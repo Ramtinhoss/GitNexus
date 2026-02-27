@@ -85,6 +85,9 @@ export async function impactCommand(target: string, options?: {
   direction?: string;
   repo?: string;
   depth?: string;
+  uid?: string;
+  file?: string;
+  minConfidence?: string;
   includeTests?: boolean;
 }): Promise<void> {
   if (!target?.trim()) {
@@ -95,8 +98,11 @@ export async function impactCommand(target: string, options?: {
   const backend = await getBackend();
   const result = await backend.callTool('impact', {
     target,
+    target_uid: options?.uid,
+    file_path: options?.file,
     direction: options?.direction || 'upstream',
     maxDepth: options?.depth ? parseInt(options.depth) : undefined,
+    minConfidence: options?.minConfidence ? parseFloat(options.minConfidence) : undefined,
     includeTests: options?.includeTests ?? false,
     repo: options?.repo,
   });

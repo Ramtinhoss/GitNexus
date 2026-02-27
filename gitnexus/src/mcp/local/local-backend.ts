@@ -44,6 +44,42 @@ const VALID_NODE_LABELS = new Set([
   'Record', 'Delegate', 'Annotation', 'Constructor', 'Template', 'Module',
 ]);
 
+function inferTypeFromId(id: unknown): string | undefined {
+  if (typeof id !== 'string' || id.length === 0) return undefined;
+  const firstColon = id.indexOf(':');
+  if (firstColon <= 0) return undefined;
+  return id.slice(0, firstColon);
+}
+
+function getRowValue<T = any>(row: any, key: string, index: number): T | undefined {
+  if (!row || typeof row !== 'object') return undefined;
+  const named = row[key];
+  if (named !== undefined) return named as T;
+  return row[index] as T | undefined;
+}
+
+function getRowType(
+  row: any,
+  opts: {
+    typeKey?: string;
+    typeIndex?: number;
+    idKey?: string;
+    idIndex?: number;
+  } = {},
+): string | undefined {
+  const {
+    typeKey = 'type',
+    typeIndex = 2,
+    idKey = 'id',
+    idIndex = 0,
+  } = opts;
+  const explicit = getRowValue<any>(row, typeKey, typeIndex);
+  if (typeof explicit === 'string' && explicit.trim().length > 0) return explicit;
+  const inferred = inferTypeFromId(getRowValue<any>(row, idKey, idIndex));
+  if (inferred && VALID_NODE_LABELS.has(inferred)) return inferred;
+  return inferred;
+}
+
 export interface CodebaseContext {
   projectName: string;
   stats: {
@@ -521,61 +557,118 @@ export class LocalBackend {
    * BM25 keyword search helper - uses KuzuDB FTS for always-fresh results
    */
   private async bm25Search(repo: RepoHandle, query: string, limit: number): Promise<any[]> {
-    const { searchFTSFromKuzu } = await import('../../core/search/bm25-index.js');
-    let bm25Results;
+    const escapedQuery = query.replace(/'/g, "''");
+    const symbolTables = [
+      { table: 'Function', index: 'function_fts', type: 'Function' },
+      { table: 'Class', index: 'class_fts', type: 'Class' },
+      { table: 'Method', index: 'method_fts', type: 'Method' },
+      { table: 'Interface', index: 'interface_fts', type: 'Interface' },
+    ];
+
+    const symbolHits: any[] = [];
+
+    for (const spec of symbolTables) {
+      try {
+        const rows = await executeQuery(repo.id, `
+          CALL QUERY_FTS_INDEX('${spec.table}', '${spec.index}', '${escapedQuery}', conjunctive := false)
+          RETURN node.id AS id, node.name AS name, node.filePath AS filePath, node.startLine AS startLine, node.endLine AS endLine, score AS score
+          ORDER BY score DESC
+          LIMIT ${limit}
+        `);
+
+        for (const row of rows) {
+          const nodeId = getRowValue<string>(row, 'id', 0);
+          if (!nodeId) continue;
+          symbolHits.push({
+            nodeId,
+            name: getRowValue<string>(row, 'name', 1) || '',
+            type: spec.type,
+            filePath: getRowValue<string>(row, 'filePath', 2) || '',
+            startLine: getRowValue<number>(row, 'startLine', 3),
+            endLine: getRowValue<number>(row, 'endLine', 4),
+            bm25Score: Number(getRowValue<number>(row, 'score', 5) ?? 0),
+          });
+        }
+      } catch {
+        // Missing FTS index for this table is expected in some repos/languages.
+      }
+    }
+
+    const rawTokens = query
+      .toLowerCase()
+      .split(/[^a-z0-9_]+/)
+      .filter(Boolean);
+    const stopTokens = new Set(['class', 'method', 'function', 'interface', 'file', 'symbol']);
+    const meaningfulTokens = rawTokens.filter(t => t.length >= 4 && !stopTokens.has(t));
+
+    // Add exact-name hits so symbol lookup queries rank correctly.
+    for (const token of meaningfulTokens) {
+      try {
+        const exactRows = await executeQuery(repo.id, `
+          MATCH (n)
+          WHERE toLower(n.name) = '${token.replace(/'/g, "''")}'
+          RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine
+          LIMIT ${limit}
+        `);
+        for (const row of exactRows) {
+          const nodeId = getRowValue<string>(row, 'id', 0);
+          if (!nodeId) continue;
+          symbolHits.push({
+            nodeId,
+            name: getRowValue<string>(row, 'name', 1) || '',
+            type: inferTypeFromId(nodeId) || 'CodeElement',
+            filePath: getRowValue<string>(row, 'filePath', 2) || '',
+            startLine: getRowValue<number>(row, 'startLine', 3),
+            endLine: getRowValue<number>(row, 'endLine', 4),
+            bm25Score: 10_000,
+          });
+        }
+      } catch {
+        // ignore exact-hit fallback failures
+      }
+    }
+
+    if (symbolHits.length > 0) {
+      const filteredByName = meaningfulTokens.length > 0
+        ? symbolHits.filter(hit => meaningfulTokens.some(t => (hit.name || '').toLowerCase().includes(t)))
+        : symbolHits;
+      const candidateHits = filteredByName.length > 0 ? filteredByName : symbolHits;
+
+      const deduped = new Map<string, any>();
+      for (const hit of candidateHits) {
+        const existing = deduped.get(hit.nodeId);
+        if (!existing || hit.bm25Score > existing.bm25Score) {
+          deduped.set(hit.nodeId, hit);
+        }
+      }
+      return Array.from(deduped.values())
+        .sort((a, b) => b.bm25Score - a.bm25Score)
+        .slice(0, limit);
+    }
+
+    // Fallback to file-level FTS when symbol indexes are missing/empty.
     try {
-      bm25Results = await searchFTSFromKuzu(query, limit, repo.id);
+      const fileRows = await executeQuery(repo.id, `
+        CALL QUERY_FTS_INDEX('File', 'file_fts', '${escapedQuery}', conjunctive := false)
+        RETURN node.filePath AS filePath, score AS score
+        ORDER BY score DESC
+        LIMIT ${limit}
+      `);
+
+      return fileRows.map((row: any) => {
+        const filePath = getRowValue<string>(row, 'filePath', 0) || '';
+        const fileName = filePath.split('/').pop() || filePath;
+        return {
+          name: fileName,
+          type: 'File',
+          filePath,
+          bm25Score: Number(getRowValue<number>(row, 'score', 1) ?? 0),
+        };
+      });
     } catch (err: any) {
       console.error('GitNexus: BM25/FTS search failed (FTS indexes may not exist) -', err.message);
       return [];
     }
-    
-    const results: any[] = [];
-    
-    for (const bm25Result of bm25Results) {
-      const fullPath = bm25Result.filePath;
-      try {
-        const symbolQuery = `
-          MATCH (n) 
-          WHERE n.filePath = '${fullPath.replace(/'/g, "''")}'
-          RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine
-          LIMIT 3
-        `;
-        const symbols = await executeQuery(repo.id, symbolQuery);
-        
-        if (symbols.length > 0) {
-          for (const sym of symbols) {
-            results.push({
-              nodeId: sym.id || sym[0],
-              name: sym.name || sym[1],
-              type: sym.type || sym[2],
-              filePath: sym.filePath || sym[3],
-              startLine: sym.startLine || sym[4],
-              endLine: sym.endLine || sym[5],
-              bm25Score: bm25Result.score,
-            });
-          }
-        } else {
-          const fileName = fullPath.split('/').pop() || fullPath;
-          results.push({
-            name: fileName,
-            type: 'File',
-            filePath: bm25Result.filePath,
-            bm25Score: bm25Result.score,
-          });
-        }
-      } catch {
-        const fileName = fullPath.split('/').pop() || fullPath;
-        results.push({
-          name: fileName,
-          type: 'File',
-          filePath: bm25Result.filePath,
-          bm25Score: bm25Result.score,
-        });
-      }
-    }
-    
-    return results;
   }
 
   /**
@@ -674,7 +767,27 @@ export class LocalBackend {
   private formatCypherAsMarkdown(result: any): any {
     if (!Array.isArray(result) || result.length === 0) return result;
 
-    const firstRow = result[0];
+    const normalizedRows = result.map((row: any) => {
+      if (!row || typeof row !== 'object') return row;
+      const next = { ...row };
+      if (Object.prototype.hasOwnProperty.call(next, 'type')) {
+        const typeValue = next.type;
+        if (typeValue === null || typeValue === undefined || (typeof typeValue === 'string' && typeValue.trim() === '')) {
+          const inferred = inferTypeFromId(next.id ?? next.uid ?? next.sourceId ?? next.targetId);
+          if (inferred) next.type = inferred;
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(next, 'kind')) {
+        const kindValue = next.kind;
+        if (kindValue === null || kindValue === undefined || (typeof kindValue === 'string' && kindValue.trim() === '')) {
+          const inferred = inferTypeFromId(next.id ?? next.uid ?? next.sourceId ?? next.targetId);
+          if (inferred) next.kind = inferred;
+        }
+      }
+      return next;
+    });
+
+    const firstRow = normalizedRows[0];
     if (typeof firstRow !== 'object' || firstRow === null) return result;
 
     const keys = Object.keys(firstRow);
@@ -682,7 +795,7 @@ export class LocalBackend {
 
     const header = '| ' + keys.join(' | ') + ' |';
     const separator = '| ' + keys.map(() => '---').join(' | ') + ' |';
-    const dataRows = result.map((row: any) =>
+    const dataRows = normalizedRows.map((row: any) =>
       '| ' + keys.map(k => {
         const v = row[k];
         if (v === null || v === undefined) return '';
@@ -693,7 +806,7 @@ export class LocalBackend {
 
     return {
       markdown: [header, separator, ...dataRows].join('\n'),
-      row_count: result.length,
+      row_count: normalizedRows.length,
     };
   }
 
@@ -820,7 +933,7 @@ export class LocalBackend {
       const escaped = uid.replace(/'/g, "''");
       symbols = await executeQuery(repo.id, `
         MATCH (n {id: '${escaped}'})
-        RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine${include_content ? ', n.content AS content' : ''}
+        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine${include_content ? ', n.content AS content' : ''}
         LIMIT 1
       `);
     } else {
@@ -839,7 +952,7 @@ export class LocalBackend {
       
       symbols = await executeQuery(repo.id, `
         MATCH (n) ${whereClause}
-        RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine${include_content ? ', n.content AS content' : ''}
+        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine${include_content ? ', n.content AS content' : ''}
         LIMIT 10
       `);
     }
@@ -854,32 +967,35 @@ export class LocalBackend {
         status: 'ambiguous',
         message: `Found ${symbols.length} symbols matching '${name}'. Use uid or file_path to disambiguate.`,
         candidates: symbols.map((s: any) => ({
-          uid: s.id || s[0],
-          name: s.name || s[1],
-          kind: s.type || s[2],
-          filePath: s.filePath || s[3],
-          line: s.startLine || s[4],
+          uid: getRowValue<string>(s, 'id', 0),
+          name: getRowValue<string>(s, 'name', 1),
+          kind: inferTypeFromId(getRowValue<string>(s, 'id', 0)) || 'CodeElement',
+          filePath: getRowValue<string>(s, 'filePath', 2),
+          line: getRowValue<number>(s, 'startLine', 3),
         })),
       };
     }
     
     // Step 3: Build full context
     const sym = symbols[0];
-    const symId = (sym.id || sym[0]).replace(/'/g, "''");
+    const symNodeId = getRowValue<string>(sym, 'id', 0) || '';
+    const symId = symNodeId.replace(/'/g, "''");
+    const symKind = inferTypeFromId(symNodeId) || 'CodeElement';
+    const symFilePath = getRowValue<string>(sym, 'filePath', 2) || '';
     
     // Categorized incoming refs
-    const incomingRows = await executeQuery(repo.id, `
+    let incomingRows = await executeQuery(repo.id, `
       MATCH (caller)-[r:CodeRelation]->(n {id: '${symId}'})
       WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
-      RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath, labels(caller)[0] AS kind
+      RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath
       LIMIT 30
     `);
     
     // Categorized outgoing refs
-    const outgoingRows = await executeQuery(repo.id, `
+    let outgoingRows = await executeQuery(repo.id, `
       MATCH (n {id: '${symId}'})-[r:CodeRelation]->(target)
       WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
-      RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath, labels(target)[0] AS kind
+      RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath
       LIMIT 30
     `);
     
@@ -891,17 +1007,74 @@ export class LocalBackend {
         RETURN p.id AS pid, p.heuristicLabel AS label, r.step AS step, p.stepCount AS stepCount
       `);
     } catch { /* no process info */ }
+
+    // Classes/interfaces are often represented by method/property level edges.
+    // When direct edges are empty, fall back to file-scoped references/processes.
+    if ((symKind === 'Class' || symKind === 'Interface') && symFilePath) {
+      const escapedPath = symFilePath.replace(/'/g, "''");
+
+      if (incomingRows.length === 0) {
+        try {
+          incomingRows = await executeQuery(repo.id, `
+            MATCH (caller)-[r:CodeRelation]->(n)
+            WHERE n.filePath = '${escapedPath}' AND r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
+            RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath
+            LIMIT 30
+          `);
+        } catch { /* ignore fallback failures */ }
+      }
+
+      if (outgoingRows.length === 0) {
+        try {
+          outgoingRows = await executeQuery(repo.id, `
+            MATCH (n)-[r:CodeRelation]->(target)
+            WHERE n.filePath = '${escapedPath}' AND r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
+            RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath
+            LIMIT 30
+          `);
+        } catch { /* ignore fallback failures */ }
+      }
+
+      if (processRows.length === 0) {
+        try {
+          const scopedProcessRows = await executeQuery(repo.id, `
+            MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
+            WHERE n.filePath = '${escapedPath}'
+            RETURN p.id AS pid, p.heuristicLabel AS label, r.step AS step, p.stepCount AS stepCount
+            LIMIT 200
+          `);
+
+          const minStepByProcess = new Map<string, any>();
+          for (const row of scopedProcessRows) {
+            const pid = getRowValue<string>(row, 'pid', 0);
+            if (!pid) continue;
+            const step = Number(getRowValue<number>(row, 'step', 2) ?? Number.MAX_SAFE_INTEGER);
+            const existing = minStepByProcess.get(pid);
+            if (!existing || step < existing.step) {
+              minStepByProcess.set(pid, {
+                pid,
+                label: getRowValue<string>(row, 'label', 1),
+                step,
+                stepCount: getRowValue<number>(row, 'stepCount', 3),
+              });
+            }
+          }
+          processRows = Array.from(minStepByProcess.values());
+        } catch { /* ignore fallback failures */ }
+      }
+    }
     
     // Helper to categorize refs
     const categorize = (rows: any[]) => {
       const cats: Record<string, any[]> = {};
       for (const row of rows) {
-        const relType = (row.relType || row[0] || '').toLowerCase();
+        const relType = String(getRowValue<string>(row, 'relType', 0) || '').toLowerCase();
+        const uid = getRowValue<string>(row, 'uid', 1);
         const entry = {
-          uid: row.uid || row[1],
-          name: row.name || row[2],
-          filePath: row.filePath || row[3],
-          kind: row.kind || row[4],
+          uid,
+          name: getRowValue<string>(row, 'name', 2),
+          filePath: getRowValue<string>(row, 'filePath', 3),
+          kind: getRowValue<string>(row, 'kind', 4) || inferTypeFromId(uid) || 'CodeElement',
         };
         if (!cats[relType]) cats[relType] = [];
         cats[relType].push(entry);
@@ -912,21 +1085,21 @@ export class LocalBackend {
     return {
       status: 'found',
       symbol: {
-        uid: sym.id || sym[0],
-        name: sym.name || sym[1],
-        kind: sym.type || sym[2],
-        filePath: sym.filePath || sym[3],
-        startLine: sym.startLine || sym[4],
-        endLine: sym.endLine || sym[5],
-        ...(include_content && (sym.content || sym[6]) ? { content: sym.content || sym[6] } : {}),
+        uid: getRowValue<string>(sym, 'id', 0),
+        name: getRowValue<string>(sym, 'name', 1),
+        kind: symKind,
+        filePath: symFilePath,
+        startLine: getRowValue<number>(sym, 'startLine', 3),
+        endLine: getRowValue<number>(sym, 'endLine', 4),
+        ...(include_content && getRowValue<string>(sym, 'content', 5) ? { content: getRowValue<string>(sym, 'content', 5) } : {}),
       },
       incoming: categorize(incomingRows),
       outgoing: categorize(outgoingRows),
       processes: processRows.map((r: any) => ({
-        id: r.pid || r[0],
-        name: r.label || r[1],
-        step_index: r.step || r[2],
-        step_count: r.stepCount || r[3],
+        id: getRowValue<string>(r, 'pid', 0),
+        name: getRowValue<string>(r, 'label', 1),
+        step_index: getRowValue<number>(r, 'step', 2),
+        step_count: getRowValue<number>(r, 'stepCount', 3),
       })),
     };
   }
@@ -968,7 +1141,7 @@ export class LocalBackend {
       const members = await executeQuery(repo.id, `
         MATCH (n)-[:CodeRelation {type: 'MEMBER_OF'}]->(c:Community)
         WHERE c.label = '${escaped}' OR c.heuristicLabel = '${escaped}'
-        RETURN DISTINCT n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
+        RETURN DISTINCT n.id AS id, n.name AS name, n.filePath AS filePath
         LIMIT 30
       `);
       
@@ -982,7 +1155,9 @@ export class LocalBackend {
           subCommunities: rawClusters.length,
         },
         members: members.map((m: any) => ({
-          name: m.name || m[0], type: m.type || m[1], filePath: m.filePath || m[2],
+          name: getRowValue<string>(m, 'name', 1),
+          type: inferTypeFromId(getRowValue<string>(m, 'id', 0)) || 'CodeElement',
+          filePath: getRowValue<string>(m, 'filePath', 2),
         })),
       };
     }
@@ -1000,7 +1175,7 @@ export class LocalBackend {
       const procId = proc.id || proc[0];
       const steps = await executeQuery(repo.id, `
         MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p {id: '${procId}'})
-        RETURN n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, r.step AS step
+        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, r.step AS step
         ORDER BY r.step
       `);
       
@@ -1010,7 +1185,10 @@ export class LocalBackend {
           processType: proc.processType || proc[3], stepCount: proc.stepCount || proc[4],
         },
         steps: steps.map((s: any) => ({
-          step: s.step || s[3], name: s.name || s[0], type: s.type || s[1], filePath: s.filePath || s[2],
+          step: getRowValue<number>(s, 'step', 3),
+          name: getRowValue<string>(s, 'name', 1),
+          type: inferTypeFromId(getRowValue<string>(s, 'id', 0)) || 'CodeElement',
+          filePath: getRowValue<string>(s, 'filePath', 2),
         })),
       };
     }
@@ -1073,15 +1251,16 @@ export class LocalBackend {
       try {
         const symbols = await executeQuery(repo.id, `
           MATCH (n) WHERE n.filePath CONTAINS '${escaped}'
-          RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
+          RETURN n.id AS id, n.name AS name, n.filePath AS filePath
           LIMIT 20
         `);
         for (const sym of symbols) {
+          const id = getRowValue<string>(sym, 'id', 0) || '';
           changedSymbols.push({
-            id: sym.id || sym[0],
-            name: sym.name || sym[1],
-            type: sym.type || sym[2],
-            filePath: sym.filePath || sym[3],
+            id,
+            name: getRowValue<string>(sym, 'name', 1),
+            type: inferTypeFromId(id) || 'CodeElement',
+            filePath: getRowValue<string>(sym, 'filePath', 2),
             change_type: 'Modified',
           });
         }
@@ -1282,6 +1461,8 @@ export class LocalBackend {
 
   private async impact(repo: RepoHandle, params: {
     target: string;
+    target_uid?: string;
+    file_path?: string;
     direction: 'upstream' | 'downstream';
     maxDepth?: number;
     relationTypes?: string[];
@@ -1291,31 +1472,89 @@ export class LocalBackend {
     await this.ensureInitialized(repo.id);
     
     const { target, direction } = params;
-    const maxDepth = params.maxDepth || 3;
+    const maxDepth = params.maxDepth ?? 3;
     const relationTypes = params.relationTypes && params.relationTypes.length > 0
       ? params.relationTypes
       : ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS'];
     const includeTests = params.includeTests ?? false;
-    const minConfidence = params.minConfidence ?? 0;
+    const minConfidence = params.minConfidence ?? 0.3;
     
     const relTypeFilter = relationTypes.map(t => `'${t}'`).join(', ');
     const confidenceFilter = minConfidence > 0 ? ` AND r.confidence >= ${minConfidence}` : '';
-    
-    const targetQuery = `
-      MATCH (n)
-      WHERE n.name = '${target.replace(/'/g, "''")}'
-      RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
-      LIMIT 1
-    `;
-    const targets = await executeQuery(repo.id, targetQuery);
+
+    let targets: any[] = [];
+    if (params.target_uid?.trim()) {
+      const escapedUid = params.target_uid.trim().replace(/'/g, "''");
+      targets = await executeQuery(repo.id, `
+        MATCH (n {id: '${escapedUid}'})
+        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine
+        LIMIT 1
+      `);
+    } else {
+      const escapedTarget = target.replace(/'/g, "''");
+      const fileFilter = params.file_path?.trim()
+        ? ` AND n.filePath CONTAINS '${params.file_path.trim().replace(/'/g, "''")}'`
+        : '';
+      targets = await executeQuery(repo.id, `
+        MATCH (n)
+        WHERE n.name = '${escapedTarget}'${fileFilter}
+        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine
+        LIMIT 20
+      `);
+    }
+
     if (targets.length === 0) return { error: `Target '${target}' not found` };
-    
+    if (targets.length > 1 && !params.target_uid) {
+      return {
+        status: 'ambiguous',
+        message: `Found ${targets.length} symbols matching '${target}'. Use target_uid or file_path to disambiguate.`,
+        candidates: targets.map((s: any) => ({
+          uid: getRowValue<string>(s, 'id', 0),
+          name: getRowValue<string>(s, 'name', 1),
+          kind: inferTypeFromId(getRowValue<string>(s, 'id', 0)) || 'CodeElement',
+          filePath: getRowValue<string>(s, 'filePath', 2),
+          line: getRowValue<number>(s, 'startLine', 3),
+        })),
+      };
+    }
+
     const sym = targets[0];
-    const symId = sym.id || sym[0];
+    const symId = getRowValue<string>(sym, 'id', 0) || '';
+    const symType = inferTypeFromId(symId) || 'CodeElement';
+    let seedIds = [symId];
+
+    // Class/interface references are frequently attached to member symbols.
+    // Seed traversal with symbols from the same file to approximate class blast radius.
+    if ((symType === 'Class' || symType === 'Interface')) {
+      const targetFilePath = getRowValue<string>(sym, 'filePath', 2);
+      if (targetFilePath) {
+        try {
+          const escapedPath = targetFilePath.replace(/'/g, "''");
+          const seedRows = await executeQuery(repo.id, `
+            MATCH (n)
+            WHERE n.filePath = '${escapedPath}'
+            RETURN n.id AS id
+            LIMIT 200
+          `);
+          const seedSet = new Set<string>([symId]);
+          for (const row of seedRows) {
+            const id = getRowValue<string>(row, 'id', 0);
+            if (!id) continue;
+            if (id.startsWith('File:') || id.startsWith('Folder:') || id.startsWith('Community:') || id.startsWith('Process:')) {
+              continue;
+            }
+            seedSet.add(id);
+          }
+          seedIds = Array.from(seedSet);
+        } catch {
+          // fallback to class node only
+        }
+      }
+    }
     
     const impacted: any[] = [];
-    const visited = new Set<string>([symId]);
-    let frontier = [symId];
+    const visited = new Set<string>(seedIds);
+    let frontier = [...seedIds];
     
     for (let depth = 1; depth <= maxDepth && frontier.length > 0; depth++) {
       const nextFrontier: string[] = [];
@@ -1323,17 +1562,19 @@ export class LocalBackend {
       // Batch frontier nodes into a single Cypher query per depth level
       const idList = frontier.map(id => `'${id.replace(/'/g, "''")}'`).join(', ');
       const query = direction === 'upstream'
-        ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, labels(caller)[0] AS type, caller.filePath AS filePath, r.type AS relType, r.confidence AS confidence`
-        : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, labels(callee)[0] AS type, callee.filePath AS filePath, r.type AS relType, r.confidence AS confidence`;
+        ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, caller.filePath AS filePath, r.type AS relType, r.confidence AS confidence`
+        : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, callee.filePath AS filePath, r.type AS relType, r.confidence AS confidence`;
       
       try {
         const related = await executeQuery(repo.id, query);
         
         for (const rel of related) {
-          const relId = rel.id || rel[1];
-          const filePath = rel.filePath || rel[4] || '';
+          const relId = getRowValue<string>(rel, 'id', 1) || '';
+          const filePath = getRowValue<string>(rel, 'filePath', 3) || '';
+          const relNodeType = inferTypeFromId(relId) || 'CodeElement';
           
           if (!includeTests && isTestFilePath(filePath)) continue;
+          if (relNodeType === 'File' || relNodeType === 'Folder' || relNodeType === 'Community' || relNodeType === 'Process') continue;
           
           if (!visited.has(relId)) {
             visited.add(relId);
@@ -1341,11 +1582,11 @@ export class LocalBackend {
             impacted.push({
               depth,
               id: relId,
-              name: rel.name || rel[2],
-              type: rel.type || rel[3],
+              name: getRowValue<string>(rel, 'name', 2),
+              type: relNodeType,
               filePath,
-              relationType: rel.relType || rel[5],
-              confidence: rel.confidence || rel[6] || 1.0,
+              relationType: getRowValue<string>(rel, 'relType', 4),
+              confidence: Number(getRowValue<number>(rel, 'confidence', 5) ?? 1.0),
             });
           }
         }
@@ -1425,9 +1666,9 @@ export class LocalBackend {
     return {
       target: {
         id: symId,
-        name: sym.name || sym[1],
-        type: sym.type || sym[2],
-        filePath: sym.filePath || sym[3],
+        name: getRowValue<string>(sym, 'name', 1),
+        type: symType,
+        filePath: getRowValue<string>(sym, 'filePath', 2),
       },
       direction,
       impactedCount: impacted.length,
@@ -1535,7 +1776,7 @@ export class LocalBackend {
     const members = await executeQuery(repo.id, `
       MATCH (n)-[:CodeRelation {type: 'MEMBER_OF'}]->(c:Community)
       WHERE c.label = '${escaped}' OR c.heuristicLabel = '${escaped}'
-      RETURN DISTINCT n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
+      RETURN DISTINCT n.id AS id, n.name AS name, n.filePath AS filePath
       LIMIT 30
     `);
 
@@ -1549,7 +1790,9 @@ export class LocalBackend {
         subCommunities: rawClusters.length,
       },
       members: members.map((m: any) => ({
-        name: m.name || m[0], type: m.type || m[1], filePath: m.filePath || m[2],
+        name: getRowValue<string>(m, 'name', 1),
+        type: inferTypeFromId(getRowValue<string>(m, 'id', 0)) || 'CodeElement',
+        filePath: getRowValue<string>(m, 'filePath', 2),
       })),
     };
   }
@@ -1575,7 +1818,7 @@ export class LocalBackend {
     const procId = proc.id || proc[0];
     const steps = await executeQuery(repo.id, `
       MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p {id: '${procId}'})
-      RETURN n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, r.step AS step
+      RETURN n.id AS id, n.name AS name, n.filePath AS filePath, r.step AS step
       ORDER BY r.step
     `);
 
@@ -1585,7 +1828,10 @@ export class LocalBackend {
         processType: proc.processType || proc[3], stepCount: proc.stepCount || proc[4],
       },
       steps: steps.map((s: any) => ({
-        step: s.step || s[3], name: s.name || s[0], type: s.type || s[1], filePath: s.filePath || s[2],
+        step: getRowValue<number>(s, 'step', 3),
+        name: getRowValue<string>(s, 'name', 1),
+        type: inferTypeFromId(getRowValue<string>(s, 'id', 0)) || 'CodeElement',
+        filePath: getRowValue<string>(s, 'filePath', 2),
       })),
     };
   }

@@ -123,7 +123,10 @@ program
   .description('Blast radius analysis: what breaks if you change a symbol')
   .option('-d, --direction <dir>', 'upstream (dependants) or downstream (dependencies)', 'upstream')
   .option('-r, --repo <name>', 'Target repository')
+  .option('-u, --uid <uid>', 'Exact target UID (disambiguates same-name symbols)')
+  .option('-f, --file <path>', 'File path filter to disambiguate target name')
   .option('--depth <n>', 'Max relationship depth (default: 3)')
+  .option('--min-confidence <n>', 'Minimum edge confidence 0-1 (default: 0.3)')
   .option('--include-tests', 'Include test files in results')
   .action(impactCommand);
 

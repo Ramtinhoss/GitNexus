@@ -290,8 +290,8 @@ const processParsingSequential = async (
         properties: {
           name: nodeName,
           filePath: file.path,
-          startLine: nameNode.startPosition.row,
-          endLine: nameNode.endPosition.row,
+          startLine: nameNode.startPosition.row + 1,
+          endLine: nameNode.endPosition.row + 1,
           language: language,
           isExported: isNodeExported(nameNode, nodeName, language),
         }
