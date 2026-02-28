@@ -148,7 +148,30 @@ gitnexus clean                   # Delete index for current repo
 gitnexus clean --all --force     # Delete all indexes
 gitnexus wiki [path]             # Generate LLM-powered docs from knowledge graph
 gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-mini)
+gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile quick --target-path ../benchmarks/fixtures/unity-mini
+gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile full --target-path ../benchmarks/fixtures/unity-mini
 ```
+
+## Unity Benchmark
+
+Run reproducible Unity/C# accuracy and regression checks:
+
+```bash
+gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile quick --target-path ../benchmarks/fixtures/unity-mini
+gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile full --target-path ../benchmarks/fixtures/unity-mini
+```
+
+Reports are written to `.gitnexus/benchmark/benchmark-report.json` and `.gitnexus/benchmark/benchmark-summary.md`.
+
+Hard gates:
+
+| Metric | Threshold |
+|--------|-----------|
+| Query precision | `>= 0.90` |
+| Query recall | `>= 0.85` |
+| Context/impact F1 | `>= 0.80` |
+| Smoke pass rate | `= 1.00` |
+| Analyze time regression | `<= +15%` |
 
 ## Multi-Repo Support
 
