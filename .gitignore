@@ -47,6 +47,11 @@ coverage/
 
 # Assets (screenshots, images)
 assets/
+!benchmarks/fixtures/
+!benchmarks/fixtures/unity-mini/
+!benchmarks/fixtures/unity-mini/Assets/
+!benchmarks/fixtures/unity-mini/Assets/Scripts/
+!benchmarks/fixtures/unity-mini/Assets/Scripts/*.cs
 
 # Generated files (should not be indexed)
 repomix-output*
