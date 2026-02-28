@@ -32,6 +32,7 @@ import { augmentCommand } from './augment.js';
 import { wikiCommand } from './wiki.js';
 import { queryCommand, contextCommand, impactCommand, cypherCommand } from './tool.js';
 import { evalServerCommand } from './eval-server.js';
+import { benchmarkUnityCommand } from './benchmark-unity.js';
 const program = new Command();
 
 program
@@ -145,5 +146,16 @@ program
   .option('-p, --port <port>', 'Port number', '4848')
   .option('--idle-timeout <seconds>', 'Auto-shutdown after N seconds idle (0 = disabled)', '0')
   .action(evalServerCommand);
+
+program
+  .command('benchmark-unity <dataset>')
+  .description('Run Unity accuracy baseline and hard-gated regression checks')
+  .option('-p, --profile <profile>', 'quick or full', 'quick')
+  .option('-r, --repo <name>', 'Target indexed repo')
+  .option('--target-path <path>', 'Path to analyze before evaluation (required unless --skip-analyze)')
+  .option('--report-dir <path>', 'Output directory for benchmark-report.json and benchmark-summary.md', '.gitnexus/benchmark')
+  .option('--extensions <list>', 'Analyze extension filter (default: .cs)', '.cs')
+  .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
+  .action(benchmarkUnityCommand);
 
 program.parse(process.argv);
