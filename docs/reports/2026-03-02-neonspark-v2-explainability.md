@@ -12,12 +12,13 @@ Target repo alias: `neonspark-v1-subset`
   - context: `5`
   - impact: `5`
 - Selection method: sampled representative tasks from the calibrated v2 benchmark set, including disambiguation-sensitive cases (`LootManager`, `MovePlatform`, `BanScreen`, `RoomConfig`).
+- Current task mapping used in this report: query tasks `1,4,6,7,8`; context tasks `20,21,24,25,26`; impact tasks `28,29,32,34,36`.
 
 ## 2) Query Samples (5)
 
 ### Q1 (`QUERY-1`, task 1)
-- Input: `search_query="MinionsManager MinionsManager GameModes", limit=1, max_symbols=1`
-- Top hits/output summary: `definitions[0]=Class:Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs:MinionsManager` (`definitionCount=1`)
+- Input: `search_query="MirrorNetMgr", limit=1, max_symbols=1`
+- Top hits/output summary: `definitions[0]=Class:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs:MirrorNetMgr` (`definitionCount=1`)
 - Expected vs actual: required hit present, result count `1` meets minimum `1`, no forbidden hits.
 - Verdict: `clear`
 
@@ -124,14 +125,14 @@ Target repo alias: `neonspark-v1-subset`
 ### Cross-run v2 benchmark context (same day)
 
 - Source: `docs/reports/2026-03-02-neonspark-v2-run1-report.json`
-- Observed historical failure class before stabilization:
+- Observed historical failure class before stabilization (pre-quick-task hardening revision):
   - `missing-required-hit`: `1` (task index `2`, InputManager query)
 - Source: `docs/reports/2026-03-02-neonspark-v2-run2-report.json`, `docs/reports/2026-03-02-neonspark-v2-run3-report.json`
   - residual failures: `none`
 
 ## 6) Follow-up Actions
 
-1. Keep `InputManager` (task index `2`) in a pinned sanity subset for repeated spot-checking, since it was the only transient miss in v2 run1.
+1. Keep early quick-sampled query tasks (`1-5`) in a pinned sanity subset for repeated spot-checking, especially after dataset query-text edits.
 2. Extend explainability sampling from `15` to `30` cases in the next calibration cycle, prioritizing name-collision-heavy symbols.
 3. Record one weekly quick-run trend line (`benchmark:neonspark:v2:quick`) and alert if any `missing-required-hit` reappears.
 
@@ -143,8 +144,16 @@ Executed from `gitnexus/`:
 2. `npm run test:benchmark` -> `PASS` (`48` tests passed, `0` failed)
 3. `npm run benchmark:neonspark:v2:quick` -> `PASS` on two consecutive runs
    - archived artifacts:
-     - `docs/reports/2026-03-02-neonspark-v2-quick-report.json`
-     - `docs/reports/2026-03-02-neonspark-v2-quick-summary.md`
+     - `docs/reports/2026-03-02-neonspark-v2-quick-run1-report.json`
+     - `docs/reports/2026-03-02-neonspark-v2-quick-run1-summary.md`
+     - `docs/reports/2026-03-02-neonspark-v2-quick-run2-report.json`
+     - `docs/reports/2026-03-02-neonspark-v2-quick-run2-summary.md`
+   - run1 metrics (archived):
+     - query precision: `1.000`
+     - query recall: `1.000`
+     - context/impact F1: `1.000`
+     - smoke pass rate: `1.000`
+     - gate failures: `none`
    - run2 metrics (archived):
      - query precision: `1.000`
      - query recall: `1.000`

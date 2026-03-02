@@ -48,21 +48,23 @@ npm run benchmark:neonspark:quick
 npm run benchmark:neonspark:full
 ```
 
-### Archive v1 quick artifacts
+### Archive v1 artifacts (runN pattern)
 
 ```bash
 cd gitnexus
-cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v1-quick-report.json
-cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v1-quick-summary.md
+RUN_TAG="2026-03-02-neonspark-v1-runN"   # replace runN with quick/full/run1/run2...
+cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/${RUN_TAG}-report.json
+cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/${RUN_TAG}-summary.md
 ```
 
-### Archive v1 full artifacts
+Committed examples that currently exist:
 
-```bash
-cd gitnexus
-cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v1-full-report.json
-cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v1-full-summary.md
-```
+- `docs/reports/2026-03-02-neonspark-v1-benchmark-report.json`
+- `docs/reports/2026-03-02-neonspark-v1-benchmark-summary.md`
+- `docs/reports/2026-03-02-neonspark-v1-p0-t4-run2-report.json`
+- `docs/reports/2026-03-02-neonspark-v1-p0-t4-run2-summary.md`
+- `docs/reports/2026-03-02-neonspark-v1-p0-t4-run3-report.json`
+- `docs/reports/2026-03-02-neonspark-v1-p0-t4-run3-summary.md`
 
 ## 2) v2 Expanded Calibration Flow
 
@@ -104,18 +106,32 @@ npm run benchmark:neonspark:v2:quick
 npm run benchmark:neonspark:v2:full
 ```
 
-### Archive v2 quick artifacts
+### Archive v2 quick artifacts (run1/run2 or runN)
 
 ```bash
 cd gitnexus
-cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v2-quick-report.json
-cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v2-quick-summary.md
+cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v2-quick-run1-report.json
+cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v2-quick-run1-summary.md
+
+# Second quick pass (or subsequent pass) example:
+cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v2-quick-run2-report.json
+cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v2-quick-run2-summary.md
 ```
 
-### Archive v2 full artifacts
+### Archive v2 full artifacts (runN pattern)
 
 ```bash
 cd gitnexus
-cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v2-full-report.json
-cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v2-full-summary.md
+RUN_TAG="2026-03-02-neonspark-v2-runN"   # replace runN with run1/run2/run3...
+cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/${RUN_TAG}-report.json
+cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/${RUN_TAG}-summary.md
 ```
+
+Committed full-run examples that currently exist:
+
+- `docs/reports/2026-03-02-neonspark-v2-run1-report.json`
+- `docs/reports/2026-03-02-neonspark-v2-run1-summary.md`
+- `docs/reports/2026-03-02-neonspark-v2-run2-report.json`
+- `docs/reports/2026-03-02-neonspark-v2-run2-summary.md`
+- `docs/reports/2026-03-02-neonspark-v2-run3-report.json`
+- `docs/reports/2026-03-02-neonspark-v2-run3-summary.md`
