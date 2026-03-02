@@ -97,3 +97,30 @@ Calibration actions applied:
 Status update:
 - `P0-T3` has a calibrated passing baseline.
 - `P0-T4` (three consecutive passing regressions) is now unblocked; this run counts as pass `1/3`.
+
+## 9) P0-T4 Consecutive Regression Passes (Completed)
+
+Two additional full regressions were executed after the calibrated pass baseline, and both passed.
+
+- Pass `1/3`:
+  - `docs/reports/2026-03-02-neonspark-v1-p0-t3-calibrated-pass-report.json`
+  - Generated at: `2026-03-02T07:58:20.718Z`
+- Pass `2/3`:
+  - `docs/reports/2026-03-02-neonspark-v1-p0-t4-run2-report.json`
+  - `docs/reports/2026-03-02-neonspark-v1-p0-t4-run2-summary.md`
+  - Generated at: `2026-03-02T08:11:33.484Z`
+- Pass `3/3`:
+  - `docs/reports/2026-03-02-neonspark-v1-p0-t4-run3-report.json`
+  - `docs/reports/2026-03-02-neonspark-v1-p0-t4-run3-summary.md`
+  - Generated at: `2026-03-02T08:13:52.381Z`
+
+All three pass reports share the same metric snapshot:
+- query precision: `1.000`
+- query recall: `1.000`
+- context/impact F1: `0.667`
+- smoke pass rate: `1.000`
+- gate failures: `none`
+
+Completion status:
+- `P0-T4` done (`3/3` consecutive passes achieved).
+- Phase 1.5 benchmark gate objective is now satisfied under the calibrated dataset/threshold contract.
