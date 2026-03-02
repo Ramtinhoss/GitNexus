@@ -12,7 +12,7 @@ import { PipelineProgress, PipelineResult } from '../../types/pipeline.js';
 import { walkRepositoryPaths, readFileContents } from './filesystem-walker.js';
 import { getLanguageFromFilename } from './utils.js';
 import { createWorkerPool, WorkerPool } from './workers/worker-pool.js';
-import { normalizeScopeRules, pathMatchesScopeRules } from './scope-filter.js';
+import { selectEntriesByScopeRules } from './scope-filter.js';
 import path from 'path';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -63,12 +63,10 @@ export const runPipelineFromRepo = async (
       });
     });
 
-    const scopeRules = normalizeScopeRules(options?.scopeRules || []);
-    const scopedFiles = scopeRules.length > 0
-      ? scannedFiles.filter((f) => pathMatchesScopeRules(f.path, scopeRules))
-      : scannedFiles;
+    const scopeSelection = selectEntriesByScopeRules(scannedFiles, options?.scopeRules || []);
+    const scopedFiles = scopeSelection.selected;
 
-    if (scopeRules.length > 0 && scopedFiles.length === 0) {
+    if (scopeSelection.diagnostics.appliedRuleCount > 0 && scopedFiles.length === 0) {
       throw new Error('Scope filters matched zero files. Check --scope-manifest/--scope-prefix.');
     }
 
@@ -371,7 +369,14 @@ export const runPipelineFromRepo = async (
 
     astCache.clear();
 
-    return { graph, repoPath, totalFileCount: totalFiles, communityResult, processResult };
+    return {
+      graph,
+      repoPath,
+      totalFileCount: totalFiles,
+      communityResult,
+      processResult,
+      scopeDiagnostics: scopeSelection.diagnostics,
+    };
   } catch (error) {
     cleanup();
     throw error;

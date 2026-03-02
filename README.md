@@ -118,7 +118,9 @@ claude mcp add gitnexus -- npx -y gitnexus@latest mcp
 gitnexus setup                    # Configure MCP for your editors (one-time)
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
-gitnexus analyze --skip-embeddings  # Skip embedding generation (faster)
+gitnexus analyze --embeddings     # Enable semantic embeddings (off by default)
+gitnexus analyze --scope-prefix Assets/NEON/Code --scope-prefix Packages/com.veewo.*  # Scoped multi-directory indexing
+gitnexus analyze --scope-manifest ./scope.txt --repo-alias neonspark-v1-subset         # Scoped indexing + stable repo alias
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI connection
 gitnexus list                    # List all indexed repositories
@@ -129,6 +131,8 @@ gitnexus wiki [path]             # Generate repository wiki from knowledge graph
 gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-mini)
 gitnexus wiki --base-url <url>   # Wiki with custom LLM API base URL
 ```
+
+For scoped indexing, `analyze` logs scope overlap dedupe counts and any normalized path collisions to help diagnose multi-directory merge safety.
 
 ### What Your AI Agent Gets
 

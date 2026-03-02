@@ -383,6 +383,21 @@ export const analyzeCommand = async (
   console.log(`  Repo Alias: ${registeredRepo.alias || 'none'}`);
   console.log(`  Scope Rules: ${scopeRules.length}`);
   console.log(`  Scoped Files: ${pipelineResult.totalFileCount}`);
+  if (scopeRules.length > 0 && pipelineResult.scopeDiagnostics) {
+    const diagnostics = pipelineResult.scopeDiagnostics;
+    console.log(`  Scope Overlap Files: ${diagnostics.overlapFiles} (${diagnostics.dedupedMatchCount} duplicate matches removed)`);
+    if (diagnostics.normalizedCollisions.length === 0) {
+      console.log('  Scope Collisions: none');
+    } else {
+      console.warn(`  Scope Collisions: ${diagnostics.normalizedCollisions.length} normalized path conflict(s) detected`);
+      diagnostics.normalizedCollisions.slice(0, 5).forEach((collision) => {
+        console.warn(`    - ${collision.normalizedPath} <= ${collision.paths.join(' | ')}`);
+      });
+      if (diagnostics.normalizedCollisions.length > 5) {
+        console.warn(`    ... ${diagnostics.normalizedCollisions.length - 5} more`);
+      }
+    }
+  }
   console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineResult.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineResult.processResult?.stats.totalProcesses || 0} flows`);
   console.log(`  KuzuDB ${kuzuTime}s | FTS ${ftsTime}s | Embeddings ${embeddingSkipped ? embeddingSkipReason : embeddingTime + 's'}`);
   if (includeExtensions.length > 0) {

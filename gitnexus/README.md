@@ -139,7 +139,9 @@ Your AI agent gets these tools automatically:
 gitnexus setup                    # Configure MCP for your editors (one-time)
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
-gitnexus analyze --skip-embeddings  # Skip embedding generation (faster)
+gitnexus analyze --embeddings     # Enable semantic embeddings (off by default)
+gitnexus analyze --scope-prefix Assets/NEON/Code --scope-prefix Packages/com.veewo.*  # Scoped multi-directory indexing
+gitnexus analyze --scope-manifest ./scope.txt --repo-alias neonspark-v1-subset         # Scoped indexing + stable repo alias
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI
 gitnexus list                    # List all indexed repositories
@@ -151,6 +153,8 @@ gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-m
 gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile quick --target-path ../benchmarks/fixtures/unity-mini
 gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile full --target-path ../benchmarks/fixtures/unity-mini
 ```
+
+For scoped indexing, `analyze` logs scope overlap dedupe counts and any normalized path collisions to help diagnose multi-directory merge safety.
 
 ## Unity Benchmark
 
