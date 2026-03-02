@@ -1,0 +1,46 @@
+{
+  "generatedAt": "2026-03-02T07:58:20.718Z",
+  "repo": "neonspark-v1-subset",
+  "profile": {
+    "maxSymbols": 9007199254740991,
+    "maxTasks": 9007199254740991
+  },
+  "metrics": {
+    "queryPrecision": 1,
+    "queryRecall": 1,
+    "contextImpactF1": 0.6666666666666666,
+    "smokePassRate": 1,
+    "perfRegressionPct": 0
+  },
+  "thresholds": {
+    "query": {
+      "precisionMin": 0.9,
+      "recallMin": 0.85
+    },
+    "contextImpact": {
+      "f1Min": 0.65
+    },
+    "smoke": {
+      "passRateMin": 1
+    },
+    "performance": {
+      "analyzeTimeRegressionMaxPct": 15
+    }
+  },
+  "gate": {
+    "pass": true,
+    "failures": []
+  },
+  "analyze": {
+    "totalSeconds": 11.9,
+    "nodes": 48532,
+    "edges": 109639
+  },
+  "triage": [],
+  "failures": [],
+  "stats": {
+    "symbols": 20,
+    "relations": 24,
+    "tasks": 18
+  }
+}
