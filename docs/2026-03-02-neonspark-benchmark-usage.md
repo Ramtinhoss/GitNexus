@@ -48,12 +48,20 @@ npm run benchmark:neonspark:quick
 npm run benchmark:neonspark:full
 ```
 
-### Archive v1 artifacts
+### Archive v1 quick artifacts
 
 ```bash
 cd gitnexus
-cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v1-benchmark-report.json
-cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v1-benchmark-summary.md
+cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v1-quick-report.json
+cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v1-quick-summary.md
+```
+
+### Archive v1 full artifacts
+
+```bash
+cd gitnexus
+cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v1-full-report.json
+cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v1-full-summary.md
 ```
 
 ## 2) v2 Expanded Calibration Flow
@@ -96,10 +104,18 @@ npm run benchmark:neonspark:v2:quick
 npm run benchmark:neonspark:v2:full
 ```
 
-### Archive v2 artifacts
+### Archive v2 quick artifacts
 
 ```bash
 cd gitnexus
-cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v2-run3-report.json
-cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v2-run3-summary.md
+cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v2-quick-report.json
+cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v2-quick-summary.md
+```
+
+### Archive v2 full artifacts
+
+```bash
+cd gitnexus
+cp .gitnexus/benchmark/benchmark-report.json ../docs/reports/2026-03-02-neonspark-v2-full-report.json
+cp .gitnexus/benchmark/benchmark-summary.md ../docs/reports/2026-03-02-neonspark-v2-full-summary.md
 ```

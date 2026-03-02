@@ -141,12 +141,22 @@ Executed from `gitnexus/`:
 
 1. `npm run build` -> `PASS`
 2. `npm run test:benchmark` -> `PASS` (`48` tests passed, `0` failed)
-3. `npm run benchmark:neonspark:v2:quick` -> `PASS`
-   - query precision: `1.000`
+3. `npm run benchmark:neonspark:v2:quick` -> `PASS` on two consecutive runs
+   - archived artifacts:
+     - `docs/reports/2026-03-02-neonspark-v2-quick-report.json`
+     - `docs/reports/2026-03-02-neonspark-v2-quick-summary.md`
+   - run2 metrics (archived):
+     - query precision: `1.000`
+     - query recall: `1.000`
+     - context/impact F1: `1.000`
+     - smoke pass rate: `1.000`
+     - gate failures: `none`
+4. `npm run benchmark:neonspark:v2:full` -> `PASS` (sanity run)
+   - query precision: `0.952`
    - query recall: `1.000`
-   - context/impact F1: `1.000`
+   - context/impact F1: `0.680`
    - smoke pass rate: `1.000`
    - gate failures: `none`
-4. `node dist/cli/index.js status` -> `PASS` (command succeeded; repo status is `stale`, indexed commit `79ad888`, current commit `af7df7d`)
-   - Clarification: staleness is expected here because new commits were created after the last index for this worktree.
-5. `node dist/cli/index.js list` -> `PASS` (`4` indexed repos listed; `neonspark-v1-subset` mapped to `/Volumes/Shuttle/unity-projects/neonspark`)
+5. `node dist/cli/index.js status` -> `PASS` (command succeeded; freshness state can still be `stale`)
+   - Clarification: command execution success and index freshness are separate; staleness is expected when commits are added after the last `analyze`.
+6. `node dist/cli/index.js list` -> `PASS` (`4` indexed repos listed; `neonspark-v1-subset` mapped to `/Volumes/Shuttle/unity-projects/neonspark`)
