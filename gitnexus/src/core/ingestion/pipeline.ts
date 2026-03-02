@@ -12,6 +12,7 @@ import { PipelineProgress, PipelineResult } from '../../types/pipeline.js';
 import { walkRepositoryPaths, readFileContents } from './filesystem-walker.js';
 import { getLanguageFromFilename } from './utils.js';
 import { createWorkerPool, WorkerPool } from './workers/worker-pool.js';
+import { normalizeScopeRules, pathMatchesScopeRules } from './scope-filter.js';
 import path from 'path';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -30,6 +31,7 @@ export const runPipelineFromRepo = async (
   onProgress: (progress: PipelineProgress) => void,
   options?: {
     includeExtensions?: string[];
+    scopeRules?: string[];
   },
 ): Promise<PipelineResult> => {
   const graph = createKnowledgeGraph();
@@ -61,6 +63,15 @@ export const runPipelineFromRepo = async (
       });
     });
 
+    const scopeRules = normalizeScopeRules(options?.scopeRules || []);
+    const scopedFiles = scopeRules.length > 0
+      ? scannedFiles.filter((f) => pathMatchesScopeRules(f.path, scopeRules))
+      : scannedFiles;
+
+    if (scopeRules.length > 0 && scopedFiles.length === 0) {
+      throw new Error('Scope filters matched zero files. Check --scope-manifest/--scope-prefix.');
+    }
+
     const includeExtensions = new Set(
       (options?.includeExtensions || [])
         .map(ext => ext.trim().toLowerCase())
@@ -68,8 +79,8 @@ export const runPipelineFromRepo = async (
         .map(ext => (ext.startsWith('.') ? ext : `.${ext}`)),
     );
     const extensionFiltered = includeExtensions.size > 0
-      ? scannedFiles.filter(f => includeExtensions.has(path.extname(f.path).toLowerCase()))
-      : scannedFiles;
+      ? scopedFiles.filter(f => includeExtensions.has(path.extname(f.path).toLowerCase()))
+      : scopedFiles;
 
     const totalFiles = extensionFiltered.length;
 

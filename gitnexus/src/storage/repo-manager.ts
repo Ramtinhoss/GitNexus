@@ -41,7 +41,25 @@ export interface RegistryEntry {
   storagePath: string;
   indexedAt: string;
   lastCommit: string;
+  sourceName?: string;
+  alias?: string;
   stats?: RepoMeta['stats'];
+}
+
+export interface RegisterRepoOptions {
+  repoAlias?: string;
+}
+
+const REPO_ALIAS_REGEX = /^[a-zA-Z0-9._-]{3,64}$/;
+
+function normalizeRepoAlias(repoAlias?: string): string | undefined {
+  if (!repoAlias) return undefined;
+  const trimmed = repoAlias.trim();
+  if (!trimmed) return undefined;
+  if (!REPO_ALIAS_REGEX.test(trimmed)) {
+    throw new Error('Invalid repo alias. Use ^[a-zA-Z0-9._-]{3,64}$');
+  }
+  return trimmed;
 }
 
 const GITNEXUS_DIR = '.gitnexus';
@@ -159,6 +177,9 @@ export const addToGitignore = async (repoPath: string): Promise<void> => {
  * Get the path to the global GitNexus directory
  */
 export const getGlobalDir = (): string => {
+  if (process.env.GITNEXUS_HOME && process.env.GITNEXUS_HOME.trim()) {
+    return path.resolve(process.env.GITNEXUS_HOME);
+  }
   return path.join(os.homedir(), '.gitnexus');
 };
 
@@ -195,12 +216,26 @@ const writeRegistry = async (entries: RegistryEntry[]): Promise<void> => {
  * Register (add or update) a repo in the global registry.
  * Called after `gitnexus analyze` completes.
  */
-export const registerRepo = async (repoPath: string, meta: RepoMeta): Promise<void> => {
+export const registerRepo = async (
+  repoPath: string,
+  meta: RepoMeta,
+  options?: RegisterRepoOptions,
+): Promise<RegistryEntry> => {
   const resolved = path.resolve(repoPath);
-  const name = path.basename(resolved);
+  const sourceName = path.basename(resolved);
+  const alias = normalizeRepoAlias(options?.repoAlias);
+  const name = alias || sourceName;
   const { storagePath } = getStoragePaths(resolved);
 
   const entries = await readRegistry();
+  if (alias) {
+    const aliasConflict = entries.find(
+      (e) => e.name === alias && path.resolve(e.path) !== resolved,
+    );
+    if (aliasConflict) {
+      throw new Error(`Repo alias "${alias}" is already registered for ${aliasConflict.path}`);
+    }
+  }
   const existing = entries.findIndex(
     (e) => path.resolve(e.path) === resolved
   );
@@ -211,6 +246,8 @@ export const registerRepo = async (repoPath: string, meta: RepoMeta): Promise<vo
     storagePath,
     indexedAt: meta.indexedAt,
     lastCommit: meta.lastCommit,
+    sourceName,
+    alias,
     stats: meta.stats,
   };
 
@@ -221,6 +258,7 @@ export const registerRepo = async (repoPath: string, meta: RepoMeta): Promise<vo
   }
 
   await writeRegistry(entries);
+  return entry;
 };
 
 /**

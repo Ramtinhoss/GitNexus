@@ -14,9 +14,12 @@ export async function benchmarkUnityCommand(
   options: {
     profile?: string;
     repo?: string;
+    repoAlias?: string;
     targetPath?: string;
     reportDir?: string;
     extensions?: string;
+    scopeManifest?: string;
+    scopePrefix?: string[];
     skipAnalyze?: boolean;
   },
 ) {
@@ -27,10 +30,13 @@ export async function benchmarkUnityCommand(
 
   const result = await runBenchmark(ds, {
     repo: options.repo,
+    repoAlias: options.repoAlias,
     targetPath: options.targetPath,
     profile: profileConfig,
     reportDir: options.reportDir,
     extensions: options.extensions || '.cs',
+    scopeManifest: options.scopeManifest,
+    scopePrefix: options.scopePrefix,
     skipAnalyze: options.skipAnalyze ?? false,
   });
 

@@ -19,6 +19,7 @@ import { getCurrentCommit, isGitRepo, getGitRoot } from '../storage/git.js';
 import { generateAIContextFiles } from './ai-context.js';
 import fs from 'fs/promises';
 import { registerClaudeHook } from './claude-hooks.js';
+import { normalizeRepoAlias, parseExtensionList, resolveAnalyzeScopeRules } from './analyze-options.js';
 
 const HEAP_MB = 8192;
 const HEAP_FLAG = `--max-old-space-size=${HEAP_MB}`;
@@ -46,6 +47,9 @@ export interface AnalyzeOptions {
   force?: boolean;
   embeddings?: boolean;
   extensions?: string;
+  repoAlias?: string;
+  scopeManifest?: string;
+  scopePrefix?: string[];
 }
 
 /** Threshold: auto-skip embeddings for repos with more nodes than this */
@@ -75,11 +79,21 @@ export const analyzeCommand = async (
 
   console.log('\n  GitNexus Analyzer\n');
 
-  const includeExtensions = (options?.extensions || '')
-    .split(',')
-    .map(ext => ext.trim().toLowerCase())
-    .filter(Boolean)
-    .map(ext => (ext.startsWith('.') ? ext : `.${ext}`));
+  let includeExtensions: string[] = [];
+  let scopeRules: string[] = [];
+  let repoAlias: string | undefined;
+  try {
+    includeExtensions = parseExtensionList(options?.extensions);
+    scopeRules = await resolveAnalyzeScopeRules({
+      scopeManifest: options?.scopeManifest,
+      scopePrefix: options?.scopePrefix,
+    });
+    repoAlias = normalizeRepoAlias(options?.repoAlias);
+  } catch (error: any) {
+    console.log(`  ${error?.message || String(error)}\n`);
+    process.exitCode = 1;
+    return;
+  }
 
   let repoPath: string;
   if (inputPath) {
@@ -104,7 +118,14 @@ export const analyzeCommand = async (
   const currentCommit = getCurrentCommit(repoPath);
   const existingMeta = await loadMeta(storagePath);
 
-  if (existingMeta && !options?.force && existingMeta.lastCommit === currentCommit && includeExtensions.length === 0) {
+  if (
+    existingMeta &&
+    !options?.force &&
+    existingMeta.lastCommit === currentCommit &&
+    includeExtensions.length === 0 &&
+    scopeRules.length === 0 &&
+    !repoAlias
+  ) {
     console.log('  Already up to date\n');
     return;
   }
@@ -191,15 +212,28 @@ export const analyzeCommand = async (
   }
 
   // ── Phase 1: Full Pipeline (0–60%) ─────────────────────────────────
-  const pipelineResult = await runPipelineFromRepo(
-    repoPath,
-    (progress) => {
-      const phaseLabel = PHASE_LABELS[progress.phase] || progress.phase;
-      const scaled = Math.round(progress.percent * 0.6);
-      updateBar(scaled, phaseLabel);
-    },
-    { includeExtensions },
-  );
+  let pipelineResult;
+  try {
+    pipelineResult = await runPipelineFromRepo(
+      repoPath,
+      (progress) => {
+        const phaseLabel = PHASE_LABELS[progress.phase] || progress.phase;
+        const scaled = Math.round(progress.percent * 0.6);
+        updateBar(scaled, phaseLabel);
+      },
+      { includeExtensions, scopeRules },
+    );
+  } catch (error: any) {
+    clearInterval(elapsedTimer);
+    process.removeListener('SIGINT', sigintHandler);
+    console.log = origLog;
+    console.warn = origWarn;
+    console.error = origError;
+    bar.stop();
+    console.log(`\n  ${error?.message || String(error)}\n`);
+    process.exitCode = 1;
+    return;
+  }
 
   // ── Phase 2: KuzuDB (60–85%) ──────────────────────────────────────
   updateBar(60, 'Loading into KuzuDB...');
@@ -300,7 +334,7 @@ export const analyzeCommand = async (
     },
   };
   await saveMeta(storagePath, meta);
-  await registerRepo(repoPath, meta);
+  const registeredRepo = await registerRepo(repoPath, meta, { repoAlias });
   await addToGitignore(repoPath);
 
   const hookResult = await registerClaudeHook();
@@ -345,6 +379,10 @@ export const analyzeCommand = async (
   // ── Summary ───────────────────────────────────────────────────────
   const embeddingsCached = cachedEmbeddings.length > 0;
   console.log(`\n  Repository indexed successfully (${totalTime}s)${embeddingsCached ? ` [${cachedEmbeddings.length} embeddings cached]` : ''}\n`);
+  console.log(`  Repo Name: ${registeredRepo.name}`);
+  console.log(`  Repo Alias: ${registeredRepo.alias || 'none'}`);
+  console.log(`  Scope Rules: ${scopeRules.length}`);
+  console.log(`  Scoped Files: ${pipelineResult.totalFileCount}`);
   console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineResult.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineResult.processResult?.stats.totalProcesses || 0} flows`);
   console.log(`  KuzuDB ${kuzuTime}s | FTS ${ftsTime}s | Embeddings ${embeddingSkipped ? embeddingSkipReason : embeddingTime + 's'}`);
   if (includeExtensions.length > 0) {

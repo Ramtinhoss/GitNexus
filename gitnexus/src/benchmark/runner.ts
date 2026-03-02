@@ -20,10 +20,13 @@ interface ProfileConfig {
 
 interface RunBenchmarkOptions {
   repo?: string;
+  repoAlias?: string;
   targetPath?: string;
   profile: ProfileConfig;
   reportDir?: string;
   extensions: string;
+  scopeManifest?: string;
+  scopePrefix?: string[];
   skipAnalyze: boolean;
 }
 
@@ -57,6 +60,10 @@ export interface BenchmarkResult {
   triage: Array<{ kind: string; count: number }>;
   analyze?: { totalSeconds: number; nodes: number; edges: number };
   reportDir: string;
+}
+
+export function resolveBenchmarkRepoName(options: Pick<RunBenchmarkOptions, 'repo' | 'repoAlias' | 'targetPath'>): string | undefined {
+  return options.repo || options.repoAlias || (options.targetPath ? path.basename(path.resolve(options.targetPath)) : undefined);
 }
 
 function normalize(s: string): string {
@@ -263,14 +270,19 @@ async function evaluateTask(
 
 export async function runBenchmark(ds: Dataset, options: RunBenchmarkOptions): Promise<BenchmarkResult> {
   const reportDir = path.resolve(options.reportDir || '.gitnexus/benchmark');
-  const repo = options.repo || (options.targetPath ? path.basename(path.resolve(options.targetPath)) : undefined);
+  const repo = resolveBenchmarkRepoName(options);
 
   let analyzeSummary: { totalSeconds: number; nodes: number; edges: number } | undefined;
   if (!options.skipAnalyze) {
     if (!options.targetPath) {
       throw new Error('targetPath is required unless skipAnalyze is true');
     }
-    const analyze = await runAnalyze(path.resolve(options.targetPath), options.extensions);
+    const analyze = await runAnalyze(path.resolve(options.targetPath), {
+      extensions: options.extensions,
+      repoAlias: options.repoAlias,
+      scopeManifest: options.scopeManifest,
+      scopePrefix: options.scopePrefix,
+    });
     analyzeSummary = parseAnalyzeSummary(`${analyze.stdout}\n${analyze.stderr}`);
   }
 

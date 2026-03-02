@@ -34,6 +34,7 @@ import { queryCommand, contextCommand, impactCommand, cypherCommand } from './to
 import { evalServerCommand } from './eval-server.js';
 import { benchmarkUnityCommand } from './benchmark-unity.js';
 const program = new Command();
+const collectValues = (value: string, previous: string[]) => [...previous, value];
 
 program
   .name('gitnexus')
@@ -51,6 +52,9 @@ program
   .option('-f, --force', 'Force full re-index even if up to date')
   .option('--embeddings', 'Enable embedding generation for semantic search (off by default)')
   .option('--extensions <list>', 'Comma-separated file extensions to include (e.g. .cs,.ts)')
+  .option('--repo-alias <name>', 'Override indexed repository name with a stable alias')
+  .option('--scope-manifest <path>', 'Manifest file with scope rules (supports comments and * wildcard)')
+  .option('--scope-prefix <pathPrefix>', 'Add a scope path prefix rule (repeatable)', collectValues, [])
   .action(analyzeCommand);
 
 program
@@ -152,9 +156,12 @@ program
   .description('Run Unity accuracy baseline and hard-gated regression checks')
   .option('-p, --profile <profile>', 'quick or full', 'quick')
   .option('-r, --repo <name>', 'Target indexed repo')
+  .option('--repo-alias <name>', 'Analyze-time repo alias and default evaluation repo when --repo is omitted')
   .option('--target-path <path>', 'Path to analyze before evaluation (required unless --skip-analyze)')
   .option('--report-dir <path>', 'Output directory for benchmark-report.json and benchmark-summary.md', '.gitnexus/benchmark')
   .option('--extensions <list>', 'Analyze extension filter (default: .cs)', '.cs')
+  .option('--scope-manifest <path>', 'Analyze scope manifest file')
+  .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
   .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
   .action(benchmarkUnityCommand);
 
