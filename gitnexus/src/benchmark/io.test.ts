@@ -16,3 +16,13 @@ test('loadBenchmarkDataset rejects missing required fields', async () => {
   const badRoot = path.resolve('src/benchmark/__fixtures__/bad-dataset');
   await assert.rejects(() => loadBenchmarkDataset(badRoot), /missing required field/i);
 });
+
+test('loadBenchmarkDataset parses neonspark-v1 dataset', async () => {
+  const root = path.resolve('../benchmarks/unity-baseline/neonspark-v1');
+  const ds = await loadBenchmarkDataset(root);
+  assert.equal(ds.symbols.length, 20);
+  assert.ok(ds.relations.length > 0);
+  assert.ok(ds.tasks.some((t) => t.tool === 'query'));
+  assert.ok(ds.tasks.some((t) => t.tool === 'context'));
+  assert.ok(ds.tasks.some((t) => t.tool === 'impact'));
+});
