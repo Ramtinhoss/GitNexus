@@ -1,6 +1,21 @@
-export function buildSymbolRows(candidates: any[], selectedUids: string[]) {
-  if (selectedUids.length !== 20) {
-    throw new Error(`selected symbol count must be exactly 20, got ${selectedUids.length}`);
+export interface BuildSymbolRowsOptions {
+  minSelected?: number;
+  maxSelected?: number;
+}
+
+export function buildSymbolRows(candidates: any[], selectedUids: string[], options: BuildSymbolRowsOptions = {}) {
+  const minSelected = options.minSelected ?? 20;
+  const maxSelected = options.maxSelected ?? 20;
+
+  if (minSelected > maxSelected) {
+    throw new Error(`invalid selected symbol range: minSelected (${minSelected}) exceeds maxSelected (${maxSelected})`);
+  }
+
+  if (selectedUids.length < minSelected || selectedUids.length > maxSelected) {
+    if (minSelected === 20 && maxSelected === 20) {
+      throw new Error(`selected symbol count must be exactly 20, got ${selectedUids.length}`);
+    }
+    throw new Error(`selected symbol count must be between ${minSelected} and ${maxSelected}, got ${selectedUids.length}`);
   }
 
   const byUid = new Map(candidates.map((c) => [String(c.symbol_uid), c]));

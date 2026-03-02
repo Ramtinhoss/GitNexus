@@ -16,3 +16,13 @@ test('buildSymbolRows maps selected uids to candidate rows', () => {
   const rows = buildSymbolRows(c as any[], ids);
   assert.equal(rows.length, 20);
 });
+
+test('buildSymbolRows supports ranged selected uid counts', () => {
+  const c = [
+    { symbol_uid: 'u1', file_path: 'Assets/NEON/Code/A.cs', symbol_name: 'A', symbol_type: 'Class', start_line: 1, end_line: 9 },
+    { symbol_uid: 'u2', file_path: 'Assets/NEON/Code/B.cs', symbol_name: 'B', symbol_type: 'Class', start_line: 1, end_line: 9 },
+  ];
+  const ids = [...Array(40)].map((_, i) => i < 39 ? 'u1' : 'u2');
+  const rows = buildSymbolRows(c as any[], ids, { minSelected: 40, maxSelected: 60 });
+  assert.equal(rows.length, 40);
+});
