@@ -31,12 +31,35 @@ export async function extractCandidates(repoName: string, outFile: string): Prom
   await initKuzu(repoName, path.join(repo.storagePath, 'kuzu'));
   try {
     const rows = await executeQuery(repoName, `
-      MATCH (s)
-      WHERE (s:Class OR s:Interface OR s:Method OR s:Function)
+      MATCH (s:Class)
       RETURN s.id AS symbol_uid,
              s.filePath AS file_path,
              s.name AS symbol_name,
-             labels(s)[0] AS symbol_type,
+             'Class' AS symbol_type,
+             COALESCE(s.startLine, 0) AS start_line,
+             COALESCE(s.endLine, 0) AS end_line
+      UNION
+      MATCH (s:Interface)
+      RETURN s.id AS symbol_uid,
+             s.filePath AS file_path,
+             s.name AS symbol_name,
+             'Interface' AS symbol_type,
+             COALESCE(s.startLine, 0) AS start_line,
+             COALESCE(s.endLine, 0) AS end_line
+      UNION
+      MATCH (s:Method)
+      RETURN s.id AS symbol_uid,
+             s.filePath AS file_path,
+             s.name AS symbol_name,
+             'Method' AS symbol_type,
+             COALESCE(s.startLine, 0) AS start_line,
+             COALESCE(s.endLine, 0) AS end_line
+      UNION
+      MATCH (s:Function)
+      RETURN s.id AS symbol_uid,
+             s.filePath AS file_path,
+             s.name AS symbol_name,
+             'Function' AS symbol_type,
              COALESCE(s.startLine, 0) AS start_line,
              COALESCE(s.endLine, 0) AS end_line
     `);

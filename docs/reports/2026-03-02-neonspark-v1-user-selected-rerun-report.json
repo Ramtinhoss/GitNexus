@@ -1,0 +1,99 @@
+{
+  "generatedAt": "2026-03-02T07:35:10.319Z",
+  "repo": "neonspark-v1-subset",
+  "profile": {
+    "maxSymbols": 9007199254740991,
+    "maxTasks": 9007199254740991
+  },
+  "metrics": {
+    "queryPrecision": 0.17647058823529413,
+    "queryRecall": 1,
+    "contextImpactF1": 0.19834710743801653,
+    "smokePassRate": 1,
+    "perfRegressionPct": 0
+  },
+  "thresholds": {
+    "query": {
+      "precisionMin": 0.9,
+      "recallMin": 0.85
+    },
+    "contextImpact": {
+      "f1Min": 0.8
+    },
+    "smoke": {
+      "passRateMin": 1
+    },
+    "performance": {
+      "analyzeTimeRegressionMaxPct": 15
+    }
+  },
+  "gate": {
+    "pass": false,
+    "failures": [
+      "query.precision",
+      "contextImpact.f1"
+    ]
+  },
+  "analyze": {
+    "totalSeconds": 14.5,
+    "nodes": 48528,
+    "edges": 109639
+  },
+  "triage": [
+    {
+      "kind": "impact-downstream-zero",
+      "count": 5
+    },
+    {
+      "kind": "ambiguous-name-wrong-hit",
+      "count": 4
+    }
+  ],
+  "failures": [
+    {
+      "kind": "ambiguous-name-wrong-hit",
+      "taskIndex": 12,
+      "detail": "Found 2 symbols matching 'AssetRef'. Use target_uid or file_path to disambiguate."
+    },
+    {
+      "kind": "impact-downstream-zero",
+      "taskIndex": 12
+    },
+    {
+      "kind": "ambiguous-name-wrong-hit",
+      "taskIndex": 13,
+      "detail": "Found 3 symbols matching 'Stat'. Use target_uid or file_path to disambiguate."
+    },
+    {
+      "kind": "impact-downstream-zero",
+      "taskIndex": 13
+    },
+    {
+      "kind": "impact-downstream-zero",
+      "taskIndex": 14
+    },
+    {
+      "kind": "ambiguous-name-wrong-hit",
+      "taskIndex": 16,
+      "detail": "Found 2 symbols matching 'MinionsManager'. Use target_uid or file_path to disambiguate."
+    },
+    {
+      "kind": "impact-downstream-zero",
+      "taskIndex": 16
+    },
+    {
+      "kind": "ambiguous-name-wrong-hit",
+      "taskIndex": 17,
+      "detail": "Found 20 symbols matching 'NetPlayer'. Use target_uid or file_path to disambiguate."
+    },
+    {
+      "kind": "impact-downstream-zero",
+      "taskIndex": 17
+    }
+  ],
+  "stats": {
+    "symbols": 20,
+    "relations": 24,
+    "tasks": 18
+  }
+}

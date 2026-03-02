@@ -50,3 +50,24 @@ Run type: first full real-repo run for P0-T2
 2. Reports archived: `YES` (`docs/reports/2026-03-02-neonspark-v1-benchmark-report.json` and `docs/reports/2026-03-02-neonspark-v1-benchmark-summary.md` exist).
 3. Reproducibility commands documented: `YES` (`docs/2026-03-02-neonspark-benchmark-usage.md` documents analyze + alias + scope + benchmark + archive flow).
 4. First-run failures categorized: `YES` (`tool-error`, `missing-required-hit`, `insufficient-result-count` documented above and in report `triage`).
+
+## 7) User-Selected Symbol Rerun (P0-T3 In Progress)
+
+After user-provided symbol selection (`20` UIDs), the dataset was rematerialized and benchmark rerun.
+
+- Rerun report files:
+  - `docs/reports/2026-03-02-neonspark-v1-user-selected-rerun-report.json`
+  - `docs/reports/2026-03-02-neonspark-v1-user-selected-rerun-summary.md`
+- Rerun metrics:
+  - query precision: `0.176`
+  - query recall: `1.000`
+  - context/impact F1: `0.198`
+  - smoke pass rate: `1.000`
+  - gate failures: `query.precision`, `contextImpact.f1`
+- Observed failure classes:
+  - `impact-downstream-zero` (5)
+  - `ambiguous-name-wrong-hit` (4)
+
+Notes:
+1. `LoginService.cs:Instance` is not emitted as a symbol in current candidate extraction (property-like member), so selection used `Class:...:LoginService`.
+2. Precision and context/impact quality improved from first run, but threshold calibration and disambiguation remain pending under `P0-T3`.
