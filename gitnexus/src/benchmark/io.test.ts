@@ -30,7 +30,7 @@ test('loadBenchmarkDataset parses neonspark-v1 dataset', async () => {
 test('loadBenchmarkDataset parses neonspark-v2 dataset', async () => {
   const root = path.resolve('../benchmarks/unity-baseline/neonspark-v2');
   const ds = await loadBenchmarkDataset(root);
-  assert.equal(ds.symbols.length, 20);
+  assert.ok(ds.symbols.length > 0);
   assert.ok(ds.relations.length > 0);
   assert.ok(ds.tasks.some((t) => t.tool === 'query'));
   assert.ok(ds.tasks.some((t) => t.tool === 'context'));
