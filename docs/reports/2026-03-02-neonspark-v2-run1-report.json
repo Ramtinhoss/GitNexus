@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-03-02T11:15:16.684Z",
+  "generatedAt": "2026-03-02T12:13:13.503Z",
   "repo": "neonspark-v1-subset",
   "profile": {
     "maxSymbols": 9007199254740991,
     "maxTasks": 9007199254740991
   },
   "metrics": {
-    "queryPrecision": 1,
-    "queryRecall": 1,
-    "contextImpactF1": 0.6808510638297872,
+    "queryPrecision": 0.9047619047619048,
+    "queryRecall": 0.95,
+    "contextImpactF1": 0.6799999999999999,
     "smokePassRate": 1,
     "perfRegressionPct": 0
   },
@@ -32,15 +32,26 @@
     "failures": []
   },
   "analyze": {
-    "totalSeconds": 11.4,
-    "nodes": 48528,
+    "totalSeconds": 11.3,
+    "nodes": 48535,
     "edges": 109639
   },
-  "triage": [],
-  "failures": [],
+  "triage": [
+    {
+      "kind": "missing-required-hit",
+      "count": 1
+    }
+  ],
+  "failures": [
+    {
+      "kind": "missing-required-hit",
+      "taskIndex": 2,
+      "detail": "Class:Assets/NEON/Code/Game/Managers/InputManager.cs:InputManager"
+    }
+  ],
   "stats": {
     "symbols": 50,
     "relations": 58,
-    "tasks": 24
+    "tasks": 36
   }
 }
