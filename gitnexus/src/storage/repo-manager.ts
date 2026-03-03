@@ -307,6 +307,7 @@ export interface CLIConfig {
   apiKey?: string;
   model?: string;
   baseUrl?: string;
+  setupScope?: 'global' | 'project';
 }
 
 /**

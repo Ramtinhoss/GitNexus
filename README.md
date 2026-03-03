@@ -53,9 +53,9 @@ The CLI indexes your repository and runs an MCP server that gives AI agents deep
 npx gitnexus analyze
 ```
 
-That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
+That's it. This indexes the codebase, updates `AGENTS.md` / `CLAUDE.md` context files, and (when using project scope) installs repo-local agent skills.
 
-To configure MCP for your editor, run `npx gitnexus setup` once — or set it up manually below.
+To configure MCP + skills, run `npx gitnexus setup` once (default global mode), or use `npx gitnexus setup --scope project` for project-local mode.
 
 ### Team Deployment and Distribution
 
@@ -68,7 +68,9 @@ Key links:
 
 ### MCP Setup
 
-`gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
+`gitnexus setup` supports two scopes:
+- `global` (default): configures global editor MCP + installs global skills
+- `project`: writes repo-local `.mcp.json` + installs repo-local skills
 
 ### Editor Support
 
@@ -131,7 +133,8 @@ codex mcp add gitnexus -- npx -y gitnexus@latest mcp
 ### CLI Commands
 
 ```bash
-gitnexus setup                    # Configure MCP for your editors (one-time)
+gitnexus setup                    # Default: global MCP + global skills
+gitnexus setup --scope project    # Project-local MCP + project-local skills
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
 gitnexus analyze --embeddings     # Enable semantic embeddings (off by default)
@@ -197,15 +200,16 @@ For scoped indexing, `analyze` logs scope overlap dedupe counts and any normaliz
 - **CLI** — Index/status/clean/wiki command workflows
 
 Installation rules:
-- `gitnexus analyze` installs repo-local skills to `.agents/skills/gitnexus/` and updates `AGENTS.md` / `CLAUDE.md`.
-- `gitnexus setup` installs global skills to `~/.agents/skills/gitnexus/`.
-- If needed, create editor-specific symlinks yourself (for example map `.claude/skills/gitnexus` to `~/.agents/skills/gitnexus`).
+- `gitnexus setup` controls skill scope:
+  - default `global`: installs to `~/.agents/skills/gitnexus/`
+  - `--scope project`: installs to `.agents/skills/gitnexus/` in current repo
+- `gitnexus analyze` always updates `AGENTS.md` / `CLAUDE.md`; skill install follows configured setup scope.
 
 ---
 
 ## Multi-Repo MCP Architecture
 
-GitNexus uses a **global registry** so one MCP server can serve multiple indexed repos. No per-project MCP config needed — set it up once and it works everywhere.
+GitNexus uses a **global registry** so one MCP server can serve multiple indexed repos. Default setup is global; if you prefer per-repo wiring, use `gitnexus setup --scope project`.
 
 ```mermaid
 flowchart TD

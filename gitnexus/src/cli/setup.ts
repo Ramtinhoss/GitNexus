@@ -12,7 +12,8 @@ import os from 'os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'url';
-import { getGlobalDir } from '../storage/repo-manager.js';
+import { getGlobalDir, loadCLIConfig, saveCLIConfig } from '../storage/repo-manager.js';
+import { getGitRoot } from '../storage/git.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +23,18 @@ interface SetupResult {
   configured: string[];
   skipped: string[];
   errors: string[];
+}
+
+type SetupScope = 'global' | 'project';
+
+interface SetupOptions {
+  scope?: string;
+}
+
+function resolveSetupScope(rawScope?: string): SetupScope {
+  if (!rawScope || rawScope.trim() === '') return 'global';
+  if (rawScope === 'global' || rawScope === 'project') return rawScope;
+  throw new Error(`Invalid --scope value "${rawScope}". Use "global" or "project".`);
 }
 
 /**
@@ -142,6 +155,18 @@ async function installGlobalAgentSkills(result: SetupResult): Promise<void> {
   }
 }
 
+async function installProjectAgentSkills(repoRoot: string, result: SetupResult): Promise<void> {
+  const skillsDir = path.join(repoRoot, '.agents', 'skills', 'gitnexus');
+  try {
+    const installed = await installSkillsTo(skillsDir);
+    if (installed.length > 0) {
+      result.configured.push(`Project agent skills (${installed.length} skills → ${path.relative(repoRoot, skillsDir)}/)`);
+    }
+  } catch (err: any) {
+    result.errors.push(`Project agent skills: ${err.message}`);
+  }
+}
+
 /**
  * Install GitNexus hooks to ~/.claude/settings.json for Claude Code.
  * Merges hook config without overwriting existing hooks.
@@ -242,6 +267,28 @@ async function setupCodex(result: SetupResult): Promise<void> {
   }
 }
 
+async function setupProjectMcp(repoRoot: string, result: SetupResult): Promise<void> {
+  const mcpPath = path.join(repoRoot, '.mcp.json');
+  try {
+    const existing = await readJsonFile(mcpPath);
+    const updated = mergeMcpConfig(existing);
+    await writeJsonFile(mcpPath, updated);
+    result.configured.push(`Project MCP (${path.relative(repoRoot, mcpPath)})`);
+  } catch (err: any) {
+    result.errors.push(`Project MCP: ${err.message}`);
+  }
+}
+
+async function saveSetupScope(scope: SetupScope, result: SetupResult): Promise<void> {
+  try {
+    const existing = await loadCLIConfig();
+    await saveCLIConfig({ ...existing, setupScope: scope });
+    result.configured.push(`Default setup scope (${scope})`);
+  } catch (err: any) {
+    result.errors.push(`Persist setup scope: ${err.message}`);
+  }
+}
+
 // ─── Skill Installation ───────────────────────────────────────────
 
 const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexus-impact-analysis', 'gitnexus-refactoring', 'gitnexus-guide', 'gitnexus-cli'];
@@ -309,11 +356,20 @@ async function copyDirRecursive(src: string, dest: string): Promise<void> {
 
 // ─── Main command ──────────────────────────────────────────────────
 
-export const setupCommand = async () => {
+export const setupCommand = async (options: SetupOptions = {}) => {
   console.log('');
   console.log('  GitNexus Setup');
   console.log('  ==============');
   console.log('');
+
+  let scope: SetupScope;
+  try {
+    scope = resolveSetupScope(options.scope);
+  } catch (err: any) {
+    console.log(`  ${err?.message || String(err)}\n`);
+    process.exitCode = 1;
+    return;
+  }
 
   // Ensure global directory exists
   const globalDir = getGlobalDir();
@@ -325,17 +381,30 @@ export const setupCommand = async () => {
     errors: [],
   };
 
-  // Detect and configure each editor's MCP
-  await setupCursor(result);
-  await setupClaudeCode(result);
-  await setupOpenCode(result);
-  await setupCodex(result);
-  
-  // Install shared global skills once
-  await installGlobalAgentSkills(result);
+  if (scope === 'global') {
+    // Detect and configure each editor's MCP
+    await setupCursor(result);
+    await setupClaudeCode(result);
+    await setupOpenCode(result);
+    await setupCodex(result);
+    
+    // Install shared global skills once
+    await installGlobalAgentSkills(result);
 
-  // Optional Claude-specific hooks
-  await installClaudeCodeHooks(result);
+    // Optional Claude-specific hooks
+    await installClaudeCodeHooks(result);
+  } else {
+    const repoRoot = getGitRoot(process.cwd());
+    if (!repoRoot) {
+      console.log('  --scope project requires running inside a git repository\n');
+      process.exitCode = 1;
+      return;
+    }
+    await setupProjectMcp(repoRoot, result);
+    await installProjectAgentSkills(repoRoot, result);
+  }
+
+  await saveSetupScope(scope, result);
 
   // Print results
   if (result.configured.length > 0) {
@@ -363,6 +432,7 @@ export const setupCommand = async () => {
 
   console.log('');
   console.log('  Summary:');
+  console.log(`    Scope: ${scope}`);
   console.log(`    MCP configured for: ${result.configured.filter(c => !c.includes('skills')).join(', ') || 'none'}`);
   console.log(`    Skills installed to: ${result.configured.filter(c => c.includes('skills')).length > 0 ? result.configured.filter(c => c.includes('skills')).join(', ') : 'none'}`);
   console.log('');

@@ -33,8 +33,12 @@ test('setup installs global skills under ~/.agents/skills/gitnexus', async () =>
       'gitnexus-exploring',
       'SKILL.md',
     );
+    const configPath = path.join(fakeHome, '.gitnexus', 'config.json');
 
     await fs.access(skillPath);
+    const configRaw = await fs.readFile(configPath, 'utf-8');
+    const config = JSON.parse(configRaw) as { setupScope?: string };
+    assert.equal(config.setupScope, 'global');
     assert.ok(true);
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
@@ -93,5 +97,62 @@ process.exit(0);
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
     await fs.rm(fakeBin, { recursive: true, force: true });
+  }
+});
+
+test('setup with --scope project writes local MCP and repo-local skills only', async () => {
+  const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
+  const fakeRepo = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-repo-'));
+
+  try {
+    await execFileAsync('git', ['init'], {
+      cwd: fakeRepo,
+      env: {
+        ...process.env,
+        HOME: fakeHome,
+        USERPROFILE: fakeHome,
+      },
+    });
+
+    await execFileAsync(process.execPath, [cliPath, 'setup', '--scope', 'project'], {
+      cwd: fakeRepo,
+      env: {
+        ...process.env,
+        HOME: fakeHome,
+        USERPROFILE: fakeHome,
+      },
+    });
+
+    const projectMcpPath = path.join(fakeRepo, '.mcp.json');
+    const localSkillPath = path.join(
+      fakeRepo,
+      '.agents',
+      'skills',
+      'gitnexus',
+      'gitnexus-exploring',
+      'SKILL.md',
+    );
+    const globalSkillPath = path.join(
+      fakeHome,
+      '.agents',
+      'skills',
+      'gitnexus',
+      'gitnexus-exploring',
+      'SKILL.md',
+    );
+    const configPath = path.join(fakeHome, '.gitnexus', 'config.json');
+
+    const projectMcpRaw = await fs.readFile(projectMcpPath, 'utf-8');
+    const projectMcp = JSON.parse(projectMcpRaw) as { mcpServers?: Record<string, { command?: string }> };
+    const configRaw = await fs.readFile(configPath, 'utf-8');
+    const config = JSON.parse(configRaw) as { setupScope?: string };
+
+    assert.equal(projectMcp.mcpServers?.gitnexus?.command, 'npx');
+    await fs.access(localSkillPath);
+    await assert.rejects(fs.access(globalSkillPath));
+    assert.equal(config.setupScope, 'project');
+  } finally {
+    await fs.rm(fakeHome, { recursive: true, force: true });
+    await fs.rm(fakeRepo, { recursive: true, force: true });
   }
 });

@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+type SkillScope = 'project' | 'global';
 
 interface RepoStats {
   files?: number;
@@ -36,7 +37,11 @@ const GITNEXUS_END_MARKER = '<!-- gitnexus:end -->';
  * - One-line quick start (read context resource) gives agents an entry point
  * - Tools/Resources sections are labeled "Reference" — agents treat them as lookup, not workflow
  */
-function generateGitNexusContent(projectName: string, stats: RepoStats): string {
+function generateGitNexusContent(projectName: string, stats: RepoStats, skillScope: SkillScope): string {
+  const skillRoot = skillScope === 'global'
+    ? '~/.agents/skills/gitnexus'
+    : '.agents/skills/gitnexus';
+
   return `${GITNEXUS_START_MARKER}
 # GitNexus MCP
 
@@ -54,12 +59,12 @@ This project is indexed by GitNexus as **${projectName}** (${stats.nodes || 0} s
 
 | Task | Read this skill file |
 |------|---------------------|
-| Understand architecture / "How does X work?" | \`.agents/skills/gitnexus/gitnexus-exploring/SKILL.md\` |
-| Blast radius / "What breaks if I change X?" | \`.agents/skills/gitnexus/gitnexus-impact-analysis/SKILL.md\` |
-| Trace bugs / "Why is X failing?" | \`.agents/skills/gitnexus/gitnexus-debugging/SKILL.md\` |
-| Rename / extract / split / refactor | \`.agents/skills/gitnexus/gitnexus-refactoring/SKILL.md\` |
-| Tools, resources, schema reference | \`.agents/skills/gitnexus/gitnexus-guide/SKILL.md\` |
-| Index, status, clean, wiki CLI commands | \`.agents/skills/gitnexus/gitnexus-cli/SKILL.md\` |
+| Understand architecture / "How does X work?" | \`${skillRoot}/gitnexus-exploring/SKILL.md\` |
+| Blast radius / "What breaks if I change X?" | \`${skillRoot}/gitnexus-impact-analysis/SKILL.md\` |
+| Trace bugs / "Why is X failing?" | \`${skillRoot}/gitnexus-debugging/SKILL.md\` |
+| Rename / extract / split / refactor | \`${skillRoot}/gitnexus-refactoring/SKILL.md\` |
+| Tools, resources, schema reference | \`${skillRoot}/gitnexus-guide/SKILL.md\` |
+| Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |
 
 ${GITNEXUS_END_MARKER}`;
 }
@@ -198,9 +203,13 @@ export async function generateAIContextFiles(
   repoPath: string,
   _storagePath: string,
   projectName: string,
-  stats: RepoStats
+  stats: RepoStats,
+  options?: {
+    skillScope?: SkillScope;
+  },
 ): Promise<{ files: string[] }> {
-  const content = generateGitNexusContent(projectName, stats);
+  const skillScope: SkillScope = options?.skillScope === 'global' ? 'global' : 'project';
+  const content = generateGitNexusContent(projectName, stats, skillScope);
   const createdFiles: string[] = [];
 
   // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Codex, Cline, etc.)
@@ -213,10 +222,12 @@ export async function generateAIContextFiles(
   const claudeResult = await upsertGitNexusSection(claudePath, content);
   createdFiles.push(`CLAUDE.md (${claudeResult})`);
 
-  // Install skills to .agents/skills/gitnexus/
-  const installedSkills = await installSkills(repoPath);
-  if (installedSkills.length > 0) {
-    createdFiles.push(`.agents/skills/gitnexus/ (${installedSkills.length} skills)`);
+  // Install repo-local skills only when project scope is selected.
+  if (skillScope === 'project') {
+    const installedSkills = await installSkills(repoPath);
+    if (installedSkills.length > 0) {
+      createdFiles.push(`.agents/skills/gitnexus/ (${installedSkills.length} skills)`);
+    }
   }
 
   return { files: createdFiles };

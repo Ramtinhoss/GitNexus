@@ -64,6 +64,7 @@ program
 program
   .command('setup')
   .description('One-time setup: configure MCP for Cursor, Claude Code, OpenCode, Codex')
+  .option('--scope <scope>', 'Install target: global (default) or project')
   .action(setupCommand);
 
 program

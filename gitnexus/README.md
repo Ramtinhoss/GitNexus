@@ -22,11 +22,13 @@ AI coding tools don't understand your codebase structure. They edit a function w
 npx gitnexus analyze
 ```
 
-That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
+That's it. This indexes the codebase, updates `AGENTS.md` / `CLAUDE.md` context files, and (when using project scope) installs repo-local agent skills.
 
-To configure MCP for your editor, run `npx gitnexus setup` once — or set it up manually below.
+To configure MCP + skills, run `npx gitnexus setup` once (default global mode), or use `npx gitnexus setup --scope project` for project-local mode.
 
-`gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
+`gitnexus setup` supports two scopes:
+- `global` (default): configures global editor MCP + installs global skills
+- `project`: writes repo-local `.mcp.json` + installs repo-local skills
 
 ## Team Deployment and Distribution
 
@@ -152,7 +154,8 @@ Your AI agent gets these tools automatically:
 ## CLI Commands
 
 ```bash
-gitnexus setup                    # Configure MCP for your editors (one-time)
+gitnexus setup                    # Default: global MCP + global skills
+gitnexus setup --scope project    # Project-local MCP + project-local skills
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
 gitnexus analyze --embeddings     # Enable semantic embeddings (off by default)
@@ -212,9 +215,10 @@ GitNexus ships with skill files that teach AI agents how to use the tools effect
 
 Installation rules:
 
-- `gitnexus analyze` installs repo-local skills to `.agents/skills/gitnexus/` and updates `AGENTS.md` / `CLAUDE.md`.
-- `gitnexus setup` installs global skills to `~/.agents/skills/gitnexus/`.
-- If needed, create editor-specific symlinks yourself (for example map `.claude/skills/gitnexus` to `~/.agents/skills/gitnexus`).
+- `gitnexus setup` controls skill scope:
+  - default `global`: installs to `~/.agents/skills/gitnexus/`
+  - `--scope project`: installs to `.agents/skills/gitnexus/` in current repo
+- `gitnexus analyze` always updates `AGENTS.md` / `CLAUDE.md`; skill install follows configured setup scope.
 
 ## Requirements
 
