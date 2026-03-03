@@ -1,0 +1,10 @@
+{
+  "coverage": {
+    "minPerScenario": 0.83,
+    "suiteAvgMin": 0.9
+  },
+  "efficiency": {
+    "maxToolCallsPerScenario": 4,
+    "suiteAvgMax": 4
+  }
+}

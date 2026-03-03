@@ -14,3 +14,9 @@ test('loadAgentContextDataset loads valid thresholds and scenarios', async () =>
   assert.equal(ds.scenarios.length, 1);
   assert.ok(ds.thresholds.coverage.minPerScenario > 0);
 });
+
+test('v1 scenario dataset loads exactly 3 scenarios', async () => {
+  const v1Root = path.resolve('../benchmarks/agent-context/neonspark-refactor-v1');
+  const ds = await loadAgentContextDataset(v1Root);
+  assert.equal(ds.scenarios.length, 3);
+});
