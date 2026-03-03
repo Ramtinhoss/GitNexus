@@ -21,6 +21,9 @@ if (!process.env.NODE_OPTIONS?.includes('--max-old-space-size')) {
 }
 
 import { Command } from 'commander';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { analyzeCommand } from './analyze.js';
 import { serveCommand } from './serve.js';
 import { listCommand } from './list.js';
@@ -34,13 +37,29 @@ import { queryCommand, contextCommand, impactCommand, cypherCommand } from './to
 import { evalServerCommand } from './eval-server.js';
 import { benchmarkUnityCommand } from './benchmark-unity.js';
 import { benchmarkAgentContextCommand } from './benchmark-agent-context.js';
+
+function resolveCliVersion(): string {
+  try {
+    const currentFile = fileURLToPath(import.meta.url);
+    const packageJsonPath = path.resolve(path.dirname(currentFile), '..', '..', 'package.json');
+    const raw = fs.readFileSync(packageJsonPath, 'utf-8');
+    const parsed = JSON.parse(raw) as { version?: string };
+    if (typeof parsed.version === 'string' && parsed.version.length > 0) {
+      return parsed.version;
+    }
+  } catch {
+    // fall through to default
+  }
+  return '0.0.0';
+}
+
 const program = new Command();
 const collectValues = (value: string, previous: string[]) => [...previous, value];
 
 program
   .name('gitnexus')
   .description('GitNexus local CLI and MCP server')
-  .version('1.2.0');
+  .version(resolveCliVersion());
 
 program
   .command('setup')

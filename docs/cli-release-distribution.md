@@ -22,9 +22,9 @@ References:
 
 ## One-Time Setup
 
-1. Decide package name on npm.
-- Recommended for team fork: `@your-org/gitnexus`
-- Keep CLI binary name as `gitnexus` (already defined in package `bin`).
+1. Use team package name on npm.
+- Package: `@veewo/gitnexus`
+- Keep CLI binary name as `gitnexus` (defined in package `bin`).
 
 2. Create npm automation token for publish rights.
 - Add token as repository secret: `NPM_TOKEN`
@@ -53,17 +53,17 @@ References:
 - Trigger: `push tags: v*`
 
 5. Smoke check published package.
-- `npx -y <package-name>@<version> --help`
+- `npx -y @veewo/gitnexus@<version> --help`
 - Optional runtime check in a test repo:
-  - `npx -y <package-name>@<version> analyze`
+  - `npx -y @veewo/gitnexus@<version> analyze`
 
 ## Teammate Install and Usage
 
 Global install:
-- `npm i -g <package-name>`
+- `npm i -g @veewo/gitnexus`
 
 No-install mode:
-- `npx -y <package-name> analyze`
+- `npx -y @veewo/gitnexus analyze`
 
 Typical first-time usage in a project:
 1. `gitnexus setup`
@@ -74,8 +74,8 @@ Typical first-time usage in a project:
 - Do not rely on unpublish.
 - Preferred rollback: release a new patch version that fixes the issue.
 - Temporary mitigation for teammates: pin a known good version.
-  - `npm i -g <package-name>@<good-version>`
-  - or `npx -y <package-name>@<good-version> analyze`
+  - `npm i -g @veewo/gitnexus@<good-version>`
+  - or `npx -y @veewo/gitnexus@<good-version> analyze`
 
 ## Team Policy
 
