@@ -130,6 +130,8 @@ gitnexus clean --all --force     # Delete all indexes
 gitnexus wiki [path]             # Generate repository wiki from knowledge graph
 gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-mini)
 gitnexus wiki --base-url <url>   # Wiki with custom LLM API base URL
+gitnexus benchmark-unity <dataset>         # Baseline accuracy benchmark suite
+gitnexus benchmark-agent-context <dataset> # Scenario-based refactor context benchmark suite
 ```
 
 For scoped indexing, `analyze` logs scope overlap dedupe counts and any normalized path collisions to help diagnose multi-directory merge safety.
