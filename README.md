@@ -57,6 +57,15 @@ That's it. This indexes the codebase, installs agent skills, registers Claude Co
 
 To configure MCP for your editor, run `npx gitnexus setup` once — or set it up manually below.
 
+### Team Deployment and Distribution
+
+For small-team rollout (single stable channel only), use the release runbook:
+- [CLI Deployment and Distribution](docs/cli-release-distribution.md)
+
+Key links:
+- [npm publish workflow](.github/workflows/publish.yml)
+- [CLI package config](gitnexus/package.json)
+
 ### MCP Setup
 
 `gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.

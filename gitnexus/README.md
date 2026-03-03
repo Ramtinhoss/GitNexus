@@ -28,6 +28,15 @@ To configure MCP for your editor, run `npx gitnexus setup` once — or set it up
 
 `gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
 
+## Team Deployment and Distribution
+
+For small-team rollout (single stable channel only), follow:
+- [CLI Deployment and Distribution](../docs/cli-release-distribution.md)
+
+Key links:
+- [npm publish workflow](../.github/workflows/publish.yml)
+- [CLI package config](./package.json)
+
 ### Editor Support
 
 | Editor | MCP | Skills | Hooks (auto-augment) | Support |
