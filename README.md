@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
 
 > *Like DeepWiki, but deeper.* DeepWiki helps you *understand* code. GitNexus lets you *analyze* it — because a knowledge graph tracks every relationship, not just descriptions.
 
-**TL;DR:** The **Web UI** is a quick way to chat with any repo. The **CLI + MCP** is how you make your AI agent actually reliable — it gives Cursor, Claude Code, and friends a deep architectural view of your codebase so they stop missing dependencies, breaking call chains, and shipping blind edits. Even smaller models get full architectural clarity, making it compete with goliath models.
+**TL;DR:** The **Web UI** is a quick way to chat with any repo. The **CLI + MCP** is how you make your AI agent actually reliable — it gives Cursor, Claude Code, Codex, and friends a deep architectural view of your codebase so they stop missing dependencies, breaking call chains, and shipping blind edits. Even smaller models get full architectural clarity, making it compete with goliath models.
 
 ---
 
@@ -31,7 +31,7 @@ https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
 |                   | **CLI + MCP**                                            | **Web UI**                                             |
 | ----------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
 | **What**    | Index repos locally, connect AI agents via MCP                 | Visual graph explorer + AI chat in browser                   |
-| **For**     | Daily development with Cursor, Claude Code, Windsurf, OpenCode | Quick exploration, demos, one-off analysis                   |
+| **For**     | Daily development with Cursor, Claude Code, Codex, Windsurf, OpenCode | Quick exploration, demos, one-off analysis                   |
 | **Scale**   | Full repos, any size                                           | Limited by browser memory (~5k files), or unlimited via backend mode |
 | **Install** | `npm install -g gitnexus`                                    | No install —[gitnexus.vercel.app](https://gitnexus.vercel.app) |
 | **Storage** | KuzuDB native (fast, persistent)                               | KuzuDB WASM (in-memory, per session)                         |
@@ -76,6 +76,7 @@ Key links:
 | --------------------- | --- | ------ | -------------------- | -------------- |
 | **Claude Code** | Yes | Yes    | Yes (PreToolUse)     | **Full** |
 | **Cursor**      | Yes | Yes    | —                   | MCP + Skills   |
+| **Codex**       | Yes | Yes    | —                   | MCP + Skills   |
 | **Windsurf**    | Yes | —     | —                   | MCP            |
 | **OpenCode**    | Yes | Yes    | —                   | MCP + Skills   |
 
@@ -119,6 +120,12 @@ claude mcp add gitnexus -- npx -y gitnexus@latest mcp
     }
   }
 }
+```
+
+**Codex** (`~/.codex/config.toml`, recommended via CLI):
+
+```bash
+codex mcp add gitnexus -- npx -y gitnexus@latest mcp
 ```
 
 ### CLI Commands
@@ -226,7 +233,7 @@ flowchart TD
         ConnB["KuzuDB conn B"]
     end
 
-    Setup -->|"writes global MCP config"| CursorConfig["~/.cursor/mcp.json"]
+    Setup -->|"writes global MCP config"| EditorConfig["~/.cursor/mcp.json / ~/.config/opencode/config.json / ~/.codex/config.toml"]
     Analyze -->|"registers repo"| RegFile
     Analyze -->|"stores index"| RepoA
     Clean -->|"unregisters repo"| RegFile
@@ -269,7 +276,7 @@ The web UI uses the same indexing pipeline as the CLI but runs entirely in WebAs
 
 ## The Problem GitNexus Solves
 
-Tools like **Cursor**, **Claude Code**, **Cline**, **Roo Code**, and **Windsurf** are powerful — but they don't truly know your codebase structure.
+Tools like **Cursor**, **Claude Code**, **Codex**, **Cline**, **Roo Code**, and **Windsurf** are powerful — but they don't truly know your codebase structure.
 
 **What happens:**
 

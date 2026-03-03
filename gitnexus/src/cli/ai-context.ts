@@ -2,7 +2,7 @@
  * AI Context Generator
  * 
  * Creates AGENTS.md and CLAUDE.md with full inline GitNexus context.
- * AGENTS.md is the standard read by Cursor, Windsurf, OpenCode, Cline, etc.
+ * AGENTS.md is the standard read by Cursor, Windsurf, OpenCode, Codex, Cline, etc.
  * CLAUDE.md is for Claude Code which only reads that file.
  */
 
@@ -203,7 +203,7 @@ export async function generateAIContextFiles(
   const content = generateGitNexusContent(projectName, stats);
   const createdFiles: string[] = [];
 
-  // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Cline, etc.)
+  // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Codex, Cline, etc.)
   const agentsPath = path.join(repoPath, 'AGENTS.md');
   const agentsResult = await upsertGitNexusSection(agentsPath, content);
   createdFiles.push(`AGENTS.md (${agentsResult})`);

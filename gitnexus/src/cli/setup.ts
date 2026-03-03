@@ -9,11 +9,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'url';
 import { getGlobalDir } from '../storage/repo-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const execFileAsync = promisify(execFile);
 
 interface SetupResult {
   configured: string[];
@@ -220,6 +223,25 @@ async function setupOpenCode(result: SetupResult): Promise<void> {
   }
 }
 
+async function setupCodex(result: SetupResult): Promise<void> {
+  const entry = getMcpEntry();
+
+  try {
+    await execFileAsync(
+      'codex',
+      ['mcp', 'add', 'gitnexus', '--', entry.command, ...entry.args],
+      { timeout: 15000 }
+    );
+    result.configured.push('Codex');
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') {
+      result.skipped.push('Codex (not installed)');
+      return;
+    }
+    result.errors.push(`Codex: ${err.message}`);
+  }
+}
+
 // ─── Skill Installation ───────────────────────────────────────────
 
 const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexus-impact-analysis', 'gitnexus-refactoring', 'gitnexus-guide', 'gitnexus-cli'];
@@ -307,6 +329,7 @@ export const setupCommand = async () => {
   await setupCursor(result);
   await setupClaudeCode(result);
   await setupOpenCode(result);
+  await setupCodex(result);
   
   // Install shared global skills once
   await installGlobalAgentSkills(result);
