@@ -95,6 +95,33 @@ function collectNames(stepOutputs: StepOutput[]): string[] {
     for (const row of output?.candidates || []) {
       addName(row?.name);
     }
+
+    for (const rows of Object.values(output?.incoming || {})) {
+      if (!Array.isArray(rows)) {
+        continue;
+      }
+      for (const row of rows) {
+        addName((row as any)?.name);
+      }
+    }
+
+    for (const rows of Object.values(output?.outgoing || {})) {
+      if (!Array.isArray(rows)) {
+        continue;
+      }
+      for (const row of rows) {
+        addName((row as any)?.name);
+      }
+    }
+
+    for (const rows of Object.values(output?.byDepth || {})) {
+      if (!Array.isArray(rows)) {
+        continue;
+      }
+      for (const row of rows) {
+        addName((row as any)?.name);
+      }
+    }
   }
 
   return [...names];

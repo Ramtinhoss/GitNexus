@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runAgentContextBenchmark } from './runner.js';
+import { executeToolPlan, runAgentContextBenchmark } from './runner.js';
 import type { AgentContextDataset } from './types.js';
 
 test('runner computes per-scenario coverage and suite averages', async () => {
@@ -56,4 +56,39 @@ test('runner computes per-scenario coverage and suite averages', async () => {
 
   assert.ok(result.metrics.avgCoverage > 0);
   assert.ok(result.scenarios[0].checks.length > 0);
+});
+
+test('executeToolPlan maps impact uid to target_uid for backend impact contract', async () => {
+  const calls: any[] = [];
+  const fakeRunner = {
+    query: async () => ({}),
+    context: async () => ({}),
+    impact: async (params: any) => {
+      calls.push(params);
+      return { impactedCount: 1 };
+    },
+    cypher: async () => ({}),
+    close: async () => {},
+  };
+
+  await executeToolPlan(
+    [
+      {
+        tool: 'impact',
+        input: {
+          target: 'MirrorNetMgr',
+          uid: 'Class:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs:MirrorNetMgr',
+          direction: 'upstream',
+        },
+      },
+    ],
+    fakeRunner,
+    'neonspark-v1-subset',
+  );
+
+  assert.equal(calls.length, 1);
+  assert.equal(
+    calls[0].target_uid,
+    'Class:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs:MirrorNetMgr',
+  );
 });

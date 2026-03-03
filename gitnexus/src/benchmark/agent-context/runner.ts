@@ -40,8 +40,25 @@ export interface RunAgentContextBenchmarkOptions {
   runner?: AgentContextToolRunner;
 }
 
+function buildToolInput(step: AgentContextToolStep, repo?: string): Record<string, unknown> {
+  const input: Record<string, unknown> = { ...step.input };
+  if (repo) {
+    input.repo = repo;
+  }
+
+  // LocalBackend impact contract uses `target_uid`, while dataset rows may carry `uid`.
+  if (step.tool === 'impact') {
+    const uid = input.uid;
+    if (typeof uid === 'string' && uid.trim() && !input.target_uid) {
+      input.target_uid = uid;
+    }
+  }
+
+  return input;
+}
+
 function callTool(runner: AgentContextToolRunner, step: AgentContextToolStep, repo?: string) {
-  const params = repo ? { ...step.input, repo } : { ...step.input };
+  const params = buildToolInput(step, repo);
 
   if (step.tool === 'query') {
     return runner.query(params);
@@ -63,7 +80,7 @@ export async function executeToolPlan(
   const outputs: Array<{ tool: string; input: Record<string, unknown>; output: any }> = [];
 
   for (const step of plan) {
-    const input = repo ? { ...step.input, repo } : { ...step.input };
+    const input = buildToolInput(step, repo);
     const output = await callTool(runner, step, repo);
     outputs.push({ tool: step.tool, input, output });
   }
