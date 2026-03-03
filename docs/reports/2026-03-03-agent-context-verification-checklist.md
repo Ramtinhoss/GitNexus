@@ -6,8 +6,8 @@
 
 ## Evidence
 
-1. Baseline regression tests: `cd gitnexus && npm run test:benchmark` -> `49/49` pass.
-2. Baseline benchmark gate: `cd gitnexus && npm run benchmark:neonspark:v2:quick` -> `PASS`, report emitted.
-3. Agent-context quick: `cd gitnexus && npm run benchmark:agent-context:quick` -> command completed with `FAIL` gate verdict and report path.
-4. Agent-context full: `cd gitnexus && npm run benchmark:agent-context:full` -> command completed with `FAIL` gate verdict and report path.
-5. Report structure check: `benchmark-report.json` includes per-scenario `checks[]` with `id`, `pass`, and optional `detail` fields.
+1. `cd gitnexus && npm run test:benchmark` -> PASS (`50/50` tests).
+2. `cd gitnexus && npm run benchmark:neonspark:v2:quick` -> PASS (baseline gate unchanged).
+3. `cd gitnexus && npm run benchmark:agent-context:quick` -> PASS.
+4. `cd gitnexus && npm run benchmark:agent-context:full` -> PASS.
+5. Report contains scenario-level check verdicts and triage sections.

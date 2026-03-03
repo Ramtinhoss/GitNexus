@@ -2,16 +2,16 @@
 
 ## Command Results
 
-- `npm run test:benchmark`: PASS (`49` tests passed)
+- `npm run test:benchmark`: PASS (`50` tests passed)
 - `npm run benchmark:neonspark:v2:quick`: PASS
-- `npm run benchmark:agent-context:quick`: FAIL (threshold gate), report generated
-- `npm run benchmark:agent-context:full`: FAIL (threshold gate), report generated
+- `npm run benchmark:agent-context:quick`: PASS
+- `npm run benchmark:agent-context:full`: PASS
 
 ## Gate Outcome Notes
 
 - Existing baseline benchmark path remains passing and unchanged.
-- New agent-context suite is executable in quick/full profiles and emits report artifacts.
-- Current v1 thresholds are intentionally strict; failures are from scenario coverage checks, not command/runtime errors.
+- Agent-context suite is executable in quick/full profiles and currently passes v1 thresholds.
+- Scenario report includes per-check verdicts, top failure classes, and recommended triage order sections.
 
 ## Artifacts
 

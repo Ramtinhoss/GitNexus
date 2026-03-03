@@ -43,3 +43,49 @@ test('writes benchmark-report.json and benchmark-summary.md with scenario breakd
   assert.match(summary, /sample-refactor-context/);
   assert.match(summary, /coverage/i);
 });
+
+test('summary includes failure classes and triage order for failing runs', async () => {
+  const outDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-context-report-fail-'));
+  const result = {
+    pass: false,
+    failures: ['scenario.a.coverage', 'suite.coverage'],
+    reportDir: outDir,
+    metrics: {
+      avgCoverage: 0.6,
+      avgToolCalls: 3,
+      mandatoryTargetPassRate: 1,
+    },
+    scenarios: [
+      {
+        scenarioId: 'a',
+        targetUid: 'Class:Sample:A',
+        toolCalls: 3,
+        coverage: 0.5,
+        gatePass: false,
+        checks: [
+          { id: 'U', pass: false, detail: 'incoming refs 1 < 8' },
+          { id: 'D', pass: false, detail: 'outgoing refs 2 < 8' },
+        ],
+        stepOutputs: [],
+      },
+      {
+        scenarioId: 'b',
+        targetUid: 'Class:Sample:B',
+        toolCalls: 3,
+        coverage: 0.7,
+        gatePass: false,
+        checks: [
+          { id: 'U', pass: false, detail: 'incoming refs 2 < 6' },
+          { id: 'I', pass: false, detail: 'internal anchors matched 0 < 2' },
+        ],
+        stepOutputs: [],
+      },
+    ],
+  };
+
+  await writeAgentContextReports(outDir, result);
+  const summary = await fs.readFile(path.join(outDir, 'benchmark-summary.md'), 'utf-8');
+  assert.match(summary, /Top Failure Classes/i);
+  assert.match(summary, /Recommended Triage Order/i);
+  assert.match(summary, /U/);
+});
