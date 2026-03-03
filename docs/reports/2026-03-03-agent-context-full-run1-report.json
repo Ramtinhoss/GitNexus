@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-03T05:21:59.433Z",
+  "generatedAt": "2026-03-03T05:19:44.456Z",
   "pass": true,
   "failures": [],
   "metrics": {
@@ -88,6 +88,30 @@
             },
             "incoming": {
               "calls": [
+                {
+                  "uid": "File:Assets/NEON/Code/Game/Interactibles/EggTimeMachine.cs",
+                  "name": "EggTimeMachine.cs",
+                  "filePath": "Assets/NEON/Code/Game/Interactibles/EggTimeMachine.cs",
+                  "kind": "File"
+                },
+                {
+                  "uid": "File:Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
+                  "name": "MinionsManager.cs",
+                  "filePath": "Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
+                  "kind": "File"
+                },
+                {
+                  "uid": "File:Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
+                  "name": "MinionsManager.cs",
+                  "filePath": "Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
+                  "kind": "File"
+                },
+                {
+                  "uid": "File:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs",
+                  "name": "NEONPlayerState.cs",
+                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs",
+                  "kind": "File"
+                },
                 {
                   "uid": "Method:Assets/NEON/Code/Game/RespawnMonsRingDamage.cs:OnMonsterKilled",
                   "name": "OnMonsterKilled",
@@ -243,35 +267,29 @@
                   "name": "OnUseKey",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/UnLockGetPetPowerUp.cs",
                   "kind": "Method"
-                },
-                {
-                  "uid": "File:Assets/NEON/Code/Game/Interactibles/EggTimeMachine.cs",
-                  "name": "EggTimeMachine.cs",
-                  "filePath": "Assets/NEON/Code/Game/Interactibles/EggTimeMachine.cs",
-                  "kind": "File"
-                },
-                {
-                  "uid": "File:Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
-                  "name": "MinionsManager.cs",
-                  "filePath": "Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
-                  "kind": "File"
-                },
-                {
-                  "uid": "File:Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
-                  "name": "MinionsManager.cs",
-                  "filePath": "Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
-                  "kind": "File"
-                },
-                {
-                  "uid": "File:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs",
-                  "name": "NEONPlayerState.cs",
-                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs",
-                  "kind": "File"
                 }
               ]
             },
             "outgoing": {
               "calls": [
+                {
+                  "uid": "Method:Assets/NEON/Code/Game/SpriteGuard.cs:SetPlayerActor",
+                  "name": "SetPlayerActor",
+                  "filePath": "Assets/NEON/Code/Game/SpriteGuard.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/Game/SpriteGuard.cs:SetPlayerActor",
+                  "name": "SetPlayerActor",
+                  "filePath": "Assets/NEON/Code/Game/SpriteGuard.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/Game/ChickenHoldable.cs:IsLucky",
+                  "name": "IsLucky",
+                  "filePath": "Assets/NEON/Code/Game/ChickenHoldable.cs",
+                  "kind": "Method"
+                },
                 {
                   "uid": "Method:Assets/NEON/Code/AutoDictBinding/NEONPlayerStateDictValuesExtension.cs:SetPlayerStateInt",
                   "name": "SetPlayerStateInt",
@@ -300,24 +318,6 @@
                   "uid": "Method:Assets/NEON/Code/AutoDictBinding/NEONPlayerStateDictValuesExtension.cs:AddPlayerStateInt",
                   "name": "AddPlayerStateInt",
                   "filePath": "Assets/NEON/Code/AutoDictBinding/NEONPlayerStateDictValuesExtension.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/Game/SpriteGuard.cs:SetPlayerActor",
-                  "name": "SetPlayerActor",
-                  "filePath": "Assets/NEON/Code/Game/SpriteGuard.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/Game/SpriteGuard.cs:SetPlayerActor",
-                  "name": "SetPlayerActor",
-                  "filePath": "Assets/NEON/Code/Game/SpriteGuard.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/Game/ChickenHoldable.cs:IsLucky",
-                  "name": "IsLucky",
-                  "filePath": "Assets/NEON/Code/Game/ChickenHoldable.cs",
                   "kind": "Method"
                 },
                 {
@@ -375,76 +375,76 @@
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Framework/SaveData/SaveDataService.cs:CompareTo",
-                  "name": "CompareTo",
-                  "filePath": "Assets/NEON/Code/Framework/SaveData/SaveDataService.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Framework/SaveData/SaveDataService.cs:CompareTo",
-                  "name": "CompareTo",
-                  "filePath": "Assets/NEON/Code/Framework/SaveData/SaveDataService.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Framework/SaveData/SaveDataService.cs:CompareTo",
-                  "name": "CompareTo",
-                  "filePath": "Assets/NEON/Code/Framework/SaveData/SaveDataService.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Framework/GameData/GameDataSingle.cs:GameDataSingleMaxValueAssign",
-                  "name": "GameDataSingleMaxValueAssign",
-                  "filePath": "Assets/NEON/Code/Framework/GameData/GameDataSingle.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Framework/GameData/GameData.cs:GameDataMaxValueAssign",
-                  "name": "GameDataMaxValueAssign",
-                  "filePath": "Assets/NEON/Code/Framework/GameData/GameData.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Framework/AssetData/AssetRefList.cs:AddRange",
-                  "name": "AddRange",
-                  "filePath": "Assets/NEON/Code/Framework/AssetData/AssetRefList.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Framework/AssetData/AssetRefList.cs:AddRange",
-                  "name": "AddRange",
-                  "filePath": "Assets/NEON/Code/Framework/AssetData/AssetRefList.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Framework/AssetData/AssetRefList.cs:RemoveAll",
-                  "name": "RemoveAll",
-                  "filePath": "Assets/NEON/Code/Framework/AssetData/AssetRefList.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs:SendPlayerState",
-                  "name": "SendPlayerState",
-                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Add",
+                  "name": "Add",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs:SendPlayerState",
-                  "name": "SendPlayerState",
-                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs",
+                  "uid": "Method:Packages/com.veewo.stat/Runtime/ModifierGroup.cs:Remove",
+                  "name": "Remove",
+                  "filePath": "Packages/com.veewo.stat/Runtime/ModifierGroup.cs",
                   "kind": "Method"
-                },
-                {
-                  "uid": "Function:Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs:GetPriority",
-                  "name": "GetPriority",
-                  "filePath": "Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
-                  "kind": "Function"
                 },
                 {
                   "uid": "Property:Assets/NEON/Code/Framework/Attri.cs:Min",
                   "name": "Min",
                   "filePath": "Assets/NEON/Code/Framework/Attri.cs",
                   "kind": "Property"
+                },
+                {
+                  "uid": "Function:Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs:GetPriority",
+                  "name": "GetPriority",
+                  "filePath": "Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs",
+                  "kind": "Function"
                 }
               ],
               "imports": [
@@ -498,6 +498,11 @@
             },
             "affected_processes": [
               {
+                "name": "OnGUI → GetLocalPlayerActor",
+                "hits": 3,
+                "step_count": 5
+              },
+              {
                 "name": "OnDestructibleDeathToDo → GetLocalPlayerActor",
                 "hits": 3,
                 "step_count": 6
@@ -543,8 +548,13 @@
                 "step_count": 5
               },
               {
-                "name": "OnGUI → GetLocalPlayerActor",
-                "hits": 3,
+                "name": "OnGameModeChange → ProcessEvent",
+                "hits": 2,
+                "step_count": 5
+              },
+              {
+                "name": "OnGameModeChange → Add",
+                "hits": 2,
                 "step_count": 5
               },
               {
@@ -578,16 +588,6 @@
                 "step_count": 5
               },
               {
-                "name": "OnGameModeChange → ProcessEvent",
-                "hits": 2,
-                "step_count": 5
-              },
-              {
-                "name": "OnGameModeChange → Add",
-                "hits": 2,
-                "step_count": 5
-              },
-              {
                 "name": "OnTriggerEnter2D → AddAttributes",
                 "hits": 1,
                 "step_count": 6
@@ -615,23 +615,23 @@
                 "impact": "direct"
               },
               {
-                "name": "GunUpgrade",
-                "hits": 9,
-                "impact": "direct"
-              },
-              {
-                "name": "LootSystem",
-                "hits": 9,
-                "impact": "direct"
-              },
-              {
                 "name": "AllMinionManager",
+                "hits": 9,
+                "impact": "direct"
+              },
+              {
+                "name": "GunUpgrade",
                 "hits": 8,
                 "impact": "direct"
               },
               {
                 "name": "Destructible",
                 "hits": 8,
+                "impact": "direct"
+              },
+              {
+                "name": "Interactibles",
+                "hits": 7,
                 "impact": "direct"
               },
               {
@@ -650,13 +650,13 @@
                 "impact": "indirect"
               },
               {
-                "name": "Managers",
+                "name": "LootSystem",
                 "hits": 7,
-                "impact": "direct"
+                "impact": "indirect"
               },
               {
-                "name": "Interactibles",
-                "hits": 6,
+                "name": "Managers",
+                "hits": 7,
                 "impact": "direct"
               },
               {
@@ -675,6 +675,11 @@
                 "impact": "direct"
               },
               {
+                "name": "GoldenGlitter",
+                "hits": 4,
+                "impact": "direct"
+              },
+              {
                 "name": "PlayerState",
                 "hits": 4,
                 "impact": "indirect"
@@ -685,17 +690,12 @@
                 "impact": "direct"
               },
               {
-                "name": "Graphs",
-                "hits": 3,
-                "impact": "indirect"
-              },
-              {
-                "name": "UI",
+                "name": "CloudPlatform",
                 "hits": 3,
                 "impact": "direct"
               },
               {
-                "name": "CloudPlatform",
+                "name": "UI",
                 "hits": 3,
                 "impact": "direct"
               }
@@ -2558,15 +2558,6 @@
                 },
                 {
                   "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Behaviors/Actions/NewNodes/PickItUpPowerUp.cs:OnStart",
-                  "name": "OnStart",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Behaviors/Actions/NewNodes/PickItUpPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Game/SpecialRoom/ChickenHouse/Hen.cs:OnRoomCleared",
                   "name": "OnRoomCleared",
                   "type": "Method",
@@ -2580,6 +2571,33 @@
                   "name": "Interact",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/SpecialRoom/ChickenHouse/Hen.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PeripheralSystems/FatePerks/OperationHurtFatePerk.cs:TryHurt",
+                  "name": "TryHurt",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PeripheralSystems/FatePerks/OperationHurtFatePerk.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PeripheralSystems/FatePerks/InstantKillFatePerk.cs:OnMonsterInjure",
+                  "name": "OnMonsterInjure",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PeripheralSystems/FatePerks/InstantKillFatePerk.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Behaviors/Actions/NewNodes/PickItUpPowerUp.cs:OnStart",
+                  "name": "OnStart",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Behaviors/Actions/NewNodes/PickItUpPowerUp.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
@@ -2603,24 +2621,6 @@
                 },
                 {
                   "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PeripheralSystems/FatePerks/OperationHurtFatePerk.cs:TryHurt",
-                  "name": "TryHurt",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PeripheralSystems/FatePerks/OperationHurtFatePerk.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PeripheralSystems/FatePerks/InstantKillFatePerk.cs:OnMonsterInjure",
-                  "name": "OnMonsterInjure",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PeripheralSystems/FatePerks/InstantKillFatePerk.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Game/Graph/Graphs/PayloadProssGraph.cs:IsStatBoostLuck",
                   "name": "IsStatBoostLuck",
                   "type": "Method",
@@ -2634,15 +2634,6 @@
                   "name": "OnStartClient",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/Destructable/Tombstone/TombstoneMinionWeapon.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Relife.cs:SetMinionsAndSpriteState",
-                  "name": "SetMinionsAndSpriteState",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Relife.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
@@ -2684,6 +2675,42 @@
                 },
                 {
                   "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Relife.cs:SetMinionsAndSpriteState",
+                  "name": "SetMinionsAndSpriteState",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Relife.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpUtility.cs:TrySpawnExtraLoot",
+                  "name": "TrySpawnExtraLoot",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpUtility.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpAboutEggUtility.cs:AddNewMinion",
+                  "name": "AddNewMinion",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpAboutEggUtility.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpAboutEggUtility.cs:EggBornHajibao",
+                  "name": "EggBornHajibao",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpAboutEggUtility.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/WonderRelic/LevelToSpawnLootPowerUp.cs:OnNextLevel",
                   "name": "OnNextLevel",
                   "type": "Method",
@@ -2717,33 +2744,6 @@
                   "filePath": "Assets/NEON/Code/Game/PowerUps/WonderRelic/GameWinToHeartOrShieldPowerUp.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpUtility.cs:TrySpawnExtraLoot",
-                  "name": "TrySpawnExtraLoot",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpUtility.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpAboutEggUtility.cs:AddNewMinion",
-                  "name": "AddNewMinion",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpAboutEggUtility.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpAboutEggUtility.cs:EggBornHajibao",
-                  "name": "EggBornHajibao",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Utilities/PowerUpAboutEggUtility.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
                 },
                 {
                   "depth": 1,
@@ -2873,6 +2873,42 @@
                 },
                 {
                   "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs:AddMinionBackToManager",
+                  "name": "AddMinionBackToManager",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/KillMonsterPartBase.cs:OnMonsterKilled",
+                  "name": "OnMonsterKilled",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/KillMonsterPartBase.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/KillMonsterPartBase.cs:OnMonsterDamage",
+                  "name": "OnMonsterDamage",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/KillMonsterPartBase.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/MonsterInjure/MonsterInjureSpawnMinionPowerUp.cs:OnMonsterInjureRoutine",
+                  "name": "OnMonsterInjureRoutine",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/MonsterInjure/MonsterInjureSpawnMinionPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillLoot.cs:CostRoutine",
                   "name": "CostRoutine",
                   "type": "Method",
@@ -2906,60 +2942,6 @@
                   "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillEggCraft.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillBuyEgg.cs:CanUseSkill",
-                  "name": "CanUseSkill",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillBuyEgg.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/EggBreakSkillDamage.cs:CostRoutine",
-                  "name": "CostRoutine",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/EggBreakSkillDamage.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/EggBornPowerUp.cs:EggBorn",
-                  "name": "EggBorn",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/EggBornPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs:AddMinionBackToManager",
-                  "name": "AddMinionBackToManager",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/KillMonsterPartBase.cs:OnMonsterKilled",
-                  "name": "OnMonsterKilled",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/KillMonsterPartBase.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/KillMonsterPartBase.cs:OnMonsterDamage",
-                  "name": "OnMonsterDamage",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/KillMonsterPartBase.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
                 },
                 {
                   "depth": 1,
@@ -2999,21 +2981,30 @@
                 },
                 {
                   "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/MonsterInjure/MonsterInjureSpawnMinionPowerUp.cs:OnMonsterInjureRoutine",
-                  "name": "OnMonsterInjureRoutine",
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillBuyEgg.cs:CanUseSkill",
+                  "name": "CanUseSkill",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/MonsterInjure/MonsterInjureSpawnMinionPowerUp.cs",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillBuyEgg.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/EggBreakSkillDamage.cs:CostRoutine",
+                  "name": "CostRoutine",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/EggBreakSkillDamage.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
                 {
                   "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/ManaTestPowerUp/InBattleExplosionLootPowerUp.cs:SpawnExplosion",
-                  "name": "SpawnExplosion",
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/EggBornPowerUp.cs:EggBorn",
+                  "name": "EggBorn",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/ManaTestPowerUp/InBattleExplosionLootPowerUp.cs",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/EggBornPowerUp.cs",
                   "relationType": "CALLS",
-                  "confidence": 0.3
+                  "confidence": 0.5
                 },
                 {
                   "depth": 1,
@@ -3089,6 +3080,15 @@
                 },
                 {
                   "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/ManaTestPowerUp/InBattleExplosionLootPowerUp.cs:SpawnExplosion",
+                  "name": "SpawnExplosion",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/ManaTestPowerUp/InBattleExplosionLootPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/Mana/BombDespawnSpawnManaPowerUp.cs:SpawnExplosion",
                   "name": "SpawnExplosion",
                   "type": "Method",
@@ -3156,69 +3156,6 @@
                   "name": "OnBombExploded",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/Explosion/BombNotHitDestructibleSpawnPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs:ClearRoom",
-                  "name": "ClearRoom",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs:SpawnPowerUp",
-                  "name": "SpawnPowerUp",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyNoHurtPowerUp.cs:ClearRoom",
-                  "name": "ClearRoom",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyNoHurtPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelSpawnPowerUp.cs:OnFrenzyLevelUpEvent",
-                  "name": "OnFrenzyLevelUpEvent",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelSpawnPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGetSpritePowerUp.cs:ClearRoom",
-                  "name": "ClearRoom",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGetSpritePowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGetGodStarPowerUp.cs:ClearRoom",
-                  "name": "ClearRoom",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGetGodStarPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGainEggPowerUp.cs:ClearRoom",
-                  "name": "ClearRoom",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGainEggPowerUp.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
                 },
@@ -3296,6 +3233,69 @@
                 },
                 {
                   "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs:ClearRoom",
+                  "name": "ClearRoom",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs:SpawnPowerUp",
+                  "name": "SpawnPowerUp",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyNoHurtPowerUp.cs:ClearRoom",
+                  "name": "ClearRoom",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyNoHurtPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelSpawnPowerUp.cs:OnFrenzyLevelUpEvent",
+                  "name": "OnFrenzyLevelUpEvent",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelSpawnPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGetSpritePowerUp.cs:ClearRoom",
+                  "name": "ClearRoom",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGetSpritePowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGetGodStarPowerUp.cs:ClearRoom",
+                  "name": "ClearRoom",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGetGodStarPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGainEggPowerUp.cs:ClearRoom",
+                  "name": "ClearRoom",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzyLevelGainEggPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/GunParts/GunPartsReflectBullet.cs:BeforeDespawn",
                   "name": "BeforeDespawn",
                   "type": "Method",
@@ -3354,105 +3354,6 @@
                   "name": "OnPerAttack",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/GunParts/DropManaPerAttack.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/WhiteHeartSwordPowerUp.cs:OnMeleeTakeDamage",
-                  "name": "OnMeleeTakeDamage",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/WhiteHeartSwordPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/DuringChargeLuckDefendPowerUp.cs:Invincibility",
-                  "name": "Invincibility",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/DuringChargeLuckDefendPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/OnPickUpDropAddStatePowerUp.cs:OnDropPicked",
-                  "name": "OnDropPicked",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/OnPickUpDropAddStatePowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalStrikeSpawnPrefabPowerUp.cs:OnCriticalStrike",
-                  "name": "OnCriticalStrike",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalStrikeSpawnPrefabPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalSpawnLootPowerup.cs:OnCriticalStrike",
-                  "name": "OnCriticalStrike",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalSpawnLootPowerup.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalSkillManaPowerUp.cs:OnCriticalStrike",
-                  "name": "OnCriticalStrike",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalSkillManaPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalMinionAttackPowerUp.cs:OnCriticalStrike",
-                  "name": "OnCriticalStrike",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalMinionAttackPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalKillGiftPowerUp.cs:OnCriticalStrike",
-                  "name": "OnCriticalStrike",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalKillGiftPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalAddExperiencePowerUp.cs:OnCriticalStrike",
-                  "name": "OnCriticalStrike",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalAddExperiencePowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/CoinTestPowerUp/UseManaDropCoinPowerUp.cs:OnManaChanged",
-                  "name": "OnManaChanged",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/CoinTestPowerUp/UseManaDropCoinPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/CoinTestPowerUp/HurtDropCoinPowerUp.cs:OnPlayerGetHurt",
-                  "name": "OnPlayerGetHurt",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/CoinTestPowerUp/HurtDropCoinPowerUp.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
                 },
@@ -3629,6 +3530,105 @@
                 },
                 {
                   "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/OnPickUpDropAddStatePowerUp.cs:OnDropPicked",
+                  "name": "OnDropPicked",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/OnPickUpDropAddStatePowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalStrikeSpawnPrefabPowerUp.cs:OnCriticalStrike",
+                  "name": "OnCriticalStrike",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalStrikeSpawnPrefabPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalSpawnLootPowerup.cs:OnCriticalStrike",
+                  "name": "OnCriticalStrike",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalSpawnLootPowerup.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalSkillManaPowerUp.cs:OnCriticalStrike",
+                  "name": "OnCriticalStrike",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalSkillManaPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalMinionAttackPowerUp.cs:OnCriticalStrike",
+                  "name": "OnCriticalStrike",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalMinionAttackPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalKillGiftPowerUp.cs:OnCriticalStrike",
+                  "name": "OnCriticalStrike",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalKillGiftPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/CriticalAddExperiencePowerUp.cs:OnCriticalStrike",
+                  "name": "OnCriticalStrike",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/CriticalAddExperiencePowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/WhiteHeartSwordPowerUp.cs:OnMeleeTakeDamage",
+                  "name": "OnMeleeTakeDamage",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/WhiteHeartSwordPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/DuringChargeLuckDefendPowerUp.cs:Invincibility",
+                  "name": "Invincibility",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/DuringChargeLuckDefendPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/CoinTestPowerUp/UseManaDropCoinPowerUp.cs:OnManaChanged",
+                  "name": "OnManaChanged",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/CoinTestPowerUp/UseManaDropCoinPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/CoinTestPowerUp/HurtDropCoinPowerUp.cs:OnPlayerGetHurt",
+                  "name": "OnPlayerGetHurt",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/CoinTestPowerUp/HurtDropCoinPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/CloudPlatform/SpawnLootOnActiveCloudPlatformPowerUp.cs:OnPlayerJump",
                   "name": "OnPlayerJump",
                   "type": "Method",
@@ -3692,6 +3692,15 @@
                 },
                 {
                   "depth": 1,
+                  "id": "Method:Assets/NEON/Code/UI/MainScreen/Options/GamePlay/GamePlaySettingsHandler.cs:LimitEggCountChange",
+                  "name": "LimitEggCountChange",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/UI/MainScreen/Options/GamePlay/GamePlaySettingsHandler.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Game/Dev/DebugCommands.cs:Start",
                   "name": "Start",
                   "type": "Method",
@@ -3714,15 +3723,6 @@
                   "name": "UnRegister",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/Baodi/BaodiSilveryEgg.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/UI/MainScreen/Options/GamePlay/GamePlaySettingsHandler.cs:LimitEggCountChange",
-                  "name": "LimitEggCountChange",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/UI/MainScreen/Options/GamePlay/GamePlaySettingsHandler.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
@@ -4459,10 +4459,10 @@
                 },
                 {
                   "depth": 2,
-                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/NetworkDataManager/NetworkDataManager.cs:AddConnect",
-                  "name": "AddConnect",
+                  "id": "Method:Assets/NEON/Code/UI/MinionUpgradeUI.cs:TurnOffUiRoutine",
+                  "name": "TurnOffUiRoutine",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/NetworkDataManager/NetworkDataManager.cs",
+                  "filePath": "Assets/NEON/Code/UI/MinionUpgradeUI.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
@@ -4477,57 +4477,12 @@
                 },
                 {
                   "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs:OnAddExplosion",
-                  "name": "OnAddExplosion",
+                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/NetworkDataManager/NetworkDataManager.cs:AddConnect",
+                  "name": "AddConnect",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.PowerSkill.cs:RefreshMingSkillIcon",
-                  "name": "RefreshMingSkillIcon",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.PowerSkill.cs",
+                  "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/NetworkDataManager/NetworkDataManager.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Obsolete.cs:SpawnTombStone",
-                  "name": "SpawnTombStone",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Obsolete.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Combat.cs:BulletDespawn",
-                  "name": "BulletDespawn",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Combat.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Behaviors/Actions/BossTransform.cs:PlayTransform",
-                  "name": "PlayTransform",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Behaviors/Actions/BossTransform.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/WonderWorks/HatchiballThrow.cs:TryCatchMonster",
-                  "name": "TryCatchMonster",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/WonderWorks/HatchiballThrow.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
                 },
                 {
                   "depth": 2,
@@ -4555,6 +4510,60 @@
                   "filePath": "Assets/NEON/Code/Game/PeripheralSystems/FatePerks/OperationHurtFatePerk.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs:OnAddExplosion",
+                  "name": "OnAddExplosion",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.PowerSkill.cs:RefreshMingSkillIcon",
+                  "name": "RefreshMingSkillIcon",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.PowerSkill.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/WonderWorks/HatchiballThrow.cs:TryCatchMonster",
+                  "name": "TryCatchMonster",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/WonderWorks/HatchiballThrow.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Behaviors/Actions/BossTransform.cs:PlayTransform",
+                  "name": "PlayTransform",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Behaviors/Actions/BossTransform.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Obsolete.cs:SpawnTombStone",
+                  "name": "SpawnTombStone",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Obsolete.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Combat.cs:BulletDespawn",
+                  "name": "BulletDespawn",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Combat.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
                 },
                 {
                   "depth": 2,
@@ -4639,6 +4648,15 @@
                 },
                 {
                   "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs:ProcessRemovedCollection",
+                  "name": "ProcessRemovedCollection",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.85
+                },
+                {
+                  "depth": 2,
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillItemToPetPowerUp.cs:SkillRoutine",
                   "name": "SkillRoutine",
                   "type": "Method",
@@ -4652,24 +4670,6 @@
                   "name": "PickItUp",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillGoldenEgg.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/EggBornPowerUp.cs:SkillRoutine",
-                  "name": "SkillRoutine",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/EggBornPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs:ProcessRemovedCollection",
-                  "name": "ProcessRemovedCollection",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
                 },
@@ -4702,15 +4702,6 @@
                 },
                 {
                   "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitter.cs:CalAbsorbAmount",
-                  "name": "CalAbsorbAmount",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitter.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 2,
                   "id": "Method:Assets/NEON/Code/Game/Interactibles/BreakableMachine.cs:SinglePlayerInteract",
                   "name": "SinglePlayerInteract",
                   "type": "Method",
@@ -4738,12 +4729,30 @@
                 },
                 {
                   "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitter.cs:CalAbsorbAmount",
+                  "name": "CalAbsorbAmount",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitter.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 2,
                   "id": "Method:Assets/NEON/Code/Game/Events/EventHandlerDespawnPowerUp.cs:HandleDespawnLogic",
                   "name": "HandleDespawnLogic",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/Events/EventHandlerDespawnPowerUp.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/EggBornPowerUp.cs:SkillRoutine",
+                  "name": "SkillRoutine",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/EggBornPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.85
                 },
                 {
                   "depth": 2,
@@ -4819,6 +4828,15 @@
                 },
                 {
                   "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/EggTest/FrenzySpawnMinionTestPowerUp.cs:FrenzyLevelChangeEvent",
+                  "name": "FrenzyLevelChangeEvent",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/EggTest/FrenzySpawnMinionTestPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.85
+                },
+                {
+                  "depth": 2,
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/Frenzy/FrenzySpawnMinionPowerUp.cs:FrenzyLevelChangeEvent",
                   "name": "FrenzyLevelChangeEvent",
                   "type": "Method",
@@ -4832,24 +4850,6 @@
                   "name": "PickItUp",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/Frenzy/EggTriggerAddFrenzyPointPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/EggTest/FrenzySpawnMinionTestPowerUp.cs:FrenzyLevelChangeEvent",
-                  "name": "FrenzyLevelChangeEvent",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/EggTest/FrenzySpawnMinionTestPowerUp.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/BornEggAddCriticalPowerUp.cs:PickItUp",
-                  "name": "PickItUp",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/BornEggAddCriticalPowerUp.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
@@ -4882,6 +4882,15 @@
                 },
                 {
                   "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Critical/BornEggAddCriticalPowerUp.cs:PickItUp",
+                  "name": "PickItUp",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Critical/BornEggAddCriticalPowerUp.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 2,
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/Chests/CompanyChest.cs:SinglePlayerInteract",
                   "name": "SinglePlayerInteract",
                   "type": "Method",
@@ -4897,15 +4906,6 @@
                   "filePath": "Assets/NEON/Code/Game/PowerUps/Chests/CompanyChest.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/UI/MinionUpgradeUI.cs:TurnOffUiRoutine",
-                  "name": "TurnOffUiRoutine",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/UI/MinionUpgradeUI.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
                 },
                 {
                   "depth": 2,
@@ -5334,6 +5334,15 @@
                 },
                 {
                   "depth": 3,
+                  "id": "Method:Assets/NEON/Code/Editor/VeewoDebugger.cs:OpenDoors",
+                  "name": "OpenDoors",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Editor/VeewoDebugger.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 3,
                   "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs:ApplyAttrs",
                   "name": "ApplyAttrs",
                   "type": "Method",
@@ -5361,10 +5370,10 @@
                 },
                 {
                   "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Obsolete.cs:SpawnNormalTombStone",
-                  "name": "SpawnNormalTombStone",
+                  "id": "Method:Assets/NEON/Code/Game/WonderWorks/HatchiballThrow.cs:OnThrowHit",
+                  "name": "OnThrowHit",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Obsolete.cs",
+                  "filePath": "Assets/NEON/Code/Game/WonderWorks/HatchiballThrow.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
                 },
@@ -5379,10 +5388,10 @@
                 },
                 {
                   "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Game/WonderWorks/HatchiballThrow.cs:OnThrowHit",
-                  "name": "OnThrowHit",
+                  "id": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Obsolete.cs:SpawnNormalTombStone",
+                  "name": "SpawnNormalTombStone",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/WonderWorks/HatchiballThrow.cs",
+                  "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Obsolete.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
                 },
@@ -5392,6 +5401,15 @@
                   "name": "KillAllMonster",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 3,
+                  "id": "Method:Assets/NEON/Code/Game/Actors/Minions/HitboxForHajibao.cs:OnTriggerEnter2D",
+                  "name": "OnTriggerEnter2D",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Actors/Minions/HitboxForHajibao.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
@@ -5410,15 +5428,6 @@
                   "name": "ProcessSecSkill",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.FixedUpdate.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Game/Actors/Minions/HitboxForHajibao.cs:OnTriggerEnter2D",
-                  "name": "OnTriggerEnter2D",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/Actors/Minions/HitboxForHajibao.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
@@ -5451,19 +5460,19 @@
                 },
                 {
                   "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillGoldenEgg.cs:CreateEgg",
-                  "name": "CreateEgg",
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs:ProcessEgg",
+                  "name": "ProcessEgg",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillGoldenEgg.cs",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
                 },
                 {
                   "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs:ProcessEgg",
-                  "name": "ProcessEgg",
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillGoldenEgg.cs:CreateEgg",
+                  "name": "CreateEgg",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/NewGunParts/MinionReloadGunPart.cs",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillGoldenEgg.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
                 },
@@ -5541,24 +5550,6 @@
                 },
                 {
                   "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitterManager.cs:RangeAllGoldenGlitterValue",
-                  "name": "RangeAllGoldenGlitterValue",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitterManager.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitterManager.cs:FixedUpdate",
-                  "name": "FixedUpdate",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitterManager.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 3,
                   "id": "Method:Assets/NEON/Code/Game/Interactibles/BreakableMachine.cs:Interact",
                   "name": "Interact",
                   "type": "Method",
@@ -5574,6 +5565,24 @@
                   "filePath": "Assets/NEON/Code/Game/Interactibles/BreakableMachine.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
+                },
+                {
+                  "depth": 3,
+                  "id": "Method:Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitterManager.cs:RangeAllGoldenGlitterValue",
+                  "name": "RangeAllGoldenGlitterValue",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitterManager.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 3,
+                  "id": "Method:Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitterManager.cs:FixedUpdate",
+                  "name": "FixedUpdate",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Game/GoldenGlitter/GoldenGlitterManager.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
                 },
                 {
                   "depth": 3,
@@ -5707,15 +5716,6 @@
                   "name": "LoanRepaidCoin",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/Chests/CompanyChest.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Editor/VeewoDebugger.cs:OpenDoors",
-                  "name": "OpenDoors",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Editor/VeewoDebugger.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
                 },
@@ -5932,18 +5932,6 @@
             "incoming": {
               "calls": [
                 {
-                  "uid": "Method:Assets/NEON/Code/Editor/ShowCollidersInScene.cs:OnGUI",
-                  "name": "OnGUI",
-                  "filePath": "Assets/NEON/Code/Editor/ShowCollidersInScene.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs:DrawResults",
-                  "name": "DrawResults",
-                  "filePath": "Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs",
-                  "kind": "Method"
-                },
-                {
                   "uid": "Method:Assets/NEON/Code/Editor/NullReferenceComponentsCheck.cs:OnGUI",
                   "name": "OnGUI",
                   "filePath": "Assets/NEON/Code/Editor/NullReferenceComponentsCheck.cs",
@@ -5959,6 +5947,42 @@
                   "uid": "Method:Packages/com.veewo.veenode/Veewo/Graph/Editor/ObjectCreator.cs:OnGUI",
                   "name": "OnGUI",
                   "filePath": "Packages/com.veewo.veenode/Veewo/Graph/Editor/ObjectCreator.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Packages/com.neonspark.inspector-navigator/Editor/HistoryPreferences.cs:CreateProvider",
+                  "name": "CreateProvider",
+                  "filePath": "Packages/com.neonspark.inspector-navigator/Editor/HistoryPreferences.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/VeewoUI/MainUIManager.cs:BackToggle",
+                  "name": "BackToggle",
+                  "filePath": "Assets/NEON/Code/VeewoUI/MainUIManager.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs:DrawResultsSection",
+                  "name": "DrawResultsSection",
+                  "filePath": "Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/Editor/ShowCollidersInScene.cs:OnGUI",
+                  "name": "OnGUI",
+                  "filePath": "Assets/NEON/Code/Editor/ShowCollidersInScene.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs:DrawResults",
+                  "name": "DrawResults",
+                  "filePath": "Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/Editor/Shared/PrefabSearchUtility.cs:DrawPrefabList",
+                  "name": "DrawPrefabList",
+                  "filePath": "Assets/NEON/Code/Editor/Shared/PrefabSearchUtility.cs",
                   "kind": "Method"
                 },
                 {
@@ -6004,12 +6028,6 @@
                   "kind": "Method"
                 },
                 {
-                  "uid": "Method:Assets/NEON/Code/Editor/Shared/PrefabSearchUtility.cs:DrawPrefabList",
-                  "name": "DrawPrefabList",
-                  "filePath": "Assets/NEON/Code/Editor/Shared/PrefabSearchUtility.cs",
-                  "kind": "Method"
-                },
-                {
                   "uid": "Method:Assets/NEON/Code/Editor/Tools/AnimatorOptimizerWindow.cs:OnGUI",
                   "name": "OnGUI",
                   "filePath": "Assets/NEON/Code/Editor/Tools/AnimatorOptimizerWindow.cs",
@@ -6019,24 +6037,6 @@
                   "uid": "Method:Assets/NEON/Code/Game/Editor/RumbleTester.cs:OnGUI",
                   "name": "OnGUI",
                   "filePath": "Assets/NEON/Code/Game/Editor/RumbleTester.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Packages/com.neonspark.inspector-navigator/Editor/HistoryPreferences.cs:CreateProvider",
-                  "name": "CreateProvider",
-                  "filePath": "Packages/com.neonspark.inspector-navigator/Editor/HistoryPreferences.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/VeewoUI/MainUIManager.cs:BackToggle",
-                  "name": "BackToggle",
-                  "filePath": "Assets/NEON/Code/VeewoUI/MainUIManager.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs:DrawResultsSection",
-                  "name": "DrawResultsSection",
-                  "filePath": "Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs",
                   "kind": "Method"
                 },
                 {
@@ -6119,9 +6119,27 @@
             "outgoing": {
               "calls": [
                 {
+                  "uid": "Method:Assets/NEON/Code/VeewoUI/MainUIManager.cs:WaitShowScreen",
+                  "name": "WaitShowScreen",
+                  "filePath": "Assets/NEON/Code/VeewoUI/MainUIManager.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/UI/PrometheusArrow.cs:SetActive",
+                  "name": "SetActive",
+                  "filePath": "Assets/NEON/Code/UI/PrometheusArrow.cs",
+                  "kind": "Method"
+                },
+                {
                   "uid": "Method:Assets/NEON/Code/UI/Base/UIInput.cs:PushStatus",
                   "name": "PushStatus",
                   "filePath": "Assets/NEON/Code/UI/Base/UIInput.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/Game/Input/PlayerInputActions.cs:Disable",
+                  "name": "Disable",
+                  "filePath": "Assets/NEON/Code/Game/Input/PlayerInputActions.cs",
                   "kind": "Method"
                 },
                 {
@@ -6134,24 +6152,6 @@
                   "uid": "Method:Assets/NEON/Code/Game/Managers/InputManager.cs:Push",
                   "name": "Push",
                   "filePath": "Assets/NEON/Code/Game/Managers/InputManager.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/Game/Input/PlayerInputActions.cs:Disable",
-                  "name": "Disable",
-                  "filePath": "Assets/NEON/Code/Game/Input/PlayerInputActions.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/VeewoUI/MainUIManager.cs:WaitShowScreen",
-                  "name": "WaitShowScreen",
-                  "filePath": "Assets/NEON/Code/VeewoUI/MainUIManager.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/UI/PrometheusArrow.cs:SetActive",
-                  "name": "SetActive",
-                  "filePath": "Assets/NEON/Code/UI/PrometheusArrow.cs",
                   "kind": "Method"
                 }
               ]
@@ -6176,7 +6176,7 @@
               "filePath": "Assets/NEON/Code/VeewoUI/MainUIManager.cs"
             },
             "direction": "upstream",
-            "impactedCount": 96,
+            "impactedCount": 95,
             "risk": "CRITICAL",
             "summary": {
               "direct": 36,
@@ -6223,6 +6223,16 @@
                 "name": "Update → FindAction",
                 "hits": 1,
                 "step_count": 4
+              },
+              {
+                "name": "OnGUI → SetDizzy",
+                "hits": 1,
+                "step_count": 5
+              },
+              {
+                "name": "OnGUI → Log",
+                "hits": 1,
+                "step_count": 5
               },
               {
                 "name": "OnClientPickItUp → ChangePosture",
@@ -6273,33 +6283,28 @@
                 "name": "OnClientPickItUp → SetPlayerActor",
                 "hits": 1,
                 "step_count": 8
-              },
-              {
-                "name": "OnClientPickItUp → Warn",
-                "hits": 1,
-                "step_count": 5
-              },
-              {
-                "name": "OnClientPickItUp → Seconds",
-                "hits": 1,
-                "step_count": 4
               }
             ],
             "affected_modules": [
-              {
-                "name": "VeewoUI",
-                "hits": 7,
-                "impact": "direct"
-              },
               {
                 "name": "Panels",
                 "hits": 7,
                 "impact": "direct"
               },
               {
+                "name": "VeewoUI",
+                "hits": 6,
+                "impact": "direct"
+              },
+              {
                 "name": "Editor",
                 "hits": 4,
                 "impact": "direct"
+              },
+              {
+                "name": "BarScreen",
+                "hits": 4,
+                "impact": "indirect"
               },
               {
                 "name": "Achievement",
@@ -6322,13 +6327,18 @@
                 "impact": "direct"
               },
               {
-                "name": "BarScreen",
-                "hits": 3,
+                "name": "SaveData",
+                "hits": 2,
                 "impact": "indirect"
               },
               {
-                "name": "Framework",
-                "hits": 2,
+                "name": "GameModes",
+                "hits": 1,
+                "impact": "indirect"
+              },
+              {
+                "name": "MarioRoom",
+                "hits": 1,
                 "impact": "indirect"
               },
               {
@@ -6345,11 +6355,6 @@
                 "name": "Tools",
                 "hits": 1,
                 "impact": "direct"
-              },
-              {
-                "name": "SaveData",
-                "hits": 1,
-                "impact": "indirect"
               },
               {
                 "name": "Game",
@@ -6380,33 +6385,10 @@
                 "name": "PlayerState",
                 "hits": 1,
                 "impact": "indirect"
-              },
-              {
-                "name": "Machines",
-                "hits": 1,
-                "impact": "indirect"
               }
             ],
             "byDepth": {
               "1": [
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Editor/ShowCollidersInScene.cs:OnGUI",
-                  "name": "OnGUI",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Editor/ShowCollidersInScene.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs:DrawResults",
-                  "name": "DrawResults",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
                 {
                   "depth": 1,
                   "id": "Method:Assets/NEON/Code/Editor/NullReferenceComponentsCheck.cs:OnGUI",
@@ -6526,10 +6508,82 @@
                 },
                 {
                   "depth": 1,
+                  "id": "Method:Packages/com.neonspark.inspector-navigator/Editor/HistoryPreferences.cs:CreateProvider",
+                  "name": "CreateProvider",
+                  "type": "Method",
+                  "filePath": "Packages/com.neonspark.inspector-navigator/Editor/HistoryPreferences.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/VeewoUI/MenuScreen.cs:HideRedDot",
+                  "name": "HideRedDot",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/VeewoUI/MenuScreen.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/VeewoUI/InteractScreenManager.cs:OpenScreen",
+                  "name": "OpenScreen",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/VeewoUI/InteractScreenManager.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/VeewoUI/GlobalUIScreenManager.cs:OpenScreen",
+                  "name": "OpenScreen",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/VeewoUI/GlobalUIScreenManager.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs:DrawResultsSection",
+                  "name": "DrawResultsSection",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Editor/ShowCollidersInScene.cs:OnGUI",
+                  "name": "OnGUI",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Editor/ShowCollidersInScene.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs:DrawResults",
+                  "name": "DrawResults",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Framework/GamePlay/GameplayEffectContainer.cs:RefreshDamage",
                   "name": "RefreshDamage",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Framework/GamePlay/GameplayEffectContainer.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/Editor/Shared/PrefabSearchUtility.cs:DrawPrefabList",
+                  "name": "DrawPrefabList",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Editor/Shared/PrefabSearchUtility.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
                 },
@@ -6607,15 +6661,6 @@
                 },
                 {
                   "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Editor/Shared/PrefabSearchUtility.cs:DrawPrefabList",
-                  "name": "DrawPrefabList",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Editor/Shared/PrefabSearchUtility.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/Editor/Tools/AnimatorOptimizerWindow.cs:OnGUI",
                   "name": "OnGUI",
                   "type": "Method",
@@ -6629,51 +6674,6 @@
                   "name": "OnGUI",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/Editor/RumbleTester.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Packages/com.neonspark.inspector-navigator/Editor/HistoryPreferences.cs:CreateProvider",
-                  "name": "CreateProvider",
-                  "type": "Method",
-                  "filePath": "Packages/com.neonspark.inspector-navigator/Editor/HistoryPreferences.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/VeewoUI/MenuScreen.cs:HideRedDot",
-                  "name": "HideRedDot",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/VeewoUI/MenuScreen.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/VeewoUI/InteractScreenManager.cs:OpenScreen",
-                  "name": "OpenScreen",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/VeewoUI/InteractScreenManager.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/VeewoUI/GlobalUIScreenManager.cs:OpenScreen",
-                  "name": "OpenScreen",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/VeewoUI/GlobalUIScreenManager.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
-                  "id": "Method:Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs:DrawResultsSection",
-                  "name": "DrawResultsSection",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
                 },
@@ -6715,15 +6715,6 @@
                 }
               ],
               "2": [
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs:OnGUI",
-                  "name": "OnGUI",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
-                },
                 {
                   "depth": 2,
                   "id": "Method:Packages/com.veewo.veenode/Veewo/Graph/Editor/VeeGraphEditorTools.cs:OnGUI",
@@ -6825,6 +6816,42 @@
                 },
                 {
                   "depth": 2,
+                  "id": "Method:Assets/NEON/Code/VeewoUI/InteractOpenUI.cs:Interact",
+                  "name": "Interact",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/VeewoUI/InteractOpenUI.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs:OnGUI",
+                  "name": "OnGUI",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.85
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs:OnGUI",
+                  "name": "OnGUI",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Editor/ScriptPrefabFinderEditor.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.85
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/UI/Combo/ItemCombiner.cs:LongPressInteract",
+                  "name": "LongPressInteract",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/UI/Combo/ItemCombiner.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 2,
                   "id": "Method:Assets/NEON/Code/Framework/SaveData/SettingsService.cs:Load",
                   "name": "Load",
                   "type": "Method",
@@ -6849,15 +6876,6 @@
                   "filePath": "Assets/NEON/Code/Framework/GamePlay/GameplayEffectContainer.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/UI/Combo/ItemCombiner.cs:LongPressInteract",
-                  "name": "LongPressInteract",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/UI/Combo/ItemCombiner.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
                 },
                 {
                   "depth": 2,
@@ -6921,33 +6939,6 @@
                   "filePath": "Assets/NEON/Code/Game/Interactibles/BarMailMachine.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/VeewoUI/InteractOpenUI.cs:Interact",
-                  "name": "Interact",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/VeewoUI/InteractOpenUI.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs:OnGUI",
-                  "name": "OnGUI",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Editor/WaveManagerFinderEditor.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Editor/PlotDialogueTable/Google/Editor/GoogleDataContainerEditor.cs:OnInspectorGUI",
-                  "name": "OnInspectorGUI",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Editor/PlotDialogueTable/Google/Editor/GoogleDataContainerEditor.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
                 },
                 {
                   "depth": 2,
@@ -7058,6 +7049,24 @@
                   "filePath": "Assets/NEON/Code/Game/PowerUps/AllHajibaoAutoWakeUpPowerUp.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
+                },
+                {
+                  "depth": 3,
+                  "id": "Method:Assets/NEON/Code/Framework/Global.cs:InitGlobal",
+                  "name": "InitGlobal",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Framework/Global.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.9
+                },
+                {
+                  "depth": 3,
+                  "id": "Method:Assets/NEON/Code/Framework/Global.cs:Start",
+                  "name": "Start",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Framework/Global.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.9
                 },
                 {
                   "depth": 3,
@@ -7238,24 +7247,6 @@
                   "filePath": "Assets/NEON/Code/Game/PowerUps/Chests/CurseChest.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
-                },
-                {
-                  "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Framework/Global.cs:InitGlobal",
-                  "name": "InitGlobal",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Framework/Global.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.9
-                },
-                {
-                  "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Framework/Global.cs:Start",
-                  "name": "Start",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Framework/Global.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.9
                 }
               ]
             }
@@ -7409,12 +7400,6 @@
                   "uid": "Method:Assets/NEON/Code/VeewoUI/BarScreen/BarHomePage.cs:GotoMainMenuConfirm",
                   "name": "GotoMainMenuConfirm",
                   "filePath": "Assets/NEON/Code/VeewoUI/BarScreen/BarHomePage.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:CreateAfterConnectedToRelay",
-                  "name": "CreateAfterConnectedToRelay",
-                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
                   "kind": "Method"
                 },
                 {
@@ -7572,6 +7557,12 @@
                   "name": "OnHostDataFragmentReceived",
                   "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs",
                   "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs:OnAllPlayerReadyLoadHandler",
+                  "name": "OnAllPlayerReadyLoadHandler",
+                  "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs",
+                  "kind": "Method"
                 }
               ]
             },
@@ -7625,18 +7616,6 @@
                   "uid": "Method:Assets/NEON/Code/NetworkCode/Util/NetUtil.cs:GetLocalNetPlayer",
                   "name": "GetLocalNetPlayer",
                   "filePath": "Assets/NEON/Code/NetworkCode/Util/NetUtil.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:StartHost",
-                  "name": "StartHost",
-                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
-                  "kind": "Method"
-                },
-                {
-                  "uid": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:StartHost",
-                  "name": "StartHost",
-                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
                   "kind": "Method"
                 },
                 {
@@ -7708,6 +7687,18 @@
                 {
                   "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs:TryCaptureNetworkSaveSnapshotOnDisconnect",
                   "name": "TryCaptureNetworkSaveSnapshotOnDisconnect",
+                  "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs:TryFallbackToSingleOnDisconnect",
+                  "name": "TryFallbackToSingleOnDisconnect",
+                  "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs",
+                  "kind": "Method"
+                },
+                {
+                  "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs:OnServerConnect",
+                  "name": "OnServerConnect",
                   "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs",
                   "kind": "Method"
                 },
@@ -7835,7 +7826,7 @@
             "summary": {
               "direct": 15,
               "processes_affected": 7,
-              "modules_affected": 13
+              "modules_affected": 12
             },
             "affected_processes": [
               {
@@ -7846,6 +7837,16 @@
               {
                 "name": "OnGameModeChange → Clear",
                 "hits": 3,
+                "step_count": 5
+              },
+              {
+                "name": "OnGameModeChange → ProcessEvent",
+                "hits": 1,
+                "step_count": 5
+              },
+              {
+                "name": "OnGameModeChange → Add",
+                "hits": 1,
                 "step_count": 5
               },
               {
@@ -7862,22 +7863,12 @@
                 "name": "OnGameModeChange → SetHostDlcState",
                 "hits": 1,
                 "step_count": 5
-              },
-              {
-                "name": "OnGameModeChange → ProcessEvent",
-                "hits": 1,
-                "step_count": 5
-              },
-              {
-                "name": "OnGameModeChange → Add",
-                "hits": 1,
-                "step_count": 5
               }
             ],
             "affected_modules": [
               {
                 "name": "NeonMgr",
-                "hits": 9,
+                "hits": 12,
                 "impact": "direct"
               },
               {
@@ -7897,11 +7888,6 @@
               },
               {
                 "name": "Online",
-                "hits": 3,
-                "impact": "direct"
-              },
-              {
-                "name": "NeonGUI",
                 "hits": 3,
                 "impact": "direct"
               },
@@ -7926,12 +7912,12 @@
                 "impact": "indirect"
               },
               {
-                "name": "GameModes",
+                "name": "NeonPlayer",
                 "hits": 1,
                 "impact": "indirect"
               },
               {
-                "name": "NeonPlayer",
+                "name": "NeonGUI",
                 "hits": 1,
                 "impact": "indirect"
               },
@@ -7972,15 +7958,6 @@
                 },
                 {
                   "depth": 1,
-                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:CreateAfterConnectedToRelay",
-                  "name": "CreateAfterConnectedToRelay",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.Reconnect.cs:CloseReconnectUI",
                   "name": "CloseReconnectUI",
                   "type": "Method",
@@ -8005,6 +7982,15 @@
                   "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/MirrorGlobalMgr.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
+                },
+                {
+                  "depth": 1,
+                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:CreateAfterConnectedToRelay",
+                  "name": "CreateAfterConnectedToRelay",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
                 },
                 {
                   "depth": 1,
@@ -8044,15 +8030,6 @@
                 },
                 {
                   "depth": 1,
-                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonMirror/Battle/MirrorBattleMgr.cs:OnDestroy",
-                  "name": "OnDestroy",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/NetworkCode/NeonMirror/Battle/MirrorBattleMgr.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/NetworkCode/NeonMirror/Bar/MirrorBarMgr.cs:Awake",
                   "name": "Awake",
                   "type": "Method",
@@ -8071,6 +8048,15 @@
                 },
                 {
                   "depth": 1,
+                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonMirror/Battle/MirrorBattleMgr.cs:OnDestroy",
+                  "name": "OnDestroy",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/NetworkCode/NeonMirror/Battle/MirrorBattleMgr.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 1,
                   "id": "Method:Assets/NEON/Code/UI/Pause/System/MenuEventListener.cs:Quit",
                   "name": "Quit",
                   "type": "Method",
@@ -8080,15 +8066,6 @@
                 }
               ],
               "2": [
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:StartHost",
-                  "name": "StartHost",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
-                },
                 {
                   "depth": 2,
                   "id": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.Reconnect.cs:OnReconnectComplete",
@@ -8118,21 +8095,12 @@
                 },
                 {
                   "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Framework/Login/TapSDKLoginProvider.cs:HandleKickOut",
-                  "name": "HandleKickOut",
+                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:StartHost",
+                  "name": "StartHost",
                   "type": "Method",
-                  "filePath": "Assets/NEON/Code/Framework/Login/TapSDKLoginProvider.cs",
+                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
                   "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Framework/Login/LoginService.cs:HandleLogoutSuccess",
-                  "name": "HandleLogoutSuccess",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Framework/Login/LoginService.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
+                  "confidence": 0.85
                 },
                 {
                   "depth": 2,
@@ -8160,6 +8128,51 @@
                   "filePath": "Assets/NEON/Code/VeewoUI/BarScreen/Online/OnlineHomePage.Single.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/VeewoUI/SystemScreen.cs:BacktoBarEvent",
+                  "name": "BacktoBarEvent",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/VeewoUI/SystemScreen.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/VeewoUI/SystemScreen.cs:Quit",
+                  "name": "Quit",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/VeewoUI/SystemScreen.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Framework/InGameConsole_ScriptRegister.cs:PreRegister",
+                  "name": "PreRegister",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Framework/InGameConsole_ScriptRegister.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Framework/Login/TapSDKLoginProvider.cs:HandleKickOut",
+                  "name": "HandleKickOut",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Framework/Login/TapSDKLoginProvider.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
+                },
+                {
+                  "depth": 2,
+                  "id": "Method:Assets/NEON/Code/Framework/Login/LoginService.cs:HandleLogoutSuccess",
+                  "name": "HandleLogoutSuccess",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Framework/Login/LoginService.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.5
                 },
                 {
                   "depth": 2,
@@ -8205,45 +8218,9 @@
                   "filePath": "Assets/NEON/Code/Game/GameModes/MainScreenMode.cs",
                   "relationType": "CALLS",
                   "confidence": 0.5
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/VeewoUI/SystemScreen.cs:BacktoBarEvent",
-                  "name": "BacktoBarEvent",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/VeewoUI/SystemScreen.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/VeewoUI/SystemScreen.cs:Quit",
-                  "name": "Quit",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/VeewoUI/SystemScreen.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.5
-                },
-                {
-                  "depth": 2,
-                  "id": "Method:Assets/NEON/Code/Framework/InGameConsole_ScriptRegister.cs:PreRegister",
-                  "name": "PreRegister",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Framework/InGameConsole_ScriptRegister.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
                 }
               ],
               "3": [
-                {
-                  "depth": 3,
-                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:OnGUI",
-                  "name": "OnGUI",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
-                },
                 {
                   "depth": 3,
                   "id": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.Reconnect.cs:TryReConnect",
@@ -8270,6 +8247,33 @@
                   "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/MirrorGlobalMgr.cs",
                   "relationType": "CALLS",
                   "confidence": 0.85
+                },
+                {
+                  "depth": 3,
+                  "id": "Method:Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs:OnGUI",
+                  "name": "OnGUI",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/NetworkCode/NeonGUI/DevGUIMirrorMgr.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.85
+                },
+                {
+                  "depth": 3,
+                  "id": "Method:Assets/NEON/Code/VeewoUI/SystemScreen.cs:QuitDesktop",
+                  "name": "QuitDesktop",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/VeewoUI/SystemScreen.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.85
+                },
+                {
+                  "depth": 3,
+                  "id": "Method:Assets/NEON/Code/Framework/InGameConsole.cs:Start",
+                  "name": "Start",
+                  "type": "Method",
+                  "filePath": "Assets/NEON/Code/Framework/InGameConsole.cs",
+                  "relationType": "CALLS",
+                  "confidence": 0.3
                 },
                 {
                   "depth": 3,
@@ -8313,24 +8317,6 @@
                   "name": "Update",
                   "type": "Method",
                   "filePath": "Assets/NEON/Code/Game/GameModes/ExpiredMode.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.3
-                },
-                {
-                  "depth": 3,
-                  "id": "Method:Assets/NEON/Code/VeewoUI/SystemScreen.cs:QuitDesktop",
-                  "name": "QuitDesktop",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/VeewoUI/SystemScreen.cs",
-                  "relationType": "CALLS",
-                  "confidence": 0.85
-                },
-                {
-                  "depth": 3,
-                  "id": "Method:Assets/NEON/Code/Framework/InGameConsole.cs:Start",
-                  "name": "Start",
-                  "type": "Method",
-                  "filePath": "Assets/NEON/Code/Framework/InGameConsole.cs",
                   "relationType": "CALLS",
                   "confidence": 0.3
                 }
