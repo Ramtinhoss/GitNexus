@@ -48,11 +48,17 @@ References:
 - `git push`
 - `git push --tags`
 
-4. Wait for GitHub Actions publish job.
+4. Publish package.
+- Preferred: tag-triggered GitHub Actions workflow publish.
+- Fallback (manual local publish): `npm publish --access public`
+- Note: local terminal publish should not use `--provenance` unless your environment supports it.
+- If you see `Automatic provenance generation not supported for provider: null`, remove `--provenance`.
+
+5. Wait for publish completion.
 - Workflow: `Publish to npm`
 - Trigger: `push tags: v*`
 
-5. Smoke check published package.
+6. Smoke check published package.
 - `npx -y @veewo/gitnexus@<version> --help`
 - Optional runtime check in a test repo:
   - `npx -y @veewo/gitnexus@<version> analyze`
@@ -61,6 +67,10 @@ References:
 
 Global install:
 - `npm i -g @veewo/gitnexus`
+
+Replace upstream package with team package:
+- `npm uninstall -g gitnexus`
+- `npm install -g @veewo/gitnexus`
 
 No-install mode:
 - `npx -y @veewo/gitnexus analyze`
@@ -82,3 +92,31 @@ Typical first-time usage in a project:
 - No beta/canary channel.
 - Only stable releases to `latest`.
 - Every release is tag-driven and traceable in git history.
+
+## Validation Checklist (Verified)
+
+Validated in this repository with `@veewo/gitnexus@1.3.4`:
+
+- `npm run build` passes
+- `npm run test:benchmark` passes
+- `npm publish --access public` succeeds
+- `npm view @veewo/gitnexus version --registry=https://registry.npmjs.org` returns expected version
+- `npx -y @veewo/gitnexus@latest --version` returns expected version
+- Fresh global install can run `gitnexus analyze`
+
+## Troubleshooting
+
+If `npm view` shows 404 with `Access token expired or revoked`:
+
+- This can be an auth-state issue, not a true missing package.
+- Verify with explicit registry:
+  - `npm view @veewo/gitnexus version --registry=https://registry.npmjs.org`
+- Re-login if needed:
+  - `npm logout --registry=https://registry.npmjs.org`
+  - `npm login --auth-type=web --scope=@veewo --registry=https://registry.npmjs.org`
+
+If publish fails with `EOTP`:
+
+- Account uses write-protected 2FA (`auth-and-writes`).
+- Publish with OTP:
+  - `npm publish --access public --otp=<code>`
