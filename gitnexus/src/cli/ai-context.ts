@@ -54,12 +54,12 @@ This project is indexed by GitNexus as **${projectName}** (${stats.nodes || 0} s
 
 | Task | Read this skill file |
 |------|---------------------|
-| Understand architecture / "How does X work?" | \`.claude/skills/gitnexus/gitnexus-exploring/SKILL.md\` |
-| Blast radius / "What breaks if I change X?" | \`.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md\` |
-| Trace bugs / "Why is X failing?" | \`.claude/skills/gitnexus/gitnexus-debugging/SKILL.md\` |
-| Rename / extract / split / refactor | \`.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md\` |
-| Tools, resources, schema reference | \`.claude/skills/gitnexus/gitnexus-guide/SKILL.md\` |
-| Index, status, clean, wiki CLI commands | \`.claude/skills/gitnexus/gitnexus-cli/SKILL.md\` |
+| Understand architecture / "How does X work?" | \`.agents/skills/gitnexus/gitnexus-exploring/SKILL.md\` |
+| Blast radius / "What breaks if I change X?" | \`.agents/skills/gitnexus/gitnexus-impact-analysis/SKILL.md\` |
+| Trace bugs / "Why is X failing?" | \`.agents/skills/gitnexus/gitnexus-debugging/SKILL.md\` |
+| Rename / extract / split / refactor | \`.agents/skills/gitnexus/gitnexus-refactoring/SKILL.md\` |
+| Tools, resources, schema reference | \`.agents/skills/gitnexus/gitnexus-guide/SKILL.md\` |
+| Index, status, clean, wiki CLI commands | \`.agents/skills/gitnexus/gitnexus-cli/SKILL.md\` |
 
 ${GITNEXUS_END_MARKER}`;
 }
@@ -116,11 +116,11 @@ async function upsertGitNexusSection(
 }
 
 /**
- * Install GitNexus skills to .claude/skills/gitnexus/
- * Works natively with Claude Code, Cursor, and GitHub Copilot
+ * Install repo-local GitNexus skills to .agents/skills/gitnexus/
+ * AGENTS.md should reference this path consistently.
  */
 async function installSkills(repoPath: string): Promise<string[]> {
-  const skillsDir = path.join(repoPath, '.claude', 'skills', 'gitnexus');
+  const skillsDir = path.join(repoPath, '.agents', 'skills', 'gitnexus');
   const installedSkills: string[] = [];
 
   // Skill definitions bundled with the package
@@ -213,12 +213,11 @@ export async function generateAIContextFiles(
   const claudeResult = await upsertGitNexusSection(claudePath, content);
   createdFiles.push(`CLAUDE.md (${claudeResult})`);
 
-  // Install skills to .claude/skills/gitnexus/
+  // Install skills to .agents/skills/gitnexus/
   const installedSkills = await installSkills(repoPath);
   if (installedSkills.length > 0) {
-    createdFiles.push(`.claude/skills/gitnexus/ (${installedSkills.length} skills)`);
+    createdFiles.push(`.agents/skills/gitnexus/ (${installedSkills.length} skills)`);
   }
 
   return { files: createdFiles };
 }
-

@@ -194,7 +194,11 @@ GitNexus ships with skill files that teach AI agents how to use the tools effect
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
 
-Installed automatically by both `gitnexus analyze` (per-repo) and `gitnexus setup` (global).
+Installation rules:
+
+- `gitnexus analyze` installs repo-local skills to `.agents/skills/gitnexus/` and updates `AGENTS.md` / `CLAUDE.md`.
+- `gitnexus setup` installs global skills to `~/.agents/skills/gitnexus/`.
+- If needed, create editor-specific symlinks yourself (for example map `.claude/skills/gitnexus` to `~/.agents/skills/gitnexus`).
 
 ## Requirements
 

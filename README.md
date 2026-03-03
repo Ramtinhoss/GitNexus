@@ -171,12 +171,19 @@ For scoped indexing, `analyze` logs scope overlap dedupe counts and any normaliz
 | `detect_impact` | Pre-commit change analysis — scope, affected processes, risk level       |
 | `generate_map`  | Architecture documentation from the knowledge graph with mermaid diagrams |
 
-**4 agent skills** installed to `.claude/skills/` automatically:
+**6 agent skills** installed automatically:
 
 - **Exploring** — Navigate unfamiliar code using the knowledge graph
 - **Debugging** — Trace bugs through call chains
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
+- **Guide** — Tools/resources/schema usage reference
+- **CLI** — Index/status/clean/wiki command workflows
+
+Installation rules:
+- `gitnexus analyze` installs repo-local skills to `.agents/skills/gitnexus/` and updates `AGENTS.md` / `CLAUDE.md`.
+- `gitnexus setup` installs global skills to `~/.agents/skills/gitnexus/`.
+- If needed, create editor-specific symlinks yourself (for example map `.claude/skills/gitnexus` to `~/.agents/skills/gitnexus`).
 
 ---
 

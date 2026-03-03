@@ -124,20 +124,18 @@ async function setupClaudeCode(result: SetupResult): Promise<void> {
 }
 
 /**
- * Install GitNexus skills to ~/.claude/skills/ for Claude Code.
+ * Install GitNexus global skills to ~/.agents/skills/gitnexus/
+ * Users can create editor-specific symlinks if they want.
  */
-async function installClaudeCodeSkills(result: SetupResult): Promise<void> {
-  const claudeDir = path.join(os.homedir(), '.claude');
-  if (!(await dirExists(claudeDir))) return;
-
-  const skillsDir = path.join(claudeDir, 'skills');
+async function installGlobalAgentSkills(result: SetupResult): Promise<void> {
+  const skillsDir = path.join(os.homedir(), '.agents', 'skills', 'gitnexus');
   try {
     const installed = await installSkillsTo(skillsDir);
     if (installed.length > 0) {
-      result.configured.push(`Claude Code skills (${installed.length} skills → ~/.claude/skills/)`);
+      result.configured.push(`Global agent skills (${installed.length} skills → ~/.agents/skills/gitnexus/)`);
     }
   } catch (err: any) {
-    result.errors.push(`Claude Code skills: ${err.message}`);
+    result.errors.push(`Global agent skills: ${err.message}`);
   }
 }
 
@@ -228,8 +226,7 @@ const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexus-impac
 
 /**
  * Install GitNexus skills to a target directory.
- * Each skill is installed as {targetDir}/gitnexus-{skillName}/SKILL.md
- * following the Agent Skills standard (both Cursor and Claude Code).
+ * Each skill is installed as {targetDir}/{skillName}/SKILL.md.
  *
  * Supports two source layouts:
  *   - Flat file:  skills/{name}.md           → copied as SKILL.md
@@ -245,7 +242,6 @@ async function installSkillsTo(targetDir: string): Promise<string[]> {
     try {
       // Try directory-based skill first (skills/{name}/SKILL.md)
       const dirSource = path.join(skillsRoot, skillName);
-      const dirSkillFile = path.join(dirSource, 'SKILL.md');
 
       let isDirectory = false;
       try {
@@ -289,42 +285,6 @@ async function copyDirRecursive(src: string, dest: string): Promise<void> {
   }
 }
 
-/**
- * Install global Cursor skills to ~/.cursor/skills/gitnexus/
- */
-async function installCursorSkills(result: SetupResult): Promise<void> {
-  const cursorDir = path.join(os.homedir(), '.cursor');
-  if (!(await dirExists(cursorDir))) return;
-  
-  const skillsDir = path.join(cursorDir, 'skills');
-  try {
-    const installed = await installSkillsTo(skillsDir);
-    if (installed.length > 0) {
-      result.configured.push(`Cursor skills (${installed.length} skills → ~/.cursor/skills/)`);
-    }
-  } catch (err: any) {
-    result.errors.push(`Cursor skills: ${err.message}`);
-  }
-}
-
-/**
- * Install global OpenCode skills to ~/.config/opencode/skill/gitnexus/
- */
-async function installOpenCodeSkills(result: SetupResult): Promise<void> {
-  const opencodeDir = path.join(os.homedir(), '.config', 'opencode');
-  if (!(await dirExists(opencodeDir))) return;
-  
-  const skillsDir = path.join(opencodeDir, 'skill');
-  try {
-    const installed = await installSkillsTo(skillsDir);
-    if (installed.length > 0) {
-      result.configured.push(`OpenCode skills (${installed.length} skills → ~/.config/opencode/skill/)`);
-    }
-  } catch (err: any) {
-    result.errors.push(`OpenCode skills: ${err.message}`);
-  }
-}
-
 // ─── Main command ──────────────────────────────────────────────────
 
 export const setupCommand = async () => {
@@ -348,11 +308,11 @@ export const setupCommand = async () => {
   await setupClaudeCode(result);
   await setupOpenCode(result);
   
-  // Install global skills for platforms that support them
-  await installClaudeCodeSkills(result);
+  // Install shared global skills once
+  await installGlobalAgentSkills(result);
+
+  // Optional Claude-specific hooks
   await installClaudeCodeHooks(result);
-  await installCursorSkills(result);
-  await installOpenCodeSkills(result);
 
   // Print results
   if (result.configured.length > 0) {
