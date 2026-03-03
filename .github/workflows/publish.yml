@@ -22,7 +22,7 @@ jobs:
         working-directory: gitnexus
       - run: npx tsc --noEmit
         working-directory: gitnexus
-      - run: npm publish
+      - run: npm publish --access public
         working-directory: gitnexus
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
