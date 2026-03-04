@@ -218,3 +218,15 @@ gitnexus list                # 查看（会清理失效项）
 gitnexus clean --force       # 反注册当前仓库
 gitnexus clean --all --force # 全量清理
 ```
+
+## 9. 验收完成后的会话重启要求（必须提示用户）
+
+当安装、`setup`、`analyze`、检索验收全部通过后，agent 必须明确提示用户：
+
+1. 退出当前 coding agent CLI 会话
+2. 在目标仓库重新启动 coding agent CLI
+
+原因：
+
+- MCP 配置在部分工具中只会在会话启动时加载
+- 不重启会话可能导致“配置已写入但当前会话仍未连接 MCP”的假象
