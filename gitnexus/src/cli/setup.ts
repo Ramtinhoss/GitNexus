@@ -1,9 +1,9 @@
 /**
  * Setup Command
  * 
- * One-time global MCP configuration writer.
- * Detects installed AI editors and writes the appropriate MCP config
- * so the GitNexus MCP server is available in all projects.
+ * One-time MCP configuration writer with explicit agent targeting.
+ * Configures only the selected coding agent's MCP entry
+ * in either global or project scope.
  */
 
 import fs from 'fs/promises';
@@ -29,7 +29,15 @@ type SetupScope = 'global' | 'project';
 
 interface SetupOptions {
   scope?: string;
+  agent?: string;
 }
+
+interface McpEntry {
+  command: string;
+  args: string[];
+}
+
+type SetupAgent = 'claude' | 'opencode' | 'codex';
 
 function resolveSetupScope(rawScope?: string): SetupScope {
   if (!rawScope || rawScope.trim() === '') return 'global';
@@ -37,11 +45,21 @@ function resolveSetupScope(rawScope?: string): SetupScope {
   throw new Error(`Invalid --scope value "${rawScope}". Use "global" or "project".`);
 }
 
+function resolveSetupAgent(rawAgent?: string): SetupAgent {
+  if (!rawAgent || rawAgent.trim() === '') {
+    throw new Error('Missing --agent. Use one of: claude, opencode, codex.');
+  }
+  if (rawAgent === 'claude' || rawAgent === 'opencode' || rawAgent === 'codex') {
+    return rawAgent;
+  }
+  throw new Error(`Invalid --agent value "${rawAgent}". Use "claude", "opencode", or "codex".`);
+}
+
 /**
  * The MCP server entry for all editors.
  * On Windows, npx must be invoked via cmd /c since it's a .cmd script.
  */
-function getMcpEntry() {
+function getMcpEntry(): McpEntry {
   if (process.platform === 'win32') {
     return {
       command: 'cmd',
@@ -51,6 +69,14 @@ function getMcpEntry() {
   return {
     command: 'npx',
     args: ['-y', 'gitnexus@latest', 'mcp'],
+  };
+}
+
+function getOpenCodeMcpEntry() {
+  const entry = getMcpEntry();
+  return {
+    type: 'local',
+    command: [entry.command, ...entry.args],
   };
 }
 
@@ -66,6 +92,21 @@ function mergeMcpConfig(existing: any): any {
     existing.mcpServers = {};
   }
   existing.mcpServers.gitnexus = getMcpEntry();
+  return existing;
+}
+
+/**
+ * Merge gitnexus entry into an OpenCode config JSON object.
+ * Returns the updated config.
+ */
+function mergeOpenCodeConfig(existing: any): any {
+  if (!existing || typeof existing !== 'object') {
+    existing = {};
+  }
+  if (!existing.mcp || typeof existing.mcp !== 'object') {
+    existing.mcp = {};
+  }
+  existing.mcp.gitnexus = getOpenCodeMcpEntry();
   return existing;
 }
 
@@ -99,6 +140,57 @@ async function dirExists(dirPath: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Check if a regular file exists.
+ */
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    const stat = await fs.stat(filePath);
+    return stat.isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Escape a value for TOML string literals.
+ */
+function toTomlString(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+function buildCodexMcpTable(): string {
+  const entry = getMcpEntry();
+  return [
+    '[mcp_servers.gitnexus]',
+    `command = ${toTomlString(entry.command)}`,
+    `args = [${entry.args.map(toTomlString).join(', ')}]`,
+  ].join('\n');
+}
+
+function mergeCodexConfig(existingRaw: string): string {
+  const table = buildCodexMcpTable();
+  const normalized = existingRaw.replace(/\r\n/g, '\n');
+  const tablePattern = /\[mcp_servers\.gitnexus\][\s\S]*?(?=\n\[[^\]]+\]|\s*$)/m;
+
+  if (tablePattern.test(normalized)) {
+    return normalized.replace(tablePattern, table).trimEnd() + '\n';
+  }
+
+  const trimmed = normalized.trimEnd();
+  if (trimmed.length === 0) return `${table}\n`;
+  return `${trimmed}\n\n${table}\n`;
+}
+
+async function resolveOpenCodeConfigPath(opencodeDir: string): Promise<string> {
+  const preferredPath = path.join(opencodeDir, 'opencode.json');
+  const legacyPath = path.join(opencodeDir, 'config.json');
+
+  if (await fileExists(preferredPath)) return preferredPath;
+  if (await fileExists(legacyPath)) return legacyPath;
+  return preferredPath;
 }
 
 // ─── Editor-specific setup ─────────────────────────────────────────
@@ -235,14 +327,12 @@ async function setupOpenCode(result: SetupResult): Promise<void> {
     return;
   }
 
-  const configPath = path.join(opencodeDir, 'config.json');
+  const configPath = await resolveOpenCodeConfigPath(opencodeDir);
   try {
     const existing = await readJsonFile(configPath);
-    const config = existing || {};
-    if (!config.mcp) config.mcp = {};
-    config.mcp.gitnexus = getMcpEntry();
+    const config = mergeOpenCodeConfig(existing);
     await writeJsonFile(configPath, config);
-    result.configured.push('OpenCode');
+    result.configured.push(`OpenCode (${path.basename(configPath)})`);
   } catch (err: any) {
     result.errors.push(`OpenCode: ${err.message}`);
   }
@@ -276,6 +366,37 @@ async function setupProjectMcp(repoRoot: string, result: SetupResult): Promise<v
     result.configured.push(`Project MCP (${path.relative(repoRoot, mcpPath)})`);
   } catch (err: any) {
     result.errors.push(`Project MCP: ${err.message}`);
+  }
+}
+
+async function setupProjectCodex(repoRoot: string, result: SetupResult): Promise<void> {
+  const codexConfigPath = path.join(repoRoot, '.codex', 'config.toml');
+  try {
+    let existingRaw = '';
+    try {
+      existingRaw = await fs.readFile(codexConfigPath, 'utf-8');
+    } catch (err: any) {
+      if (err?.code !== 'ENOENT') throw err;
+    }
+
+    const merged = mergeCodexConfig(existingRaw);
+    await fs.mkdir(path.dirname(codexConfigPath), { recursive: true });
+    await fs.writeFile(codexConfigPath, merged, 'utf-8');
+    result.configured.push(`Project Codex MCP (${path.relative(repoRoot, codexConfigPath)})`);
+  } catch (err: any) {
+    result.errors.push(`Project Codex MCP: ${err.message}`);
+  }
+}
+
+async function setupProjectOpenCode(repoRoot: string, result: SetupResult): Promise<void> {
+  const opencodePath = path.join(repoRoot, 'opencode.json');
+  try {
+    const existing = await readJsonFile(opencodePath);
+    const merged = mergeOpenCodeConfig(existing);
+    await writeJsonFile(opencodePath, merged);
+    result.configured.push(`Project OpenCode MCP (${path.relative(repoRoot, opencodePath)})`);
+  } catch (err: any) {
+    result.errors.push(`Project OpenCode MCP: ${err.message}`);
   }
 }
 
@@ -363,8 +484,10 @@ export const setupCommand = async (options: SetupOptions = {}) => {
   console.log('');
 
   let scope: SetupScope;
+  let agent: SetupAgent;
   try {
     scope = resolveSetupScope(options.scope);
+    agent = resolveSetupAgent(options.agent);
   } catch (err: any) {
     console.log(`  ${err?.message || String(err)}\n`);
     process.exitCode = 1;
@@ -382,17 +505,20 @@ export const setupCommand = async (options: SetupOptions = {}) => {
   };
 
   if (scope === 'global') {
-    // Detect and configure each editor's MCP
-    await setupCursor(result);
-    await setupClaudeCode(result);
-    await setupOpenCode(result);
-    await setupCodex(result);
+    // Configure only the selected agent MCP
+    if (agent === 'claude') {
+      await setupClaudeCode(result);
+      // Claude-only hooks should only be installed when Claude is selected.
+      await installClaudeCodeHooks(result);
+    } else if (agent === 'opencode') {
+      await setupOpenCode(result);
+    } else if (agent === 'codex') {
+      await setupCodex(result);
+    }
     
     // Install shared global skills once
     await installGlobalAgentSkills(result);
 
-    // Optional Claude-specific hooks
-    await installClaudeCodeHooks(result);
   } else {
     const repoRoot = getGitRoot(process.cwd());
     if (!repoRoot) {
@@ -400,7 +526,13 @@ export const setupCommand = async (options: SetupOptions = {}) => {
       process.exitCode = 1;
       return;
     }
-    await setupProjectMcp(repoRoot, result);
+    if (agent === 'claude') {
+      await setupProjectMcp(repoRoot, result);
+    } else if (agent === 'codex') {
+      await setupProjectCodex(repoRoot, result);
+    } else if (agent === 'opencode') {
+      await setupProjectOpenCode(repoRoot, result);
+    }
     await installProjectAgentSkills(repoRoot, result);
   }
 
@@ -433,6 +565,7 @@ export const setupCommand = async (options: SetupOptions = {}) => {
   console.log('');
   console.log('  Summary:');
   console.log(`    Scope: ${scope}`);
+  console.log(`    Agent: ${agent}`);
   console.log(`    MCP configured for: ${result.configured.filter(c => !c.includes('skills')).join(', ') || 'none'}`);
   console.log(`    Skills installed to: ${result.configured.filter(c => c.includes('skills')).length > 0 ? result.configured.filter(c => c.includes('skills')).join(', ') : 'none'}`);
   console.log('');

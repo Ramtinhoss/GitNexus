@@ -63,8 +63,9 @@ program
 
 program
   .command('setup')
-  .description('One-time setup: configure MCP for Cursor, Claude Code, OpenCode, Codex')
+  .description('One-time setup: configure MCP for a selected coding agent (claude/opencode/codex)')
   .option('--scope <scope>', 'Install target: global (default) or project')
+  .option('--agent <agent>', 'Target coding agent: claude, opencode, or codex')
   .action(setupCommand);
 
 program
@@ -74,7 +75,10 @@ program
   .option('--embeddings', 'Enable embedding generation for semantic search (off by default)')
   .option('--extensions <list>', 'Comma-separated file extensions to include (e.g. .cs,.ts)')
   .option('--repo-alias <name>', 'Override indexed repository name with a stable alias')
-  .option('--scope-manifest <path>', 'Manifest file with scope rules (supports comments and * wildcard)')
+  .option(
+    '--scope-manifest <path>',
+    'Manifest file with scope rules (supports comments and * wildcard; recommended: .gitnexus/sync-manifest.txt)',
+  )
   .option('--scope-prefix <pathPrefix>', 'Add a scope path prefix rule (repeatable)', collectValues, [])
   .action(analyzeCommand);
 

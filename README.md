@@ -55,7 +55,7 @@ npx gitnexus analyze
 
 That's it. This indexes the codebase, updates `AGENTS.md` / `CLAUDE.md` context files, and (when using project scope) installs repo-local agent skills.
 
-To configure MCP + skills, run `npx gitnexus setup` once (default global mode), or use `npx gitnexus setup --scope project` for project-local mode.
+To configure MCP + skills, run `npx gitnexus setup --agent <claude|opencode|codex>` once (default global mode), or add `--scope project` for project-local mode.
 
 ### Team Deployment and Distribution
 
@@ -65,12 +65,18 @@ For small-team rollout (single stable channel only), use the release runbook:
 Key links:
 - [npm publish workflow](.github/workflows/publish.yml)
 - [CLI package config](gitnexus/package.json)
+- [Agent install + acceptance runbook](INSTALL-GUIDE.md)
 
 ### MCP Setup
 
-`gitnexus setup` supports two scopes:
-- `global` (default): configures global editor MCP + installs global skills
-- `project`: writes repo-local `.mcp.json` + installs repo-local skills
+`gitnexus setup` requires an agent selection:
+- `--agent claude`: configure Claude MCP only
+- `--agent opencode`: configure OpenCode MCP only
+- `--agent codex`: configure Codex MCP only
+
+It also supports two scopes:
+- `global` (default): writes MCP to the selected agent's global config + installs global skills
+- `project`: writes MCP to the selected agent's project-local config + installs repo-local skills
 
 ### Editor Support
 
@@ -111,14 +117,14 @@ claude mcp add gitnexus -- npx -y gitnexus@latest mcp
 }
 ```
 
-**OpenCode** (`~/.config/opencode/config.json`):
+**OpenCode** (`~/.config/opencode/opencode.json`):
 
 ```json
 {
   "mcp": {
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "gitnexus@latest", "mcp"]
+      "type": "local",
+      "command": ["npx", "-y", "gitnexus@latest", "mcp"]
     }
   }
 }
@@ -133,13 +139,14 @@ codex mcp add gitnexus -- npx -y gitnexus@latest mcp
 ### CLI Commands
 
 ```bash
-gitnexus setup                    # Default: global MCP + global skills
-gitnexus setup --scope project    # Project-local MCP + project-local skills
+gitnexus setup --agent claude                     # Global setup for Claude
+gitnexus setup --agent codex                      # Global setup for Codex
+gitnexus setup --scope project --agent opencode   # Project-local setup for OpenCode
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
 gitnexus analyze --embeddings     # Enable semantic embeddings (off by default)
 gitnexus analyze --scope-prefix Assets/NEON/Code --scope-prefix Packages/com.veewo.*  # Scoped multi-directory indexing
-gitnexus analyze --scope-manifest ./scope.txt --repo-alias neonspark-v1-subset         # Scoped indexing + stable repo alias
+gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt --repo-alias neonspark-v1-subset  # Scoped indexing + stable repo alias
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI connection
 gitnexus list                    # List all indexed repositories
@@ -201,6 +208,7 @@ For scoped indexing, `analyze` logs scope overlap dedupe counts and any normaliz
 
 Installation rules:
 - `gitnexus setup` controls skill scope:
+  - requires `--agent <claude|opencode|codex>`
   - default `global`: installs to `~/.agents/skills/gitnexus/`
   - `--scope project`: installs to `.agents/skills/gitnexus/` in current repo
 - `gitnexus analyze` always updates `AGENTS.md` / `CLAUDE.md`; skill install follows configured setup scope.
@@ -209,7 +217,7 @@ Installation rules:
 
 ## Multi-Repo MCP Architecture
 
-GitNexus uses a **global registry** so one MCP server can serve multiple indexed repos. Default setup is global; if you prefer per-repo wiring, use `gitnexus setup --scope project`.
+GitNexus uses a **global registry** so one MCP server can serve multiple indexed repos. Default setup is global; if you prefer per-repo wiring, use `gitnexus setup --scope project --agent <claude|opencode|codex>`.
 
 ```mermaid
 flowchart TD
@@ -237,7 +245,7 @@ flowchart TD
         ConnB["KuzuDB conn B"]
     end
 
-    Setup -->|"writes global MCP config"| EditorConfig["~/.cursor/mcp.json / ~/.config/opencode/config.json / ~/.codex/config.toml"]
+    Setup -->|"writes global MCP config"| EditorConfig["~/.cursor/mcp.json / ~/.config/opencode/opencode.json / ~/.codex/config.toml"]
     Analyze -->|"registers repo"| RegFile
     Analyze -->|"stores index"| RepoA
     Clean -->|"unregisters repo"| RegFile

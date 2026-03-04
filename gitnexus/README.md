@@ -24,11 +24,16 @@ npx gitnexus analyze
 
 That's it. This indexes the codebase, updates `AGENTS.md` / `CLAUDE.md` context files, and (when using project scope) installs repo-local agent skills.
 
-To configure MCP + skills, run `npx gitnexus setup` once (default global mode), or use `npx gitnexus setup --scope project` for project-local mode.
+To configure MCP + skills, run `npx gitnexus setup --agent <claude|opencode|codex>` once (default global mode), or add `--scope project` for project-local mode.
 
-`gitnexus setup` supports two scopes:
-- `global` (default): configures global editor MCP + installs global skills
-- `project`: writes repo-local `.mcp.json` + installs repo-local skills
+`gitnexus setup` requires an agent selection:
+- `--agent claude`: configure Claude MCP only
+- `--agent opencode`: configure OpenCode MCP only
+- `--agent codex`: configure Codex MCP only
+
+It also supports two scopes:
+- `global` (default): writes MCP to the selected agent's global config + installs global skills
+- `project`: writes MCP to the selected agent's project-local config + installs repo-local skills
 
 ## Team Deployment and Distribution
 
@@ -38,6 +43,7 @@ For small-team rollout (single stable channel only), follow:
 Key links:
 - [npm publish workflow](../.github/workflows/publish.yml)
 - [CLI package config](./package.json)
+- [Agent install + acceptance runbook](../INSTALL-GUIDE.md)
 
 ### Editor Support
 
@@ -84,14 +90,14 @@ Add to `~/.cursor/mcp.json` (global — works for all projects):
 
 ### OpenCode
 
-Add to `~/.config/opencode/config.json`:
+Add to `~/.config/opencode/opencode.json`:
 
 ```json
 {
   "mcp": {
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "gitnexus@latest", "mcp"]
+      "type": "local",
+      "command": ["npx", "-y", "gitnexus@latest", "mcp"]
     }
   }
 }
@@ -154,13 +160,14 @@ Your AI agent gets these tools automatically:
 ## CLI Commands
 
 ```bash
-gitnexus setup                    # Default: global MCP + global skills
-gitnexus setup --scope project    # Project-local MCP + project-local skills
+gitnexus setup --agent claude                     # Global setup for Claude
+gitnexus setup --agent codex                      # Global setup for Codex
+gitnexus setup --scope project --agent opencode   # Project-local setup for OpenCode
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
 gitnexus analyze --embeddings     # Enable semantic embeddings (off by default)
 gitnexus analyze --scope-prefix Assets/NEON/Code --scope-prefix Packages/com.veewo.*  # Scoped multi-directory indexing
-gitnexus analyze --scope-manifest ./scope.txt --repo-alias neonspark-v1-subset         # Scoped indexing + stable repo alias
+gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt --repo-alias neonspark-v1-subset  # Scoped indexing + stable repo alias
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI
 gitnexus list                    # List all indexed repositories
@@ -216,6 +223,7 @@ GitNexus ships with skill files that teach AI agents how to use the tools effect
 Installation rules:
 
 - `gitnexus setup` controls skill scope:
+  - requires `--agent <claude|opencode|codex>`
   - default `global`: installs to `~/.agents/skills/gitnexus/`
   - `--scope project`: installs to `.agents/skills/gitnexus/` in current repo
 - `gitnexus analyze` always updates `AGENTS.md` / `CLAUDE.md`; skill install follows configured setup scope.
