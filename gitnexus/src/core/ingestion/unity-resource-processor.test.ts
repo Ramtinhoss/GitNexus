@@ -89,7 +89,7 @@ test('processUnityResources builds scan context once and enriches all class node
 
   const result = await processUnityResources(graph, {
     repoPath: fixtureRoot,
-    scopedPaths: ['Assets/Scripts/MainUIManager.cs'],
+    scopedPaths: ['Assets/Scripts/MainUIManager.cs', 'Assets/Scene/MainUIManager.unity'],
   });
 
   assert.ok(result.processedSymbols > 0);
