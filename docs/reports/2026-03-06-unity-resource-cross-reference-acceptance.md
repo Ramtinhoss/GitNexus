@@ -133,4 +133,5 @@ Programmatic pipeline sample (same scope/filter) confirms the new enrich diagnos
 
 ### Known Limitation
 
-- Current CLI analyze summary does not print `unityResult.diagnostics`; diagnostics are available from pipeline result / APIs.
+- CLI analyze summary now prints `unityResult.diagnostics` (count + preview lines).
+- Diagnostics are still available from pipeline result / APIs for programmatic consumption.
