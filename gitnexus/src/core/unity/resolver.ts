@@ -62,7 +62,9 @@ export interface ResolveOutput {
 export async function resolveUnityBindings(input: ResolveInput): Promise<ResolveOutput> {
   const scriptPath = await resolveSymbolScriptPath(input.repoRoot, input.symbol, input.scanContext);
   const scriptGuid = await resolveScriptGuid(input.repoRoot, scriptPath, input.scanContext);
-  const hits = input.scanContext?.guidToResourceHits.get(scriptGuid) ?? (await findGuidHits(input.repoRoot, scriptGuid));
+  const hits = input.scanContext
+    ? (input.scanContext.guidToResourceHits.get(scriptGuid) ?? [])
+    : await findGuidHits(input.repoRoot, scriptGuid);
   const resourceBindings: ResolvedUnityBinding[] = [];
   const unityDiagnostics: string[] = [];
 
