@@ -37,6 +37,7 @@ import { queryCommand, contextCommand, impactCommand, cypherCommand } from './to
 import { evalServerCommand } from './eval-server.js';
 import { benchmarkUnityCommand } from './benchmark-unity.js';
 import { benchmarkAgentContextCommand } from './benchmark-agent-context.js';
+import { unityBindingsCommand } from './unity-bindings.js';
 
 function resolveCliVersion(): string {
   try {
@@ -138,6 +139,7 @@ program
   .option('-g, --goal <text>', 'What you want to find')
   .option('-l, --limit <n>', 'Max processes to return (default: 5)')
   .option('--content', 'Include full symbol source code')
+  .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .action(queryCommand);
 
 program
@@ -147,7 +149,17 @@ program
   .option('-u, --uid <uid>', 'Direct symbol UID (zero-ambiguity lookup)')
   .option('-f, --file <path>', 'File path to disambiguate common names')
   .option('--content', 'Include full symbol source code')
+  .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .action(contextCommand);
+
+program
+  .command('unity-bindings <symbol>')
+  .description('Experimental: inspect Unity resource bindings for a C# symbol')
+  .option('--target-path <path>', 'Unity project root (default: cwd)')
+  .option('--json', 'Output JSON')
+  .action(async (symbol, options) => {
+    await unityBindingsCommand(symbol, options);
+  });
 
 program
   .command('impact <target>')

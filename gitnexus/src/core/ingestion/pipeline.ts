@@ -6,6 +6,7 @@ import { processCalls, processCallsFromExtracted } from './call-processor.js';
 import { processHeritage, processHeritageFromExtracted } from './heritage-processor.js';
 import { processCommunities } from './community-processor.js';
 import { processProcesses } from './process-processor.js';
+import { processUnityResources } from './unity-resource-processor.js';
 import { createSymbolTable } from './symbol-table.js';
 import { createASTCache } from './ast-cache.js';
 import { PipelineProgress, PipelineResult } from '../../types/pipeline.js';
@@ -357,6 +358,15 @@ export const runPipelineFromRepo = async (
     });
 
     onProgress({
+      phase: 'enriching',
+      percent: 99,
+      message: 'Extracting Unity resource bindings...',
+      stats: { filesProcessed: totalFiles, totalFiles, nodesCreated: graph.nodeCount },
+    });
+
+    const unityResult = await processUnityResources(graph, { repoPath });
+
+    onProgress({
       phase: 'complete',
       percent: 100,
       message: `Graph complete! ${communityResult.stats.totalCommunities} communities, ${processResult.stats.totalProcesses} processes detected.`,
@@ -375,6 +385,7 @@ export const runPipelineFromRepo = async (
       totalFileCount: totalFiles,
       communityResult,
       processResult,
+      unityResult,
       scopeDiagnostics: scopeSelection.diagnostics,
     };
   } catch (error) {

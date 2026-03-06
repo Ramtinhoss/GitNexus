@@ -26,7 +26,18 @@ export type NodeTableName = typeof NODE_TABLES[number];
 export const REL_TABLE_NAME = 'CodeRelation';
 
 // Valid relation types
-export const REL_TYPES = ['CONTAINS', 'DEFINES', 'IMPORTS', 'CALLS', 'EXTENDS', 'IMPLEMENTS', 'MEMBER_OF', 'STEP_IN_PROCESS'] as const;
+export const REL_TYPES = [
+  'CONTAINS',
+  'DEFINES',
+  'IMPORTS',
+  'CALLS',
+  'EXTENDS',
+  'IMPLEMENTS',
+  'MEMBER_OF',
+  'STEP_IN_PROCESS',
+  'UNITY_COMPONENT_IN',
+  'UNITY_COMPONENT_INSTANCE',
+] as const;
 export type RelType = typeof REL_TYPES[number];
 
 // ============================================================================
@@ -245,6 +256,8 @@ CREATE REL TABLE ${REL_TABLE_NAME} (
   FROM Class TO Method,
   FROM Class TO Function,
   FROM Class TO Class,
+  FROM Class TO File,
+  FROM Class TO CodeElement,
   FROM Class TO Interface,
   FROM Class TO Community,
   FROM Class TO \`Template\`,

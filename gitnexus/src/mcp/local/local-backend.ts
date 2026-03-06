@@ -9,6 +9,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { initKuzu, executeQuery, closeKuzu, isKuzuReady } from '../core/kuzu-adapter.js';
+import { parseUnityResourcesMode } from '../../core/unity/options.js';
+import { loadUnityContext } from './unity-enrichment.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
@@ -335,6 +337,7 @@ export class LocalBackend {
     limit?: number;
     max_symbols?: number;
     include_content?: boolean;
+    unity_resources?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
       return { error: 'query parameter is required and cannot be empty.' };
@@ -345,6 +348,7 @@ export class LocalBackend {
     const processLimit = params.limit || 5;
     const maxSymbolsPerProcess = params.max_symbols || 10;
     const includeContent = params.include_content ?? false;
+    const unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
     const searchQuery = params.query.trim();
     
     // Step 1: Run hybrid search to get matching symbols
@@ -450,6 +454,9 @@ export class LocalBackend {
         endLine: sym.endLine,
         ...(module ? { module } : {}),
         ...(includeContent && content ? { content } : {}),
+        ...((unityResourcesMode !== 'off' && sym.nodeId && sym.type === 'Class')
+          ? await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query))
+          : {}),
       };
       
       if (processRows.length === 0) {
@@ -895,10 +902,12 @@ export class LocalBackend {
     uid?: string;
     file_path?: string;
     include_content?: boolean;
+    unity_resources?: string;
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
     
     const { name, uid, file_path, include_content } = params;
+    const unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
     
     if (!name && !uid) {
       return { error: 'Either "name" or "uid" parameter is required.' };
@@ -1060,7 +1069,7 @@ export class LocalBackend {
       return cats;
     };
     
-    return {
+    const result = {
       status: 'found',
       symbol: {
         uid: getRowValue<string>(sym, 'id', 0),
@@ -1080,6 +1089,12 @@ export class LocalBackend {
         step_count: getRowValue<number>(r, 'stepCount', 3),
       })),
     };
+
+    if (unityResourcesMode !== 'off' && symNodeId && symKind === 'Class') {
+      Object.assign(result, await loadUnityContext(repo.id, symNodeId, (query) => executeQuery(repo.id, query)));
+    }
+
+    return result;
   }
 
   /**

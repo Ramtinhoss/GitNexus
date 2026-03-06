@@ -1,6 +1,7 @@
 import { GraphNode, GraphRelationship, KnowledgeGraph } from '../core/graph/types.js';
 import { CommunityDetectionResult } from '../core/ingestion/community-processor.js';
 import { ProcessDetectionResult } from '../core/ingestion/process-processor.js';
+import type { UnityResourceProcessingResult } from '../core/ingestion/unity-resource-processor.js';
 import type { ScopeSelectionDiagnostics } from '../core/ingestion/scope-filter.js';
 
 export type PipelinePhase = 'idle' | 'extracting' | 'structure' | 'parsing' | 'imports' | 'calls' | 'heritage' | 'communities' | 'processes' | 'enriching' | 'complete' | 'error';
@@ -26,6 +27,7 @@ export interface PipelineResult {
   totalFileCount: number;
   communityResult?: CommunityDetectionResult;
   processResult?: ProcessDetectionResult;
+  unityResult?: UnityResourceProcessingResult;
   scopeDiagnostics?: ScopeSelectionDiagnostics;
 }
 
@@ -36,6 +38,7 @@ export interface SerializablePipelineResult {
   relationships: GraphRelationship[];
   repoPath: string;
   totalFileCount: number;
+  unityResult?: UnityResourceProcessingResult;
 }
 
 // Helper to convert PipelineResult to serializable format
@@ -44,6 +47,7 @@ export const serializePipelineResult = (result: PipelineResult): SerializablePip
   relationships: [...result.graph.iterRelationships()],
   repoPath: result.repoPath,
   totalFileCount: result.totalFileCount,
+  unityResult: result.unityResult,
 });
 
 // Helper to reconstruct from serializable format (used in main thread)
@@ -59,5 +63,6 @@ export const deserializePipelineResult = (
     graph,
     repoPath: serialized.repoPath,
     totalFileCount: serialized.totalFileCount,
+    unityResult: serialized.unityResult,
   };
 };

@@ -15,6 +15,7 @@
  */
 
 import { LocalBackend } from '../mcp/local/local-backend.js';
+import type { UnityResourcesMode } from '../core/unity/options.js';
 
 let _backend: LocalBackend | null = null;
 
@@ -41,6 +42,7 @@ export async function queryCommand(queryText: string, options?: {
   goal?: string;
   limit?: string;
   content?: boolean;
+  unityResources?: UnityResourcesMode;
 }): Promise<void> {
   if (!queryText?.trim()) {
     console.error('Usage: gitnexus query <search_query>');
@@ -54,6 +56,7 @@ export async function queryCommand(queryText: string, options?: {
     goal: options?.goal,
     limit: options?.limit ? parseInt(options.limit) : undefined,
     include_content: options?.content ?? false,
+    unity_resources: options?.unityResources,
     repo: options?.repo,
   });
   output(result);
@@ -64,6 +67,7 @@ export async function contextCommand(name: string, options?: {
   file?: string;
   uid?: string;
   content?: boolean;
+  unityResources?: UnityResourcesMode;
 }): Promise<void> {
   if (!name?.trim() && !options?.uid) {
     console.error('Usage: gitnexus context <symbol_name> [--uid <uid>] [--file <path>]');
@@ -76,6 +80,7 @@ export async function contextCommand(name: string, options?: {
     uid: options?.uid,
     file_path: options?.file,
     include_content: options?.content ?? false,
+    unity_resources: options?.unityResources,
     repo: options?.repo,
   });
   output(result);

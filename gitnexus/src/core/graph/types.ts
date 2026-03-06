@@ -73,6 +73,8 @@ export type RelationshipType =
   | 'EXTENDS'
   | 'MEMBER_OF'
   | 'STEP_IN_PROCESS'
+  | 'UNITY_COMPONENT_IN'
+  | 'UNITY_COMPONENT_INSTANCE'
 
 export interface GraphNode {
   id:  string,
