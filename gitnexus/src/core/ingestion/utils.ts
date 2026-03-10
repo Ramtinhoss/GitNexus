@@ -37,6 +37,8 @@ export const getLanguageFromFilename = (filename: string): SupportedLanguages | 
       filename.endsWith('.php5') || filename.endsWith('.php8')) {
     return SupportedLanguages.PHP;
   }
+  // GDScript (Godot Engine)
+  if (filename.endsWith('.gd')) return SupportedLanguages.GDScript;
   return null;
 };
 

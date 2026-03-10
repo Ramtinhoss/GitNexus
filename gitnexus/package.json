@@ -82,6 +82,7 @@
     "tree-sitter-python": "^0.21.0",
     "tree-sitter-rust": "^0.21.0",
     "tree-sitter-typescript": "^0.21.0",
+    "tree-sitter-gdscript": "^6.1.0",
     "typescript": "^5.4.5",
     "uuid": "^13.0.0"
   },

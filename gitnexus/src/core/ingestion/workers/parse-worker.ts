@@ -10,6 +10,7 @@ import CSharp from 'tree-sitter-c-sharp';
 import Go from 'tree-sitter-go';
 import Rust from 'tree-sitter-rust';
 import PHP from 'tree-sitter-php';
+import GDScript from 'tree-sitter-gdscript';
 import { SupportedLanguages } from '../../../config/supported-languages.js';
 import { LANGUAGE_QUERIES } from '../tree-sitter-queries.js';
 import { getLanguageFromFilename } from '../utils.js';
@@ -103,6 +104,7 @@ const languageMap: Record<string, any> = {
   [SupportedLanguages.Go]: Go,
   [SupportedLanguages.Rust]: Rust,
   [SupportedLanguages.PHP]: PHP.php_only,
+  [SupportedLanguages.GDScript]: GDScript,
 };
 
 const setLanguage = (language: SupportedLanguages, filePath: string): void => {
@@ -205,6 +207,10 @@ const isNodeExported = (node: any, name: string, language: string): boolean => {
       }
       // Top-level functions (no parent class) are globally accessible
       return true;
+
+    case 'gdscript':
+      // GDScript: functions/variables not starting with _ are public
+      return !name.startsWith('_');
 
     default:
       return false;
@@ -336,6 +342,30 @@ const BUILT_INS = new Set([
   'preg_match', 'preg_match_all', 'preg_replace', 'preg_split',
   'header', 'session_start', 'session_destroy', 'ob_start', 'ob_end_clean', 'ob_get_clean',
   'dd', 'dump',
+  // GDScript built-ins
+  'print', 'push_error', 'push_warning', 'range', 'len', 'str', 'int', 'float', 'bool',
+  'abs', 'absf', 'absi', 'sign', 'signf', 'signi',
+  'min', 'max', 'minf', 'maxi', 'mini',
+  'clamp', 'clampf', 'clampi',
+  'lerp', 'lerpf', 'inverse_lerp',
+  'smoothstep', 'remap', 'is_equal_approx', 'is_zero_approx',
+  'floor', 'floorf', 'floori', 'ceil', 'ceilf', 'ceili', 'round', 'roundf', 'roundi',
+  'snapped', 'snappedf', 'snappedi',
+  'sin', 'cos', 'tan', 'sinh', 'cosh', 'tanh', 'asin', 'acos', 'atan', 'atan2',
+  'sqrt', 'pow', 'exp', 'log',
+  'deg_to_rad', 'rad_to_deg', 'linear_to_db', 'db_to_linear',
+  'randi', 'randf', 'randfn', 'randi_range', 'randf_range', 'randomize', 'seed',
+  'hash', 'instance_from_id', 'is_instance_id_valid', 'is_instance_valid',
+  'type_exists', 'type_string', 'typeof', 'str_to_var', 'var_to_str',
+  'bytes_to_var', 'var_to_bytes',
+  'load', 'preload', 'ResourceLoader', 'ResourceSaver',
+  'get_node', 'get_node_or_null', 'get_parent', 'get_tree', 'get_viewport',
+  'call_deferred', 'set_deferred',
+  'emit_signal', 'connect', 'disconnect', 'is_connected',
+  'queue_free', 'free',
+  'Input', 'InputMap', 'ProjectSettings', 'Engine', 'Time', 'OS',
+  'PhysicsServer2D', 'PhysicsServer3D', 'RenderingServer', 'AudioServer',
+  'NavigationServer2D', 'NavigationServer3D',
 ]);
 
 // ============================================================================
@@ -369,6 +399,7 @@ const getLabelFromCaptures = (captureMap: Record<string, any>): string | null =>
   if (captureMap['definition.annotation']) return 'Annotation';
   if (captureMap['definition.constructor']) return 'Constructor';
   if (captureMap['definition.template']) return 'Template';
+  if (captureMap['definition.signal']) return 'Signal';
   return 'CodeElement';
 };
 
