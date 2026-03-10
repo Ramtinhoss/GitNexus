@@ -375,6 +375,10 @@ const BUILT_INS = new Set([
 const getLabelFromCaptures = (captureMap: Record<string, any>): string | null => {
   // Skip imports (handled separately) and calls
   if (captureMap['import'] || captureMap['call']) return null;
+
+  // Handle constructor specially (no name node, fixed name "_init")
+  if (captureMap['definition.constructor']) return 'Constructor';
+
   if (!captureMap['name']) return null;
 
   if (captureMap['definition.function']) return 'Function';
@@ -684,8 +688,9 @@ const processFileGroup = (
       const nodeLabel = getLabelFromCaptures(captureMap);
       if (!nodeLabel) continue;
 
-      const nameNode = captureMap['name'];
-      const nodeName = nameNode.text;
+      // Handle constructor specially (no name node, fixed name "_init")
+      const nameNode = captureMap['name'] || captureMap['definition.constructor'];
+      const nodeName = nodeLabel === 'Constructor' ? '_init' : nameNode.text;
       const nodeId = generateId(nodeLabel, `${file.path}:${nodeName}`);
 
       let description: string | undefined;

@@ -413,6 +413,10 @@ export const GDSCRIPT_QUERIES = `
 ; ── Constructor (_init) ─────────────────────────────────────────────────────
 (constructor_definition) @definition.constructor
 
+; ── Constructor with name capture for symbol extraction ────────────────────
+(constructor_definition
+  parameters: (parameters)) @definition.constructor
+
 ; ── Signals ─────────────────────────────────────────────────────────────────
 (signal_statement
   name: (name) @name) @definition.signal
@@ -427,18 +431,18 @@ export const GDSCRIPT_QUERIES = `
 
 ; ── Extends (inheritance) ───────────────────────────────────────────────────
 (extends_statement
-  (identifier) @heritage.extends) @heritage
+  (type (identifier) @heritage.extends)) @heritage
 
 ; ── Class with extends ──────────────────────────────────────────────────────
 (class_definition
   name: (name) @heritage.class
-  (extends_statement
-    (identifier) @heritage.extends)) @heritage
+  extends: (extends_statement
+    (type (identifier) @heritage.extends))) @heritage
 
 ; ── Preload/Load (imports) ──────────────────────────────────────────────────
+; Note: Standard tree-sitter doesn't support #any-of?, so we use separate patterns
 (call
-  (identifier) @import.source
-  (#any-of? @import.source "preload" "load")) @import
+  (identifier) @import.source) @import
 
 ; ── Function Calls ──────────────────────────────────────────────────────────
 (call
