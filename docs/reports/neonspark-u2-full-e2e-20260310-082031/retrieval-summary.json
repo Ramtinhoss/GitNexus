@@ -1,0 +1,59 @@
+{
+  "symbols": [
+    {
+      "symbol": "MainUIManager",
+      "pass": true,
+      "stepCount": 4,
+      "durationMs": 264.3,
+      "totalTokensEst": 25677,
+      "failures": []
+    },
+    {
+      "symbol": "CoinPowerUp",
+      "pass": true,
+      "stepCount": 4,
+      "durationMs": 53,
+      "totalTokensEst": 15693,
+      "failures": []
+    },
+    {
+      "symbol": "GlobalDataAssets",
+      "pass": true,
+      "stepCount": 4,
+      "durationMs": 133.3,
+      "totalTokensEst": 4571,
+      "failures": []
+    },
+    {
+      "symbol": "AssetRef",
+      "pass": true,
+      "stepCount": 4,
+      "durationMs": 165.8,
+      "totalTokensEst": 1080134,
+      "failures": []
+    },
+    {
+      "symbol": "PlayerActor",
+      "pass": true,
+      "stepCount": 4,
+      "durationMs": 256.3,
+      "totalTokensEst": 13739,
+      "failures": []
+    }
+  ],
+  "tokenSummary": {
+    "totalTokensEst": 1139814,
+    "totalDurationMs": 872.7
+  },
+  "failures": [
+    "duration.min=0.9ms median=22.4ms max=208.4ms"
+  ],
+  "serializedTypeEdgeCount": 4688,
+  "characterListAssetRefSprite": {
+    "extractedAssetRefInstances": 127,
+    "nonEmptyAssetRefInstances": 123,
+    "spriteAssetRefInstances": 63,
+    "spriteRatioInNonEmpty": 0.5122,
+    "uniqueSpriteAssets": 54
+  }
+}

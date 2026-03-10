@@ -1,0 +1,227 @@
+{
+  "generatedAt": "2026-03-10T07:12:27.842Z",
+  "repo": "neonspark-u2-e2e-neonspark-u2-full-e2e-20260310-065542",
+  "symbol": {
+    "assetRefUid": "Class:Assets/NEON/Code/Framework/AssetData/AssetRef.cs:AssetRef",
+    "characterListUid": "Class:Assets/NEON/Code/Game/ScriptableAssets/CharacterList.cs:CharacterList"
+  },
+  "stats": {
+    "assetRefBindingsTotal": 890,
+    "characterListResourceBindingsTotal": 1,
+    "characterListRelatedResources": [
+      "Assets/NEON/DataAssets/CharacterList.asset"
+    ],
+    "assetRefBindingsOnCharacterListResources": 0,
+    "resolvedReferencesOnCharacterListResources": 0,
+    "validResolvedReferencesOnCharacterListResources": 0,
+    "invalidResolvedReferencesOnCharacterListResources": 0,
+    "embeddedRelativePathMentionsInCharacterListScalarFields": 127,
+    "embeddedRelativePathUniqueInCharacterListScalarFields": 107
+  },
+  "breakdown": {
+    "resolution": {},
+    "fieldName": {},
+    "embeddedRelativePathsTop50": [
+      [
+        "Assets/ActorPrefab/Actor_Ghost/V_Actor_Ghost.prefab",
+        9
+      ],
+      [
+        "_guid:",
+        4
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_cassie.png",
+        2
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_elise.png",
+        2
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_james.png",
+        2
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_lucia.png",
+        2
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_mira.png",
+        2
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_nik.png",
+        2
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_r7.png",
+        2
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_saya.png",
+        2
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_pic/hero_pic_yu.png",
+        2
+      ],
+      [
+        "Assets/ActorPrefab/Actor_Cassie/V_Actor_Cassie.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_Elise/V_Actor_Elise.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_James/V_Actor_James.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_Lucia/Hair_D_1.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_Lucia/Hair_D_2.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_Lucia/V_Actor_Lucia.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_Mira/V_Actor_Mira.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_Nik/V_Actor_Nik.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_R7/V_Actor_R7.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_Saya/V_Actor_Saya.prefab",
+        1
+      ],
+      [
+        "Assets/ActorPrefab/Actor_XuanYu/V_Actor_XuanYu.prefab",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_Cassie.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_Elise.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_James.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_Lucia.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_Mira.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_Nik.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_R7.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_Saya.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/0_pixle/ui_character_head/hero_head_Yu.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_cassie_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_cassie_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_elise_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_elise_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_james_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_james_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_lucia_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_lucia_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_mira_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_mira_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_nik_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_nik_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_r7_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_r7_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_saya_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_saya_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_yu_off.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_avart/hero_avatar_yu_on.png",
+        1
+      ],
+      [
+        "Assets/NEON/Art/Sprites/UI/4K/new_UI_character_choose/heroes_name/hero_name_cassie.png",
+        1
+      ]
+    ]
+  }
+}

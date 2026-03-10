@@ -1,0 +1,101 @@
+{
+  "capturedAt": "2026-03-10T07:37:55.122Z",
+  "targetPath": "/Volumes/Shuttle/unity-projects/neonspark",
+  "runs": 1,
+  "scope": {
+    "scopeManifest": null,
+    "scopePrefix": [
+      "Assets",
+      "Packages"
+    ],
+    "scopeRuleCount": 2
+  },
+  "samples": [
+    {
+      "run": 1,
+      "totalMs": 18900.8,
+      "phases": [
+        {
+          "phase": "extracting",
+          "durationMs": 3370.4
+        },
+        {
+          "phase": "structure",
+          "durationMs": 79.6
+        },
+        {
+          "phase": "parsing",
+          "durationMs": 3469.2
+        },
+        {
+          "phase": "communities",
+          "durationMs": 1395.2
+        },
+        {
+          "phase": "processes",
+          "durationMs": 162.2
+        },
+        {
+          "phase": "enriching",
+          "durationMs": 10423.8
+        },
+        {
+          "phase": "complete",
+          "durationMs": 0.1
+        }
+      ],
+      "unity": {
+        "processedSymbols": 2586,
+        "bindingCount": 110597,
+        "diagnosticsTotal": 9,
+        "timingsMs": {
+          "scanContext": 4758.6,
+          "resolve": 5056.4,
+          "graphWrite": 586.1,
+          "total": 10423.6
+        }
+      }
+    }
+  ],
+  "metrics": {
+    "metaIndexMs": {
+      "mean": 4758.6,
+      "median": 4758.6,
+      "min": 4758.6,
+      "max": 4758.6,
+      "spread": 0
+    },
+    "referenceResolveMs": {
+      "mean": 5056.4,
+      "median": 5056.4,
+      "min": 5056.4,
+      "max": 5056.4,
+      "spread": 0
+    },
+    "graphReferenceWriteMs": {
+      "mean": 586.1,
+      "median": 586.1,
+      "min": 586.1,
+      "max": 586.1,
+      "spread": 0
+    },
+    "unityTotalMs": {
+      "mean": 10423.6,
+      "median": 10423.6,
+      "min": 10423.6,
+      "max": 10423.6,
+      "spread": 0
+    },
+    "pipelineTotalMs": {
+      "mean": 18900.8,
+      "median": 18900.8,
+      "min": 18900.8,
+      "max": 18900.8,
+      "spread": 0
+    }
+  },
+  "notes": {
+    "metaIndexMsDefinition": "Current implementation uses unity.timingsMs.scanContext as metaIndexMs proxy (scanContext includes meta index + resource scan + asset meta index)."
+  },
+  "thresholdVerdict": null
+}

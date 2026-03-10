@@ -63,6 +63,8 @@ assets/
 
 # Generated files (should not be indexed)
 repomix-output*
+*.wal
+neonspark-unity-phase11-real-*
 
 # Design docs (local only)
 docs/plans/

@@ -1,0 +1,12 @@
+{
+  "runId": "neonspark-u2-full-e2e-20260310-075518",
+  "status": "failed",
+  "failedGate": "analyze",
+  "completedGates": [
+    "preflight",
+    "build",
+    "pipeline-profile"
+  ],
+  "error": "Command failed (null): /usr/bin/time -p node dist/cli/index.js analyze --force --extensions .cs --repo-alias neonspark-u2-e2e-neonspark-u2-full-e2e-20260310-075518 --scope-prefix Assets --scope-prefix Packages /Volumes/Shuttle/unity-projects/neonspark\ntime: command terminated abnormally\nreal 44.36\nuser 49.62\nsys 14.82",
+  "capturedAt": "2026-03-10T07:57:13.576Z"
+}
