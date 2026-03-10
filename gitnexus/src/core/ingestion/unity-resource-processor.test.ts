@@ -175,7 +175,7 @@ test('processUnityResources skips resolve for symbols without guid resource hits
   assert.equal(result.bindingCount, 1);
 });
 
-test('processUnityResources skips resolve for symbols missing scan context mapping', async () => {
+test('processUnityResources skips resolve for symbols missing canonical script mapping', async () => {
   const graph = createKnowledgeGraph();
   for (const symbol of ['HitSymbol', 'UnknownSymbol']) {
     const filePath = `Assets/Scripts/${symbol}.cs`;
@@ -229,7 +229,7 @@ test('processUnityResources skips resolve for symbols missing scan context mappi
   );
 
   assert.deepEqual(calledSymbols, ['HitSymbol']);
-  assert.ok(result.diagnostics.some((line) => line.includes('missing scanContext script mapping')));
+  assert.ok(result.diagnostics.some((line) => line.includes('missing canonical script mapping')));
 });
 
 test('processUnityResources memoizes resolve results by symbol within one run', async () => {
@@ -285,8 +285,72 @@ test('processUnityResources memoizes resolve results by symbol within one run', 
   );
 
   assert.deepEqual(calledSymbols, ['DupSymbol']);
-  assert.equal(result.processedSymbols, 2);
-  assert.equal(result.bindingCount, 2);
+  assert.equal(result.processedSymbols, 1);
+  assert.equal(result.bindingCount, 1);
+  assert.ok(result.diagnostics.some((line) => line.includes('skip-non-canonical=1')));
+});
+
+test('processUnityResources writes UNITY_COMPONENT_INSTANCE only for canonical class node', async () => {
+  const graph = createKnowledgeGraph();
+  const canonicalPath = 'Assets/Scripts/PlayerActor.cs';
+  const partialPath = 'Assets/Scripts/PlayerActor.Visual.cs';
+  const canonicalClassId = generateId('Class', `${canonicalPath}:PlayerActor`);
+  const partialClassId = generateId('Class', `${partialPath}:PlayerActor`);
+  graph.addNode({
+    id: canonicalClassId,
+    label: 'Class',
+    properties: { name: 'PlayerActor', filePath: canonicalPath },
+  });
+  graph.addNode({
+    id: partialClassId,
+    label: 'Class',
+    properties: { name: 'PlayerActor', filePath: partialPath },
+  });
+
+  const fakeScanContext = {
+    symbolToScriptPath: new Map([['PlayerActor', canonicalPath]]),
+    symbolToScriptPaths: new Map([['PlayerActor', [canonicalPath, partialPath]]]),
+    symbolToCanonicalScriptPath: new Map([['PlayerActor', canonicalPath]]),
+    scriptPathToGuid: new Map([[canonicalPath, '11111111111111111111111111111111']]),
+    guidToResourceHits: new Map([
+      ['11111111111111111111111111111111', [{ resourcePath: 'Assets/Scene/Test.unity', resourceType: 'scene', line: 1, lineText: 'guid: 1111' }]],
+    ]),
+    resourceDocCache: new Map(),
+  };
+
+  const result = await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext as any,
+      resolveBindings: async () =>
+        ({
+          symbol: 'PlayerActor',
+          scriptPath: canonicalPath,
+          scriptGuid: '11111111111111111111111111111111',
+          resourceBindings: [
+            {
+              resourcePath: 'Assets/Scene/Test.unity',
+              resourceType: 'scene',
+              bindingKind: 'direct',
+              componentObjectId: '11400000',
+              evidence: { line: 1, lineText: 'guid: 1111' },
+              serializedFields: { scalarFields: [], referenceFields: [] },
+            },
+          ],
+          serializedFields: { scalarFields: [], referenceFields: [] },
+          unityDiagnostics: [],
+        }) as any,
+    },
+  );
+
+  const instanceRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_COMPONENT_INSTANCE');
+  assert.equal(instanceRelations.length, 1);
+  assert.equal(instanceRelations[0]?.sourceId, canonicalClassId);
+  assert.equal(result.processedSymbols, 1);
+  assert.equal(result.bindingCount, 1);
+  assert.ok(result.diagnostics.some((line) => line.includes('selected=1')));
+  assert.ok(result.diagnostics.some((line) => line.includes('skip-non-canonical=1')));
 });
 
 test('processUnityResources writes compact unity payload by default', async () => {

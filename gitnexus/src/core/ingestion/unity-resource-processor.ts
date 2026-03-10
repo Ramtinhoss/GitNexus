@@ -60,7 +60,9 @@ export async function processUnityResources(
   let scanContext: UnityScanContext | undefined;
   let symbolsWithResourceHits = new Set<string>();
   let skippedNoGuidHit = 0;
-  let skippedMissingScanContextMapping = 0;
+  let skippedMissingCanonical = 0;
+  let skippedNonCanonical = 0;
+  let canonicalSelected = 0;
   const resolvedBySymbol = new Map<string, Awaited<ReturnType<typeof resolveUnityBindings>>>();
   const resolveErrorBySymbol = new Map<string, string>();
   let scanContextMs = 0;
@@ -99,10 +101,18 @@ export async function processUnityResources(
     if (!symbol) continue;
 
     if (scanContext) {
-      if (!scanContext.symbolToScriptPath.has(symbol)) {
-        skippedMissingScanContextMapping += 1;
+      const canonicalScriptPath = getCanonicalScriptPath(scanContext, symbol);
+      if (!canonicalScriptPath) {
+        skippedMissingCanonical += 1;
         continue;
       }
+
+      const classNodePath = normalizePath(String(classNode.properties.filePath || '').trim());
+      if (classNodePath !== canonicalScriptPath) {
+        skippedNonCanonical += 1;
+        continue;
+      }
+      canonicalSelected += 1;
 
       if (!symbolsWithResourceHits.has(symbol)) {
         skippedNoGuidHit += 1;
@@ -170,8 +180,11 @@ export async function processUnityResources(
   if (skippedNoGuidHit > 0) {
     diagnostics.push(`prefilter: skipped ${skippedNoGuidHit} symbol(s) without guid resource hits`);
   }
-  if (skippedMissingScanContextMapping > 0) {
-    diagnostics.push(`prefilter: skipped ${skippedMissingScanContextMapping} symbol(s) missing scanContext script mapping`);
+  diagnostics.push(
+    `canonical: selected=${canonicalSelected}, skip-non-canonical=${skippedNonCanonical}, missing-canonical=${skippedMissingCanonical}`,
+  );
+  if (skippedMissingCanonical > 0) {
+    diagnostics.push(`prefilter: skipped ${skippedMissingCanonical} symbol(s) missing canonical script mapping`);
   }
   diagnostics.push(...aggregateUnityDiagnostics(issueDiagnostics));
 
@@ -192,7 +205,8 @@ export async function processUnityResources(
 function collectSymbolsWithResourceHits(scanContext: UnityScanContext): Set<string> {
   const symbols = new Set<string>();
 
-  for (const [symbol, scriptPath] of scanContext.symbolToScriptPath.entries()) {
+  const canonicalEntries = scanContext.symbolToCanonicalScriptPath?.entries() || scanContext.symbolToScriptPath.entries();
+  for (const [symbol, scriptPath] of canonicalEntries) {
     const guid = scanContext.scriptPathToGuid.get(scriptPath);
     if (!guid) continue;
     if ((scanContext.guidToResourceHits.get(guid) || []).length === 0) continue;
@@ -200,6 +214,22 @@ function collectSymbolsWithResourceHits(scanContext: UnityScanContext): Set<stri
   }
 
   return symbols;
+}
+
+function getCanonicalScriptPath(scanContext: UnityScanContext, symbol: string): string | undefined {
+  const canonicalPath = scanContext.symbolToCanonicalScriptPath?.get(symbol);
+  if (canonicalPath) {
+    return normalizePath(canonicalPath);
+  }
+  const fallbackPath = scanContext.symbolToScriptPath.get(symbol);
+  if (fallbackPath) {
+    return normalizePath(fallbackPath);
+  }
+  return undefined;
+}
+
+function normalizePath(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
 }
 
 function resolveUnityPayloadMode(explicit?: UnityPayloadMode): UnityPayloadMode {
