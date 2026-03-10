@@ -21,6 +21,8 @@ export interface UnitySymbolDeclaration {
 }
 
 export interface UnityScanContext {
+  symbolToScriptPaths: Map<string, string[]>;
+  symbolToCanonicalScriptPath: Map<string, string>;
   symbolToScriptPath: Map<string, string>;
   scriptPathToGuid: Map<string, string>;
   guidToResourceHits: Map<string, UnityResourceGuidHit[]>;
@@ -33,7 +35,7 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     input.symbolDeclarations && input.symbolDeclarations.length > 0
       ? resolveScriptFilesFromSymbolDeclarations(input.repoRoot, input.symbolDeclarations, input.scopedPaths)
       : await resolveScriptFiles(input.repoRoot, input.scopedPaths);
-  const symbolToScriptPath =
+  const symbolToScriptPaths =
     input.symbolDeclarations && input.symbolDeclarations.length > 0
       ? buildSymbolScriptPathIndexFromDeclarations(input.repoRoot, input.symbolDeclarations, input.scopedPaths)
       : await buildSymbolScriptPathIndex(input.repoRoot, scriptFiles);
@@ -49,8 +51,16 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
   const guidToResourceHits = await buildGuidHitIndex(input.repoRoot, scriptPathToGuid, resourceFiles);
   const assetMetaFiles = resolveAssetMetaFiles(input.repoRoot, input.scopedPaths, scriptFiles, resourceFiles);
   const assetGuidToPath = await buildAssetMetaIndex(input.repoRoot, { metaFiles: assetMetaFiles });
+  const symbolToCanonicalScriptPath = buildCanonicalScriptPathIndex(
+    symbolToScriptPaths,
+    scriptPathToGuid,
+    guidToResourceHits,
+  );
+  const symbolToScriptPath = new Map<string, string>(symbolToCanonicalScriptPath);
 
   return {
+    symbolToScriptPaths,
+    symbolToCanonicalScriptPath,
     symbolToScriptPath,
     scriptPathToGuid,
     guidToResourceHits,
@@ -59,7 +69,7 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
   };
 }
 
-async function buildSymbolScriptPathIndex(repoRoot: string, scriptFiles: string[]): Promise<Map<string, string>> {
+async function buildSymbolScriptPathIndex(repoRoot: string, scriptFiles: string[]): Promise<Map<string, string[]>> {
   const candidates = new Map<string, Set<string>>();
 
   for (const scriptPath of scriptFiles) {
@@ -83,14 +93,12 @@ async function buildSymbolScriptPathIndex(repoRoot: string, scriptFiles: string[
     }
   }
 
-  const symbolToScriptPath = new Map<string, string>();
+  const symbolToScriptPaths = new Map<string, string[]>();
   for (const [symbol, paths] of candidates.entries()) {
-    if (paths.size === 1) {
-      symbolToScriptPath.set(symbol, [...paths][0]);
-    }
+    symbolToScriptPaths.set(symbol, [...paths].sort((left, right) => left.localeCompare(right)));
   }
 
-  return symbolToScriptPath;
+  return symbolToScriptPaths;
 }
 
 async function buildGuidHitIndex(
@@ -212,7 +220,7 @@ function buildSymbolScriptPathIndexFromDeclarations(
   repoRoot: string,
   declarations: UnitySymbolDeclaration[],
   scopedPaths?: string[],
-): Map<string, string> {
+): Map<string, string[]> {
   const candidates = new Map<string, Set<string>>();
   const allowedScriptPaths = resolveScopedScriptAllowlist(repoRoot, scopedPaths);
 
@@ -225,14 +233,66 @@ function buildSymbolScriptPathIndexFromDeclarations(
     addSymbolCandidate(candidates, symbol, scriptPath);
   }
 
-  const symbolToScriptPath = new Map<string, string>();
+  const symbolToScriptPaths = new Map<string, string[]>();
   for (const [symbol, paths] of candidates.entries()) {
-    if (paths.size === 1) {
-      symbolToScriptPath.set(symbol, [...paths][0]);
-    }
+    symbolToScriptPaths.set(symbol, [...paths].sort((left, right) => left.localeCompare(right)));
   }
 
-  return symbolToScriptPath;
+  return symbolToScriptPaths;
+}
+
+function buildCanonicalScriptPathIndex(
+  symbolToScriptPaths: Map<string, string[]>,
+  scriptPathToGuid: Map<string, string>,
+  guidToResourceHits: Map<string, UnityResourceGuidHit[]>,
+): Map<string, string> {
+  const canonical = new Map<string, string>();
+  for (const [symbol, scriptPaths] of symbolToScriptPaths.entries()) {
+    if (scriptPaths.length === 0) continue;
+    const selected = selectCanonicalScriptPath(symbol, scriptPaths, scriptPathToGuid, guidToResourceHits);
+    if (selected) {
+      canonical.set(symbol, selected);
+    }
+  }
+  return canonical;
+}
+
+function selectCanonicalScriptPath(
+  symbol: string,
+  scriptPaths: string[],
+  scriptPathToGuid: Map<string, string>,
+  guidToResourceHits: Map<string, UnityResourceGuidHit[]>,
+): string | null {
+  const uniquePaths = [...new Set(scriptPaths)].sort((left, right) => left.localeCompare(right));
+  if (uniquePaths.length === 0) return null;
+  const symbolBaseName = `${symbol}.cs`.toLowerCase();
+  const symbolPrefix = `${symbol.toLowerCase()}.`;
+
+  const scored = uniquePaths.map((scriptPath) => {
+    const baseName = path.basename(scriptPath).toLowerCase();
+    const exactScore = baseName === symbolBaseName ? 0 : 1;
+    const generatedScore = baseName.endsWith('.generated.cs') ? 1 : 0;
+    const suffixScore = baseName.startsWith(symbolPrefix) && baseName !== symbolBaseName ? 1 : 0;
+    const guid = scriptPathToGuid.get(scriptPath);
+    const hitCount = guid ? (guidToResourceHits.get(guid)?.length || 0) : 0;
+    return {
+      scriptPath,
+      exactScore,
+      generatedScore,
+      suffixScore,
+      hitCount,
+    };
+  });
+
+  scored.sort((left, right) => {
+    if (left.exactScore !== right.exactScore) return left.exactScore - right.exactScore;
+    if (left.generatedScore !== right.generatedScore) return left.generatedScore - right.generatedScore;
+    if (left.suffixScore !== right.suffixScore) return left.suffixScore - right.suffixScore;
+    if (left.hitCount !== right.hitCount) return right.hitCount - left.hitCount;
+    return left.scriptPath.localeCompare(right.scriptPath);
+  });
+
+  return scored[0].scriptPath;
 }
 
 function resolveScriptFilesFromSymbolDeclarations(

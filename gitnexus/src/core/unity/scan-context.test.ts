@@ -77,3 +77,44 @@ test('buildUnityScanContext indexes scoped asset meta files for guid->path resol
     'Assets/Config/MainUIDocument.asset',
   );
 });
+
+test('buildUnityScanContext selects canonical script for duplicated symbol declarations', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-canonical-'));
+  const scriptsDir = path.join(tempRoot, 'Assets/Scripts');
+  const sceneDir = path.join(tempRoot, 'Assets/Scene');
+  await fs.mkdir(scriptsDir, { recursive: true });
+  await fs.mkdir(sceneDir, { recursive: true });
+
+  try {
+    await fs.writeFile(
+      path.join(scriptsDir, 'PlayerActor.cs'),
+      'public partial class PlayerActor {}',
+      'utf-8',
+    );
+    await fs.writeFile(
+      path.join(scriptsDir, 'PlayerActor.Visual.cs'),
+      'public partial class PlayerActor {}',
+      'utf-8',
+    );
+    await fs.writeFile(path.join(scriptsDir, 'PlayerActor.cs.meta'), 'guid: 11111111111111111111111111111111\n', 'utf-8');
+    await fs.writeFile(path.join(scriptsDir, 'PlayerActor.Visual.cs.meta'), 'guid: 22222222222222222222222222222222\n', 'utf-8');
+    await fs.writeFile(path.join(sceneDir, 'Test.unity'), '--- !u!1 &1\nguid: 11111111111111111111111111111111\n', 'utf-8');
+
+    const context = await buildUnityScanContext({
+      repoRoot: tempRoot,
+      symbolDeclarations: [
+        { symbol: 'PlayerActor', scriptPath: 'Assets/Scripts/PlayerActor.cs' },
+        { symbol: 'PlayerActor', scriptPath: 'Assets/Scripts/PlayerActor.Visual.cs' },
+      ],
+    });
+
+    assert.deepEqual(context.symbolToScriptPaths.get('PlayerActor'), [
+      'Assets/Scripts/PlayerActor.cs',
+      'Assets/Scripts/PlayerActor.Visual.cs',
+    ]);
+    assert.equal(context.symbolToCanonicalScriptPath.get('PlayerActor'), 'Assets/Scripts/PlayerActor.cs');
+    assert.equal(context.symbolToScriptPath.get('PlayerActor'), 'Assets/Scripts/PlayerActor.cs');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
