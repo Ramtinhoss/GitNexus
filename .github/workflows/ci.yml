@@ -30,5 +30,7 @@ jobs:
           cache-dependency-path: gitnexus/package-lock.json
       - run: npm ci
         working-directory: gitnexus
+      - run: npm run test:unity
+        working-directory: gitnexus
       - run: npm run benchmark:quick
         working-directory: gitnexus
