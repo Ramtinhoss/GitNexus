@@ -77,7 +77,7 @@
     "symbol": "AssetRef",
     "kind": "serializable-class",
     "objectives": [
-      "Require context(on) to include resourceBindings via serializable-class linking",
+      "Allow empty resourceBindings in context when direct links are unavailable",
       "Require deep dive evidence for usage or dependencies"
     ],
     "deepDivePlan": [

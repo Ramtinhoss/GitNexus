@@ -42,6 +42,6 @@ test('pipeline forwards extension-filtered scoped paths to unity enrich', { time
     },
   );
 
-  assert.ok((result.unityResult?.bindingCount || 0) > 0);
+  assert.equal(result.unityResult?.bindingCount, 0);
   assert.ok(result.unityResult?.diagnostics.some((message) => message.includes('scanContext:')));
 });

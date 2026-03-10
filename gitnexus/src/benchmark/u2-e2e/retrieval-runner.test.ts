@@ -38,7 +38,7 @@ test('runSymbolScenario executes context off/on + deepDive and records metrics',
   assert.equal(out.assertions.pass, true);
 });
 
-test('AssetRef requires context(on) resourceBindings after serializable-class coverage', async () => {
+test('AssetRef allows empty resourceBindings but requires deep-dive evidence', async () => {
   const noEvidenceRunner = {
     context: async () => ({ status: 'found', resourceBindings: [] }),
     query: async () => ({ process_symbols: [] }),
@@ -54,7 +54,7 @@ test('AssetRef requires context(on) resourceBindings after serializable-class co
   });
 
   assert.equal(out.assertions.pass, false);
-  assert.ok(out.assertions.failures.some((f) => f.includes('context(on) must include resourceBindings')));
+  assert.ok(out.assertions.failures.some((f) => f.includes('deep-dive')));
 });
 
 test('PlayerActor scenario uses context file hint and valid context deep-dive input', async () => {

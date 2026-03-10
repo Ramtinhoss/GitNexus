@@ -15,9 +15,8 @@ export async function loadUnityContext(
 ): Promise<UnityContextPayload> {
   const escapedSymbolId = symbolId.replace(/'/g, "''");
   const rows = await execute(`
-    MATCH (symbol {id: '${escapedSymbolId}'})-[r:CodeRelation]->(component:CodeElement)
-    WHERE r.type IN ['UNITY_COMPONENT_INSTANCE', 'UNITY_SERIALIZED_TYPE_IN']
-    RETURN component.filePath AS resourcePath, component.description AS payload, r.type AS relationType, r.reason AS relationReason
+    MATCH (symbol {id: '${escapedSymbolId}'})-[r:CodeRelation {type: 'UNITY_COMPONENT_INSTANCE'}]->(component:CodeElement)
+    RETURN component.filePath AS resourcePath, component.description AS payload
     ORDER BY component.filePath, component.id
   `);
 
@@ -52,7 +51,7 @@ export function projectUnityBindings(rows: any[]): UnityContextPayload {
         resourceType: parsed.resourceType || inferResourceType(parsed.resourcePath || row?.resourcePath || row?.[0] || ''),
         bindingKind: parsed.bindingKind || 'direct',
         componentObjectId: parsed.componentObjectId || '',
-        evidence: parsed.evidence || buildSyntheticEvidence(row),
+        evidence: parsed.evidence || { line: 0, lineText: '' },
         serializedFields: parsed.serializedFields || { scalarFields: [], referenceFields: [] },
         resolvedReferences: parsed.resolvedReferences || [],
       };
@@ -79,16 +78,4 @@ function inferResourceType(resourcePath: string): 'prefab' | 'scene' | 'asset' {
   if (resourcePath.endsWith('.prefab')) return 'prefab';
   if (resourcePath.endsWith('.asset')) return 'asset';
   return 'scene';
-}
-
-function buildSyntheticEvidence(row: any): ResolvedUnityBinding['evidence'] {
-  const relationType = String(row?.relationType || '').trim();
-  const relationReason = String(row?.relationReason || '').trim();
-  if (!relationType && !relationReason) {
-    return { line: 0, lineText: '' };
-  }
-  return {
-    line: 0,
-    lineText: relationReason ? `${relationType}:${relationReason}` : relationType,
-  };
 }

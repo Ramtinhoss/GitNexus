@@ -37,7 +37,6 @@ export const REL_TYPES = [
   'STEP_IN_PROCESS',
   'UNITY_COMPONENT_IN',
   'UNITY_COMPONENT_INSTANCE',
-  'UNITY_SERIALIZED_TYPE_IN',
 ] as const;
 export type RelType = typeof REL_TYPES[number];
 
