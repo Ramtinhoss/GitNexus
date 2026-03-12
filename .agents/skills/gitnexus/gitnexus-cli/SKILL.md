@@ -9,6 +9,12 @@ All commands work via `npx` — no global install required.
 
 ## Commands
 
+## Execution Rules
+
+- For build/analyze/test commands, set command timeout to 10-30 minutes.
+- If a command fails or times out, do not auto-retry. Report the exact command and tool output to user immediately.
+- Do not silently switch to glob/grep fallback when GitNexus analyze/build fails. Ask user before any non-GitNexus fallback workflow.
+
 ### analyze — Build or refresh the index
 
 ```bash
@@ -24,6 +30,7 @@ Run from the project root. This parses all source files, builds the knowledge gr
 | `--embeddings` | Enable embedding generation for semantic search (off by default) |
 
 **When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale.
+When stale is detected, ask user to confirm rebuild first. If user declines, explicitly warn that retrieval may not reflect current codebase.
 
 ### status — Check index freshness
 

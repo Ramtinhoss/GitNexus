@@ -31,7 +31,7 @@ export function checkStaleness(repoPath: string, lastCommit: string): StalenessI
       return {
         isStale: true,
         commitsBehind,
-        hint: `⚠️ Index is ${commitsBehind} commit${commitsBehind > 1 ? 's' : ''} behind HEAD. Run analyze tool to update.`,
+        hint: `⚠️ Index is ${commitsBehind} commit${commitsBehind > 1 ? 's' : ''} behind HEAD. Ask user whether to run analyze to rebuild index; if not rebuilt, retrieval may not match current code.`,
       };
     }
     

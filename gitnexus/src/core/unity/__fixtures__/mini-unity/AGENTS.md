@@ -9,7 +9,7 @@ This project is indexed by GitNexus as **mini-unity** (22 symbols, 23 relationsh
 2. **Match your task to a skill below** and **read that skill file**
 3. **Follow the skill's workflow and checklist**
 
-> If step 1 warns the index is stale, run `npx -y gitnexus analyze` in the terminal first (it reuses the previous analyze scope/options by default; add `--no-reuse-options` to reset).
+> If step 1 warns the index is stale, ask user whether to rebuild index via `npx -y gitnexus analyze` first (it reuses previous analyze scope/options by default; add `--no-reuse-options` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
 
 ## Skills
 
