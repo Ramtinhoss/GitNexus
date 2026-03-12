@@ -224,7 +224,7 @@ async function getContextResource(backend: LocalBackend, repoName?: string): Pro
   lines.push('  - cypher: Raw graph queries');
   lines.push('  - list_repos: Discover all indexed repositories');
   lines.push('');
-  lines.push('re_index: Run `npx gitnexus analyze` in terminal if data is stale');
+  lines.push('re_index: Run `npx -y gitnexus analyze` in terminal if data is stale (reuses previous analyze scope/options unless `--no-reuse-options` is passed)');
   lines.push('');
   lines.push('resources_available:');
   lines.push('  - gitnexus://repos: All indexed repositories');

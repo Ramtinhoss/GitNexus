@@ -19,7 +19,7 @@ import { getCurrentCommit, isGitRepo, getGitRoot } from '../storage/git.js';
 import { generateAIContextFiles } from './ai-context.js';
 import fs from 'fs/promises';
 import { registerClaudeHook } from './claude-hooks.js';
-import { normalizeRepoAlias, parseExtensionList, resolveAnalyzeScopeRules } from './analyze-options.js';
+import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
 import { formatFallbackSummary, formatUnityDiagnosticsSummary } from './analyze-summary.js';
 
 const HEAP_MB = 8192;
@@ -51,6 +51,7 @@ export interface AnalyzeOptions {
   repoAlias?: string;
   scopeManifest?: string;
   scopePrefix?: string[];
+  reuseOptions?: boolean;
 }
 
 /** Threshold: auto-skip embeddings for repos with more nodes than this */
@@ -80,22 +81,6 @@ export const analyzeCommand = async (
 
   console.log('\n  GitNexus Analyzer\n');
 
-  let includeExtensions: string[] = [];
-  let scopeRules: string[] = [];
-  let repoAlias: string | undefined;
-  try {
-    includeExtensions = parseExtensionList(options?.extensions);
-    scopeRules = await resolveAnalyzeScopeRules({
-      scopeManifest: options?.scopeManifest,
-      scopePrefix: options?.scopePrefix,
-    });
-    repoAlias = normalizeRepoAlias(options?.repoAlias);
-  } catch (error: any) {
-    console.log(`  ${error?.message || String(error)}\n`);
-    process.exitCode = 1;
-    return;
-  }
-
   let repoPath: string;
   if (inputPath) {
     repoPath = path.resolve(inputPath);
@@ -119,16 +104,56 @@ export const analyzeCommand = async (
   const currentCommit = getCurrentCommit(repoPath);
   const existingMeta = await loadMeta(storagePath);
 
-  if (
-    existingMeta &&
-    !options?.force &&
-    existingMeta.lastCommit === currentCommit &&
-    includeExtensions.length === 0 &&
-    scopeRules.length === 0 &&
-    !repoAlias
-  ) {
-    console.log('  Already up to date\n');
+  let includeExtensions: string[] = [];
+  let scopeRules: string[] = [];
+  let repoAlias: string | undefined;
+  let embeddingsEnabled = false;
+  try {
+    const effectiveOptions = await resolveEffectiveAnalyzeOptions({
+      extensions: options?.extensions,
+      scopeManifest: options?.scopeManifest,
+      scopePrefix: options?.scopePrefix,
+      repoAlias: options?.repoAlias,
+      embeddings: options?.embeddings,
+      reuseOptions: options?.reuseOptions,
+    }, existingMeta?.analyzeOptions);
+    includeExtensions = effectiveOptions.includeExtensions;
+    scopeRules = effectiveOptions.scopeRules;
+    repoAlias = effectiveOptions.repoAlias;
+    embeddingsEnabled = effectiveOptions.embeddings;
+  } catch (error: any) {
+    console.log(`  ${error?.message || String(error)}\n`);
+    process.exitCode = 1;
     return;
+  }
+
+  if (existingMeta && !options?.force && existingMeta.lastCommit === currentCommit) {
+    const hasScopePrefixInput = Array.isArray(options?.scopePrefix)
+      ? options.scopePrefix.length > 0
+      : Boolean(options?.scopePrefix);
+    const hasCliOverrides =
+      options?.extensions !== undefined ||
+      Boolean(options?.scopeManifest) ||
+      hasScopePrefixInput ||
+      options?.repoAlias !== undefined ||
+      options?.embeddings !== undefined ||
+      options?.reuseOptions === false;
+
+    if (!hasCliOverrides) {
+      console.log('  Already up to date\n');
+      return;
+    }
+
+    if (
+      options?.reuseOptions !== false &&
+      includeExtensions.length === 0 &&
+      scopeRules.length === 0 &&
+      !repoAlias &&
+      !embeddingsEnabled
+    ) {
+      console.log('  Already up to date\n');
+      return;
+    }
   }
 
   // Single progress bar for entire pipeline
@@ -199,7 +224,7 @@ export const analyzeCommand = async (
   let cachedEmbeddingNodeIds = new Set<string>();
   let cachedEmbeddings: Array<{ nodeId: string; embedding: number[] }> = [];
 
-  if (options?.embeddings && existingMeta && !options?.force) {
+  if (embeddingsEnabled && existingMeta && !options?.force) {
     try {
       updateBar(0, 'Caching embeddings...');
       await initKuzu(kuzuPath);
@@ -293,7 +318,7 @@ export const analyzeCommand = async (
   let embeddingSkipped = true;
   let embeddingSkipReason = 'off (use --embeddings to enable)';
 
-  if (options?.embeddings) {
+  if (embeddingsEnabled) {
     if (stats.nodes > EMBEDDING_NODE_LIMIT) {
       embeddingSkipReason = `skipped (${stats.nodes.toLocaleString()} nodes > ${EMBEDDING_NODE_LIMIT.toLocaleString()} limit)`;
     } else {
@@ -326,6 +351,12 @@ export const analyzeCommand = async (
     repoPath,
     lastCommit: currentCommit,
     indexedAt: new Date().toISOString(),
+    analyzeOptions: {
+      includeExtensions,
+      scopeRules,
+      repoAlias,
+      embeddings: embeddingsEnabled,
+    },
     stats: {
       files: pipelineResult.totalFileCount,
       nodes: stats.nodes,

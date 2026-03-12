@@ -53,7 +53,7 @@ This project is indexed by GitNexus as **${projectName}** (${stats.nodes || 0} s
 2. **Match your task to a skill below** and **read that skill file**
 3. **Follow the skill's workflow and checklist**
 
-> If step 1 warns the index is stale, run \`npx gitnexus analyze\` in the terminal first.
+> If step 1 warns the index is stale, run \`npx -y gitnexus analyze\` in the terminal first (it reuses the previous analyze scope/options by default; add \`--no-reuse-options\` to reset).
 
 ## Skills
 

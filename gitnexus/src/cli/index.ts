@@ -74,6 +74,7 @@ program
   .command('analyze [path]')
   .description('Index a repository (full analysis)')
   .option('-f, --force', 'Force full re-index even if up to date')
+  .option('--no-reuse-options', 'Do not reuse stored analyze options from previous index')
   .option('--embeddings', 'Enable embedding generation for semantic search (off by default)')
   .option('--extensions <list>', 'Comma-separated file extensions to include (e.g. .cs,.ts)')
   .option('--repo-alias <name>', 'Override indexed repository name with a stable alias')

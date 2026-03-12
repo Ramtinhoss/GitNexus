@@ -14,6 +14,12 @@ export interface RepoMeta {
   repoPath: string;
   lastCommit: string;
   indexedAt: string;
+  analyzeOptions?: {
+    includeExtensions?: string[];
+    scopeRules?: string[];
+    repoAlias?: string;
+    embeddings?: boolean;
+  };
   stats?: {
     files?: number;
     nodes?: number;

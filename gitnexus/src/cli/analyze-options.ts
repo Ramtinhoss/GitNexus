@@ -9,6 +9,27 @@ export interface AnalyzeScopeOptions {
   scopePrefix?: string[] | string;
 }
 
+export interface StoredAnalyzeOptions {
+  includeExtensions?: string[];
+  scopeRules?: string[];
+  repoAlias?: string;
+  embeddings?: boolean;
+}
+
+export interface ResolveAnalyzeOptionsInput extends AnalyzeScopeOptions {
+  extensions?: string;
+  repoAlias?: string;
+  embeddings?: boolean;
+  reuseOptions?: boolean;
+}
+
+export interface EffectiveAnalyzeOptions {
+  includeExtensions: string[];
+  scopeRules: string[];
+  repoAlias?: string;
+  embeddings: boolean;
+}
+
 export function parseExtensionList(rawExtensions?: string): string[] {
   return (rawExtensions || '')
     .split(',')
@@ -66,4 +87,45 @@ export async function resolveAnalyzeScopeRules(options?: AnalyzeScopeOptions): P
   }
 
   return normalizedRules;
+}
+
+function parseScopePrefixCount(scopePrefix?: string[] | string): number {
+  if (Array.isArray(scopePrefix)) return scopePrefix.length;
+  if (typeof scopePrefix === 'string') return scopePrefix.trim() ? 1 : 0;
+  return 0;
+}
+
+export async function resolveEffectiveAnalyzeOptions(
+  options?: ResolveAnalyzeOptionsInput,
+  stored?: StoredAnalyzeOptions,
+): Promise<EffectiveAnalyzeOptions> {
+  const includeExtensionsFromCli = parseExtensionList(options?.extensions);
+  const scopeRulesFromCli = await resolveAnalyzeScopeRules({
+    scopeManifest: options?.scopeManifest,
+    scopePrefix: options?.scopePrefix,
+  });
+  const repoAliasFromCli = normalizeRepoAlias(options?.repoAlias);
+
+  const hasCliExtensions = options?.extensions !== undefined;
+  const hasCliScope = Boolean(options?.scopeManifest) || parseScopePrefixCount(options?.scopePrefix) > 0;
+  const hasCliRepoAlias = options?.repoAlias !== undefined;
+  const canReuse = options?.reuseOptions !== false;
+
+  const includeExtensions = hasCliExtensions
+    ? includeExtensionsFromCli
+    : (canReuse ? (stored?.includeExtensions || []) : []);
+  const scopeRules = hasCliScope
+    ? scopeRulesFromCli
+    : (canReuse ? (stored?.scopeRules || []) : []);
+  const repoAlias = hasCliRepoAlias
+    ? repoAliasFromCli
+    : (canReuse ? normalizeRepoAlias(stored?.repoAlias) : undefined);
+  const embeddings = options?.embeddings ?? (canReuse ? Boolean(stored?.embeddings) : false);
+
+  return {
+    includeExtensions: [...includeExtensions],
+    scopeRules: [...scopeRules],
+    repoAlias,
+    embeddings,
+  };
 }
