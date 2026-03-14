@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { generateId } from '../../lib/utils.js';
 import type { KnowledgeGraph, GraphNode, GraphRelationship } from '../graph/types.js';
@@ -152,18 +151,8 @@ export async function processUnityResources(
         bindingCount += 1;
         componentCount += 1;
 
-        const resourceFileNode = ensureResourceFileNode(graph, binding.resourcePath);
         const componentNode = createComponentNode(symbol, binding, payloadMode);
         graph.addNode(componentNode);
-
-        graph.addRelationship({
-          id: generateId('UNITY_COMPONENT_IN', `${classNode.id}:${binding.componentObjectId}->${resourceFileNode.id}`),
-          type: 'UNITY_COMPONENT_IN',
-          sourceId: classNode.id,
-          targetId: resourceFileNode.id,
-          confidence: 1.0,
-          reason: binding.bindingKind,
-        });
 
         graph.addRelationship({
           id: generateId('UNITY_COMPONENT_INSTANCE', `${classNode.id}->${componentNode.id}`),
@@ -259,26 +248,6 @@ function resolveUnityPayloadMode(explicit?: UnityPayloadMode): UnityPayloadMode 
   const envMode = String(process.env.GITNEXUS_UNITY_PAYLOAD_MODE || '').trim().toLowerCase();
   if (envMode === 'full') return 'full';
   return 'compact';
-}
-
-function ensureResourceFileNode(graph: KnowledgeGraph, resourcePath: string): GraphNode {
-  const normalizedResourcePath = resourcePath.replace(/\\/g, '/');
-  const fileId = generateId('File', normalizedResourcePath);
-  const existing = graph.getNode(fileId);
-  if (existing) {
-    return existing;
-  }
-
-  const node: GraphNode = {
-    id: fileId,
-    label: 'File',
-    properties: {
-      name: path.basename(normalizedResourcePath),
-      filePath: normalizedResourcePath,
-    },
-  };
-  graph.addNode(node);
-  return node;
 }
 
 function createComponentNode(

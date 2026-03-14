@@ -10,7 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = path.resolve(here, '../../../src/core/unity/__fixtures__/mini-unity');
 const symbols = ['Global', 'BattleMode', 'PlayerActor', 'MainUIManager'];
 
-test('processUnityResources adds Unity resource relationships and component payload nodes', async () => {
+test('processUnityResources does not emit UNITY_COMPONENT_IN or synthetic resource File nodes', async () => {
   const graph = createKnowledgeGraph();
 
   for (const symbol of symbols) {
@@ -49,11 +49,16 @@ test('processUnityResources adds Unity resource relationships and component payl
   const result = await processUnityResources(graph, { repoPath: fixtureRoot });
   const unityFileRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_COMPONENT_IN');
   const unityInstanceRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_COMPONENT_INSTANCE');
+  const syntheticResourceFiles = [...graph.iterNodes()].filter(
+    (node) => node.label === 'File' && /\.(prefab|unity|asset)$/.test(String(node.properties.filePath)),
+  );
   const componentNodes = [...graph.iterNodes()].filter(
     (node) => node.label === 'CodeElement' && /\.(unity|prefab)$/.test(String(node.properties.filePath)),
   );
 
-  assert.ok(unityFileRelations.length > 0);
+  assert.equal(result.bindingCount > 0, true);
+  assert.equal(unityFileRelations.length, 0);
+  assert.equal(syntheticResourceFiles.length, 0);
   assert.ok(unityInstanceRelations.length > 0);
   assert.ok(componentNodes.length > 0);
   assert.ok(componentNodes.some((node) => String(node.properties.description).includes('mainUIDocument')));
