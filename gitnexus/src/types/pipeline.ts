@@ -36,6 +36,14 @@ export interface PipelineResult {
   scopeDiagnostics?: ScopeSelectionDiagnostics;
 }
 
+export interface PipelineRuntimeSummary {
+  totalFileCount: number;
+  communityResult?: CommunityDetectionResult;
+  processResult?: ProcessDetectionResult;
+  unityResult?: UnityResourceProcessingResult;
+  scopeDiagnostics?: ScopeSelectionDiagnostics;
+}
+
 // Serializable version for Web Worker communication
 // Maps and functions cannot be transferred via postMessage
 export interface SerializablePipelineResult {

@@ -23,6 +23,8 @@ import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
 import { formatFallbackSummary, formatUnityDiagnosticsSummary } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { shouldCloseKuzuOnAnalyzeExit } from './analyze-close-policy.js';
+import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
+import type { PipelineResult } from '../types/pipeline.js';
 
 const HEAP_MB = 8192;
 const HEAP_FLAG = `--max-old-space-size=${HEAP_MB}`;
@@ -248,7 +250,7 @@ export const analyzeCommand = async (
   }
 
   // ── Phase 1: Full Pipeline (0–60%) ─────────────────────────────────
-  let pipelineResult;
+  let pipelineResult: PipelineResult | undefined;
   try {
     pipelineResult = await runPipelineFromRepo(
       repoPath,
@@ -288,6 +290,8 @@ export const analyzeCommand = async (
     const progress = Math.min(84, 60 + Math.round((kuzuMsgCount / (kuzuMsgCount + 10)) * 24));
     updateBar(progress, msg);
   });
+  const pipelineRuntime = toPipelineRuntimeSummary(pipelineResult);
+  pipelineResult = undefined;
   const kuzuTime = ((Date.now() - t0Kuzu) / 1000).toFixed(1);
   const kuzuWarnings = kuzuResult.warnings;
 
@@ -368,11 +372,11 @@ export const analyzeCommand = async (
       embeddings: embeddingsEnabled,
     },
     stats: {
-      files: pipelineResult.totalFileCount,
+      files: pipelineRuntime.totalFileCount,
       nodes: stats.nodes,
       edges: stats.edges,
-      communities: pipelineResult.communityResult?.stats.totalCommunities,
-      processes: pipelineResult.processResult?.stats.totalProcesses,
+      communities: pipelineRuntime.communityResult?.stats.totalCommunities,
+      processes: pipelineRuntime.processResult?.stats.totalProcesses,
     },
   };
   await saveMeta(storagePath, meta);
@@ -383,9 +387,9 @@ export const analyzeCommand = async (
 
   const projectName = path.basename(repoPath);
   let aggregatedClusterCount = 0;
-  if (pipelineResult.communityResult?.communities) {
+  if (pipelineRuntime.communityResult?.communities) {
     const groups = new Map<string, number>();
-    for (const c of pipelineResult.communityResult.communities) {
+    for (const c of pipelineRuntime.communityResult.communities) {
       const label = c.heuristicLabel || c.label || 'Unknown';
       groups.set(label, (groups.get(label) || 0) + c.symbolCount);
     }
@@ -393,12 +397,12 @@ export const analyzeCommand = async (
   }
 
   const aiContext = await generateAIContextFiles(repoPath, storagePath, projectName, {
-    files: pipelineResult.totalFileCount,
+    files: pipelineRuntime.totalFileCount,
     nodes: stats.nodes,
     edges: stats.edges,
-    communities: pipelineResult.communityResult?.stats.totalCommunities,
+    communities: pipelineRuntime.communityResult?.stats.totalCommunities,
     clusters: aggregatedClusterCount,
-    processes: pipelineResult.processResult?.stats.totalProcesses,
+    processes: pipelineRuntime.processResult?.stats.totalProcesses,
   }, {
     skillScope: ((await loadCLIConfig()).setupScope === 'global') ? 'global' : 'project',
   });
@@ -428,9 +432,9 @@ export const analyzeCommand = async (
   console.log(`  Repo Name: ${registeredRepo.name}`);
   console.log(`  Repo Alias: ${registeredRepo.alias || 'none'}`);
   console.log(`  Scope Rules: ${scopeRules.length}`);
-  console.log(`  Scoped Files: ${pipelineResult.totalFileCount}`);
-  if (scopeRules.length > 0 && pipelineResult.scopeDiagnostics) {
-    const diagnostics = pipelineResult.scopeDiagnostics;
+  console.log(`  Scoped Files: ${pipelineRuntime.totalFileCount}`);
+  if (scopeRules.length > 0 && pipelineRuntime.scopeDiagnostics) {
+    const diagnostics = pipelineRuntime.scopeDiagnostics;
     console.log(`  Scope Overlap Files: ${diagnostics.overlapFiles} (${diagnostics.dedupedMatchCount} duplicate matches removed)`);
     if (diagnostics.normalizedCollisions.length === 0) {
       console.log('  Scope Collisions: none');
@@ -444,11 +448,11 @@ export const analyzeCommand = async (
       }
     }
   }
-  const unitySummaryLines = formatUnityDiagnosticsSummary(pipelineResult.unityResult?.diagnostics);
+  const unitySummaryLines = formatUnityDiagnosticsSummary(pipelineRuntime.unityResult?.diagnostics);
   for (const line of unitySummaryLines) {
     console.log(`  ${line}`);
   }
-  console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineResult.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineResult.processResult?.stats.totalProcesses || 0} flows`);
+  console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineRuntime.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineRuntime.processResult?.stats.totalProcesses || 0} flows`);
   console.log(`  KuzuDB ${kuzuTime}s | FTS ${ftsTime}s | Embeddings ${embeddingSkipped ? embeddingSkipReason : embeddingTime + 's'}`);
   if (includeExtensions.length > 0) {
     console.log(`  File filter: ${includeExtensions.join(', ')}`);
