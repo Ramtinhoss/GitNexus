@@ -13,9 +13,11 @@
 - Reason 1: Tier 3 improves analyze wall time and peak RSS versus Tier 2 (`-8.42s`, `-777MB`).
 - Reason 2: Unity query gates remain green (DoorObj found with non-empty bindings, zero diagnostics; AssetRef class resolved by uid with non-empty bindings).
 - Reason 3: Query-time hydration path is covered by targeted tests (`unity-enrichment`, `unity-lazy-hydrator`, `unity-resource-processor`) and final suite pass.
+- Equivalence status: field-level hydration equivalence is verified, but DoorObj binding count parity with Tier 2 is not met in current runtime measurement.
 
 ## Evidence Links
 
 - `docs/reports/2026-03-14-analyze-memory-tier1-summary.json`
 - `docs/reports/2026-03-14-analyze-memory-tier2-summary.json`
 - `docs/reports/2026-03-14-analyze-memory-tier3-summary.json`
+- `docs/reports/2026-03-14-analyze-memory-tier3-equivalence-check.json`

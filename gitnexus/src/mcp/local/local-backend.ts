@@ -47,7 +47,7 @@ function normalizePath(filePath: string): string {
   return String(filePath || '').replace(/\\/g, '/');
 }
 
-function mergeUnityBindings(
+export function mergeUnityBindings(
   baseBindings: ResolvedUnityBinding[],
   resolvedByPath: Map<string, ResolvedUnityBinding[]>,
 ): ResolvedUnityBinding[] {

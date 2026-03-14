@@ -1,0 +1,37 @@
+{
+  "date": "2026-03-14",
+  "scope": "Tier3 summary-only hydration equivalence check",
+  "sourceReports": {
+    "tier2": "docs/reports/2026-03-14-analyze-memory-tier2-summary.json",
+    "tier3": "docs/reports/2026-03-14-analyze-memory-tier3-summary.json"
+  },
+  "comparison": {
+    "doorObj": {
+      "tier2Bindings": 5189,
+      "tier3Bindings": 33,
+      "deltaBindings": -5156,
+      "retainedRatio": 0.0064
+    },
+    "assetRef": {
+      "tier3QueryMode": "uid",
+      "tier3Bindings": 525
+    }
+  },
+  "hydrationPipelineVerification": {
+    "testFile": "gitnexus/src/mcp/local/local-backend.unity-merge.test.ts",
+    "command": "npm --prefix gitnexus run build && node --test gitnexus/dist/mcp/local/local-backend.unity-merge.test.js gitnexus/dist/mcp/local/unity-enrichment.test.js gitnexus/dist/mcp/local/unity-lazy-hydrator.test.js",
+    "result": "pass",
+    "assertions": [
+      "summary rows hydrate into full rows with preserved scalar field coverage",
+      "unresolved paths keep lightweight summary fallback without dropping baseline evidence"
+    ]
+  },
+  "assessment": {
+    "fieldLevelEquivalence": true,
+    "countLevelEquivalence": false,
+    "notes": [
+      "Tier3 hydration path is functionally able to recover full binding payloads for hydrated resource paths.",
+      "DoorObj count is materially lower than Tier2 in current runtime measurements, so quantitative parity is not met."
+    ]
+  }
+}
