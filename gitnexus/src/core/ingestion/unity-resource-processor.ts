@@ -146,42 +146,32 @@ export async function processUnityResources(
 
       processedSymbols += 1;
 
-      for (const summary of collectResourceSummaryRows(resolved.resourceBindings)) {
-        const resourceFileId = generateId('File', summary.resourcePath);
-        graph.addRelationship({
-          id: generateId('UNITY_RESOURCE_SUMMARY', `${classNode.id}->${resourceFileId}`),
-          type: 'UNITY_RESOURCE_SUMMARY',
-          sourceId: classNode.id,
-          targetId: resourceFileId,
-          confidence: 1.0,
-          reason: JSON.stringify({
-            resourceType: summary.resourceType,
-            bindingKinds: summary.bindingKinds,
-            lightweight: summary.lightweight,
-          }),
-        });
-      }
+      const tWriteStart = performance.now();
+      const summaryBySource = new Map<string, Map<string, { resourceType: string; bindingKinds: Set<string>; lightweight: boolean }>>();
+      const appendSummary = (
+        sourceNodeId: string,
+        binding: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number],
+      ) => {
+        const normalizedPath = normalizePath(binding.resourcePath);
+        const perPath = summaryBySource.get(sourceNodeId) || new Map<string, { resourceType: string; bindingKinds: Set<string>; lightweight: boolean }>();
+        const existing = perPath.get(normalizedPath) || {
+          resourceType: binding.resourceType,
+          bindingKinds: new Set<string>(),
+          lightweight: true,
+        };
+        existing.resourceType = binding.resourceType || existing.resourceType;
+        existing.bindingKinds.add(binding.bindingKind);
+        existing.lightweight = existing.lightweight && Boolean(binding.lightweight);
+        perPath.set(normalizedPath, existing);
+        summaryBySource.set(sourceNodeId, perPath);
+      };
 
       for (const binding of resolved.resourceBindings) {
-        const tWriteStart = performance.now();
         bindingCount += 1;
-        componentCount += 1;
 
-        const componentNode = createComponentNode(symbol, binding, payloadMode);
-        graph.addNode(componentNode);
+        appendSummary(classNode.id, binding);
 
-        graph.addRelationship({
-          id: generateId('UNITY_COMPONENT_INSTANCE', `${classNode.id}->${componentNode.id}`),
-          type: 'UNITY_COMPONENT_INSTANCE',
-          sourceId: classNode.id,
-          targetId: componentNode.id,
-          confidence: 1.0,
-          reason: binding.bindingKind,
-        });
-
-        const serializableTypeLinking = linkSerializableTypeEdges(
-          graph,
-          componentNode,
+        const serializableTypeLinking = collectSerializableTypeTargetsForBinding(
           symbol,
           binding,
           scanContext,
@@ -192,8 +182,29 @@ export async function processUnityResources(
         for (const hitSymbol of serializableTypeLinking.symbols) {
           serializedTypeSymbols.add(hitSymbol);
         }
-        graphWriteMs += performance.now() - tWriteStart;
+        for (const targetClassId of serializableTypeLinking.targetClassIds) {
+          appendSummary(targetClassId, binding);
+        }
       }
+
+      for (const [sourceNodeId, perPath] of summaryBySource.entries()) {
+        for (const [resourcePath, summary] of perPath.entries()) {
+          const resourceFileId = generateId('File', resourcePath);
+          graph.addRelationship({
+            id: generateId('UNITY_RESOURCE_SUMMARY', `${sourceNodeId}->${resourceFileId}`),
+            type: 'UNITY_RESOURCE_SUMMARY',
+            sourceId: sourceNodeId,
+            targetId: resourceFileId,
+            confidence: 1.0,
+            reason: JSON.stringify({
+              resourceType: summary.resourceType,
+              bindingKinds: [...summary.bindingKinds.values()].sort(),
+              lightweight: true,
+            }),
+          });
+        }
+      }
+      graphWriteMs += performance.now() - tWriteStart;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       resolveErrorBySymbol.set(symbol, message);
@@ -359,11 +370,10 @@ interface SerializableTypeLinkingStats {
   edgeCount: number;
   missCount: number;
   symbols: Set<string>;
+  targetClassIds: Set<string>;
 }
 
-function linkSerializableTypeEdges(
-  graph: KnowledgeGraph,
-  componentNode: GraphNode,
+function collectSerializableTypeTargetsForBinding(
   hostSymbol: string,
   binding: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number],
   scanContext: UnityScanContext | undefined,
@@ -373,6 +383,7 @@ function linkSerializableTypeEdges(
     edgeCount: 0,
     missCount: 0,
     symbols: new Set<string>(),
+    targetClassIds: new Set<string>(),
   };
   if (!scanContext) return stats;
 
@@ -398,14 +409,7 @@ function linkSerializableTypeEdges(
       continue;
     }
 
-    graph.addRelationship({
-      id: generateId('UNITY_SERIALIZED_TYPE_IN', `${serializableNode.id}->${componentNode.id}:${fieldName}`),
-      type: 'UNITY_SERIALIZED_TYPE_IN',
-      sourceId: serializableNode.id,
-      targetId: componentNode.id,
-      confidence: 1.0,
-      reason: JSON.stringify({ hostSymbol, fieldName, declaredType, sourceLayer }),
-    });
+    stats.targetClassIds.add(serializableNode.id);
     stats.edgeCount += 1;
     stats.symbols.add(declaredType);
   }

@@ -1245,7 +1245,7 @@ export class LocalBackend {
   ): Promise<UnityContextPayload> {
     const lightweightPaths = [...new Set(
       input.payload.resourceBindings
-        .filter((binding) => binding.lightweight)
+        .filter((binding) => binding.lightweight || binding.componentObjectId === 'summary')
         .map((binding) => normalizePath(binding.resourcePath))
         .filter((value) => value.length > 0),
     )];

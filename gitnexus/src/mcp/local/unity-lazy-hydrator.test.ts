@@ -50,3 +50,28 @@ test('context lazy hydration returns partial results when budget exceeded and re
   assert.equal(out.resolvedByPath.size, 2);
   assert.match(((out as any).diagnostics || []).join('\n'), /budget exceeded/i);
 });
+
+test('summary-only Unity analyze persistence still returns full bindings after lazy hydration', async () => {
+  const out = await hydrateLazyBindings({
+    pendingPaths: ['Assets/Doors/Door.prefab'],
+    config: { maxPendingPathsPerRequest: 10, batchSize: 5, maxHydrationMs: 5000 },
+    resolveBatch: async () => new Map([
+      ['Assets/Doors/Door.prefab', [{
+        resourcePath: 'Assets/Doors/Door.prefab',
+        resourceType: 'prefab',
+        bindingKind: 'direct',
+        componentObjectId: '114',
+        serializedFields: {
+          scalarFields: [{ name: 'Shows', value: '1', sourceLayer: 'prefab' }],
+          referenceFields: [],
+        },
+        resolvedReferences: [],
+        evidence: { line: 12, lineText: 'm_Script: ...' },
+      } as any]],
+    ]),
+  });
+  assert.equal(
+    out.resolvedByPath.get('Assets/Doors/Door.prefab')?.[0]?.serializedFields.scalarFields[0]?.name,
+    'Shows',
+  );
+});

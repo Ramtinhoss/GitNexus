@@ -48,20 +48,17 @@ test('processUnityResources does not emit UNITY_COMPONENT_IN or synthetic resour
 
   const result = await processUnityResources(graph, { repoPath: fixtureRoot });
   const unityFileRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_COMPONENT_IN');
-  const unityInstanceRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_COMPONENT_INSTANCE');
+  const unitySummaryRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_RESOURCE_SUMMARY');
   const syntheticResourceFiles = [...graph.iterNodes()].filter(
     (node) => node.label === 'File' && /\.(prefab|unity|asset)$/.test(String(node.properties.filePath)),
   );
-  const componentNodes = [...graph.iterNodes()].filter(
-    (node) => node.label === 'CodeElement' && /\.(unity|prefab)$/.test(String(node.properties.filePath)),
-  );
+  const componentNodes = [...graph.iterNodes()].filter((node) => node.label === 'CodeElement');
 
   assert.equal(result.bindingCount > 0, true);
   assert.equal(unityFileRelations.length, 0);
   assert.equal(syntheticResourceFiles.length, 0);
-  assert.ok(unityInstanceRelations.length > 0);
-  assert.ok(componentNodes.length > 0);
-  assert.ok(componentNodes.some((node) => String(node.properties.description).includes('mainUIDocument')));
+  assert.ok(unitySummaryRelations.length > 0);
+  assert.equal(componentNodes.length, 0);
   assert.ok(result.bindingCount >= symbols.length);
   assert.ok(result.timingsMs.scanContext >= 0);
   assert.ok(result.timingsMs.resolve >= 0);
@@ -295,7 +292,7 @@ test('processUnityResources memoizes resolve results by symbol within one run', 
   assert.ok(result.diagnostics.some((line) => line.includes('skip-non-canonical=1')));
 });
 
-test('processUnityResources writes UNITY_COMPONENT_INSTANCE only for canonical class node', async () => {
+test('processUnityResources writes UNITY_RESOURCE_SUMMARY only for canonical class node', async () => {
   const graph = createKnowledgeGraph();
   const canonicalPath = 'Assets/Scripts/PlayerActor.cs';
   const partialPath = 'Assets/Scripts/PlayerActor.Visual.cs';
@@ -349,16 +346,16 @@ test('processUnityResources writes UNITY_COMPONENT_INSTANCE only for canonical c
     },
   );
 
-  const instanceRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_COMPONENT_INSTANCE');
-  assert.equal(instanceRelations.length, 1);
-  assert.equal(instanceRelations[0]?.sourceId, canonicalClassId);
+  const summaryRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_RESOURCE_SUMMARY');
+  assert.equal(summaryRelations.length, 1);
+  assert.equal(summaryRelations[0]?.sourceId, canonicalClassId);
   assert.equal(result.processedSymbols, 1);
   assert.equal(result.bindingCount, 1);
   assert.ok(result.diagnostics.some((line) => line.includes('selected=1')));
   assert.ok(result.diagnostics.some((line) => line.includes('skip-non-canonical=1')));
 });
 
-test('processUnityResources writes UNITY_SERIALIZED_TYPE_IN for serializable class field matches', async () => {
+test('processUnityResources writes UNITY_RESOURCE_SUMMARY for serializable class field matches', async () => {
   const graph = createKnowledgeGraph();
   const hostPath = 'Assets/Scripts/HostClass.cs';
   const serializablePath = 'Assets/Scripts/AssetRef.cs';
@@ -428,12 +425,12 @@ test('processUnityResources writes UNITY_SERIALIZED_TYPE_IN for serializable cla
     },
   );
 
-  const serializedTypeEdges = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_SERIALIZED_TYPE_IN');
-  assert.equal(serializedTypeEdges.length, 1);
-  assert.equal(serializedTypeEdges[0]?.sourceId, serializableClassId);
+  const summaryRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_RESOURCE_SUMMARY');
+  const serializableSummary = summaryRelations.filter((rel) => rel.sourceId === serializableClassId);
+  assert.equal(serializableSummary.length, 1);
 });
 
-test('processUnityResources writes compact unity payload by default', async () => {
+test('processUnityResources writes compact UNITY_RESOURCE_SUMMARY reason by default', async () => {
   const graph = createKnowledgeGraph();
   const classId = generateId('Class', 'Assets/Scripts/Compact.cs:CompactSymbol');
   graph.addNode({
@@ -480,18 +477,15 @@ test('processUnityResources writes compact unity payload by default', async () =
     },
   );
 
-  const component = [...graph.iterNodes()].find((node) => node.label === 'CodeElement');
-  assert.ok(component);
-  const payload = JSON.parse(String(component.properties.description));
-  assert.equal(payload.bindingKind, 'scene-override');
-  assert.equal(payload.componentObjectId, '11400000');
-  assert.ok(Array.isArray(payload.serializedFields.scalarFields));
-  assert.equal(payload.resourcePath, undefined);
-  assert.equal(payload.resourceType, undefined);
-  assert.equal(payload.evidence, undefined);
+  const summary = [...graph.iterRelationships()].find((rel) => rel.type === 'UNITY_RESOURCE_SUMMARY');
+  assert.ok(summary);
+  const reason = JSON.parse(String(summary.reason || '{}'));
+  assert.deepEqual(reason.bindingKinds, ['scene-override']);
+  assert.equal(reason.lightweight, true);
+  assert.equal(reason.resourceType, 'scene');
 });
 
-test('processUnityResources includes structured assetRefPaths in component payload', async () => {
+test('processUnityResources keeps UNITY_RESOURCE_SUMMARY reason compact when bindings include assetRefPaths', async () => {
   const graph = createKnowledgeGraph();
   const classId = generateId('Class', 'Assets/Scripts/CharacterList.cs:CharacterList');
   graph.addNode({
@@ -546,15 +540,12 @@ test('processUnityResources includes structured assetRefPaths in component paylo
     },
   );
 
-  const component = [...graph.iterNodes()].find((node) => node.label === 'CodeElement');
-  assert.ok(component);
-  const payload = JSON.parse(String(component.properties.description));
-  assert.equal(payload.assetRefPaths?.length, 1);
-  assert.equal(payload.assetRefPaths?.[0]?.fieldName, '_Head_Ref');
-  assert.equal(payload.assetRefPaths?.[0]?.isSprite, true);
+  const summary = [...graph.iterRelationships()].find((rel) => rel.type === 'UNITY_RESOURCE_SUMMARY');
+  assert.ok(summary);
+  assert.equal(String(summary.reason).includes('assetRefPaths'), false);
 });
 
-test('processUnityResources writes full unity payload when payloadMode=full', async () => {
+test('processUnityResources summary-only persistence ignores full payload mode and keeps summary reason', async () => {
   const graph = createKnowledgeGraph();
   const classId = generateId('Class', 'Assets/Scripts/Full.cs:FullSymbol');
   graph.addNode({
@@ -598,12 +589,12 @@ test('processUnityResources writes full unity payload when payloadMode=full', as
     },
   );
 
-  const component = [...graph.iterNodes()].find((node) => node.label === 'CodeElement');
-  assert.ok(component);
-  const payload = JSON.parse(String(component.properties.description));
-  assert.equal(payload.resourcePath, 'Assets/Scene/Test.unity');
-  assert.equal(payload.resourceType, 'scene');
-  assert.equal(payload.evidence?.line, 9);
+  const summary = [...graph.iterRelationships()].find((rel) => rel.type === 'UNITY_RESOURCE_SUMMARY');
+  assert.ok(summary);
+  const reason = JSON.parse(String(summary.reason || '{}'));
+  assert.equal(reason.resourceType, 'scene');
+  assert.deepEqual(reason.bindingKinds, ['scene-override']);
+  assert.equal(String(summary.reason).includes('evidence'), false);
 });
 
 test('processUnityResources aggregates repetitive diagnostics with capped samples', async () => {

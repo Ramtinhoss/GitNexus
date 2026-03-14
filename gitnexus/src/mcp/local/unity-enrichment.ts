@@ -153,7 +153,7 @@ function parseUnityResourceSummaryReason(input: string): {
     return {
       resourceType: parsed.resourceType || fallback.resourceType,
       bindingKinds,
-      lightweight: parsed.lightweight !== false,
+      lightweight: true,
     };
   } catch {
     return fallback;
