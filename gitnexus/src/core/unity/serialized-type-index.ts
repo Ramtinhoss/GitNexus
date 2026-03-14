@@ -8,6 +8,11 @@ interface SourceFile {
   content: string;
 }
 
+interface SourceFileReader {
+  filePath: string;
+  read: () => Promise<string>;
+}
+
 const SERIALIZABLE_DECLARATION_PATTERN =
   /(?:\[[^\]]*\bSerializable\b[^\]]*\]\s*)+(?:(?:public|private|protected|internal|static|sealed|abstract|partial)\s+)*(?:class|struct)\s+([A-Za-z_][A-Za-z0-9_]*)/g;
 const CLASS_DECLARATION_PATTERN = /\bclass\s+([A-Za-z_][A-Za-z0-9_]*)[^{]*\{/g;
@@ -17,26 +22,66 @@ const FIELD_DECLARATION_PATTERN =
 export function buildSerializableTypeIndexFromSources(sources: SourceFile[]): SerializableTypeIndex {
   const serializableSymbols = new Set<string>();
   for (const source of sources) {
-    SERIALIZABLE_DECLARATION_PATTERN.lastIndex = 0;
-    let match = SERIALIZABLE_DECLARATION_PATTERN.exec(source.content);
-    while (match) {
-      serializableSymbols.add(match[1]);
-      match = SERIALIZABLE_DECLARATION_PATTERN.exec(source.content);
-    }
+    collectSerializableDeclarations(source.content, serializableSymbols);
   }
 
   const hostFieldTypeHints = new Map<string, Map<string, string>>();
   for (const source of sources) {
-    const classBodies = extractClassBodies(source.content);
-    for (const classBody of classBodies) {
-      const fieldHints = extractHostFieldHints(classBody.body, serializableSymbols);
-      if (fieldHints.size > 0) {
-        hostFieldTypeHints.set(classBody.name, fieldHints);
-      }
-    }
+    collectHostFieldTypeHints(source.content, serializableSymbols, hostFieldTypeHints);
   }
 
   return { serializableSymbols, hostFieldTypeHints };
+}
+
+export async function buildSerializableTypeIndexFromFiles(files: SourceFileReader[]): Promise<SerializableTypeIndex> {
+  const serializableSymbols = new Set<string>();
+  for (const file of files) {
+    const content = await safeReadFileContent(file);
+    collectSerializableDeclarations(content, serializableSymbols);
+  }
+
+  const hostFieldTypeHints = new Map<string, Map<string, string>>();
+  for (const file of files) {
+    const content = await safeReadFileContent(file);
+    collectHostFieldTypeHints(content, serializableSymbols, hostFieldTypeHints);
+  }
+
+  return { serializableSymbols, hostFieldTypeHints };
+}
+
+function collectSerializableDeclarations(content: string, serializableSymbols: Set<string>): void {
+  SERIALIZABLE_DECLARATION_PATTERN.lastIndex = 0;
+  let match = SERIALIZABLE_DECLARATION_PATTERN.exec(content);
+  while (match) {
+    serializableSymbols.add(match[1]);
+    match = SERIALIZABLE_DECLARATION_PATTERN.exec(content);
+  }
+}
+
+function collectHostFieldTypeHints(
+  content: string,
+  serializableSymbols: Set<string>,
+  hostFieldTypeHints: Map<string, Map<string, string>>,
+): void {
+  const classBodies = extractClassBodies(content);
+  for (const classBody of classBodies) {
+    const fieldHints = extractHostFieldHints(classBody.body, serializableSymbols);
+    if (fieldHints.size > 0) {
+      hostFieldTypeHints.set(classBody.name, fieldHints);
+    }
+  }
+}
+
+async function safeReadFileContent(file: SourceFileReader): Promise<string> {
+  try {
+    return await file.read();
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'EISDIR') {
+      return '';
+    }
+    throw error;
+  }
 }
 
 function extractClassBodies(content: string): Array<{ name: string; body: string }> {

@@ -155,3 +155,20 @@ test('buildUnityScanContext exposes serializable symbol index and host field typ
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
+
+test('buildUnityScanContext builds serializable index from files without preloading source array', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-serializable-streaming-'));
+  const scriptsDir = path.join(tempRoot, 'Assets/Scripts');
+  await fs.mkdir(scriptsDir, { recursive: true });
+
+  try {
+    await fs.writeFile(path.join(scriptsDir, 'AssetRef.cs'), '[Serializable] class AssetRef {}', 'utf-8');
+    await fs.writeFile(path.join(scriptsDir, 'Host.cs'), 'class Host { AssetRef icon; }', 'utf-8');
+
+    const context = await buildUnityScanContext({ repoRoot: tempRoot });
+    assert.equal(context.serializableSymbols.has('AssetRef'), true);
+    assert.equal(context.hostFieldTypeHints.get('Host')?.get('icon'), 'AssetRef');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
