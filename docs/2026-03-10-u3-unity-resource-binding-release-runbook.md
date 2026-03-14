@@ -123,3 +123,8 @@ Diagnostics interpretation:
 - `lazy-expand budget exceeded after <N>ms`: hydration stopped early by budget cap; output is partial but valid.
 - `lazy-expand failed: ...`: hydration failure (I/O, parse, or resolver error). Baseline lightweight payload is still returned.
 - Empty `unityDiagnostics` with non-empty `resourceBindings`: lazy hydration completed within budget and no resolver warnings surfaced.
+
+## 9. Tier 3 Summary-Only Expectations (2026-03-14)
+
+- Tier 3 summary-only analyze persistence reduces build memory and DB size.
+- Cold Unity queries may hydrate from source files; warm queries rely on overlay hit rate.

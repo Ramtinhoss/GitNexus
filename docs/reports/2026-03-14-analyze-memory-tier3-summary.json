@@ -1,0 +1,65 @@
+{
+  "tier": 3,
+  "focus": [
+    "summary-only analyze persistence",
+    "query-time full hydration"
+  ],
+  "measurements": {
+    "analyze": {
+      "command": "/usr/bin/time -l node gitnexus/dist/cli/index.js analyze /Volumes/Shuttle/projects/neonnew --repo-alias neonnew-core",
+      "realSec": 117.19,
+      "maxRssBytes": 5776474112,
+      "nodes": 118192,
+      "edges": 271815,
+      "kuzuSec": 43.7,
+      "ftsSec": 15.8
+    },
+    "queryCold": {
+      "command": "/usr/bin/time -l node gitnexus/dist/cli/index.js context DoorObj --repo neonnew-core --file Assets/NEON/Code/Game/Doors/DoorObj.cs --unity-resources auto",
+      "realSec": 0.94,
+      "maxRssBytes": 551174144,
+      "resourceBindings": 33,
+      "unityDiagnostics": 0,
+      "status": "found"
+    },
+    "queryWarm": {
+      "command": "/usr/bin/time -l node gitnexus/dist/cli/index.js context DoorObj --repo neonnew-core --file Assets/NEON/Code/Game/Doors/DoorObj.cs --unity-resources auto",
+      "realSec": 0.93,
+      "maxRssBytes": 544555008,
+      "resourceBindings": 33,
+      "unityDiagnostics": 0,
+      "status": "found"
+    },
+    "queryAssetRef": {
+      "command": "/usr/bin/time -l node gitnexus/dist/cli/index.js context --uid Class:Assets/NEON/Code/Framework/AssetData/AssetRef.cs:AssetRef --repo neonnew-core --unity-resources on",
+      "realSec": 0.6,
+      "maxRssBytes": 551813120,
+      "resourceBindings": 525,
+      "unityDiagnostics": 0,
+      "status": "found",
+      "note": "Used --uid because name-only AssetRef query is ambiguous (Class + Constructor)."
+    }
+  },
+  "comparisonToTier2": {
+    "tier2Report": "docs/reports/2026-03-14-analyze-memory-tier2-summary.json",
+    "delta": {
+      "analyzeRealSec": -8.42,
+      "analyzeMaxRssBytes": -777060352,
+      "nodes": -55896,
+      "edges": -34791,
+      "coldQueryRealSec": -1.5,
+      "coldQueryMaxRssBytes": -425869312,
+      "warmQueryRealSec": -1.49,
+      "warmQueryMaxRssBytes": -400162816,
+      "doorObjBindings": -5156
+    }
+  },
+  "decision": {
+    "keep": true,
+    "notes": [
+      "Tier 3 reduced analyze wall time and peak RSS compared with Tier 2 while keeping Unity query gates green.",
+      "DoorObj summary-only retrieval now returns compact baseline bindings and relies on lazy hydration for full payload expansion.",
+      "AssetRef class still resolves to non-empty bindings under unity-resources=on when queried by explicit UID."
+    ]
+  }
+}
