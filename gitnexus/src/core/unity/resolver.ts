@@ -9,6 +9,7 @@ import type { UnityScanContext } from './scan-context.js';
 import { parseUnityYamlObjects, type UnityObjectBlock, type UnityObjectType } from './yaml-object-graph.js';
 
 export type UnityBindingKind = 'direct' | 'prefab-instance' | 'nested' | 'variant' | 'scene-override';
+const MAX_CACHED_RESOURCE_BYTES = 512 * 1024;
 
 export interface ResolveInput {
   repoRoot: string;
@@ -99,8 +100,19 @@ export async function resolveUnityBindings(input: ResolveInput): Promise<Resolve
     : await findGuidHits(input.repoRoot, scriptGuid);
   const resourceBindings: ResolvedUnityBinding[] = [];
   const unityDiagnostics: string[] = [];
+  const resourceSizeCache = new Map<string, boolean>();
 
   for (const hit of hits) {
+    const shouldUseLightweightBinding = await isLargeResourceForDeepParse(
+      input.repoRoot,
+      hit.resourcePath,
+      resourceSizeCache,
+    );
+    if (shouldUseLightweightBinding) {
+      resourceBindings.push(createLightweightBinding(hit));
+      continue;
+    }
+
     const blocks = await getResourceBlocks(input.repoRoot, hit.resourcePath, input.scanContext);
     const matchedComponents = blocks.filter(
       (block) => block.objectType === 'MonoBehaviour' && block.fields.m_Script?.includes(scriptGuid),
@@ -137,6 +149,43 @@ export async function resolveUnityBindings(input: ResolveInput): Promise<Resolve
     serializedFields: aggregateSerializedFields(resourceBindings),
     unityDiagnostics,
   };
+}
+
+function createLightweightBinding(hit: UnityResourceGuidHit): ResolvedUnityBinding {
+  return {
+    resourcePath: hit.resourcePath,
+    resourceType: hit.resourceType,
+    bindingKind: hit.resourceType === 'scene' ? 'scene-override' : 'direct',
+    componentObjectId: `line-${hit.line}`,
+    evidence: {
+      line: hit.line,
+      lineText: hit.lineText,
+    },
+    serializedFields: {
+      scalarFields: [],
+      referenceFields: [],
+    },
+    resolvedReferences: [],
+    assetRefPaths: [],
+  };
+}
+
+async function isLargeResourceForDeepParse(
+  repoRoot: string,
+  resourcePath: string,
+  cache: Map<string, boolean>,
+): Promise<boolean> {
+  const normalizedPath = normalizePath(resourcePath);
+  const cached = cache.get(normalizedPath);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const absolutePath = path.join(repoRoot, normalizedPath);
+  const stat = await fs.stat(absolutePath);
+  const isLarge = stat.size > MAX_CACHED_RESOURCE_BYTES;
+  cache.set(normalizedPath, isLarge);
+  return isLarge;
 }
 
 export function hasCoverage(resultSet: ResolveOutput[]): { hasScalar: boolean; hasReference: boolean } {
@@ -211,9 +260,16 @@ async function getResourceBlocks(
   }
 
   const absoluteResourcePath = path.join(repoRoot, normalizedResourcePath);
+  let allowCache = Boolean(scanContext);
+  if (allowCache) {
+    const stat = await fs.stat(absoluteResourcePath);
+    allowCache = stat.size <= MAX_CACHED_RESOURCE_BYTES;
+  }
   const raw = await fs.readFile(absoluteResourcePath, 'utf-8');
   const blocks = parseUnityYamlObjects(raw);
-  scanContext?.resourceDocCache.set(normalizedResourcePath, blocks);
+  if (allowCache) {
+    scanContext?.resourceDocCache.set(normalizedResourcePath, blocks);
+  }
   return blocks;
 }
 

@@ -10,7 +10,7 @@ import { processUnityResources } from './unity-resource-processor.js';
 import { createSymbolTable } from './symbol-table.js';
 import { createASTCache } from './ast-cache.js';
 import { PipelineProgress, PipelineResult } from '../../types/pipeline.js';
-import { walkRepositoryPaths, readFileContents } from './filesystem-walker.js';
+import { walkRepositoryPaths, readFileContents, walkUnityResourcePaths } from './filesystem-walker.js';
 import { getLanguageFromFilename } from './utils.js';
 import { createWorkerPool, WorkerPool } from './workers/worker-pool.js';
 import { selectEntriesByScopeRules } from './scope-filter.js';
@@ -97,10 +97,14 @@ export const runPipelineFromRepo = async (
     });
 
     const allPaths = extensionFiltered.map(f => f.path);
+    const unityCandidates = await walkUnityResourcePaths(repoPath);
     const unityScopedPaths =
       (options?.scopeRules && options.scopeRules.length > 0)
-        ? scopedFiles.map(f => f.path)
-        : allPaths;
+        ? selectEntriesByScopeRules(
+          unityCandidates.map(path => ({ path })),
+          options.scopeRules,
+        ).selected.map(entry => entry.path)
+        : unityCandidates;
     processStructure(graph, allPaths);
 
     onProgress({

@@ -98,7 +98,11 @@ test('buildUnityScanContext selects canonical script for duplicated symbol decla
     );
     await fs.writeFile(path.join(scriptsDir, 'PlayerActor.cs.meta'), 'guid: 11111111111111111111111111111111\n', 'utf-8');
     await fs.writeFile(path.join(scriptsDir, 'PlayerActor.Visual.cs.meta'), 'guid: 22222222222222222222222222222222\n', 'utf-8');
-    await fs.writeFile(path.join(sceneDir, 'Test.unity'), '--- !u!1 &1\nguid: 11111111111111111111111111111111\n', 'utf-8');
+    await fs.writeFile(
+      path.join(sceneDir, 'Test.unity'),
+      '--- !u!114 &1\nMonoBehaviour:\n  m_Script: {fileID: 11500000, guid: 11111111111111111111111111111111, type: 3}\n',
+      'utf-8',
+    );
 
     const context = await buildUnityScanContext({
       repoRoot: tempRoot,

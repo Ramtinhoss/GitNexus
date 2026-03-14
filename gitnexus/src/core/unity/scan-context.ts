@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import path from 'node:path';
+import { createInterface } from 'node:readline';
 import { glob } from 'glob';
 import { buildAssetMetaIndex, buildMetaIndex } from './meta-index.js';
 import type { UnityResourceGuidHit } from './resource-hit-scanner.js';
@@ -7,8 +9,8 @@ import type { UnityObjectBlock } from './yaml-object-graph.js';
 import { buildSerializableTypeIndexFromSources } from './serialized-type-index.js';
 
 const DECLARATION_PATTERN = /\b(?:class|struct|interface)\s+([A-Za-z_][A-Za-z0-9_]*)\b/g;
-const GUID_IN_LINE_PATTERN = /\bguid:\s*([0-9a-f]{32})\b/gi;
-const RESOURCE_HIT_SCAN_CONCURRENCY = 16;
+const SCRIPT_GUID_IN_LINE_PATTERN = /\bm_Script\s*:\s*\{[^}]*\bguid\s*:\s*([0-9a-f]{32})\b/gi;
+const RESOURCE_HIT_SCAN_CONCURRENCY = 4;
 
 export interface BuildScanContextInput {
   repoRoot: string;
@@ -145,43 +147,9 @@ async function buildGuidHitIndex(
     RESOURCE_HIT_SCAN_CONCURRENCY,
     async (resourcePathRaw) => {
       const resourcePath = normalizeSlashes(resourcePathRaw);
-      const absolutePath = path.join(repoRoot, resourcePath);
-      let content = '';
-      try {
-        content = await fs.readFile(absolutePath, 'utf-8');
-      } catch (error) {
-        const code = (error as NodeJS.ErrnoException).code;
-        if (code === 'ENOENT' || code === 'EISDIR') {
-          return new Map<string, UnityResourceGuidHit[]>();
-        }
-        throw error;
-      }
-
       const resourceType = inferResourceType(resourcePath);
-      const lines = content.split(/\r?\n/);
       const hits = new Map<string, UnityResourceGuidHit[]>();
-
-      for (let index = 0; index < lines.length; index += 1) {
-        const line = lines[index];
-        const seenCanonical = new Set<string>();
-        GUID_IN_LINE_PATTERN.lastIndex = 0;
-        let match = GUID_IN_LINE_PATTERN.exec(line);
-        while (match) {
-          const canonicalGuid = guidLookup.get(match[1].toLowerCase());
-          if (canonicalGuid && !seenCanonical.has(canonicalGuid)) {
-            seenCanonical.add(canonicalGuid);
-            const existing = hits.get(canonicalGuid) || [];
-            existing.push({
-              resourcePath,
-              resourceType,
-              line: index + 1,
-              lineText: line,
-            });
-            hits.set(canonicalGuid, existing);
-          }
-          match = GUID_IN_LINE_PATTERN.exec(line);
-        }
-      }
+      await scanGuidHitsInResourceFile(repoRoot, resourcePath, resourceType, guidLookup, hits);
 
       return hits;
     },
@@ -197,6 +165,57 @@ async function buildGuidHitIndex(
   }
 
   return guidToResourceHits;
+}
+
+async function scanGuidHitsInResourceFile(
+  repoRoot: string,
+  resourcePath: string,
+  resourceType: UnityResourceGuidHit['resourceType'],
+  guidLookup: Map<string, string>,
+  hits: Map<string, UnityResourceGuidHit[]>,
+): Promise<void> {
+  const absolutePath = path.join(repoRoot, resourcePath);
+  const stream = createReadStream(absolutePath, { encoding: 'utf-8' });
+  const reader = createInterface({
+    input: stream,
+    crlfDelay: Infinity,
+  });
+  const seenGuidInResource = new Set<string>();
+
+  let lineNumber = 0;
+  try {
+    for await (const line of reader) {
+      lineNumber += 1;
+      const seenCanonical = new Set<string>();
+      SCRIPT_GUID_IN_LINE_PATTERN.lastIndex = 0;
+      let match = SCRIPT_GUID_IN_LINE_PATTERN.exec(line);
+      while (match) {
+        const canonicalGuid = guidLookup.get(match[1].toLowerCase());
+        if (canonicalGuid && !seenCanonical.has(canonicalGuid) && !seenGuidInResource.has(canonicalGuid)) {
+          seenCanonical.add(canonicalGuid);
+          seenGuidInResource.add(canonicalGuid);
+          const existing = hits.get(canonicalGuid) || [];
+          existing.push({
+            resourcePath,
+            resourceType,
+            line: lineNumber,
+            lineText: line,
+          });
+          hits.set(canonicalGuid, existing);
+        }
+        match = SCRIPT_GUID_IN_LINE_PATTERN.exec(line);
+      }
+    }
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'EISDIR') {
+      return;
+    }
+    throw error;
+  } finally {
+    reader.close();
+    stream.destroy();
+  }
 }
 
 async function resolveScriptFiles(repoRoot: string, scopedPaths?: string[]): Promise<string[]> {
