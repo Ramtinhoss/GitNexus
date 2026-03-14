@@ -281,8 +281,9 @@ function buildUnityPayload(
     payload.lightweight = true;
   }
 
-  if (binding.serializedFields.scalarFields.length > 0 || binding.serializedFields.referenceFields.length > 0) {
-    payload.serializedFields = binding.serializedFields;
+  const serializedFields = compactSerializedFieldsForStorage(binding.serializedFields);
+  if (serializedFields.scalarFields.length > 0 || serializedFields.referenceFields.length > 0) {
+    payload.serializedFields = serializedFields;
   }
   if (binding.resolvedReferences && binding.resolvedReferences.length > 0) {
     payload.resolvedReferences = binding.resolvedReferences;
@@ -298,6 +299,25 @@ function buildUnityPayload(
   }
 
   return payload;
+}
+
+function compactSerializedFieldsForStorage(
+  input: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number]['serializedFields'],
+): Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number]['serializedFields'] {
+  return {
+    scalarFields: input.scalarFields.map((field) => ({
+      name: field.name,
+      sourceLayer: field.sourceLayer,
+      value: field.value,
+      valueType: field.valueType,
+    })),
+    referenceFields: input.referenceFields.map((field) => ({
+      name: field.name,
+      guid: field.guid,
+      fileId: field.fileId,
+      sourceLayer: field.sourceLayer,
+    })),
+  };
 }
 
 function buildCanonicalClassNodeIndex(

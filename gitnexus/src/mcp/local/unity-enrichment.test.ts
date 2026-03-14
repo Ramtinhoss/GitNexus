@@ -177,6 +177,24 @@ test('projectUnityBindings infers lightweight marker from legacy line-* componen
   assert.equal(out.resourceBindings[0]?.lightweight, true);
 });
 
+test('projectUnityBindings restores compact component payload rows without embedded resourcePath', () => {
+  const out = projectUnityBindings([
+    {
+      resourcePath: 'Assets/A.prefab',
+      payload: JSON.stringify({
+        bindingKind: 'direct',
+        componentObjectId: '114',
+        serializedFields: { scalarFields: [], referenceFields: [] },
+      }),
+    },
+  ]);
+
+  assert.equal(out.resourceBindings.length, 1);
+  assert.equal(out.resourceBindings[0]?.resourcePath, 'Assets/A.prefab');
+  assert.equal(out.resourceBindings[0]?.bindingKind, 'direct');
+  assert.deepEqual(out.unityDiagnostics, []);
+});
+
 test('formatLazyHydrationBudgetDiagnostic returns stable budget warning', () => {
   const message = formatLazyHydrationBudgetDiagnostic(17);
   assert.match(message, /budget exceeded/i);

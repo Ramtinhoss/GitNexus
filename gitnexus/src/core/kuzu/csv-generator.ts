@@ -46,6 +46,8 @@ const escapeCSVNumber = (value: number | undefined | null, defaultValue: number 
   return String(value);
 };
 
+const UNITY_RESOURCE_PATH_PATTERN = /\.(prefab|unity|asset)$/i;
+
 // ============================================================================
 // CONTENT EXTRACTION (lazy — reads from disk on demand)
 // ============================================================================
@@ -162,6 +164,60 @@ const extractContent = async (
     ? snippet.slice(0, MAX_SNIPPET) + '\n... [truncated]'
     : snippet;
 };
+
+function compactUnityComponentDescription(description: unknown): string {
+  const raw = typeof description === 'string' ? description : '';
+  if (!raw) return '';
+  try {
+    const parsed = JSON.parse(raw) as any;
+    const compact: Record<string, unknown> = {};
+    if (parsed.bindingKind) compact.bindingKind = parsed.bindingKind;
+    if (parsed.componentObjectId) compact.componentObjectId = parsed.componentObjectId;
+    if (parsed.lightweight) compact.lightweight = true;
+
+    const scalarFields = parsed.serializedFields?.scalarFields || [];
+    const referenceFields = parsed.serializedFields?.referenceFields || [];
+    if (scalarFields.length > 0 || referenceFields.length > 0) {
+      compact.serializedFields = { scalarFields, referenceFields };
+    }
+
+    if (Array.isArray(parsed.resolvedReferences) && parsed.resolvedReferences.length > 0) {
+      compact.resolvedReferences = parsed.resolvedReferences;
+    }
+    if (Array.isArray(parsed.assetRefPaths) && parsed.assetRefPaths.length > 0) {
+      compact.assetRefPaths = parsed.assetRefPaths;
+    }
+
+    return JSON.stringify(Object.keys(compact).length > 0 ? compact : parsed);
+  } catch {
+    return raw;
+  }
+}
+
+export async function toCodeElementCsvRow(
+  node: GraphNode,
+  contentCache?: FileContentCache,
+): Promise<string> {
+  const filePath = String(node.properties.filePath || '');
+  const isUnityComponentRow = node.label === 'CodeElement' && UNITY_RESOURCE_PATH_PATTERN.test(filePath);
+  const content = isUnityComponentRow
+    ? ''
+    : (contentCache ? await extractContent(node, contentCache) : '');
+  const description = isUnityComponentRow
+    ? compactUnityComponentDescription((node.properties as any).description || '')
+    : String((node.properties as any).description || '');
+
+  return [
+    escapeCSVField(node.id),
+    escapeCSVField(node.properties.name || ''),
+    escapeCSVField(filePath),
+    escapeCSVNumber(node.properties.startLine, -1),
+    escapeCSVNumber(node.properties.endLine, -1),
+    node.properties.isExported ? 'true' : 'false',
+    escapeCSVField(content),
+    escapeCSVField(description),
+  ].join(',');
+}
 
 // ============================================================================
 // BUFFERED CSV WRITER
@@ -326,17 +382,7 @@ export const streamAllCSVsToDisk = async (
         // Code element nodes (Function, Class, Interface, Method, CodeElement)
         const writer = codeWriterMap[node.label];
         if (writer) {
-          const content = await extractContent(node, contentCache);
-          await writer.addRow([
-            escapeCSVField(node.id),
-            escapeCSVField(node.properties.name || ''),
-            escapeCSVField(node.properties.filePath || ''),
-            escapeCSVNumber(node.properties.startLine, -1),
-            escapeCSVNumber(node.properties.endLine, -1),
-            node.properties.isExported ? 'true' : 'false',
-            escapeCSVField(content),
-            escapeCSVField((node.properties as any).description || ''),
-          ].join(','));
+          await writer.addRow(await toCodeElementCsvRow(node, contentCache));
         } else {
           // Multi-language node types (Struct, Impl, Trait, Macro, etc.)
           const mlWriter = multiLangWriters.get(node.label);
