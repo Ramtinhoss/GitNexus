@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { buildUnityScanContext } from './scan-context.js';
+import { buildUnityScanContext, buildUnityScanContextFromSeed } from './scan-context.js';
 import { resolveUnityBindings } from './resolver.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -171,4 +171,30 @@ test('buildUnityScanContext builds serializable index from files without preload
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
+});
+
+test('buildUnityScanContextFromSeed reconstructs lookup maps for resolver fast path', async () => {
+  const context = buildUnityScanContextFromSeed({
+    seed: {
+      version: 1,
+      symbolToScriptPath: {
+        MainUIManager: 'Assets/Scripts/MainUIManager.cs',
+      },
+      scriptPathToGuid: {
+        'Assets/Scripts/MainUIManager.cs': '11111111111111111111111111111111',
+      },
+      guidToResourcePaths: {
+        '11111111111111111111111111111111': ['Assets/Scene/MainUIManager.unity'],
+      },
+      assetGuidToPath: {
+        '44444444444444444444444444444444': 'Assets/Config/MainUIDocument.asset',
+      },
+    },
+    symbolDeclarations: [{ symbol: 'MainUIManager', scriptPath: 'Assets/Scripts/MainUIManager.cs' }],
+  });
+
+  assert.equal(context.symbolToScriptPath.get('MainUIManager'), 'Assets/Scripts/MainUIManager.cs');
+  assert.equal(context.scriptPathToGuid.get('Assets/Scripts/MainUIManager.cs'), '11111111111111111111111111111111');
+  assert.equal(context.guidToResourceHits.get('11111111111111111111111111111111')?.length, 1);
+  assert.equal(context.assetGuidToPath?.get('44444444444444444444444444444444'), 'Assets/Config/MainUIDocument.asset');
 });

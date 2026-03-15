@@ -25,6 +25,7 @@ import { resolveChildProcessExit } from './exit-code.js';
 import { shouldCloseKuzuOnAnalyzeExit } from './analyze-close-policy.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
 import type { PipelineResult } from '../types/pipeline.js';
+import type { UnityParitySeed } from '../core/ingestion/unity-parity-seed.js';
 
 const HEAP_MB = 8192;
 const HEAP_FLAG = `--max-old-space-size=${HEAP_MB}`;
@@ -380,6 +381,7 @@ export const analyzeCommand = async (
     },
   };
   await saveMeta(storagePath, meta);
+  await persistUnityParitySeed(storagePath, pipelineRuntime.unityResult?.paritySeed);
   const registeredRepo = await registerRepo(repoPath, meta, { repoAlias });
   await addToGitignore(repoPath);
 
@@ -491,3 +493,17 @@ export const analyzeCommand = async (
     process.exit(0);
   }
 };
+
+async function persistUnityParitySeed(
+  storagePath: string,
+  seed: UnityParitySeed | undefined,
+): Promise<void> {
+  const seedPath = path.join(storagePath, 'unity-parity-seed.json');
+  if (!seed) {
+    try {
+      await fs.rm(seedPath, { force: true });
+    } catch {}
+    return;
+  }
+  await fs.writeFile(seedPath, JSON.stringify(seed), 'utf-8');
+}

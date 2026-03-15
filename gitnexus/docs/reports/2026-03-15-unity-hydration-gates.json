@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-03-15T02:45:23.042Z",
+  "config": {
+    "targetPath": "/Volumes/Shuttle/projects/neonnew",
+    "repo": "neonnew-core",
+    "symbol": "DoorObj",
+    "file": "Assets/NEON/Code/Game/Doors/DoorObj.cs",
+    "unityHydration": "compact"
+  },
+  "metrics": {
+    "coldMs": 1678,
+    "warmMs": 573,
+    "coldMaxRssBytes": 573538304,
+    "warmMaxRssBytes": 516341760
+  },
+  "hydrationMetaSummary": {
+    "compactSamples": 2,
+    "paritySamples": 0,
+    "compactNeedsRetryRate": 0,
+    "parityCompleteRate": 0
+  },
+  "thresholdVerdict": {
+    "pass": true,
+    "checks": {}
+  }
+}

@@ -7,6 +7,7 @@ import { buildAssetMetaIndex, buildMetaIndex } from './meta-index.js';
 import type { UnityResourceGuidHit } from './resource-hit-scanner.js';
 import type { UnityObjectBlock } from './yaml-object-graph.js';
 import { buildSerializableTypeIndexFromFiles } from './serialized-type-index.js';
+import type { UnityParitySeed } from '../ingestion/unity-parity-seed.js';
 
 const DECLARATION_PATTERN = /\b(?:class|struct|interface)\s+([A-Za-z_][A-Za-z0-9_]*)\b/g;
 const SCRIPT_GUID_IN_LINE_PATTERN = /\bm_Script\s*:\s*\{[^}]*\bguid\s*:\s*([0-9a-f]{32})\b/gi;
@@ -80,6 +81,100 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     guidToResourceHits,
     serializableSymbols: serializableTypeIndex.serializableSymbols,
     hostFieldTypeHints: serializableTypeIndex.hostFieldTypeHints,
+    assetGuidToPath,
+    resourceDocCache: new Map<string, UnityObjectBlock[]>(),
+  };
+}
+
+export function buildUnityScanContextFromSeed(input: {
+  seed: UnityParitySeed;
+  symbolDeclarations?: UnitySymbolDeclaration[];
+}): UnityScanContext {
+  const seed = input.seed;
+  const requestedSymbols = new Set(
+    (input.symbolDeclarations || [])
+      .map((entry) => String(entry.symbol || '').trim())
+      .filter((value) => value.length > 0),
+  );
+  const requestedScripts = new Set(
+    (input.symbolDeclarations || [])
+      .map((entry) => normalizeSlashes(String(entry.scriptPath || '').trim()))
+      .filter((value) => value.length > 0),
+  );
+
+  const symbolToScriptPath = new Map<string, string>();
+  for (const [symbol, scriptPath] of Object.entries(seed.symbolToScriptPath || {})) {
+    const normalizedPath = normalizeSlashes(scriptPath);
+    if (!normalizedPath) continue;
+    if (requestedSymbols.size > 0 && !requestedSymbols.has(symbol)) continue;
+    symbolToScriptPath.set(symbol, normalizedPath);
+    requestedScripts.add(normalizedPath);
+  }
+
+  if (symbolToScriptPath.size === 0 && requestedSymbols.size > 0) {
+    for (const declaration of input.symbolDeclarations || []) {
+      const symbol = String(declaration.symbol || '').trim();
+      const scriptPath = normalizeSlashes(String(declaration.scriptPath || '').trim());
+      if (!symbol || !scriptPath) continue;
+      symbolToScriptPath.set(symbol, scriptPath);
+      requestedScripts.add(scriptPath);
+    }
+  }
+
+  const symbolToCanonicalScriptPath = new Map<string, string>(symbolToScriptPath);
+  const symbolToScriptPaths = new Map<string, string[]>();
+  for (const [symbol, scriptPath] of symbolToScriptPath.entries()) {
+    symbolToScriptPaths.set(symbol, [scriptPath]);
+  }
+
+  const scriptPathToGuid = new Map<string, string>();
+  const normalizedScriptPathToGuidEntries = Object.entries(seed.scriptPathToGuid || {})
+    .map(([scriptPath, guid]) => [normalizeSlashes(scriptPath), String(guid || '').trim()] as const)
+    .filter(([scriptPath, guid]) => scriptPath.length > 0 && guid.length > 0);
+  for (const [scriptPath, guid] of normalizedScriptPathToGuidEntries) {
+    if (requestedScripts.size > 0 && !requestedScripts.has(scriptPath)) continue;
+    scriptPathToGuid.set(scriptPath, guid);
+  }
+  if (scriptPathToGuid.size === 0 && requestedScripts.size > 0) {
+    for (const [scriptPath, guid] of normalizedScriptPathToGuidEntries) {
+      if (!requestedScripts.has(scriptPath)) continue;
+      scriptPathToGuid.set(scriptPath, guid);
+    }
+  }
+
+  const selectedGuids = new Set<string>(scriptPathToGuid.values());
+  const guidToResourceHits = new Map<string, UnityResourceGuidHit[]>();
+  for (const [guid, resourcePaths] of Object.entries(seed.guidToResourcePaths || {})) {
+    if (selectedGuids.size > 0 && !selectedGuids.has(guid)) continue;
+    const hits = (resourcePaths || [])
+      .map((resourcePathRaw) => normalizeSlashes(String(resourcePathRaw || '').trim()))
+      .filter((resourcePath) => resourcePath.length > 0)
+      .map((resourcePath) => ({
+        resourcePath,
+        resourceType: inferResourceType(resourcePath),
+        line: 0,
+        lineText: 'seed',
+      }));
+    if (hits.length > 0) {
+      guidToResourceHits.set(guid, hits);
+    }
+  }
+
+  const assetGuidToPath = new Map<string, string>();
+  for (const [guid, assetPath] of Object.entries(seed.assetGuidToPath || {})) {
+    const normalizedPath = normalizeSlashes(String(assetPath || '').trim());
+    if (!guid || !normalizedPath) continue;
+    assetGuidToPath.set(guid, normalizedPath);
+  }
+
+  return {
+    symbolToScriptPaths,
+    symbolToCanonicalScriptPath,
+    symbolToScriptPath,
+    scriptPathToGuid,
+    guidToResourceHits,
+    serializableSymbols: new Set(),
+    hostFieldTypeHints: new Map<string, Map<string, string>>(),
     assetGuidToPath,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };

@@ -9,6 +9,9 @@ test('sampler emits cold/warm latency and rss metrics with threshold verdict', a
     exitCode: 0,
     stdout: '',
     stderr: '',
+    hydrationMeta: warm
+      ? { requestedMode: 'compact', effectiveMode: 'parity', isComplete: true, needsParityRetry: false }
+      : { requestedMode: 'compact', effectiveMode: 'compact', isComplete: false, needsParityRetry: true },
   });
 
   const report = await runUnityLazyContextSampler(fakeRunner as any, {
@@ -25,6 +28,8 @@ test('sampler emits cold/warm latency and rss metrics with threshold verdict', a
   });
 
   assert.ok(report.metrics.coldMs > 0);
+  assert.equal(typeof report.hydrationMetaSummary.compactNeedsRetryRate, 'number');
+  assert.equal(typeof report.hydrationMetaSummary.parityCompleteRate, 'number');
   assert.ok(typeof report.thresholdVerdict.pass === 'boolean');
   assert.equal(report.thresholdVerdict.pass, true);
 });

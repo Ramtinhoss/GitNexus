@@ -9,13 +9,21 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { initKuzu, executeQuery, closeKuzu, isKuzuReady } from '../core/kuzu-adapter.js';
-import { parseUnityResourcesMode } from '../../core/unity/options.js';
-import { buildUnityScanContext } from '../../core/unity/scan-context.js';
+import { parseUnityHydrationMode, parseUnityResourcesMode, type UnityHydrationMode } from '../../core/unity/options.js';
+import { buildUnityScanContext, buildUnityScanContextFromSeed } from '../../core/unity/scan-context.js';
 import { resolveUnityBindings, type ResolvedUnityBinding } from '../../core/unity/resolver.js';
-import { formatLazyHydrationBudgetDiagnostic, loadUnityContext, type UnityContextPayload } from './unity-enrichment.js';
+import {
+  formatLazyHydrationBudgetDiagnostic,
+  loadUnityContext,
+  type UnityContextPayload,
+  type UnityHydrationMeta,
+} from './unity-enrichment.js';
 import { resolveUnityLazyConfig } from './unity-lazy-config.js';
 import { hydrateLazyBindings } from './unity-lazy-hydrator.js';
 import { readUnityOverlayBindings, upsertUnityOverlayBindings } from './unity-lazy-overlay.js';
+import { readUnityParityCache, upsertUnityParityCache } from './unity-parity-cache.js';
+import { createParityWarmupQueue } from './unity-parity-warmup-queue.js';
+import { loadUnityParitySeed } from './unity-parity-seed-loader.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
@@ -47,6 +55,14 @@ function normalizePath(filePath: string): string {
   return String(filePath || '').replace(/\\/g, '/');
 }
 
+function bindingIdentity(binding: ResolvedUnityBinding): string {
+  return [
+    normalizePath(binding.resourcePath),
+    binding.bindingKind,
+    binding.componentObjectId,
+  ].join('|');
+}
+
 export function mergeUnityBindings(
   baseBindings: ResolvedUnityBinding[],
   resolvedByPath: Map<string, ResolvedUnityBinding[]>,
@@ -74,6 +90,72 @@ export function mergeUnityBindings(
   }
 
   return merged;
+}
+
+export function mergeParityUnityBindings(
+  baseNonLightweightBindings: ResolvedUnityBinding[],
+  resolvedBindings: ResolvedUnityBinding[],
+): ResolvedUnityBinding[] {
+  const merged: ResolvedUnityBinding[] = [];
+  const seen = new Set<string>();
+  for (const row of [...baseNonLightweightBindings, ...resolvedBindings]) {
+    const key = bindingIdentity(row);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push({ ...row, lightweight: false });
+  }
+  return merged;
+}
+
+export function attachUnityHydrationMeta(
+  payload: UnityContextPayload,
+  input: Pick<UnityHydrationMeta, 'requestedMode' | 'effectiveMode' | 'elapsedMs' | 'fallbackToCompact'> & {
+    hasExpandableBindings: boolean;
+  },
+): UnityContextPayload {
+  const { hasExpandableBindings, ...metaInput } = input;
+  const reasons: string[] = [];
+  if (metaInput.effectiveMode === 'compact' && hasExpandableBindings) {
+    reasons.push('mode_compact');
+  }
+  if (metaInput.fallbackToCompact) {
+    reasons.push('fallback_to_compact');
+  }
+  if (hasExpandableBindings) {
+    reasons.push('lightweight_bindings_remaining');
+  }
+  if (payload.unityDiagnostics.some((diag) => /budget exceeded/i.test(String(diag || '')))) {
+    reasons.push('budget_exceeded');
+  }
+  const isComplete = reasons.length === 0;
+  const needsParityRetry = !isComplete && metaInput.effectiveMode === 'compact';
+
+  return {
+      ...payload,
+      hydrationMeta: {
+      ...metaInput,
+      resourceBindingCount: payload.resourceBindings.length,
+      unityDiagnosticsCount: payload.unityDiagnostics.length,
+      isComplete,
+      completenessReason: reasons,
+      needsParityRetry,
+      ...(needsParityRetry ? { retryHint: 'rerun_with_unity_hydration=parity' } : {}),
+    },
+  };
+}
+
+const inFlightParityHydration = new Map<string, Promise<UnityContextPayload>>();
+const parityWarmupQueue = createParityWarmupQueue({
+  maxParallel: resolveParityWarmupMaxParallel(process.env),
+});
+
+function resolveParityWarmupMaxParallel(env: NodeJS.ProcessEnv): number {
+  const raw = String(env.GITNEXUS_UNITY_PARITY_WARMUP_MAX_PARALLEL || '').trim();
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed;
+  }
+  return 2;
 }
 
 /** Valid KuzuDB node labels for safe Cypher query construction */
@@ -376,6 +458,7 @@ export class LocalBackend {
     max_symbols?: number;
     include_content?: boolean;
     unity_resources?: string;
+    unity_hydration_mode?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
       return { error: 'query parameter is required and cannot be empty.' };
@@ -387,6 +470,7 @@ export class LocalBackend {
     const maxSymbolsPerProcess = params.max_symbols || 10;
     const includeContent = params.include_content ?? false;
     const unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
+    const unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
     const searchQuery = params.query.trim();
     
     // Step 1: Run hybrid search to get matching symbols
@@ -493,7 +577,13 @@ export class LocalBackend {
         ...(module ? { module } : {}),
         ...(includeContent && content ? { content } : {}),
         ...((unityResourcesMode !== 'off' && sym.nodeId && sym.type === 'Class')
-          ? await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query))
+          ? await this.hydrateUnityContext(repo, {
+            symbolUid: sym.nodeId,
+            symbolName: sym.name || '',
+            symbolFilePath: sym.filePath || '',
+            payload: await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query)),
+            hydrationMode: unityHydrationMode,
+          })
           : {}),
       };
       
@@ -941,11 +1031,13 @@ export class LocalBackend {
     file_path?: string;
     include_content?: boolean;
     unity_resources?: string;
+    unity_hydration_mode?: string;
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
     
     const { name, uid, file_path, include_content } = params;
     const unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
+    const unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
     
     if (!name && !uid) {
       return { error: 'Either "name" or "uid" parameter is required.' };
@@ -1130,11 +1222,12 @@ export class LocalBackend {
 
     if (unityResourcesMode !== 'off' && symNodeId && symKind === 'Class') {
       const unityContext = await loadUnityContext(repo.id, symNodeId, (query) => executeQuery(repo.id, query));
-      const hydratedUnityContext = await this.hydrateUnityContextLazy(repo, {
+      const hydratedUnityContext = await this.hydrateUnityContext(repo, {
         symbolUid: symNodeId,
         symbolName: getRowValue<string>(sym, 'name', 1) || '',
         symbolFilePath: symFilePath,
         payload: unityContext,
+        hydrationMode: unityHydrationMode,
       });
       Object.assign(result, hydratedUnityContext);
     }
@@ -1234,13 +1327,212 @@ export class LocalBackend {
     return { error: 'Invalid type. Use: symbol, cluster, or process' };
   }
 
-  private async hydrateUnityContextLazy(
+  private async hydrateUnityContext(
     repo: RepoHandle,
     input: {
       symbolUid: string;
       symbolName: string;
       symbolFilePath: string;
       payload: UnityContextPayload;
+      hydrationMode: UnityHydrationMode;
+    },
+  ): Promise<UnityContextPayload> {
+    const startedAt = Date.now();
+    if (input.hydrationMode === 'compact') {
+      const compactPayload = await this.hydrateUnityContextCompact(repo, input);
+      const withMeta = attachUnityHydrationMeta(compactPayload, {
+        requestedMode: 'compact',
+        effectiveMode: 'compact',
+        elapsedMs: Date.now() - startedAt,
+        fallbackToCompact: false,
+        hasExpandableBindings: compactPayload.resourceBindings.some(
+          (binding) => binding.lightweight || binding.componentObjectId === 'summary',
+        ),
+      });
+      if (withMeta.hydrationMeta?.needsParityRetry) {
+        this.scheduleParityWarmup(repo, input);
+      }
+      return withMeta;
+    }
+
+    const parityResult = await this.hydrateUnityContextParity(repo, input);
+    return attachUnityHydrationMeta(parityResult.payload, {
+      requestedMode: 'parity',
+      effectiveMode: parityResult.effectiveMode,
+      elapsedMs: Date.now() - startedAt,
+      fallbackToCompact: parityResult.fallbackToCompact,
+      hasExpandableBindings: parityResult.payload.resourceBindings.some(
+        (binding) => binding.lightweight || binding.componentObjectId === 'summary',
+      ),
+    });
+  }
+
+  private buildParityWarmupKey(repo: RepoHandle, symbolUid: string): string {
+    return `${repo.storagePath}::${repo.lastCommit}::${symbolUid}`;
+  }
+
+  private scheduleParityWarmup(
+    repo: RepoHandle,
+    input: {
+      symbolUid: string;
+      symbolName: string;
+      symbolFilePath: string;
+      payload: UnityContextPayload;
+      hydrationMode: UnityHydrationMode;
+    },
+  ): void {
+    if (!this.shouldEnableParityWarmup()) {
+      return;
+    }
+    if (!input.symbolUid || !input.symbolName || !input.symbolFilePath) {
+      return;
+    }
+
+    void parityWarmupQueue.run(() => this.getOrRunParityHydration(repo, input))
+      .then(() => undefined)
+      .catch(() => undefined);
+  }
+
+  private shouldEnableParityWarmup(): boolean {
+    const raw = String(process.env.GITNEXUS_UNITY_PARITY_WARMUP || '').trim().toLowerCase();
+    return raw === '1' || raw === 'true' || raw === 'on';
+  }
+
+  private async getOrRunParityHydration(
+    repo: RepoHandle,
+    input: {
+      symbolUid: string;
+      symbolName: string;
+      symbolFilePath: string;
+      payload: UnityContextPayload;
+      hydrationMode: UnityHydrationMode;
+    },
+  ): Promise<UnityContextPayload> {
+    const key = this.buildParityWarmupKey(repo, input.symbolUid);
+    const existing = inFlightParityHydration.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    const pending = (async () => {
+      const cached = await readUnityParityCache(repo.storagePath, repo.lastCommit, input.symbolUid);
+      if (cached) {
+        return cached;
+      }
+      const payload = await this.computeParityPayload(repo, input);
+      await upsertUnityParityCache(repo.storagePath, repo.lastCommit, input.symbolUid, payload);
+      return payload;
+    })().finally(() => {
+      inFlightParityHydration.delete(key);
+    });
+
+    inFlightParityHydration.set(key, pending);
+    return pending;
+  }
+
+  private async computeParityPayload(
+    repo: RepoHandle,
+    input: {
+      symbolUid: string;
+      symbolName: string;
+      symbolFilePath: string;
+      payload: UnityContextPayload;
+      hydrationMode: UnityHydrationMode;
+    },
+  ): Promise<UnityContextPayload> {
+    const symbolDeclarations = [{ symbol: input.symbolName, scriptPath: input.symbolFilePath }];
+    const paritySeed = await loadUnityParitySeed(repo.storagePath);
+    const seededScanContext = paritySeed
+      ? buildUnityScanContextFromSeed({
+        seed: paritySeed,
+        symbolDeclarations,
+      })
+      : null;
+
+    let resolved = await resolveUnityBindings({
+      repoRoot: repo.repoPath,
+      symbol: input.symbolName,
+      scanContext: seededScanContext || await buildUnityScanContext({
+        repoRoot: repo.repoPath,
+        symbolDeclarations,
+      }),
+      deepParseLargeResources: true,
+    });
+
+    if (
+      seededScanContext
+      && resolved.resourceBindings.length === 0
+      && input.payload.resourceBindings.length > 0
+    ) {
+      const fallbackScanContext = await buildUnityScanContext({
+        repoRoot: repo.repoPath,
+        symbolDeclarations,
+      });
+      resolved = await resolveUnityBindings({
+        repoRoot: repo.repoPath,
+        symbol: input.symbolName,
+        scanContext: fallbackScanContext,
+        deepParseLargeResources: true,
+      });
+    }
+
+    if (resolved.resourceBindings.length === 0 && input.payload.resourceBindings.length > 0) {
+      throw new Error('parity-expand returned zero bindings');
+    }
+
+    const baseNonLightweight = input.payload.resourceBindings.filter(
+      (binding) => !binding.lightweight && binding.componentObjectId !== 'summary',
+    );
+    const mergedBindings = mergeParityUnityBindings(baseNonLightweight, resolved.resourceBindings);
+    return this.toUnityContextPayload(mergedBindings, [
+      ...input.payload.unityDiagnostics,
+      ...resolved.unityDiagnostics,
+    ]);
+  }
+
+  private async hydrateUnityContextParity(
+    repo: RepoHandle,
+    input: {
+      symbolUid: string;
+      symbolName: string;
+      symbolFilePath: string;
+      payload: UnityContextPayload;
+      hydrationMode: UnityHydrationMode;
+    },
+  ): Promise<{ payload: UnityContextPayload; effectiveMode: UnityHydrationMode; fallbackToCompact: boolean }> {
+    try {
+      return {
+        payload: await this.getOrRunParityHydration(repo, input),
+        effectiveMode: 'parity',
+        fallbackToCompact: false,
+      };
+    } catch (error) {
+      const compactFallback = await this.hydrateUnityContextCompact(repo, input);
+      const message = String(error instanceof Error ? error.message : error);
+      return {
+        payload: {
+          ...compactFallback,
+          unityDiagnostics: [
+            ...compactFallback.unityDiagnostics,
+            /parity-expand returned zero bindings/i.test(message)
+              ? 'parity-expand returned zero bindings; fell back to compact hydration'
+              : `parity-expand failed: ${message}`,
+          ],
+        },
+        effectiveMode: 'compact',
+        fallbackToCompact: true,
+      };
+    }
+  }
+
+  private async hydrateUnityContextCompact(
+    repo: RepoHandle,
+    input: {
+      symbolUid: string;
+      symbolName: string;
+      symbolFilePath: string;
+      payload: UnityContextPayload;
+      hydrationMode: UnityHydrationMode;
     },
   ): Promise<UnityContextPayload> {
     const lightweightPaths = [...new Set(
@@ -1324,11 +1616,18 @@ export class LocalBackend {
     }
 
     const mergedBindings = mergeUnityBindings(input.payload.resourceBindings, resolvedByPath);
+    return this.toUnityContextPayload(mergedBindings, unityDiagnostics);
+  }
+
+  private toUnityContextPayload(
+    resourceBindings: ResolvedUnityBinding[],
+    unityDiagnostics: string[],
+  ): UnityContextPayload {
     return {
-      resourceBindings: mergedBindings,
+      resourceBindings,
       serializedFields: {
-        scalarFields: mergedBindings.flatMap((binding) => binding.serializedFields.scalarFields),
-        referenceFields: mergedBindings.flatMap((binding) => binding.serializedFields.referenceFields),
+        scalarFields: resourceBindings.flatMap((binding) => binding.serializedFields.scalarFields),
+        referenceFields: resourceBindings.flatMap((binding) => binding.serializedFields.referenceFields),
       },
       unityDiagnostics,
     };

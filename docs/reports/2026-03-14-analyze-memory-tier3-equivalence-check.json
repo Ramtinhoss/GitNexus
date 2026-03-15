@@ -1,9 +1,10 @@
 {
   "date": "2026-03-14",
-  "scope": "Tier3 summary-only hydration equivalence check",
+  "scope": "Tier3 summary-only hydration equivalence and retry-contract check",
   "sourceReports": {
     "tier2": "docs/reports/2026-03-14-analyze-memory-tier2-summary.json",
-    "tier3": "docs/reports/2026-03-14-analyze-memory-tier3-summary.json"
+    "tier3": "docs/reports/2026-03-14-analyze-memory-tier3-summary.json",
+    "hydrationGate": "gitnexus/docs/reports/2026-03-15-unity-hydration-gates.json"
   },
   "comparison": {
     "doorObj": {
@@ -15,6 +16,23 @@
     "assetRef": {
       "tier3QueryMode": "uid",
       "tier3Bindings": 525
+    }
+  },
+  "hydrationContractSignals": {
+    "compact": {
+      "requestedMode": "compact",
+      "effectiveMode": "compact",
+      "isComplete": true,
+      "needsParityRetry": false
+    },
+    "parity": {
+      "requestedMode": "parity",
+      "effectiveMode": "parity",
+      "isComplete": true
+    },
+    "parityLatencyMs": {
+      "firstCall": 9294,
+      "secondCall": 19
     }
   },
   "hydrationPipelineVerification": {
@@ -29,9 +47,11 @@
   "assessment": {
     "fieldLevelEquivalence": true,
     "countLevelEquivalence": false,
+    "contractLevelEquivalence": true,
     "notes": [
       "Tier3 hydration path is functionally able to recover full binding payloads for hydrated resource paths.",
-      "DoorObj count is materially lower than Tier2 in current runtime measurements, so quantitative parity is not met."
+      "DoorObj count is materially lower than Tier2 in current runtime measurements, so quantitative parity is not met.",
+      "Compact/parity retry contract is now explicit and machine-readable via hydrationMeta."
     ]
   }
 }

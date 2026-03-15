@@ -60,6 +60,8 @@ test('processUnityResources does not emit UNITY_COMPONENT_IN or synthetic resour
   assert.ok(unitySummaryRelations.length > 0);
   assert.equal(componentNodes.length, 0);
   assert.ok(result.bindingCount >= symbols.length);
+  assert.equal(result.paritySeed?.version, 1);
+  assert.ok((result.paritySeed?.scriptPathToGuid || {})['Assets/Scripts/MainUIManager.cs']);
   assert.ok(result.timingsMs.scanContext >= 0);
   assert.ok(result.timingsMs.resolve >= 0);
   assert.ok(result.timingsMs.graphWrite > 0);

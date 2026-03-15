@@ -9,6 +9,12 @@ test('runSymbolScenario executes context off/on + deepDive and records metrics',
       if (input.unity_resources === 'on') {
         return {
           status: 'found',
+          hydrationMeta: {
+            requestedMode: 'compact',
+            effectiveMode: 'compact',
+            isComplete: false,
+            needsParityRetry: true,
+          },
           resourceBindings: [
             {
               resourcePath: 'Assets/Prefabs/UI.prefab',
@@ -40,7 +46,11 @@ test('runSymbolScenario executes context off/on + deepDive and records metrics',
 
 test('AssetRef requires context(on) resourceBindings after serializable-class coverage', async () => {
   const noEvidenceRunner = {
-    context: async () => ({ status: 'found', resourceBindings: [] }),
+    context: async () => ({
+      status: 'found',
+      hydrationMeta: { requestedMode: 'compact', effectiveMode: 'compact', isComplete: false, needsParityRetry: true },
+      resourceBindings: [],
+    }),
     query: async () => ({ process_symbols: [] }),
     impact: async () => ({ impactedCount: 0 }),
     cypher: async () => ({ rows: [] }),
@@ -61,6 +71,7 @@ test('AssetRef requires deep-dive evidence even when context(on) has resourceBin
   const noDeepDiveEvidenceRunner = {
     context: async () => ({
       status: 'found',
+      hydrationMeta: { requestedMode: 'compact', effectiveMode: 'compact', isComplete: false, needsParityRetry: true },
       resourceBindings: [{ resourcePath: 'Assets/Data/Unlock.asset', resourceType: 'asset' }],
     }),
     query: async () => ({ process_symbols: [] }),
@@ -83,6 +94,7 @@ test('AssetRef passes when context(on) bindings and deep-dive evidence are both 
   const satisfiedRunner = {
     context: async () => ({
       status: 'found',
+      hydrationMeta: { requestedMode: 'compact', effectiveMode: 'compact', isComplete: false, needsParityRetry: true },
       resourceBindings: [{ resourcePath: 'Assets/Data/Unlock.asset', resourceType: 'asset' }],
     }),
     query: async () => ({ process_symbols: [{ id: 'Class:Assets/Scripts/UnlockContent.cs:UnlockContent' }] }),
@@ -121,6 +133,12 @@ test('runSymbolScenario retries context with file hint when response is ambiguou
       if (input.file_path === hint) {
         return {
           status: 'found',
+          hydrationMeta: {
+            requestedMode: 'compact',
+            effectiveMode: 'compact',
+            isComplete: false,
+            needsParityRetry: true,
+          },
           resourceBindings: [
             {
               resourcePath: 'Assets/Prefabs/Player.prefab',
@@ -158,4 +176,32 @@ test('runSymbolScenario retries context with file hint when response is ambiguou
   assert.equal(contextCalls[2]?.file_path, hint);
   assert.equal(out.steps[1]?.output?.status, 'found');
   assert.equal(out.assertions.pass, true);
+});
+
+test('runSymbolScenario fails when compact context hydrationMeta.needsParityRetry is missing', async () => {
+  const runner = {
+    context: async (input: Record<string, unknown>) => {
+      if (input.unity_resources === 'on') {
+        return {
+          status: 'found',
+          hydrationMeta: { requestedMode: 'compact', effectiveMode: 'compact', isComplete: false },
+          resourceBindings: [{ resourcePath: 'Assets/Prefabs/A.prefab', resourceType: 'prefab' }],
+        };
+      }
+      return { status: 'found' };
+    },
+    query: async () => ({ process_symbols: [{ id: 'Class:A' }] }),
+    impact: async () => ({ impactedCount: 1 }),
+    cypher: async () => ({ rows: [] }),
+  };
+
+  const out = await runSymbolScenario(runner as any, {
+    symbol: 'MainUIManager',
+    kind: 'component',
+    objectives: ['verify hydration contract'],
+    deepDivePlan: [{ tool: 'query', input: { query: 'MainUIManager' } }],
+  });
+
+  assert.equal(out.assertions.pass, false);
+  assert.ok(out.assertions.failures.some((f) => f.includes('hydrationMeta.needsParityRetry')));
 });

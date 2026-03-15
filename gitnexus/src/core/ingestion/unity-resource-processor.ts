@@ -4,12 +4,14 @@ import type { KnowledgeGraph, GraphNode, GraphRelationship } from '../graph/type
 import type { UnityScanContext, UnitySymbolDeclaration } from '../unity/scan-context.js';
 import { buildUnityScanContext } from '../unity/scan-context.js';
 import { resolveUnityBindings } from '../unity/resolver.js';
+import { buildUnityParitySeed, type UnityParitySeed } from './unity-parity-seed.js';
 
 export interface UnityResourceProcessingResult {
   processedSymbols: number;
   bindingCount: number;
   componentCount: number;
   diagnostics: string[];
+  paritySeed?: UnityParitySeed;
   timingsMs: {
     scanContext: number;
     resolve: number;
@@ -231,6 +233,7 @@ export async function processUnityResources(
     bindingCount,
     componentCount,
     diagnostics,
+    paritySeed: scanContext ? buildUnityParitySeed(scanContext) : undefined,
     timingsMs: {
       scanContext: roundMs(scanContextMs),
       resolve: roundMs(resolveMs),

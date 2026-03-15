@@ -85,12 +85,29 @@ function assertScenario(
   scenario: SymbolScenario,
   contextOnOutput: any,
   deepDiveOutputs: any[],
+  contextUnityHydration: 'compact' | 'parity',
 ): { pass: boolean; failures: string[] } {
   const failures: string[] = [];
   const bindings = Array.isArray(contextOnOutput?.resourceBindings) ? contextOnOutput.resourceBindings : [];
   const hasBindings = bindings.length > 0;
   const hasResolvedReferences = bindings.some((binding: any) => Array.isArray(binding?.resolvedReferences) && binding.resolvedReferences.length > 0);
   const hasAssetTypeBinding = bindings.some((binding: any) => typeof binding?.resourceType === 'string' && binding.resourceType.length > 0);
+  const hydrationMeta = contextOnOutput?.hydrationMeta && typeof contextOnOutput.hydrationMeta === 'object'
+    ? contextOnOutput.hydrationMeta
+    : null;
+
+  if (!hydrationMeta) {
+    failures.push(`${scenario.symbol}: context(on) must include hydrationMeta`);
+  } else if (contextUnityHydration === 'compact') {
+    if (typeof hydrationMeta.needsParityRetry !== 'boolean') {
+      failures.push(`${scenario.symbol}: context(on) hydrationMeta.needsParityRetry must be boolean`);
+    }
+    if (hydrationMeta.isComplete === false && hydrationMeta.needsParityRetry !== true) {
+      failures.push(`${scenario.symbol}: context(on) incomplete compact response must set hydrationMeta.needsParityRetry=true`);
+    }
+  } else if (hydrationMeta.isComplete !== true) {
+    failures.push(`${scenario.symbol}: context(on) parity response must set hydrationMeta.isComplete=true`);
+  }
 
   if (scenario.symbol === 'MainUIManager' || scenario.symbol === 'PlayerActor') {
     if (!hasBindings) {
@@ -191,7 +208,12 @@ export async function runSymbolScenario(
   const contextOff = await runContextWithDisambiguation(runner, scenario, contextOffInput);
   steps.push(buildMetric('context-off', 'context', performance.now() - t0, contextOffInput, contextOff));
 
-  const contextOnInput = { ...baseContextInput, unity_resources: 'on' };
+  const contextUnityHydration = scenario.contextUnityHydration === 'parity' ? 'parity' : 'compact';
+  const contextOnInput = {
+    ...baseContextInput,
+    unity_resources: 'on',
+    unity_hydration_mode: contextUnityHydration,
+  };
   const t1 = performance.now();
   const contextOn = await runContextWithDisambiguation(runner, scenario, contextOnInput);
   steps.push(buildMetric('context-on', 'context', performance.now() - t1, contextOnInput, contextOn));
@@ -212,6 +234,6 @@ export async function runSymbolScenario(
   return {
     symbol: scenario.symbol,
     steps,
-    assertions: assertScenario(scenario, contextOn, deepDiveOutputs),
+    assertions: assertScenario(scenario, contextOn, deepDiveOutputs, contextUnityHydration),
   };
 }

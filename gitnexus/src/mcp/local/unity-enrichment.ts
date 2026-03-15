@@ -4,9 +4,25 @@ import type {
   ResolvedUnityBinding,
   UnitySerializedFields,
 } from '../../core/unity/resolver.js';
+import type { UnityHydrationMode } from '../../core/unity/options.js';
 import { extractAssetRefPathReferences } from '../../core/unity/resolver.js';
 
-export interface UnityContextPayload extends Pick<ResolveOutput, 'resourceBindings' | 'serializedFields' | 'unityDiagnostics'> {}
+export interface UnityHydrationMeta {
+  requestedMode: UnityHydrationMode;
+  effectiveMode: UnityHydrationMode;
+  elapsedMs: number;
+  fallbackToCompact: boolean;
+  resourceBindingCount: number;
+  unityDiagnosticsCount: number;
+  isComplete: boolean;
+  completenessReason: string[];
+  needsParityRetry: boolean;
+  retryHint?: string;
+}
+
+export interface UnityContextPayload extends Pick<ResolveOutput, 'resourceBindings' | 'serializedFields' | 'unityDiagnostics'> {
+  hydrationMeta?: UnityHydrationMeta;
+}
 
 export type ExecuteQuery = (query: string) => Promise<any[]>;
 

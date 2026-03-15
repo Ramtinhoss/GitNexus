@@ -28,6 +28,19 @@ export interface UnityLazyContextSample {
   exitCode: number;
   stdout: string;
   stderr: string;
+  hydrationMeta?: {
+    requestedMode?: string;
+    effectiveMode?: string;
+    isComplete?: boolean;
+    needsParityRetry?: boolean;
+  };
+}
+
+export interface UnityHydrationMetaSummary {
+  compactSamples: number;
+  paritySamples: number;
+  compactNeedsRetryRate: number;
+  parityCompleteRate: number;
 }
 
 export interface UnityLazyContextSamplerConfig {
@@ -35,6 +48,7 @@ export interface UnityLazyContextSamplerConfig {
   repo: string;
   symbol: string;
   file: string;
+  unityHydration?: 'compact' | 'parity';
   thresholds?: UnityLazyContextThresholds;
 }
 
@@ -73,6 +87,7 @@ export async function runUnityLazyContextSampler(
   capturedAt: string;
   config: Omit<UnityLazyContextSamplerConfig, 'thresholds'>;
   metrics: UnityLazyContextMetrics;
+  hydrationMetaSummary: UnityHydrationMetaSummary;
   thresholdVerdict: UnityLazyThresholdVerdict;
 }> {
   const cold = await runner({ ...config, warm: false });
@@ -91,6 +106,7 @@ export async function runUnityLazyContextSampler(
     coldMaxRssBytes: cold.maxRssBytes,
     warmMaxRssBytes: warm.maxRssBytes,
   };
+  const hydrationMetaSummary = summarizeHydrationMeta([cold, warm]);
 
   return {
     capturedAt: new Date().toISOString(),
@@ -99,8 +115,10 @@ export async function runUnityLazyContextSampler(
       repo: config.repo,
       symbol: config.symbol,
       file: config.file,
+      unityHydration: config.unityHydration || 'compact',
     },
     metrics,
+    hydrationMetaSummary,
     thresholdVerdict: evaluateUnityLazyContextThresholds(metrics, config.thresholds),
   };
 }
@@ -121,6 +139,8 @@ async function runCliContextSample(input: UnityLazyContextSamplerConfig & { warm
     input.file,
     '--unity-resources',
     'auto',
+    '--unity-hydration',
+    input.unityHydration || 'compact',
   ];
 
   const startedAt = Date.now();
@@ -136,6 +156,10 @@ async function runCliContextSample(input: UnityLazyContextSamplerConfig & { warm
 
   const rssMatch = stderr.match(/maximum resident set size[^0-9]*([0-9]+)|([0-9]+)\s+maximum resident set size/i);
   const maxRssBytes = rssMatch ? Number(rssMatch[1] || rssMatch[2] || 0) : 0;
+  const parsedPayload = extractFirstJsonObject(stdout) || extractFirstJsonObject(stderr);
+  const hydrationMeta = parsedPayload && typeof parsedPayload === 'object' && parsedPayload.hydrationMeta
+    ? parsedPayload.hydrationMeta
+    : undefined;
 
   return {
     durationMs: Date.now() - startedAt,
@@ -143,6 +167,7 @@ async function runCliContextSample(input: UnityLazyContextSamplerConfig & { warm
     exitCode,
     stdout,
     stderr,
+    hydrationMeta,
   };
 }
 
@@ -151,6 +176,7 @@ interface CliArgs {
   repo: string;
   symbol: string;
   file: string;
+  unityHydration: 'compact' | 'parity';
   thresholds?: string;
   report?: string;
 }
@@ -166,6 +192,8 @@ function parseArgs(argv: string[]): CliArgs {
   const repo = get('--repo');
   const symbol = get('--symbol');
   const file = get('--file');
+  const unityHydrationRaw = String(get('--unity-hydration') || 'compact').trim().toLowerCase();
+  const unityHydration = unityHydrationRaw === 'parity' ? 'parity' : 'compact';
   if (!targetPath) throw new Error('Missing required arg: --target-path <path>');
   if (!repo) throw new Error('Missing required arg: --repo <repo>');
   if (!symbol) throw new Error('Missing required arg: --symbol <symbol>');
@@ -176,6 +204,7 @@ function parseArgs(argv: string[]): CliArgs {
     repo,
     symbol,
     file,
+    unityHydration,
     thresholds: get('--thresholds') ? path.resolve(get('--thresholds')!) : undefined,
     report: get('--report') ? path.resolve(get('--report')!) : undefined,
   };
@@ -196,6 +225,7 @@ async function main(): Promise<void> {
     repo: args.repo,
     symbol: args.symbol,
     file: args.file,
+    unityHydration: args.unityHydration,
     thresholds,
   });
 
@@ -218,4 +248,58 @@ if (import.meta.url === `file://${modulePath}`) {
     console.error(`[unity-lazy-context-sampler] failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   });
+}
+
+function summarizeHydrationMeta(samples: UnityLazyContextSample[]): UnityHydrationMetaSummary {
+  let compactSamples = 0;
+  let compactNeedsRetry = 0;
+  let paritySamples = 0;
+  let parityComplete = 0;
+
+  for (const sample of samples) {
+    const mode = String(sample.hydrationMeta?.effectiveMode || '').toLowerCase();
+    if (mode === 'parity') {
+      paritySamples += 1;
+      if (sample.hydrationMeta?.isComplete === true) {
+        parityComplete += 1;
+      }
+      continue;
+    }
+    if (mode === 'compact') {
+      compactSamples += 1;
+      if (sample.hydrationMeta?.needsParityRetry === true) {
+        compactNeedsRetry += 1;
+      }
+    }
+  }
+
+  return {
+    compactSamples,
+    paritySamples,
+    compactNeedsRetryRate: compactSamples > 0 ? round1(compactNeedsRetry / compactSamples) : 0,
+    parityCompleteRate: paritySamples > 0 ? round1(parityComplete / paritySamples) : 0,
+  };
+}
+
+function extractFirstJsonObject(text: string): any | null {
+  if (!text) return null;
+  const start = text.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0;
+  for (let i = start; i < text.length; i += 1) {
+    const char = text[i];
+    if (char === '{') depth += 1;
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        const candidate = text.slice(start, i + 1);
+        try {
+          return JSON.parse(candidate);
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
 }

@@ -15,6 +15,7 @@ export interface SymbolScenario {
   kind: 'component' | 'scriptableobject' | 'serializable-class' | 'partial-component';
   objectives: string[];
   contextFileHint?: string;
+  contextUnityHydration?: 'compact' | 'parity';
   deepDivePlan: Array<{ tool: 'query' | 'context' | 'impact' | 'cypher'; input: Record<string, unknown> }>;
 }
 
