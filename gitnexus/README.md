@@ -4,7 +4,7 @@
 
 Works with **Cursor**, **Claude Code**, **Codex**, **Windsurf**, **Cline**, **OpenCode**, and any MCP-compatible tool.
 
-[![npm version](https://img.shields.io/npm/v/gitnexus.svg)](https://www.npmjs.com/package/gitnexus)
+[![npm version](https://img.shields.io/npm/v/%40veewo%2Fgitnexus.svg)](https://www.npmjs.com/package/@veewo/gitnexus)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 
 ---
@@ -19,12 +19,12 @@ AI coding tools don't understand your codebase structure. They edit a function w
 
 ```bash
 # Index your repo (run from repo root)
-npx gitnexus analyze
+npx -y @veewo/gitnexus analyze
 ```
 
 That's it. This indexes the codebase, updates `AGENTS.md` / `CLAUDE.md` context files, and (when using project scope) installs repo-local agent skills.
 
-To configure MCP + skills, run `npx gitnexus setup --agent <claude|opencode|codex>` once (default global mode), or add `--scope project` for project-local mode.
+To configure MCP + skills, run `npx -y @veewo/gitnexus setup --agent <claude|opencode|codex>` once (default global mode), or add `--scope project` for project-local mode.
 
 `gitnexus setup` requires an agent selection:
 - `--agent claude`: configure Claude MCP only

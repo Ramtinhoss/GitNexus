@@ -6,7 +6,7 @@
 
 Indexes any codebase into a knowledge graph — every dependency, call chain, cluster, and execution flow — then exposes it through smart tools so AI agents never miss code.
 
-[![npm version](https://img.shields.io/npm/v/gitnexus.svg)](https://www.npmjs.com/package/gitnexus)
+[![npm version](https://img.shields.io/npm/v/%40veewo%2Fgitnexus.svg)](https://www.npmjs.com/package/@veewo/gitnexus)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 
 
@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
 | **What**    | Index repos locally, connect AI agents via MCP                 | Visual graph explorer + AI chat in browser                   |
 | **For**     | Daily development with Cursor, Claude Code, Codex, Windsurf, OpenCode | Quick exploration, demos, one-off analysis                   |
 | **Scale**   | Full repos, any size                                           | Limited by browser memory (~5k files), or unlimited via backend mode |
-| **Install** | `npm install -g gitnexus`                                    | No install —[gitnexus.vercel.app](https://gitnexus.vercel.app) |
+| **Install** | `npm install -g @veewo/gitnexus`                             | No install —[gitnexus.vercel.app](https://gitnexus.vercel.app) |
 | **Storage** | KuzuDB native (fast, persistent)                               | KuzuDB WASM (in-memory, per session)                         |
 | **Parsing** | Tree-sitter native bindings                                    | Tree-sitter WASM                                             |
 | **Privacy** | Everything local, no network                                   | Everything in-browser, no server                             |
@@ -50,12 +50,12 @@ The CLI indexes your repository and runs an MCP server that gives AI agents deep
 
 ```bash
 # Index your repo (run from repo root)
-npx gitnexus analyze
+npx -y @veewo/gitnexus analyze
 ```
 
 That's it. This indexes the codebase, updates `AGENTS.md` / `CLAUDE.md` context files, and (when using project scope) installs repo-local agent skills.
 
-To configure MCP + skills, run `npx gitnexus setup --agent <claude|opencode|codex>` once (default global mode), or add `--scope project` for project-local mode.
+To configure MCP + skills, run `npx -y @veewo/gitnexus setup --agent <claude|opencode|codex>` once (default global mode), or add `--scope project` for project-local mode.
 
 ### Team Deployment and Distribution
 
@@ -101,7 +101,7 @@ If you prefer manual configuration:
 **Claude Code** (full support — MCP + skills + hooks):
 
 ```bash
-claude mcp add gitnexus -- npx -y gitnexus@latest mcp
+claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
 ```
 
 **Cursor** (`~/.cursor/mcp.json` — global, works for all projects):
@@ -111,7 +111,7 @@ claude mcp add gitnexus -- npx -y gitnexus@latest mcp
   "mcpServers": {
     "gitnexus": {
       "command": "npx",
-      "args": ["-y", "gitnexus@latest", "mcp"]
+      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
     }
   }
 }
@@ -124,7 +124,7 @@ claude mcp add gitnexus -- npx -y gitnexus@latest mcp
   "mcp": {
     "gitnexus": {
       "type": "local",
-      "command": ["npx", "-y", "gitnexus@latest", "mcp"]
+      "command": ["npx", "-y", "@veewo/gitnexus@latest", "mcp"]
     }
   }
 }
@@ -133,7 +133,7 @@ claude mcp add gitnexus -- npx -y gitnexus@latest mcp
 **Codex** (`~/.codex/config.toml`, recommended via CLI):
 
 ```bash
-codex mcp add gitnexus -- npx -y gitnexus@latest mcp
+codex mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
 ```
 
 ### CLI Commands
