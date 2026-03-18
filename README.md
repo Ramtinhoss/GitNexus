@@ -1,13 +1,30 @@
 # GitNexus
+⚠️ Important Notice:** GitNexus has NO official cryptocurrency, token, or coin. Any token/coin using the GitNexus name on Pump.fun or any other platform is **not affiliated with, endorsed by, or created by** this project or its maintainers. Do not purchase any cryptocurrency claiming association with GitNexus.
 
-<a href="https://trendshift.io/repositories/19809" target="_blank"><img src="https://trendshift.io/api/badge/repositories/19809" alt="abhigyanpatwari%2FGitNexus | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<div align="center">
 
-**Building git for agent context.**
+  <a href="https://trendshift.io/repositories/19809" target="_blank">
+    <img src="https://trendshift.io/api/badge/repositories/19809" alt="abhigyanpatwari%2FGitNexus | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+  </a>
+
+  <h2>Join the official Discord to discuss ideas, issues etc!</h2>
+
+  <a href="https://discord.gg/AAsRVT6fGb">
+    <img src="https://img.shields.io/discord/1477255801545429032?color=5865F2&logo=discord&logoColor=white" alt="Discord"/>
+  </a>
+  <a href="https://www.npmjs.com/package/gitnexus">
+    <img src="https://img.shields.io/npm/v/gitnexus.svg" alt="npm version"/>
+  </a>
+  <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">
+    <img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg" alt="License: PolyForm Noncommercial"/>
+  </a>
+
+</div>
+
+**Building nervous system for agent context.**
 
 Indexes any codebase into a knowledge graph — every dependency, call chain, cluster, and execution flow — then exposes it through smart tools so AI agents never miss code.
 
-[![npm version](https://img.shields.io/npm/v/%40veewo%2Fgitnexus.svg)](https://www.npmjs.com/package/@veewo/gitnexus)
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 
 
 
@@ -17,7 +34,7 @@ https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
 
 > *Like DeepWiki, but deeper.* DeepWiki helps you *understand* code. GitNexus lets you *analyze* it — because a knowledge graph tracks every relationship, not just descriptions.
 
-**TL;DR:** The **Web UI** is a quick way to chat with any repo. The **CLI + MCP** is how you make your AI agent actually reliable — it gives Cursor, Claude Code, Codex, and friends a deep architectural view of your codebase so they stop missing dependencies, breaking call chains, and shipping blind edits. Even smaller models get full architectural clarity, making it compete with goliath models.
+**TL;DR:** The **Web UI** is a quick way to chat with any repo. The **CLI + MCP** is how you make your AI agent actually reliable — it gives Cursor, Claude Code, and friends a deep architectural view of your codebase so they stop missing dependencies, breaking call chains, and shipping blind edits. Even smaller models get full architectural clarity, making it compete with goliath models.
 
 ---
 
@@ -31,10 +48,10 @@ https://github.com/user-attachments/assets/172685ba-8e54-4ea7-9ad1-e31a3398da72
 |                   | **CLI + MCP**                                            | **Web UI**                                             |
 | ----------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
 | **What**    | Index repos locally, connect AI agents via MCP                 | Visual graph explorer + AI chat in browser                   |
-| **For**     | Daily development with Cursor, Claude Code, Codex, Windsurf, OpenCode | Quick exploration, demos, one-off analysis                   |
+| **For**     | Daily development with Cursor, Claude Code, Windsurf, OpenCode, Codex | Quick exploration, demos, one-off analysis                   |
 | **Scale**   | Full repos, any size                                           | Limited by browser memory (~5k files), or unlimited via backend mode |
-| **Install** | `npm install -g @veewo/gitnexus`                             | No install —[gitnexus.vercel.app](https://gitnexus.vercel.app) |
-| **Storage** | KuzuDB native (fast, persistent)                               | KuzuDB WASM (in-memory, per session)                         |
+| **Install** | `npm install -g gitnexus`                                    | No install —[gitnexus.vercel.app](https://gitnexus.vercel.app) |
+| **Storage** | LadybugDB native (fast, persistent)                               | LadybugDB WASM (in-memory, per session)                         |
 | **Parsing** | Tree-sitter native bindings                                    | Tree-sitter WASM                                             |
 | **Privacy** | Everything local, no network                                   | Everything in-browser, no server                             |
 
@@ -50,45 +67,28 @@ The CLI indexes your repository and runs an MCP server that gives AI agents deep
 
 ```bash
 # Index your repo (run from repo root)
-npx -y @veewo/gitnexus analyze
+npx gitnexus analyze
 ```
 
-That's it. This indexes the codebase, updates `AGENTS.md` / `CLAUDE.md` context files, and (when using project scope) installs repo-local agent skills.
+That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
 
-To configure MCP + skills, run `npx -y @veewo/gitnexus setup --agent <claude|opencode|codex>` once (default global mode), or add `--scope project` for project-local mode.
-
-### Team Deployment and Distribution
-
-For small-team rollout (single stable channel only), use the release runbook:
-- [CLI Deployment and Distribution](docs/cli-release-distribution.md)
-
-Key links:
-- [npm publish workflow](.github/workflows/publish.yml)
-- [CLI package config](gitnexus/package.json)
-- [Agent install + acceptance runbook](INSTALL-GUIDE.md)
+To configure MCP for your editor, run `npx gitnexus setup` once — or set it up manually below.
 
 ### MCP Setup
 
-`gitnexus setup` requires an agent selection:
-- `--agent claude`: configure Claude MCP only
-- `--agent opencode`: configure OpenCode MCP only
-- `--agent codex`: configure Codex MCP only
-
-It also supports two scopes:
-- `global` (default): writes MCP to the selected agent's global config + installs global skills
-- `project`: writes MCP to the selected agent's project-local config + installs repo-local skills
+`gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
 
 ### Editor Support
 
 | Editor                | MCP | Skills | Hooks (auto-augment) | Support        |
 | --------------------- | --- | ------ | -------------------- | -------------- |
-| **Claude Code** | Yes | Yes    | Yes (PreToolUse)     | **Full** |
+| **Claude Code** | Yes | Yes    | Yes (PreToolUse + PostToolUse) | **Full** |
 | **Cursor**      | Yes | Yes    | —                   | MCP + Skills   |
-| **Codex**       | Yes | Yes    | —                   | MCP + Skills   |
 | **Windsurf**    | Yes | —     | —                   | MCP            |
 | **OpenCode**    | Yes | Yes    | —                   | MCP + Skills   |
+| **Codex**       | Yes | —     | —                   | MCP            |
 
-> **Claude Code** gets the deepest integration: MCP tools + agent skills + PreToolUse hooks that automatically enrich grep/glob/bash calls with knowledge graph context.
+> **Claude Code** gets the deepest integration: MCP tools + agent skills + PreToolUse hooks that enrich searches with graph context + PostToolUse hooks that auto-reindex after commits.
 
 ### Community Integrations
 
@@ -101,7 +101,7 @@ If you prefer manual configuration:
 **Claude Code** (full support — MCP + skills + hooks):
 
 ```bash
-claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
+claude mcp add gitnexus -- npx -y gitnexus@latest mcp
 ```
 
 **Cursor** (`~/.cursor/mcp.json` — global, works for all projects):
@@ -111,42 +111,43 @@ claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
   "mcpServers": {
     "gitnexus": {
       "command": "npx",
-      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
+      "args": ["-y", "gitnexus@latest", "mcp"]
     }
   }
 }
 ```
 
-**OpenCode** (`~/.config/opencode/opencode.json`):
+**OpenCode** (`~/.config/opencode/config.json`):
 
 ```json
 {
   "mcp": {
     "gitnexus": {
-      "type": "local",
-      "command": ["npx", "-y", "@veewo/gitnexus@latest", "mcp"]
+      "command": "npx",
+      "args": ["-y", "gitnexus@latest", "mcp"]
     }
   }
 }
 ```
 
-**Codex** (`~/.codex/config.toml`, recommended via CLI):
+**Codex** (`~/.codex/config.toml` for system scope, or `.codex/config.toml` for project scope):
 
-```bash
-codex mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
+```toml
+[mcp_servers.gitnexus]
+command = "npx"
+args = ["-y", "gitnexus@latest", "mcp"]
 ```
 
 ### CLI Commands
 
 ```bash
-gitnexus setup --agent claude                     # Global setup for Claude
-gitnexus setup --agent codex                      # Global setup for Codex
-gitnexus setup --scope project --agent opencode   # Project-local setup for OpenCode
+gitnexus setup                    # Configure MCP for your editors (one-time)
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
-gitnexus analyze --embeddings     # Enable semantic embeddings (off by default)
-gitnexus analyze --scope-prefix Assets/NEON/Code --scope-prefix Packages/com.veewo.*  # Scoped multi-directory indexing
-gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt --repo-alias neonspark-v1-subset  # Scoped indexing + stable repo alias
+gitnexus analyze --skills         # Generate repo-specific skill files from detected communities
+gitnexus analyze --skip-embeddings  # Skip embedding generation (faster)
+gitnexus analyze --embeddings     # Enable embedding generation (slower, better search)
+gitnexus analyze --verbose        # Log skipped files when parsers are unavailable
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI connection
 gitnexus list                    # List all indexed repositories
@@ -156,16 +157,7 @@ gitnexus clean --all --force     # Delete all indexes
 gitnexus wiki [path]             # Generate repository wiki from knowledge graph
 gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-mini)
 gitnexus wiki --base-url <url>   # Wiki with custom LLM API base URL
-gitnexus unity-bindings <symbol> --target-path <path> [--json]  # Experimental Unity C# <-> prefab/scene/asset cross-reference
-gitnexus context <symbol> --unity-resources on                  # Include graph-native Unity resource data
-gitnexus query <symbol> --unity-resources on                    # Enrich query symbol hits with Unity resource data
-gitnexus benchmark-unity <dataset>         # Baseline accuracy benchmark suite
-gitnexus benchmark-agent-context <dataset> # Scenario-based refactor context benchmark suite
 ```
-
-For scoped indexing, `analyze` logs scope overlap dedupe counts and any normalized path collisions to help diagnose multi-directory merge safety.
-
-Unity resource retrieval is opt-in on `query/context` via `unity_resources: off|on|auto` (default: `off`) and surfaces `resourceBindings`, `serializedFields`, `resolvedReferences`, and `unityDiagnostics` when enabled.
 
 ### What Your AI Agent Gets
 
@@ -202,27 +194,22 @@ Unity resource retrieval is opt-in on `query/context` via `unity_resources: off|
 | `detect_impact` | Pre-commit change analysis — scope, affected processes, risk level       |
 | `generate_map`  | Architecture documentation from the knowledge graph with mermaid diagrams |
 
-**6 agent skills** installed automatically:
+**4 agent skills** installed to `.claude/skills/` automatically:
 
 - **Exploring** — Navigate unfamiliar code using the knowledge graph
 - **Debugging** — Trace bugs through call chains
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
-- **Guide** — Tools/resources/schema usage reference
-- **CLI** — Index/status/clean/wiki command workflows
 
-Installation rules:
-- `gitnexus setup` controls skill scope:
-  - requires `--agent <claude|opencode|codex>`
-  - default `global`: installs to `~/.agents/skills/gitnexus/`
-  - `--scope project`: installs to `.agents/skills/gitnexus/` in current repo
-- `gitnexus analyze` always updates `AGENTS.md` / `CLAUDE.md`; skill install follows configured setup scope.
+**Repo-specific skills** generated with `--skills`:
+
+When you run `gitnexus analyze --skills`, GitNexus detects the functional areas of your codebase (via Leiden community detection) and generates a `SKILL.md` file for each one under `.claude/skills/generated/`. Each skill describes a module's key files, entry points, execution flows, and cross-area connections — so your AI agent gets targeted context for the exact area of code you're working in. Skills are regenerated on each `--skills` run to stay current with the codebase.
 
 ---
 
 ## Multi-Repo MCP Architecture
 
-GitNexus uses a **global registry** so one MCP server can serve multiple indexed repos. Default setup is global; if you prefer per-repo wiring, use `gitnexus setup --scope project --agent <claude|opencode|codex>`.
+GitNexus uses a **global registry** so one MCP server can serve multiple indexed repos. No per-project MCP config needed — set it up once and it works everywhere.
 
 ```mermaid
 flowchart TD
@@ -246,11 +233,11 @@ flowchart TD
         Server["server.ts"]
         Backend["LocalBackend"]
         Pool["Connection Pool"]
-        ConnA["KuzuDB conn A"]
-        ConnB["KuzuDB conn B"]
+        ConnA["LadybugDB conn A"]
+        ConnB["LadybugDB conn B"]
     end
 
-    Setup -->|"writes global MCP config"| EditorConfig["~/.cursor/mcp.json / ~/.config/opencode/opencode.json / ~/.codex/config.toml"]
+    Setup -->|"writes global MCP config"| CursorConfig["~/.cursor/mcp.json"]
     Analyze -->|"registers repo"| RegFile
     Analyze -->|"stores index"| RepoA
     Clean -->|"unregisters repo"| RegFile
@@ -264,7 +251,7 @@ flowchart TD
     ConnB -->|"queries"| RepoB
 ```
 
-**How it works:** Each `gitnexus analyze` stores the index in `.gitnexus/` inside the repo (portable, gitignored) and registers a pointer in `~/.gitnexus/registry.json`. When an AI agent starts, the MCP server reads the registry and can serve any indexed repo. KuzuDB connections are opened lazily on first query and evicted after 5 minutes of inactivity (max 5 concurrent). If only one repo is indexed, the `repo` parameter is optional on all tools — agents don't need to change anything.
+**How it works:** Each `gitnexus analyze` stores the index in `.gitnexus/` inside the repo (portable, gitignored) and registers a pointer in `~/.gitnexus/registry.json`. When an AI agent starts, the MCP server reads the registry and can serve any indexed repo. LadybugDB connections are opened lazily on first query and evicted after 5 minutes of inactivity (max 5 concurrent). If only one repo is indexed, the `repo` parameter is optional on all tools — agents don't need to change anything.
 
 ---
 
@@ -285,7 +272,7 @@ npm install
 npm run dev
 ```
 
-The web UI uses the same indexing pipeline as the CLI but runs entirely in WebAssembly (Tree-sitter WASM, KuzuDB WASM, in-browser embeddings). It's great for quick exploration but limited by browser memory for larger repos.
+The web UI uses the same indexing pipeline as the CLI but runs entirely in WebAssembly (Tree-sitter WASM, LadybugDB WASM, in-browser embeddings). It's great for quick exploration but limited by browser memory for larger repos.
 
 **Local Backend Mode:** Run `gitnexus serve` and open the web UI locally — it auto-detects the server and shows all your indexed repos, with full AI chat support. No need to re-upload or re-index. The agent's tools (Cypher queries, search, code navigation) route through the backend HTTP API automatically.
 
@@ -293,7 +280,7 @@ The web UI uses the same indexing pipeline as the CLI but runs entirely in WebAs
 
 ## The Problem GitNexus Solves
 
-Tools like **Cursor**, **Claude Code**, **Codex**, **Cline**, **Roo Code**, and **Windsurf** are powerful — but they don't truly know your codebase structure.
+Tools like **Cursor**, **Claude Code**, **Cline**, **Roo Code**, and **Windsurf** are powerful — but they don't truly know your codebase structure.
 
 **What happens:**
 
@@ -342,14 +329,30 @@ GitNexus builds a complete knowledge graph of your codebase through a multi-phas
 
 1. **Structure** — Walks the file tree and maps folder/file relationships
 2. **Parsing** — Extracts functions, classes, methods, and interfaces using Tree-sitter ASTs
-3. **Resolution** — Resolves imports and function calls across files with language-aware logic
+3. **Resolution** — Resolves imports, function calls, heritage, constructor inference, and `self`/`this` receiver types across files with language-aware logic
 4. **Clustering** — Groups related symbols into functional communities
 5. **Processes** — Traces execution flows from entry points through call chains
 6. **Search** — Builds hybrid search indexes for fast retrieval
 
 ### Supported Languages
 
-TypeScript, JavaScript, Python, Java, C, C++, C#, Go, Rust
+| Language | Imports | Named Bindings | Exports | Heritage | Type Annotations | Constructor Inference | Config | Frameworks | Entry Points |
+|----------|---------|----------------|---------|----------|-----------------|---------------------|--------|------------|-------------|
+| TypeScript | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| JavaScript | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
+| Python | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Java | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| Kotlin | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| C# | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Go | ✓ | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Rust | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| PHP | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ruby | ✓ | — | ✓ | ✓ | — | ✓ | — | ✓ | ✓ |
+| Swift | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| C | — | — | ✓ | — | ✓ | ✓ | — | ✓ | ✓ |
+| C++ | — | — | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+
+**Imports** — cross-file import resolution · **Named Bindings** — `import { X as Y }` / re-export tracking · **Exports** — public/exported symbol detection · **Heritage** — class inheritance, interfaces, mixins · **Type Annotations** — explicit type extraction for receiver resolution · **Constructor Inference** — infer receiver type from constructor calls (`self`/`this` resolution included for all languages) · **Config** — language toolchain config parsing (tsconfig, go.mod, etc.) · **Frameworks** — AST-based framework pattern detection · **Entry Points** — entry point scoring heuristics
 
 ---
 
@@ -488,7 +491,7 @@ The wiki generator reads the indexed graph structure, groups files into modules 
 | ------------------------- | ------------------------------------- | --------------------------------------- |
 | **Runtime**         | Node.js (native)                      | Browser (WASM)                          |
 | **Parsing**         | Tree-sitter native bindings           | Tree-sitter WASM                        |
-| **Database**        | KuzuDB native                         | KuzuDB WASM                             |
+| **Database**        | LadybugDB native                         | LadybugDB WASM                             |
 | **Embeddings**      | HuggingFace transformers.js (GPU/CPU) | transformers.js (WebGPU/WASM)           |
 | **Search**          | BM25 + semantic + RRF                 | BM25 + semantic + RRF                   |
 | **Agent Interface** | MCP (stdio)                           | LangChain ReAct agent                   |
@@ -509,9 +512,10 @@ The wiki generator reads the indexed graph structure, groups files into modules 
 
 ### Recently Completed
 
+- [X] Constructor-Inferred Type Resolution, `self`/`this` Receiver Mapping
 - [X] Wiki Generation, Multi-File Rename, Git-Diff Impact Analysis
 - [X] Process-Grouped Search, 360-Degree Context, Claude Code Hooks
-- [X] Multi-Repo MCP, Zero-Config Setup, 9 Language Support
+- [X] Multi-Repo MCP, Zero-Config Setup, 13 Language Support
 - [X] Community Detection, Process Detection, Confidence Scoring
 - [X] Hybrid Search, Vector Index
 
@@ -528,7 +532,7 @@ The wiki generator reads the indexed graph structure, groups files into modules 
 ## Acknowledgments
 
 - [Tree-sitter](https://tree-sitter.github.io/) — AST parsing
-- [KuzuDB](https://kuzudb.com/) — Embedded graph database with vector support
+- [LadybugDB](https://ladybugdb.com/) — Embedded graph database with vector support (formerly KuzuDB)
 - [Sigma.js](https://www.sigmajs.org/) — WebGL graph rendering
 - [transformers.js](https://huggingface.co/docs/transformers.js) — Browser ML
 - [Graphology](https://graphology.github.io/) — Graph data structures

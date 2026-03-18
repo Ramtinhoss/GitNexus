@@ -1,78 +1,28 @@
 #!/usr/bin/env node
 
-// Raise Node heap limit for large repos (e.g. Linux kernel).
-// Must run before any heavy allocation. If already set by the user, respect it.
-if (!process.env.NODE_OPTIONS?.includes('--max-old-space-size')) {
-  const execArgv = process.execArgv.join(' ');
-  if (!execArgv.includes('--max-old-space-size')) {
-    // Re-spawn with a larger heap (8 GB)
-    const { execFileSync } = await import('node:child_process');
-    try {
-      execFileSync(process.execPath, ['--max-old-space-size=8192', ...process.argv.slice(1)], {
-        stdio: 'inherit',
-        env: { ...process.env, NODE_OPTIONS: `${process.env.NODE_OPTIONS || ''} --max-old-space-size=8192`.trim() },
-      });
-      process.exit(0);
-    } catch (e: any) {
-      const resolved = resolveChildProcessExit(e, 1);
-      if (resolved.bySignal && resolved.signal) {
-        process.stderr.write(`gitnexus: child process terminated by signal ${resolved.signal}\n`);
-      }
-      process.exit(resolved.code);
-    }
-  }
-}
+// Heap re-spawn removed — only analyze.ts needs the 8GB heap (via its own ensureHeap()).
+// Removing it from here improves MCP server startup time significantly.
 
 import { Command } from 'commander';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { analyzeCommand } from './analyze.js';
-import { serveCommand } from './serve.js';
-import { listCommand } from './list.js';
-import { statusCommand } from './status.js';
-import { mcpCommand } from './mcp.js';
-import { cleanCommand } from './clean.js';
-import { setupCommand } from './setup.js';
-import { augmentCommand } from './augment.js';
-import { wikiCommand } from './wiki.js';
-import { queryCommand, contextCommand, impactCommand, cypherCommand } from './tool.js';
-import { evalServerCommand } from './eval-server.js';
-import { benchmarkUnityCommand } from './benchmark-unity.js';
-import { benchmarkAgentContextCommand } from './benchmark-agent-context.js';
-import { unityBindingsCommand } from './unity-bindings.js';
-import { benchmarkU2E2ECommand } from './benchmark-u2-e2e.js';
-import { resolveChildProcessExit } from './exit-code.js';
+import { createRequire } from 'node:module';
+import { createLazyAction } from './lazy-action.js';
 
-function resolveCliVersion(): string {
-  try {
-    const currentFile = fileURLToPath(import.meta.url);
-    const packageJsonPath = path.resolve(path.dirname(currentFile), '..', '..', 'package.json');
-    const raw = fs.readFileSync(packageJsonPath, 'utf-8');
-    const parsed = JSON.parse(raw) as { version?: string };
-    if (typeof parsed.version === 'string' && parsed.version.length > 0) {
-      return parsed.version;
-    }
-  } catch {
-    // fall through to default
-  }
-  return '0.0.0';
-}
-
+const _require = createRequire(import.meta.url);
+const pkg = _require('../../package.json');
 const program = new Command();
 const collectValues = (value: string, previous: string[]) => [...previous, value];
 
 program
   .name('gitnexus')
   .description('GitNexus local CLI and MCP server')
-  .version(resolveCliVersion());
+  .version(pkg.version);
 
 program
   .command('setup')
   .description('One-time setup: configure MCP for a selected coding agent (claude/opencode/codex)')
   .option('--scope <scope>', 'Install target: global (default) or project')
   .option('--agent <agent>', 'Target coding agent: claude, opencode, or codex')
-  .action(setupCommand);
+  .action(createLazyAction(() => import('./setup.js'), 'setupCommand'));
 
 program
   .command('analyze [path]')
@@ -82,41 +32,44 @@ program
   .option('--embeddings', 'Enable embedding generation for semantic search (off by default)')
   .option('--extensions <list>', 'Comma-separated file extensions to include (e.g. .cs,.ts)')
   .option('--repo-alias <name>', 'Override indexed repository name with a stable alias')
+  .option('--skills', 'Generate repo-specific skill files from detected communities')
+  .option('-v, --verbose', 'Enable verbose ingestion warnings (default: false)')
   .option(
     '--scope-manifest <path>',
     'Manifest file with scope rules (supports comments and * wildcard; recommended: .gitnexus/sync-manifest.txt)',
   )
   .option('--scope-prefix <pathPrefix>', 'Add a scope path prefix rule (repeatable)', collectValues, [])
-  .action(analyzeCommand);
+  .addHelpText('after', '\nEnvironment variables:\n  GITNEXUS_NO_GITIGNORE=1  Skip .gitignore parsing (still reads .gitnexusignore)')
+  .action(createLazyAction(() => import('./analyze.js'), 'analyzeCommand'));
 
 program
   .command('serve')
   .description('Start local HTTP server for web UI connection')
   .option('-p, --port <port>', 'Port number', '4747')
   .option('--host <host>', 'Bind address (default: 127.0.0.1, use 0.0.0.0 for remote access)')
-  .action(serveCommand);
+  .action(createLazyAction(() => import('./serve.js'), 'serveCommand'));
 
 program
   .command('mcp')
   .description('Start MCP server (stdio) — serves all indexed repos')
-  .action(mcpCommand);
+  .action(createLazyAction(() => import('./mcp.js'), 'mcpCommand'));
 
 program
   .command('list')
   .description('List all indexed repositories')
-  .action(listCommand);
+  .action(createLazyAction(() => import('./list.js'), 'listCommand'));
 
 program
   .command('status')
   .description('Show index status for current repo')
-  .action(statusCommand);
+  .action(createLazyAction(() => import('./status.js'), 'statusCommand'));
 
 program
   .command('clean')
   .description('Delete GitNexus index for current repo')
   .option('-f, --force', 'Skip confirmation prompt')
   .option('--all', 'Clean all indexed repos')
-  .action(cleanCommand);
+  .action(createLazyAction(() => import('./clean.js'), 'cleanCommand'));
 
 program
   .command('wiki [path]')
@@ -127,12 +80,12 @@ program
   .option('--api-key <key>', 'LLM API key (saved to ~/.gitnexus/config.json)')
   .option('--concurrency <n>', 'Parallel LLM calls (default: 3)', '3')
   .option('--gist', 'Publish wiki as a public GitHub Gist after generation')
-  .action(wikiCommand);
+  .action(createLazyAction(() => import('./wiki.js'), 'wikiCommand'));
 
 program
   .command('augment <pattern>')
   .description('Augment a search pattern with knowledge graph context (used by hooks)')
-  .action(augmentCommand);
+  .action(createLazyAction(() => import('./augment.js'), 'augmentCommand'));
 
 // ─── Direct Tool Commands (no MCP overhead) ────────────────────────
 // These invoke LocalBackend directly for use in eval, scripts, and CI.
@@ -147,7 +100,7 @@ program
   .option('--content', 'Include full symbol source code')
   .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
-  .action(queryCommand);
+  .action(createLazyAction(() => import('./tool.js'), 'queryCommand'));
 
 program
   .command('context [name]')
@@ -158,16 +111,14 @@ program
   .option('--content', 'Include full symbol source code')
   .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
-  .action(contextCommand);
+  .action(createLazyAction(() => import('./tool.js'), 'contextCommand'));
 
 program
   .command('unity-bindings <symbol>')
   .description('Experimental: inspect Unity resource bindings for a C# symbol')
   .option('--target-path <path>', 'Unity project root (default: cwd)')
   .option('--json', 'Output JSON')
-  .action(async (symbol, options) => {
-    await unityBindingsCommand(symbol, options);
-  });
+  .action(createLazyAction(() => import('./unity-bindings.js'), 'unityBindingsCommand'));
 
 program
   .command('impact <target>')
@@ -179,13 +130,13 @@ program
   .option('--depth <n>', 'Max relationship depth (default: 3)')
   .option('--min-confidence <n>', 'Minimum edge confidence 0-1 (default: 0.3)')
   .option('--include-tests', 'Include test files in results')
-  .action(impactCommand);
+  .action(createLazyAction(() => import('./tool.js'), 'impactCommand'));
 
 program
   .command('cypher <query>')
   .description('Execute raw Cypher query against the knowledge graph')
   .option('-r, --repo <name>', 'Target repository')
-  .action(cypherCommand);
+  .action(createLazyAction(() => import('./tool.js'), 'cypherCommand'));
 
 // ─── Eval Server (persistent daemon for SWE-bench) ─────────────────
 
@@ -194,7 +145,7 @@ program
   .description('Start lightweight HTTP server for fast tool calls during evaluation')
   .option('-p, --port <port>', 'Port number', '4848')
   .option('--idle-timeout <seconds>', 'Auto-shutdown after N seconds idle (0 = disabled)', '0')
-  .action(evalServerCommand);
+  .action(createLazyAction(() => import('./eval-server.js'), 'evalServerCommand'));
 
 program
   .command('benchmark-unity <dataset>')
@@ -208,7 +159,7 @@ program
   .option('--scope-manifest <path>', 'Analyze scope manifest file')
   .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
   .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
-  .action(benchmarkUnityCommand);
+  .action(createLazyAction(() => import('./benchmark-unity.js'), 'benchmarkUnityCommand'));
 
 program
   .command('benchmark-agent-context <dataset>')
@@ -226,17 +177,13 @@ program
   .option('--scope-manifest <path>', 'Analyze scope manifest file')
   .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
   .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
-  .action(async (dataset, options) => {
-    await benchmarkAgentContextCommand(dataset, options);
-  });
+  .action(createLazyAction(() => import('./benchmark-agent-context.js'), 'benchmarkAgentContextCommand'));
 
 program
   .command('benchmark-u2-e2e')
   .description('Run fail-fast full neonspark U2 E2E benchmark and emit evidence reports')
   .option('--config <path>', 'Path to E2E config JSON')
   .option('--report-dir <path>', 'Output directory for reports')
-  .action(async (options) => {
-    await benchmarkU2E2ECommand(options);
-  });
+  .action(createLazyAction(() => import('./benchmark-u2-e2e.js'), 'benchmarkU2E2ECommand'));
 
 program.parse(process.argv);

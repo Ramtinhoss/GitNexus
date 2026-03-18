@@ -15,6 +15,7 @@ import { promisify } from 'node:util';
 import { fileURLToPath } from 'url';
 import { getGlobalDir, loadCLIConfig, saveCLIConfig } from '../storage/repo-manager.js';
 import { getGitRoot } from '../storage/git.js';
+import { glob } from 'glob';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +41,7 @@ interface McpEntry {
 
 type SetupAgent = 'claude' | 'opencode' | 'codex';
 const FALLBACK_MCP_PACKAGE = 'gitnexus@latest';
+const LEGACY_CURSOR_AGENT = 'cursor';
 
 function resolveSetupScope(rawScope?: string): SetupScope {
   if (!rawScope || rawScope.trim() === '') return 'global';
@@ -49,12 +51,24 @@ function resolveSetupScope(rawScope?: string): SetupScope {
 
 function resolveSetupAgent(rawAgent?: string): SetupAgent {
   if (!rawAgent || rawAgent.trim() === '') {
-    throw new Error('Missing --agent. Use one of: claude, opencode, codex.');
+    return 'claude';
   }
   if (rawAgent === 'claude' || rawAgent === 'opencode' || rawAgent === 'codex') {
     return rawAgent;
   }
   throw new Error(`Invalid --agent value "${rawAgent}". Use "claude", "opencode", or "codex".`);
+}
+
+async function installLegacyCursorSkills(result: SetupResult): Promise<void> {
+  const skillsDir = path.join(os.homedir(), '.cursor', 'skills');
+  try {
+    const installed = await installSkillsTo(skillsDir);
+    if (installed.length > 0) {
+      result.configured.push(`Cursor skills (${installed.length} skills → ~/.cursor/skills/)`);
+    }
+  } catch (err: any) {
+    result.errors.push(`Cursor skills: ${err.message}`);
+  }
 }
 
 /**
@@ -304,13 +318,23 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
     const src = path.join(pluginHooksPath, 'gitnexus-hook.cjs');
     const dest = path.join(destHooksDir, 'gitnexus-hook.cjs');
     try {
-      const content = await fs.readFile(src, 'utf-8');
+      let content = await fs.readFile(src, 'utf-8');
+      // Inject resolved CLI path so the copied hook can find the CLI
+      // even when it's no longer inside the npm package tree
+      const resolvedCli = path.join(__dirname, '..', 'cli', 'index.js');
+      const normalizedCli = path.resolve(resolvedCli).replace(/\\/g, '/');
+      const jsonCli = JSON.stringify(normalizedCli);
+      content = content.replace(
+        "let cliPath = path.resolve(__dirname, '..', '..', 'dist', 'cli', 'index.js');",
+        `let cliPath = ${jsonCli};`
+      );
       await fs.writeFile(dest, content, 'utf-8');
     } catch {
       // Script not found in source — skip
     }
 
-    const hookCmd = `node "${path.join(destHooksDir, 'gitnexus-hook.cjs').replace(/\\/g, '/')}"`;
+    const hookPath = path.join(destHooksDir, 'gitnexus-hook.cjs').replace(/\\/g, '/');
+    const hookCmd = `node "${hookPath.replace(/"/g, '\\"')}"`;
 
     // Merge hook config into ~/.claude/settings.json
     const existing = await readJsonFile(settingsPath) || {};
@@ -319,25 +343,31 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
     // NOTE: SessionStart hooks are broken on Windows (Claude Code bug #23576).
     // Session context is delivered via CLAUDE.md / skills instead.
 
-    // Add PreToolUse hook if not already present
-    if (!existing.hooks.PreToolUse) existing.hooks.PreToolUse = [];
-    const hasPreToolHook = existing.hooks.PreToolUse.some(
-      (h: any) => h.hooks?.some((hh: any) => hh.command?.includes('gitnexus'))
-    );
-    if (!hasPreToolHook) {
-      existing.hooks.PreToolUse.push({
-        matcher: 'Grep|Glob|Bash',
-        hooks: [{
-          type: 'command',
-          command: hookCmd,
-          timeout: 8000,
-          statusMessage: 'Enriching with GitNexus graph context...',
-        }],
-      });
+    // Helper: add a hook entry if one with 'gitnexus-hook' isn't already registered
+    interface HookEntry { hooks?: Array<{ command?: string }> }
+    function ensureHookEntry(
+      eventName: string,
+      matcher: string,
+      timeout: number,
+      statusMessage: string,
+    ) {
+      if (!existing.hooks[eventName]) existing.hooks[eventName] = [];
+      const hasHook = existing.hooks[eventName].some(
+        (h: HookEntry) => h.hooks?.some(hh => hh.command?.includes('gitnexus-hook'))
+      );
+      if (!hasHook) {
+        existing.hooks[eventName].push({
+          matcher,
+          hooks: [{ type: 'command', command: hookCmd, timeout, statusMessage }],
+        });
+      }
     }
 
+    ensureHookEntry('PreToolUse', 'Grep|Glob|Bash', 10, 'Enriching with GitNexus graph context...');
+    ensureHookEntry('PostToolUse', 'Bash', 10, 'Checking GitNexus index freshness...');
+
     await writeJsonFile(settingsPath, existing);
-    result.configured.push('Claude Code hooks (PreToolUse)');
+    result.configured.push('Claude Code hooks (PreToolUse, PostToolUse)');
   } catch (err: any) {
     result.errors.push(`Claude Code hooks: ${err.message}`);
   }
@@ -435,8 +465,6 @@ async function saveSetupScope(scope: SetupScope, result: SetupResult): Promise<v
 
 // ─── Skill Installation ───────────────────────────────────────────
 
-const SKILL_NAMES = ['gitnexus-exploring', 'gitnexus-debugging', 'gitnexus-impact-analysis', 'gitnexus-refactoring', 'gitnexus-guide', 'gitnexus-cli'];
-
 /**
  * Install GitNexus skills to a target directory.
  * Each skill is installed as {targetDir}/{skillName}/SKILL.md.
@@ -449,24 +477,38 @@ async function installSkillsTo(targetDir: string): Promise<string[]> {
   const installed: string[] = [];
   const skillsRoot = path.join(__dirname, '..', '..', 'skills');
 
-  for (const skillName of SKILL_NAMES) {
+  let flatFiles: string[] = [];
+  let dirSkillFiles: string[] = [];
+  try {
+    [flatFiles, dirSkillFiles] = await Promise.all([
+      glob('*.md', { cwd: skillsRoot }),
+      glob('*/SKILL.md', { cwd: skillsRoot }),
+    ]);
+  } catch {
+    return [];
+  }
+
+  const skillSources = new Map<string, { isDirectory: boolean }>();
+
+  for (const relPath of dirSkillFiles) {
+    skillSources.set(path.dirname(relPath), { isDirectory: true });
+  }
+  for (const relPath of flatFiles) {
+    const skillName = path.basename(relPath, '.md');
+    if (!skillSources.has(skillName)) {
+      skillSources.set(skillName, { isDirectory: false });
+    }
+  }
+
+  for (const [skillName, source] of skillSources) {
     const skillDir = path.join(targetDir, skillName);
 
     try {
-      // Try directory-based skill first (skills/{name}/SKILL.md)
-      const dirSource = path.join(skillsRoot, skillName);
-
-      let isDirectory = false;
-      try {
-        const stat = await fs.stat(dirSource);
-        isDirectory = stat.isDirectory();
-      } catch { /* not a directory */ }
-
-      if (isDirectory) {
+      if (source.isDirectory) {
+        const dirSource = path.join(skillsRoot, skillName);
         await copyDirRecursive(dirSource, skillDir);
         installed.push(skillName);
       } else {
-        // Fall back to flat file (skills/{name}.md)
         const flatSource = path.join(skillsRoot, `${skillName}.md`);
         const content = await fs.readFile(flatSource, 'utf-8');
         await fs.mkdir(skillDir, { recursive: true });
@@ -508,6 +550,7 @@ export const setupCommand = async (options: SetupOptions = {}) => {
 
   let scope: SetupScope;
   let agent: SetupAgent;
+  const legacyCursorMode = !options.agent || options.agent.trim() === '';
   try {
     scope = resolveSetupScope(options.scope);
     agent = resolveSetupAgent(options.agent);
@@ -528,20 +571,26 @@ export const setupCommand = async (options: SetupOptions = {}) => {
   };
 
   if (scope === 'global') {
-    // Configure only the selected agent MCP
-    if (agent === 'claude') {
-      await setupClaudeCode(result);
-      // Claude-only hooks should only be installed when Claude is selected.
-      await installClaudeCodeHooks(result);
-    } else if (agent === 'opencode') {
-      await setupOpenCode(result);
-    } else if (agent === 'codex') {
-      await setupCodex(result);
+    if (legacyCursorMode) {
+      await setupCursor(result);
+      await installLegacyCursorSkills(result);
+      await saveSetupScope(scope, result);
+      agent = LEGACY_CURSOR_AGENT as SetupAgent;
+    } else {
+      // Configure only the selected agent MCP
+      if (agent === 'claude') {
+        await setupClaudeCode(result);
+        // Claude-only hooks should only be installed when Claude is selected.
+        await installClaudeCodeHooks(result);
+      } else if (agent === 'opencode') {
+        await setupOpenCode(result);
+      } else if (agent === 'codex') {
+        await setupCodex(result);
+      }
+      // Install shared global skills once
+      await installGlobalAgentSkills(result);
+      await saveSetupScope(scope, result);
     }
-    
-    // Install shared global skills once
-    await installGlobalAgentSkills(result);
-
   } else {
     const repoRoot = getGitRoot(process.cwd());
     if (!repoRoot) {
@@ -557,9 +606,8 @@ export const setupCommand = async (options: SetupOptions = {}) => {
       await setupProjectOpenCode(repoRoot, result);
     }
     await installProjectAgentSkills(repoRoot, result);
+    await saveSetupScope(scope, result);
   }
-
-  await saveSetupScope(scope, result);
 
   // Print results
   if (result.configured.length > 0) {
@@ -588,7 +636,7 @@ export const setupCommand = async (options: SetupOptions = {}) => {
   console.log('');
   console.log('  Summary:');
   console.log(`    Scope: ${scope}`);
-  console.log(`    Agent: ${agent}`);
+  console.log(`    Agent: ${legacyCursorMode ? LEGACY_CURSOR_AGENT : agent}`);
   console.log(`    MCP configured for: ${result.configured.filter(c => !c.includes('skills')).join(', ') || 'none'}`);
   console.log(`    Skills installed to: ${result.configured.filter(c => c.includes('skills')).length > 0 ? result.configured.filter(c => c.includes('skills')).join(', ') : 'none'}`);
   console.log('');

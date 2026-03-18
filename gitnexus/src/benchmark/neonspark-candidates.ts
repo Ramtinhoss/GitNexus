@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { listRegisteredRepos } from '../storage/repo-manager.js';
-import { closeKuzu, executeQuery, initKuzu } from '../mcp/core/kuzu-adapter.js';
+import { closeLbug, executeQuery, initLbug } from '../mcp/core/lbug-adapter.js';
 
 const ALLOWED_PREFIXES = ['Assets/NEON/Code/', 'Packages/com.veewo.', 'Packages/com.neonspark.'];
 
@@ -29,7 +29,7 @@ export async function extractCandidates(repoName: string, outFile: string): Prom
   const repo = repos.find((r) => r.name === repoName);
   if (!repo) throw new Error(`repo not indexed: ${repoName}`);
 
-  await initKuzu(repoName, path.join(repo.storagePath, 'kuzu'));
+  await initLbug(repoName, path.join(repo.storagePath, 'lbug'));
   try {
     const rows = await executeQuery(repoName, `
       MATCH (s:Class)
@@ -71,7 +71,7 @@ export async function extractCandidates(repoName: string, outFile: string): Prom
     await fs.writeFile(outFile, jsonl, 'utf-8');
     return normalized.length;
   } finally {
-    await closeKuzu(repoName);
+    await closeLbug(repoName);
   }
 }
 
