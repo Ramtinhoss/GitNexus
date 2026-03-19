@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { type GeneratedSkillInfo } from './skill-gen.js';
+import { buildNpxCommand, resolveCliSpec } from '../config/cli-spec.js';
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -43,6 +44,7 @@ function generateGitNexusContent(
   projectName: string,
   stats: RepoStats,
   skillScope: SkillScope,
+  cliPackageSpec: string,
   generatedSkills?: GeneratedSkillInfo[],
 ): string {
   const skillRoot = skillScope === 'global'
@@ -53,6 +55,7 @@ function generateGitNexusContent(
       `| Work in the ${s.label} area (${s.symbolCount} symbols) | \`.claude/skills/generated/${s.name}/SKILL.md\` |`,
     ).join('\n')}`
     : '';
+  const reindexCmd = buildNpxCommand(cliPackageSpec, 'analyze');
 
   return `${GITNEXUS_START_MARKER}
 # GitNexus MCP
@@ -65,7 +68,7 @@ This project is indexed by GitNexus as **${projectName}** (${stats.nodes || 0} s
 2. **Match your task to a skill below** and **read that skill file**
 3. **Follow the skill's workflow and checklist**
 
-> If step 1 warns the index is stale, ask user whether to rebuild index via \`npx -y @veewo/gitnexus@latest analyze\` first (it reuses previous analyze scope/options by default; add \`--no-reuse-options\` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
+> If step 1 warns the index is stale, ask user whether to rebuild index via \`gitnexus analyze\` when local CLI exists; otherwise run \`${reindexCmd}\` (it reuses previous analyze scope/options by default; add \`--no-reuse-options\` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
 
 ## Skills
 
@@ -218,11 +221,19 @@ export async function generateAIContextFiles(
   stats: RepoStats,
   options?: {
     skillScope?: SkillScope;
+    cliPackageSpec?: string;
   },
   generatedSkills?: GeneratedSkillInfo[]
 ): Promise<{ files: string[] }> {
   const skillScope: SkillScope = options?.skillScope === 'global' ? 'global' : 'project';
-  const content = generateGitNexusContent(projectName, stats, skillScope, generatedSkills);
+  const cliPackageSpec = options?.cliPackageSpec || resolveCliSpec().packageSpec;
+  const content = generateGitNexusContent(
+    projectName,
+    stats,
+    skillScope,
+    cliPackageSpec,
+    generatedSkills,
+  );
   const createdFiles: string[] = [];
 
   // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Codex, Cline, etc.)

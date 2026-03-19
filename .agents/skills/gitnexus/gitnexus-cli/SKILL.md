@@ -11,7 +11,7 @@ Resolve command runner once, then use it consistently in the session:
 if command -v gitnexus >/dev/null 2>&1; then
   GN="gitnexus"
 else
-  GN="npx -y @veewo/gitnexus@latest"
+  GN="npx -y ${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}"
 fi
 ```
 

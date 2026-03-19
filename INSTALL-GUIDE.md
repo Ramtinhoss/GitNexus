@@ -10,16 +10,20 @@
 
 ## 版本与执行策略（必须遵守）
 
-- 本文档**不锁具体版本号**；版本由用户在会话 prompt 中指定（例如 RC 版本）
-- 必须先执行 `npm install -g @veewo/gitnexus[@<version>]`
-- 命令执行顺序：优先本机 `gitnexus`，若未安装再回退 `npx -y @veewo/gitnexus@latest`
-- 建议在会话开始先解析命令别名，后续统一使用 `$GN`
+- 本文档默认 `latest`，但**用户在 prompt 指定版本时必须优先使用用户版本**（例如 `1.4.7-rc`）
+- 整个会话只能有一个 CLI 版本源，禁止混用 `latest` / 固定版本
+- 建议先设置一次 `GITNEXUS_CLI_SPEC`，并在整个流程统一复用 `$GN`
+- `setup` 支持写入版本源：`--cli-version <version>` 或 `--cli-spec <packageSpec>`
 
 ```bash
+# 如果用户 prompt 指定版本，请先设置：
+# export GITNEXUS_CLI_SPEC="@veewo/gitnexus@1.4.7-rc"
+GITNEXUS_CLI_SPEC="${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}"
+
 if command -v gitnexus >/dev/null 2>&1; then
   GN="gitnexus"
 else
-  GN="npx -y @veewo/gitnexus@latest"
+  GN="npx -y ${GITNEXUS_CLI_SPEC}"
 fi
 ```
 
@@ -52,16 +56,17 @@ fi
 
 ```bash
 npm uninstall -g gitnexus
-npm install -g @veewo/gitnexus
+npm install -g "${GITNEXUS_CLI_SPEC}"
 
 which gitnexus
 gitnexus --version
 npm view @veewo/gitnexus version --registry=https://registry.npmjs.org
 
+GITNEXUS_CLI_SPEC="${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}"
 if command -v gitnexus >/dev/null 2>&1; then
   GN="gitnexus"
 else
-  GN="npx -y @veewo/gitnexus@latest"
+  GN="npx -y ${GITNEXUS_CLI_SPEC}"
 fi
 ```
 
@@ -72,22 +77,23 @@ fi
 
 ## 2. Setup（严格按 agent 选择执行）
 
-`setup` 必须传 `--agent <claude|opencode|codex>`。
+`setup` 必须传 `--agent <claude|opencode|codex>`。  
+若用户在 prompt 指定版本，必须同时传 `--cli-version` 或 `--cli-spec`，确保 MCP 配置与当前会话一致。
 
 ### 2.1 Global 示例
 
 ```bash
-$GN setup --agent claude
-$GN setup --agent opencode
-$GN setup --agent codex
+$GN setup --agent claude --cli-spec "$GITNEXUS_CLI_SPEC"
+$GN setup --agent opencode --cli-spec "$GITNEXUS_CLI_SPEC"
+$GN setup --agent codex --cli-spec "$GITNEXUS_CLI_SPEC"
 ```
 
 ### 2.2 Project 示例（在目标 repo 根目录）
 
 ```bash
-$GN setup --scope project --agent claude
-$GN setup --scope project --agent opencode
-$GN setup --scope project --agent codex
+$GN setup --scope project --agent claude --cli-spec "$GITNEXUS_CLI_SPEC"
+$GN setup --scope project --agent opencode --cli-spec "$GITNEXUS_CLI_SPEC"
+$GN setup --scope project --agent codex --cli-spec "$GITNEXUS_CLI_SPEC"
 ```
 
 ### 2.3 预期改动

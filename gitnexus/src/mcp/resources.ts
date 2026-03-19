@@ -7,6 +7,8 @@
 
 import type { LocalBackend } from './local/local-backend.js';
 import { checkStaleness } from './staleness.js';
+import { loadCLIConfig } from '../storage/repo-manager.js';
+import { buildNpxCommand, resolveCliSpec } from '../config/cli-spec.js';
 
 export interface ResourceDefinition {
   uri: string;
@@ -148,6 +150,12 @@ export async function readResource(uri: string, backend: LocalBackend): Promise<
   }
 }
 
+async function resolveAnalyzeNpxCommand(): Promise<string> {
+  const config = await loadCLIConfig();
+  const packageSpec = resolveCliSpec({ config }).packageSpec;
+  return buildNpxCommand(packageSpec, 'analyze');
+}
+
 // ─── Resource Implementations ─────────────────────────────────────────
 
 /**
@@ -224,7 +232,8 @@ async function getContextResource(backend: LocalBackend, repoName?: string): Pro
   lines.push('  - cypher: Raw graph queries');
   lines.push('  - list_repos: Discover all indexed repositories');
   lines.push('');
-  lines.push('re_index: If data is stale, ask user whether to run `npx -y @veewo/gitnexus@latest analyze` (reuses previous analyze scope/options unless `--no-reuse-options` is passed). If user declines, clearly state retrieval may not reflect current code. For build/analyze/test commands, use 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently switch to glob/grep fallback.');
+  const analyzeCmd = await resolveAnalyzeNpxCommand();
+  lines.push(`re_index: If data is stale, ask user whether to run \`gitnexus analyze\` when local CLI exists; otherwise run \`${analyzeCmd}\` (reuses previous analyze scope/options unless \`--no-reuse-options\` is passed). If user declines, clearly state retrieval may not reflect current code. For build/analyze/test commands, use 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently switch to glob/grep fallback.`);
   lines.push('');
   lines.push('resources_available:');
   lines.push('  - gitnexus://repos: All indexed repositories');
@@ -433,9 +442,10 @@ async function getProcessDetailResource(name: string, backend: LocalBackend, rep
  */
 async function getSetupResource(backend: LocalBackend): Promise<string> {
   const repos = await backend.listRepos();
+  const analyzeCmd = await resolveAnalyzeNpxCommand();
 
   if (repos.length === 0) {
-    return '# GitNexus\n\nNo repositories indexed. Run: `npx -y @veewo/gitnexus@latest analyze` in a repository.';
+    return `# GitNexus\n\nNo repositories indexed. Run: \`gitnexus analyze\` when local CLI exists; otherwise \`${analyzeCmd}\` in a repository.`;
   }
   
   const sections: string[] = [];

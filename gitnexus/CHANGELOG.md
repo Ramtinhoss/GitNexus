@@ -2,6 +2,27 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.8-rc] - 2026-03-19
+
+### Added
+- Unified CLI package-spec resolver used across setup/resource/AGENTS generation/hook flows.
+  - Resolution priority: explicit setup args (`--cli-spec`/`--cli-version`) > env (`GITNEXUS_CLI_SPEC`/`GITNEXUS_CLI_VERSION`) > persisted config (`~/.gitnexus/config.json`) > `@latest`.
+- `gitnexus setup` now supports:
+  - `--cli-version <version>`
+  - `--cli-spec <packageSpec>`
+  and persists the resolved package spec into CLI config for later sessions.
+
+### Changed
+- Standardized stale-index remediation guidance to use local CLI first (`gitnexus analyze`) with npx fallback resolved from one package spec source.
+- Updated setup/manual docs and skill templates to avoid hard-coded mixed-version invocation paths.
+- Updated MCP JSON templates used in this repository to local binary form (`gitnexus mcp`) to eliminate static `@latest` drift in checked-in configs.
+
+### Fixed
+- Fixed false “Already up to date” path when metadata exists but LadybugDB file is missing.
+  - `analyze` now rebuilds when `.gitnexus/meta.json` exists but `.gitnexus/lbug` is absent.
+  - `status` now warns explicitly when metadata exists but LadybugDB file is missing.
+  - registry validation now requires both `meta.json` and `lbug`.
+
 ## [1.4.7-rc] - 2026-03-19
 
 ### Changed

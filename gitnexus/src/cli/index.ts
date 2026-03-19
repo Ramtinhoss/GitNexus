@@ -22,6 +22,8 @@ program
   .description('One-time setup: configure MCP for a selected coding agent (claude/opencode/codex)')
   .option('--scope <scope>', 'Install target: global (default) or project')
   .option('--agent <agent>', 'Target coding agent: claude, opencode, or codex')
+  .option('--cli-version <version>', 'Pin npx GitNexus version/tag for generated MCP commands (e.g. 1.4.7-rc)')
+  .option('--cli-spec <spec>', 'Pin full npx package spec for generated MCP commands (e.g. @veewo/gitnexus@1.4.7-rc)')
   .action(createLazyAction(() => import('./setup.js'), 'setupCommand'));
 
 program

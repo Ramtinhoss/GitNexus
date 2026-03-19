@@ -4,7 +4,7 @@
  * Shows the indexing status of the current repository.
  */
 
-import { findRepo, getStoragePaths, hasKuzuIndex } from '../storage/repo-manager.js';
+import { findRepo, getStoragePaths, hasKuzuIndex, hasLbugIndex } from '../storage/repo-manager.js';
 import { getCurrentCommit, isGitRepo, getGitRoot } from '../storage/git.js';
 
 export const statusCommand = async () => {
@@ -32,6 +32,14 @@ export const statusCommand = async () => {
 
   const currentCommit = getCurrentCommit(repo.repoPath);
   const isUpToDate = currentCommit === repo.meta.lastCommit;
+  const lbugReady = await hasLbugIndex(repo.storagePath);
+
+  if (!lbugReady) {
+    console.log(`Repository: ${repo.repoPath}`);
+    console.log('Status: ⚠️ index metadata exists but LadybugDB is missing');
+    console.log('Run: gitnexus analyze --force');
+    return;
+  }
 
   console.log(`Repository: ${repo.repoPath}`);
   console.log(`Indexed: ${new Date(repo.meta.indexedAt).toLocaleString()}`);

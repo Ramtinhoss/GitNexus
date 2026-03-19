@@ -13,7 +13,41 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawnSync } = require('child_process');
+const DEFAULT_NPX_SPEC = '@veewo/gitnexus@latest';
+const DEFAULT_PACKAGE_NAME = '@veewo/gitnexus';
+
+function normalizeNpxSpec(raw) {
+  const value = (raw || '').trim();
+  if (!value) return DEFAULT_NPX_SPEC;
+  if (value.startsWith('@') || value.includes('/') || value.includes('@')) {
+    if (value.startsWith('@') && value.indexOf('@', 1) === -1) return `${value}@latest`;
+    if (!value.startsWith('@') && !value.includes('/') && !value.includes('@')) return `${DEFAULT_PACKAGE_NAME}@${value}`;
+    if (!value.startsWith('@') && value.includes('@')) return value;
+    if (!value.includes('@')) return `${value}@latest`;
+    return value;
+  }
+  return `${DEFAULT_PACKAGE_NAME}@${value}`;
+}
+
+function resolveNpxSpec() {
+  if (process.env.GITNEXUS_CLI_SPEC) return normalizeNpxSpec(process.env.GITNEXUS_CLI_SPEC);
+  if (process.env.GITNEXUS_CLI_VERSION) return normalizeNpxSpec(process.env.GITNEXUS_CLI_VERSION);
+
+  try {
+    const raw = fs.readFileSync(path.join(os.homedir(), '.gitnexus', 'config.json'), 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.cliPackageSpec === 'string' && parsed.cliPackageSpec.trim()) {
+      return normalizeNpxSpec(parsed.cliPackageSpec);
+    }
+    if (typeof parsed.cliVersion === 'string' && parsed.cliVersion.trim()) {
+      return normalizeNpxSpec(parsed.cliVersion);
+    }
+  } catch {}
+
+  return DEFAULT_NPX_SPEC;
+}
 
 /**
  * Read JSON input from stdin synchronously.
@@ -107,7 +141,7 @@ function resolveCliPath() {
  * Spawn a gitnexus CLI command synchronously.
  * Returns the stderr output (KuzuDB captures stdout at OS level).
  */
-function runGitNexusCli(cliPath, args, cwd, timeout) {
+function runGitNexusCli(cliPath, args, cwd, timeout, npxSpec) {
   const isWin = process.platform === 'win32';
   if (cliPath) {
     return spawnSync(
@@ -119,7 +153,7 @@ function runGitNexusCli(cliPath, args, cwd, timeout) {
   // On Windows, invoke npx.cmd directly (no shell needed)
   return spawnSync(
     isWin ? 'npx.cmd' : 'npx',
-    ['-y', 'gitnexus', ...args],
+    ['-y', npxSpec, ...args],
     { encoding: 'utf-8', timeout: timeout + 5000, cwd, stdio: ['pipe', 'pipe', 'pipe'] }
   );
 }
@@ -141,9 +175,10 @@ function handlePreToolUse(input) {
   if (!pattern || pattern.length < 3) return;
 
   const cliPath = resolveCliPath();
+  const npxSpec = resolveNpxSpec();
   let result = '';
   try {
-    const child = runGitNexusCli(cliPath, ['augment', '--', pattern], cwd, 7000);
+    const child = runGitNexusCli(cliPath, ['augment', '--', pattern], cwd, 7000, npxSpec);
     if (!child.error && child.status === 0) {
       result = child.stderr || '';
     }
@@ -166,7 +201,7 @@ function sendHookResponse(hookEventName, message) {
 /**
  * PostToolUse handler — detect index staleness after git mutations.
  *
- * Instead of spawning a full `npx -y @veewo/gitnexus@latest analyze` synchronously (which blocks
+ * Instead of spawning a full analyze command synchronously (which blocks
  * the agent for up to 120s and risks KuzuDB corruption on timeout), we do a
  * lightweight staleness check: compare `git rev-parse HEAD` against the
  * lastCommit stored in `.gitnexus/meta.json`. If they differ, notify the
@@ -210,10 +245,13 @@ function handlePostToolUse(input) {
   // If HEAD matches last indexed commit, no reindex needed
   if (currentHead && currentHead === lastCommit) return;
 
-  const analyzeCmd = `npx -y @veewo/gitnexus@latest analyze${hadEmbeddings ? ' --embeddings' : ''}`;
+  const npxSpec = resolveNpxSpec();
+  const analyzeArgs = `analyze${hadEmbeddings ? ' --embeddings' : ''}`;
+  const analyzeCmd = `gitnexus ${analyzeArgs}`;
+  const fallbackCmd = `npx -y ${npxSpec} ${analyzeArgs}`;
   sendHookResponse('PostToolUse',
     `GitNexus index is stale (last indexed: ${lastCommit ? lastCommit.slice(0, 7) : 'never'}). ` +
-    `Run \`${analyzeCmd}\` to update the knowledge graph.`
+    `Run \`${analyzeCmd}\` (or \`${fallbackCmd}\`) to update the knowledge graph.`
   );
 }
 

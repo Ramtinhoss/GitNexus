@@ -105,6 +105,18 @@ export const hasKuzuIndex = async (storagePath: string): Promise<boolean> => {
 };
 
 /**
+ * Check whether a LadybugDB index exists in the given storage path.
+ */
+export const hasLbugIndex = async (storagePath: string): Promise<boolean> => {
+  try {
+    await fs.stat(path.join(storagePath, 'lbug'));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Clean up stale KuzuDB files after migration to LadybugDB.
  *
  * Returns:
@@ -350,6 +362,7 @@ export const listRegisteredRepos = async (opts?: { validate?: boolean }): Promis
   for (const entry of entries) {
     try {
       await fs.access(path.join(entry.storagePath, 'meta.json'));
+      await fs.access(path.join(entry.storagePath, 'lbug'));
       valid.push(entry);
     } catch {
       // Index no longer exists — skip
@@ -371,6 +384,8 @@ export interface CLIConfig {
   model?: string;
   baseUrl?: string;
   setupScope?: 'global' | 'project';
+  cliPackageSpec?: string;
+  cliVersion?: string;
 }
 
 /**

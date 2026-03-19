@@ -7,7 +7,6 @@
  */
 
 import fs from 'fs/promises';
-import { readFileSync } from 'node:fs';
 import path from 'path';
 import os from 'os';
 import { execFile } from 'node:child_process';
@@ -16,6 +15,7 @@ import { fileURLToPath } from 'url';
 import { getGlobalDir, loadCLIConfig, saveCLIConfig } from '../storage/repo-manager.js';
 import { getGitRoot } from '../storage/git.js';
 import { glob } from 'glob';
+import { buildNpxCommand, resolveCliSpec } from '../config/cli-spec.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +32,8 @@ type SetupScope = 'global' | 'project';
 interface SetupOptions {
   scope?: string;
   agent?: string;
+  cliVersion?: string;
+  cliSpec?: string;
 }
 
 interface McpEntry {
@@ -40,7 +42,6 @@ interface McpEntry {
 }
 
 type SetupAgent = 'claude' | 'opencode' | 'codex';
-const FALLBACK_MCP_PACKAGE = '@veewo/gitnexus@latest';
 const LEGACY_CURSOR_AGENT = 'cursor';
 
 function resolveSetupScope(rawScope?: string): SetupScope {
@@ -71,45 +72,27 @@ async function installLegacyCursorSkills(result: SetupResult): Promise<void> {
   }
 }
 
-/**
- * Resolve the package spec used by MCP commands.
- * Defaults to @veewo/gitnexus@latest when package metadata is unavailable.
- */
-function resolveMcpPackageSpec(): string {
-  try {
-    const packageJsonPath = path.join(__dirname, '..', '..', 'package.json');
-    const raw = readFileSync(packageJsonPath, 'utf-8');
-    const parsed = JSON.parse(raw) as { name?: string };
-    if (typeof parsed.name === 'string' && parsed.name.trim().length > 0) {
-      return `${parsed.name}@latest`;
-    }
-  } catch {
-    // Fallback keeps behavior for unusual runtimes.
-  }
-  return FALLBACK_MCP_PACKAGE;
-}
-
-const MCP_PACKAGE_SPEC = resolveMcpPackageSpec();
+const DEFAULT_MCP_PACKAGE_SPEC = resolveCliSpec().packageSpec;
 
 /**
  * The MCP server entry for all editors.
  * On Windows, npx must be invoked via cmd /c since it's a .cmd script.
  */
-function getMcpEntry(): McpEntry {
+function getMcpEntry(mcpPackageSpec: string): McpEntry {
   if (process.platform === 'win32') {
     return {
       command: 'cmd',
-      args: ['/c', 'npx', '-y', MCP_PACKAGE_SPEC, 'mcp'],
+      args: ['/c', 'npx', '-y', mcpPackageSpec, 'mcp'],
     };
   }
   return {
     command: 'npx',
-    args: ['-y', MCP_PACKAGE_SPEC, 'mcp'],
+    args: ['-y', mcpPackageSpec, 'mcp'],
   };
 }
 
-function getOpenCodeMcpEntry() {
-  const entry = getMcpEntry();
+function getOpenCodeMcpEntry(mcpPackageSpec: string) {
+  const entry = getMcpEntry(mcpPackageSpec);
   return {
     type: 'local',
     command: [entry.command, ...entry.args],
@@ -120,14 +103,14 @@ function getOpenCodeMcpEntry() {
  * Merge gitnexus entry into an existing MCP config JSON object.
  * Returns the updated config.
  */
-function mergeMcpConfig(existing: any): any {
+function mergeMcpConfig(existing: any, mcpPackageSpec: string): any {
   if (!existing || typeof existing !== 'object') {
     existing = {};
   }
   if (!existing.mcpServers || typeof existing.mcpServers !== 'object') {
     existing.mcpServers = {};
   }
-  existing.mcpServers.gitnexus = getMcpEntry();
+  existing.mcpServers.gitnexus = getMcpEntry(mcpPackageSpec);
   return existing;
 }
 
@@ -135,14 +118,14 @@ function mergeMcpConfig(existing: any): any {
  * Merge gitnexus entry into an OpenCode config JSON object.
  * Returns the updated config.
  */
-function mergeOpenCodeConfig(existing: any): any {
+function mergeOpenCodeConfig(existing: any, mcpPackageSpec: string): any {
   if (!existing || typeof existing !== 'object') {
     existing = {};
   }
   if (!existing.mcp || typeof existing.mcp !== 'object') {
     existing.mcp = {};
   }
-  existing.mcp.gitnexus = getOpenCodeMcpEntry();
+  existing.mcp.gitnexus = getOpenCodeMcpEntry(mcpPackageSpec);
   return existing;
 }
 
@@ -197,8 +180,8 @@ function toTomlString(value: string): string {
   return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
-function buildCodexMcpTable(): string {
-  const entry = getMcpEntry();
+function buildCodexMcpTable(mcpPackageSpec: string): string {
+  const entry = getMcpEntry(mcpPackageSpec);
   return [
     '[mcp_servers.gitnexus]',
     `command = ${toTomlString(entry.command)}`,
@@ -206,8 +189,8 @@ function buildCodexMcpTable(): string {
   ].join('\n');
 }
 
-function mergeCodexConfig(existingRaw: string): string {
-  const table = buildCodexMcpTable();
+function mergeCodexConfig(existingRaw: string, mcpPackageSpec: string): string {
+  const table = buildCodexMcpTable(mcpPackageSpec);
   const normalized = existingRaw.replace(/\r\n/g, '\n');
   const tablePattern = /^\[mcp_servers\.gitnexus\][\s\S]*?(?=^\[[^\]]+\]|(?![\s\S]))/m;
 
@@ -232,7 +215,7 @@ async function resolveOpenCodeConfigPath(opencodeDir: string): Promise<string> {
 
 // ─── Editor-specific setup ─────────────────────────────────────────
 
-async function setupCursor(result: SetupResult): Promise<void> {
+async function setupCursor(result: SetupResult, mcpPackageSpec: string): Promise<void> {
   const cursorDir = path.join(os.homedir(), '.cursor');
   if (!(await dirExists(cursorDir))) {
     result.skipped.push('Cursor (not installed)');
@@ -242,7 +225,7 @@ async function setupCursor(result: SetupResult): Promise<void> {
   const mcpPath = path.join(cursorDir, 'mcp.json');
   try {
     const existing = await readJsonFile(mcpPath);
-    const updated = mergeMcpConfig(existing);
+    const updated = mergeMcpConfig(existing, mcpPackageSpec);
     await writeJsonFile(mcpPath, updated);
     result.configured.push('Cursor');
   } catch (err: any) {
@@ -250,7 +233,7 @@ async function setupCursor(result: SetupResult): Promise<void> {
   }
 }
 
-async function setupClaudeCode(result: SetupResult): Promise<void> {
+async function setupClaudeCode(result: SetupResult, mcpPackageSpec: string): Promise<void> {
   const claudeDir = path.join(os.homedir(), '.claude');
   const hasClaude = await dirExists(claudeDir);
 
@@ -263,7 +246,7 @@ async function setupClaudeCode(result: SetupResult): Promise<void> {
   console.log('');
   console.log('  Claude Code detected. Run this command to add GitNexus MCP:');
   console.log('');
-  console.log(`    claude mcp add gitnexus -- npx -y ${MCP_PACKAGE_SPEC} mcp`);
+  console.log(`    claude mcp add gitnexus -- ${buildNpxCommand(mcpPackageSpec, 'mcp')}`);
   console.log('');
   result.configured.push('Claude Code (MCP manual step printed)');
 }
@@ -300,7 +283,7 @@ async function installProjectAgentSkills(repoRoot: string, result: SetupResult):
  * Install GitNexus hooks to ~/.claude/settings.json for Claude Code.
  * Merges hook config without overwriting existing hooks.
  */
-async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
+async function installClaudeCodeHooks(result: SetupResult, mcpPackageSpec: string): Promise<void> {
   const claudeDir = path.join(os.homedir(), '.claude');
   if (!(await dirExists(claudeDir))) return;
 
@@ -327,6 +310,10 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
       content = content.replace(
         "let cliPath = path.resolve(__dirname, '..', '..', 'dist', 'cli', 'index.js');",
         `let cliPath = ${jsonCli};`
+      );
+      content = content.replace(
+        "const DEFAULT_NPX_SPEC = '@veewo/gitnexus@latest';",
+        `const DEFAULT_NPX_SPEC = ${JSON.stringify(mcpPackageSpec)};`,
       );
       await fs.writeFile(dest, content, 'utf-8');
     } catch {
@@ -373,7 +360,7 @@ async function installClaudeCodeHooks(result: SetupResult): Promise<void> {
   }
 }
 
-async function setupOpenCode(result: SetupResult): Promise<void> {
+async function setupOpenCode(result: SetupResult, mcpPackageSpec: string): Promise<void> {
   const opencodeDir = path.join(os.homedir(), '.config', 'opencode');
   if (!(await dirExists(opencodeDir))) {
     result.skipped.push('OpenCode (not installed)');
@@ -383,7 +370,7 @@ async function setupOpenCode(result: SetupResult): Promise<void> {
   const configPath = await resolveOpenCodeConfigPath(opencodeDir);
   try {
     const existing = await readJsonFile(configPath);
-    const config = mergeOpenCodeConfig(existing);
+    const config = mergeOpenCodeConfig(existing, mcpPackageSpec);
     await writeJsonFile(configPath, config);
     result.configured.push(`OpenCode (${path.basename(configPath)})`);
   } catch (err: any) {
@@ -391,8 +378,8 @@ async function setupOpenCode(result: SetupResult): Promise<void> {
   }
 }
 
-async function setupCodex(result: SetupResult): Promise<void> {
-  const entry = getMcpEntry();
+async function setupCodex(result: SetupResult, mcpPackageSpec: string): Promise<void> {
+  const entry = getMcpEntry(mcpPackageSpec);
 
   try {
     await execFileAsync(
@@ -410,11 +397,11 @@ async function setupCodex(result: SetupResult): Promise<void> {
   }
 }
 
-async function setupProjectMcp(repoRoot: string, result: SetupResult): Promise<void> {
+async function setupProjectMcp(repoRoot: string, result: SetupResult, mcpPackageSpec: string): Promise<void> {
   const mcpPath = path.join(repoRoot, '.mcp.json');
   try {
     const existing = await readJsonFile(mcpPath);
-    const updated = mergeMcpConfig(existing);
+    const updated = mergeMcpConfig(existing, mcpPackageSpec);
     await writeJsonFile(mcpPath, updated);
     result.configured.push(`Project MCP (${path.relative(repoRoot, mcpPath)})`);
   } catch (err: any) {
@@ -422,7 +409,7 @@ async function setupProjectMcp(repoRoot: string, result: SetupResult): Promise<v
   }
 }
 
-async function setupProjectCodex(repoRoot: string, result: SetupResult): Promise<void> {
+async function setupProjectCodex(repoRoot: string, result: SetupResult, mcpPackageSpec: string): Promise<void> {
   const codexConfigPath = path.join(repoRoot, '.codex', 'config.toml');
   try {
     let existingRaw = '';
@@ -432,7 +419,7 @@ async function setupProjectCodex(repoRoot: string, result: SetupResult): Promise
       if (err?.code !== 'ENOENT') throw err;
     }
 
-    const merged = mergeCodexConfig(existingRaw);
+    const merged = mergeCodexConfig(existingRaw, mcpPackageSpec);
     await fs.mkdir(path.dirname(codexConfigPath), { recursive: true });
     await fs.writeFile(codexConfigPath, merged, 'utf-8');
     result.configured.push(`Project Codex MCP (${path.relative(repoRoot, codexConfigPath)})`);
@@ -441,11 +428,11 @@ async function setupProjectCodex(repoRoot: string, result: SetupResult): Promise
   }
 }
 
-async function setupProjectOpenCode(repoRoot: string, result: SetupResult): Promise<void> {
+async function setupProjectOpenCode(repoRoot: string, result: SetupResult, mcpPackageSpec: string): Promise<void> {
   const opencodePath = path.join(repoRoot, 'opencode.json');
   try {
     const existing = await readJsonFile(opencodePath);
-    const merged = mergeOpenCodeConfig(existing);
+    const merged = mergeOpenCodeConfig(existing, mcpPackageSpec);
     await writeJsonFile(opencodePath, merged);
     result.configured.push(`Project OpenCode MCP (${path.relative(repoRoot, opencodePath)})`);
   } catch (err: any) {
@@ -453,11 +440,28 @@ async function setupProjectOpenCode(repoRoot: string, result: SetupResult): Prom
   }
 }
 
-async function saveSetupScope(scope: SetupScope, result: SetupResult): Promise<void> {
+function extractVersionFromPackageSpec(packageSpec: string): string | undefined {
+  const trimmed = packageSpec.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith('@')) {
+    const at = trimmed.indexOf('@', 1);
+    return at > 0 ? trimmed.slice(at + 1) : undefined;
+  }
+  const at = trimmed.lastIndexOf('@');
+  return at > 0 ? trimmed.slice(at + 1) : undefined;
+}
+
+async function saveSetupConfig(scope: SetupScope, packageSpec: string, result: SetupResult): Promise<void> {
   try {
     const existing = await loadCLIConfig();
-    await saveCLIConfig({ ...existing, setupScope: scope });
+    await saveCLIConfig({
+      ...existing,
+      setupScope: scope,
+      cliPackageSpec: packageSpec,
+      cliVersion: extractVersionFromPackageSpec(packageSpec),
+    });
     result.configured.push(`Default setup scope (${scope})`);
+    result.configured.push(`CLI package spec (${packageSpec})`);
   } catch (err: any) {
     result.errors.push(`Persist setup scope: ${err.message}`);
   }
@@ -548,6 +552,12 @@ export const setupCommand = async (options: SetupOptions = {}) => {
   console.log('  ==============');
   console.log('');
 
+  if (options.cliSpec && options.cliVersion) {
+    console.log('  Use either --cli-spec or --cli-version, not both.\n');
+    process.exitCode = 1;
+    return;
+  }
+
   let scope: SetupScope;
   let agent: SetupAgent;
   const legacyCursorMode = !options.agent || options.agent.trim() === '';
@@ -564,6 +574,14 @@ export const setupCommand = async (options: SetupOptions = {}) => {
   const globalDir = getGlobalDir();
   await fs.mkdir(globalDir, { recursive: true });
 
+  const existingConfig = await loadCLIConfig();
+  const resolvedCliSpec = resolveCliSpec({
+    explicitSpec: options.cliSpec,
+    explicitVersion: options.cliVersion,
+    config: existingConfig,
+  });
+  const mcpPackageSpec = resolvedCliSpec.packageSpec || DEFAULT_MCP_PACKAGE_SPEC;
+
   const result: SetupResult = {
     configured: [],
     skipped: [],
@@ -572,24 +590,24 @@ export const setupCommand = async (options: SetupOptions = {}) => {
 
   if (scope === 'global') {
     if (legacyCursorMode) {
-      await setupCursor(result);
+      await setupCursor(result, mcpPackageSpec);
       await installLegacyCursorSkills(result);
-      await saveSetupScope(scope, result);
+      await saveSetupConfig(scope, mcpPackageSpec, result);
       agent = LEGACY_CURSOR_AGENT as SetupAgent;
     } else {
       // Configure only the selected agent MCP
       if (agent === 'claude') {
-        await setupClaudeCode(result);
+        await setupClaudeCode(result, mcpPackageSpec);
         // Claude-only hooks should only be installed when Claude is selected.
-        await installClaudeCodeHooks(result);
+        await installClaudeCodeHooks(result, mcpPackageSpec);
       } else if (agent === 'opencode') {
-        await setupOpenCode(result);
+        await setupOpenCode(result, mcpPackageSpec);
       } else if (agent === 'codex') {
-        await setupCodex(result);
+        await setupCodex(result, mcpPackageSpec);
       }
       // Install shared global skills once
       await installGlobalAgentSkills(result);
-      await saveSetupScope(scope, result);
+      await saveSetupConfig(scope, mcpPackageSpec, result);
     }
   } else {
     const repoRoot = getGitRoot(process.cwd());
@@ -599,14 +617,14 @@ export const setupCommand = async (options: SetupOptions = {}) => {
       return;
     }
     if (agent === 'claude') {
-      await setupProjectMcp(repoRoot, result);
+      await setupProjectMcp(repoRoot, result, mcpPackageSpec);
     } else if (agent === 'codex') {
-      await setupProjectCodex(repoRoot, result);
+      await setupProjectCodex(repoRoot, result, mcpPackageSpec);
     } else if (agent === 'opencode') {
-      await setupProjectOpenCode(repoRoot, result);
+      await setupProjectOpenCode(repoRoot, result, mcpPackageSpec);
     }
     await installProjectAgentSkills(repoRoot, result);
-    await saveSetupScope(scope, result);
+    await saveSetupConfig(scope, mcpPackageSpec, result);
   }
 
   // Print results
@@ -637,6 +655,7 @@ export const setupCommand = async (options: SetupOptions = {}) => {
   console.log('  Summary:');
   console.log(`    Scope: ${scope}`);
   console.log(`    Agent: ${legacyCursorMode ? LEGACY_CURSOR_AGENT : agent}`);
+  console.log(`    CLI package spec: ${mcpPackageSpec}`);
   console.log(`    MCP configured for: ${result.configured.filter(c => !c.includes('skills')).join(', ') || 'none'}`);
   console.log(`    Skills installed to: ${result.configured.filter(c => c.includes('skills')).length > 0 ? result.configured.filter(c => c.includes('skills')).join(', ') : 'none'}`);
   console.log('');

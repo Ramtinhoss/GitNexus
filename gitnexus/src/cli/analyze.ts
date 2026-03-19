@@ -23,6 +23,7 @@ import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
 import { formatFallbackSummary, formatUnityDiagnosticsSummary } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
+import { resolveCliSpec } from '../config/cli-spec.js';
 import type { PipelineResult } from '../types/pipeline.js';
 import type { UnityParitySeed } from '../core/ingestion/unity-parity-seed.js';
 
@@ -125,6 +126,13 @@ export const analyzeCommand = async (
 
   const currentCommit = getCurrentCommit(repoPath);
   const existingMeta = await loadMeta(storagePath);
+  let hasLbugIndex = false;
+  try {
+    await fs.stat(lbugPath);
+    hasLbugIndex = true;
+  } catch {
+    hasLbugIndex = false;
+  }
 
   let includeExtensions: string[] = [];
   let scopeRules: string[] = [];
@@ -149,7 +157,11 @@ export const analyzeCommand = async (
     return;
   }
 
-  if (existingMeta && !options?.force && existingMeta.lastCommit === currentCommit && !options?.skills) {
+  if (existingMeta && !hasLbugIndex && !options?.force) {
+    console.log('  Existing metadata found, but LadybugDB index file is missing — rebuilding index...\n');
+  }
+
+  if (existingMeta && hasLbugIndex && !options?.force && existingMeta.lastCommit === currentCommit && !options?.skills) {
     const hasScopePrefixInput = Array.isArray(options?.scopePrefix)
       ? options.scopePrefix.length > 0
       : Boolean(options?.scopePrefix);
@@ -425,6 +437,7 @@ export const analyzeCommand = async (
     generatedSkills = skillResult.skills;
   }
 
+  const cliConfig = await loadCLIConfig();
   const aiContext = await generateAIContextFiles(repoPath, storagePath, projectName, {
     files: pipelineRuntime.totalFileCount,
     nodes: stats.nodes,
@@ -433,7 +446,8 @@ export const analyzeCommand = async (
     clusters: aggregatedClusterCount,
     processes: pipelineRuntime.processResult?.stats.totalProcesses,
   }, {
-    skillScope: ((await loadCLIConfig()).setupScope === 'global') ? 'global' : 'project',
+    skillScope: (cliConfig.setupScope === 'global') ? 'global' : 'project',
+    cliPackageSpec: resolveCliSpec({ config: cliConfig }).packageSpec,
   }, generatedSkills);
 
   await closeLbug();

@@ -73,6 +73,26 @@ test('setup rejects invalid --agent', async () => {
   }
 });
 
+test('setup rejects using --cli-spec and --cli-version together', async () => {
+  const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
+
+  try {
+    try {
+      await runSetup(['--agent', 'opencode', '--cli-spec', '@veewo/gitnexus@1.4.7-rc', '--cli-version', '1.4.7-rc'], {
+        ...process.env,
+        HOME: fakeHome,
+        USERPROFILE: fakeHome,
+      });
+      assert.fail('expected setup with conflicting CLI options to fail');
+    } catch (err: any) {
+      assert.equal(typeof err?.stdout, 'string');
+      assert.match(err.stdout as string, /Use either --cli-spec or --cli-version/);
+    }
+  } finally {
+    await fs.rm(fakeHome, { recursive: true, force: true });
+  }
+});
+
 test('setup installs global skills under ~/.agents/skills/gitnexus', async () => {
   const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
 
@@ -175,6 +195,40 @@ test('setup configures OpenCode MCP in ~/.config/opencode/opencode.json', async 
 
     assert.equal(opencodeConfig.mcp?.gitnexus?.type, 'local');
     assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['npx', '-y', expectedMcpPackage, 'mcp']);
+  } finally {
+    await fs.rm(fakeHome, { recursive: true, force: true });
+  }
+});
+
+test('setup --cli-version pins MCP package spec and persists it in config', async () => {
+  const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
+
+  try {
+    const opencodeDir = path.join(fakeHome, '.config', 'opencode');
+    await fs.mkdir(opencodeDir, { recursive: true });
+
+    await runSetup(['--agent', 'opencode', '--cli-version', '1.4.7-rc'], {
+      ...process.env,
+      HOME: fakeHome,
+      USERPROFILE: fakeHome,
+    });
+
+    const opencodeConfigPath = path.join(opencodeDir, 'opencode.json');
+    const opencodeRaw = await fs.readFile(opencodeConfigPath, 'utf-8');
+    const opencodeConfig = JSON.parse(opencodeRaw) as {
+      mcp?: Record<string, { type?: string; command?: string[] }>;
+    };
+
+    const configPath = path.join(fakeHome, '.gitnexus', 'config.json');
+    const savedConfigRaw = await fs.readFile(configPath, 'utf-8');
+    const savedConfig = JSON.parse(savedConfigRaw) as {
+      cliPackageSpec?: string;
+      cliVersion?: string;
+    };
+
+    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['npx', '-y', '@veewo/gitnexus@1.4.7-rc', 'mcp']);
+    assert.equal(savedConfig.cliPackageSpec, '@veewo/gitnexus@1.4.7-rc');
+    assert.equal(savedConfig.cliVersion, '1.4.7-rc');
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
   }

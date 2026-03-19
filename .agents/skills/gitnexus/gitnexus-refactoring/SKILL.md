@@ -23,7 +23,7 @@ description: "Use when the user wants to rename, extract, split, move, or restru
 5. Plan update order: interfaces → implementations → callers → tests
 ```
 
-> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise run `npx -y @veewo/gitnexus@latest analyze`.
+> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise run `npx -y ${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest} analyze`.
 
 ## Checklists
 

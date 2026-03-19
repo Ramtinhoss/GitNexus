@@ -1,9 +1,8 @@
 {
   "mcpServers": {
     "gitnexus": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     }
   }
 }

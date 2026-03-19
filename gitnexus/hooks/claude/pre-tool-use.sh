@@ -64,7 +64,11 @@ fi
 
 # Run gitnexus augment — must be fast (<500ms target)
 # augment writes to stderr (KuzuDB captures stdout at OS level), so capture stderr and discard stdout
-RESULT=$(cd "$CWD" && npx -y @veewo/gitnexus@latest augment "$PATTERN" 2>&1 1>/dev/null)
+GITNEXUS_CLI_SPEC="${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}"
+if [ -n "$GITNEXUS_CLI_VERSION" ]; then
+  GITNEXUS_CLI_SPEC="@veewo/gitnexus@$GITNEXUS_CLI_VERSION"
+fi
+RESULT=$(cd "$CWD" && npx -y "$GITNEXUS_CLI_SPEC" augment "$PATTERN" 2>&1 1>/dev/null)
 
 if [ -n "$RESULT" ]; then
   ESCAPED=$(echo "$RESULT" | jq -Rs .)
