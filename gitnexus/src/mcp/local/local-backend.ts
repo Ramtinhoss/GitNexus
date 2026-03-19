@@ -1441,7 +1441,7 @@ export class LocalBackend {
     },
   ): Promise<UnityContextPayload> {
     const symbolDeclarations = [{ symbol: input.symbolName, scriptPath: input.symbolFilePath }];
-    const paritySeed = await loadUnityParitySeed(repo.storagePath);
+    const paritySeed = await loadUnityParitySeed(repo.storagePath, { indexedCommit: repo.lastCommit });
     const seededScanContext = paritySeed
       ? buildUnityScanContextFromSeed({
         seed: paritySeed,
