@@ -2,6 +2,35 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.6-rc] - 2026-03-19
+
+> Cumulative release notes for `nantas-dev`, comparing `v1.3.11` -> `v1.4.6-rc`.
+
+### Added
+- Unity retrieval architecture upgrades:
+  - summary-first persistence model (`UNITY_RESOURCE_SUMMARY`) with query-time lazy expansion.
+  - compact/parity hydration contract (`hydrationMeta`, `needsParityRetry`) with parity warmup path.
+  - lazy overlay + parity cache layers for repeat query acceleration.
+- Unity serializable-class resource binding coverage (U3), including AssetRef-oriented context enrichment.
+- Benchmark/eval tooling expansion:
+  - Unity benchmark orchestration and gate reports.
+  - Agent-context benchmark pipeline and dataset tooling.
+- Analyze-scope and repo-alias workflow support for real-repo benchmark runs.
+- Setup workflow improvements for Codex/OpenCode MCP configuration and idempotent setup behavior.
+- Type resolution expansion through Phases 4-7 and broader language coverage.
+
+### Changed
+- Storage/backend runtime migrated from KuzuDB to LadybugDB v0.15.
+- Analyze/runtime memory profile reduced via streaming and bounded intermediate structures.
+- Unity hydration strategy shifted from analyze-time full materialization to on-demand query-time hydration.
+- CI/release workflow hardening and scoped package distribution under `@veewo/gitnexus`.
+
+### Fixed
+- Unity parity seed hot-path now uses singleflight + idle-bounded in-memory cache, reducing duplicate seed reads under concurrency.
+- Impact tool stability and relation coverage (`HAS_METHOD`, `OVERRIDES`) improvements.
+- CLI output and setup reliability fixes (stdout routing, duplicate MCP table guards, hook/postinstall robustness).
+- Test/runtime stability fixes, including Vitest worker `EPIPE` noise suppression.
+
 ## [1.4.6] - 2026-03-18
 
 ### Added
