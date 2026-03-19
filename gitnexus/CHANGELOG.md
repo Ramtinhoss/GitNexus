@@ -2,6 +2,13 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.7-rc] - 2026-03-19
+
+### Changed
+- Updated agent installation and indexing guidance to use local `gitnexus` CLI first, with fallback to `npx -y @veewo/gitnexus@latest` only when local CLI is unavailable.
+- Synchronized stale-index recovery instructions across AGENTS/CLAUDE entry docs and GitNexus skill workflows to follow the same local-first command resolution strategy.
+- Updated INSTALL-GUIDE command examples to use a session-level runner variable (`$GN`) for consistent `setup/analyze/status/query/context/impact/cypher/clean/list` invocation behavior.
+
 ## [1.4.6-rc] - 2026-03-19
 
 > Cumulative release notes for `nantas-dev`, comparing `v1.3.11` -> `v1.4.6-rc`.

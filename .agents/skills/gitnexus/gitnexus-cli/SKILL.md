@@ -5,14 +5,22 @@ description: "Use when the user needs to run GitNexus CLI commands like analyze/
 
 # GitNexus CLI Commands
 
-All commands work via `npx` — no global install required.
+Resolve command runner once, then use it consistently in the session:
+
+```bash
+if command -v gitnexus >/dev/null 2>&1; then
+  GN="gitnexus"
+else
+  GN="npx -y @veewo/gitnexus@latest"
+fi
+```
 
 ## Commands
 
 ### analyze — Build or refresh the index
 
 ```bash
-npx -y @veewo/gitnexus@latest analyze
+$GN analyze
 ```
 
 Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and generates CLAUDE.md / AGENTS.md context files.
@@ -27,7 +35,7 @@ Run from the project root. This parses all source files, builds the knowledge gr
 ### status — Check index freshness
 
 ```bash
-npx -y @veewo/gitnexus@latest status
+$GN status
 ```
 
 Shows whether the current repo has a GitNexus index, when it was last updated, and symbol/relationship counts. Use this to check if re-indexing is needed.
@@ -35,7 +43,7 @@ Shows whether the current repo has a GitNexus index, when it was last updated, a
 ### clean — Delete the index
 
 ```bash
-npx -y @veewo/gitnexus@latest clean
+$GN clean
 ```
 
 Deletes the `.gitnexus/` directory and unregisters the repo from the global registry. Use before re-indexing if the index is corrupt or after removing GitNexus from a project.
@@ -48,7 +56,7 @@ Deletes the `.gitnexus/` directory and unregisters the repo from the global regi
 ### wiki — Generate documentation from the graph
 
 ```bash
-npx -y @veewo/gitnexus@latest wiki
+$GN wiki
 ```
 
 Generates repository documentation from the knowledge graph using an LLM. Requires an API key (saved to `~/.gitnexus/config.json` on first use).
@@ -65,7 +73,7 @@ Generates repository documentation from the knowledge graph using an LLM. Requir
 ### list — Show all indexed repos
 
 ```bash
-npx -y @veewo/gitnexus@latest list
+$GN list
 ```
 
 Lists all repositories registered in `~/.gitnexus/registry.json`. The MCP `list_repos` tool provides the same information.
@@ -75,11 +83,11 @@ Lists all repositories registered in `~/.gitnexus/registry.json`. The MCP `list_
 For Unity resource retrieval:
 
 ```bash
-npx -y @veewo/gitnexus@latest context DoorObj --repo neonnew-core --file Assets/NEON/Code/Game/Doors/DoorObj.cs --unity-resources on --unity-hydration compact
+$GN context DoorObj --repo neonnew-core --file Assets/NEON/Code/Game/Doors/DoorObj.cs --unity-resources on --unity-hydration compact
 ```
 
 ```bash
-npx -y @veewo/gitnexus@latest query "DoorObj binding" --repo neonnew-core --unity-resources on --unity-hydration compact
+$GN query "DoorObj binding" --repo neonnew-core --unity-resources on --unity-hydration compact
 ```
 
 Rules:

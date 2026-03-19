@@ -5,8 +5,23 @@
 1. 全局安装 `@veewo/gitnexus` CLI
 2. 执行 `gitnexus setup`（按用户选择 `global/project` + `--agent`）
 3. 与用户确认索引范围，生成 `.gitnexus/sync-manifest.txt`
-4. 执行 `npx -y @veewo/gitnexus@latest analyze` 构建索引
+4. 执行 `gitnexus analyze` 构建索引
 5. 完成检索测试验收（`query/context/impact/cypher`）
+
+## 版本与执行策略（必须遵守）
+
+- 本文档**不锁具体版本号**；版本由用户在会话 prompt 中指定（例如 RC 版本）
+- 必须先执行 `npm install -g @veewo/gitnexus[@<version>]`
+- 命令执行顺序：优先本机 `gitnexus`，若未安装再回退 `npx -y @veewo/gitnexus@latest`
+- 建议在会话开始先解析命令别名，后续统一使用 `$GN`
+
+```bash
+if command -v gitnexus >/dev/null 2>&1; then
+  GN="gitnexus"
+else
+  GN="npx -y @veewo/gitnexus@latest"
+fi
+```
 
 ## 一句话指令模板（给任意 agent）
 
@@ -42,6 +57,12 @@ npm install -g @veewo/gitnexus
 which gitnexus
 gitnexus --version
 npm view @veewo/gitnexus version --registry=https://registry.npmjs.org
+
+if command -v gitnexus >/dev/null 2>&1; then
+  GN="gitnexus"
+else
+  GN="npx -y @veewo/gitnexus@latest"
+fi
 ```
 
 通过标准：
@@ -56,17 +77,17 @@ npm view @veewo/gitnexus version --registry=https://registry.npmjs.org
 ### 2.1 Global 示例
 
 ```bash
-gitnexus setup --agent claude
-gitnexus setup --agent opencode
-gitnexus setup --agent codex
+$GN setup --agent claude
+$GN setup --agent opencode
+$GN setup --agent codex
 ```
 
 ### 2.2 Project 示例（在目标 repo 根目录）
 
 ```bash
-gitnexus setup --scope project --agent claude
-gitnexus setup --scope project --agent opencode
-gitnexus setup --scope project --agent codex
+$GN setup --scope project --agent claude
+$GN setup --scope project --agent opencode
+$GN setup --scope project --agent codex
 ```
 
 ### 2.3 预期改动
@@ -114,7 +135,7 @@ EOF
 ### 5.1 Scoped（推荐）
 
 ```bash
-npx -y @veewo/gitnexus@latest analyze \
+$GN analyze \
   --repo-alias "$ALIAS" \
   --scope-manifest .gitnexus/sync-manifest.txt
 ```
@@ -122,7 +143,7 @@ npx -y @veewo/gitnexus@latest analyze \
 可按仓库语言补充扩展名过滤，例如：
 
 ```bash
-npx -y @veewo/gitnexus@latest analyze \
+$GN analyze \
   --repo-alias "$ALIAS" \
   --scope-manifest .gitnexus/sync-manifest.txt \
   --extensions .ts,.tsx,.js,.jsx
@@ -131,7 +152,7 @@ npx -y @veewo/gitnexus@latest analyze \
 ### 5.2 Full（全量）
 
 ```bash
-npx -y @veewo/gitnexus@latest analyze --repo-alias "$ALIAS"
+$GN analyze --repo-alias "$ALIAS"
 ```
 
 预期结果：
@@ -145,8 +166,8 @@ npx -y @veewo/gitnexus@latest analyze --repo-alias "$ALIAS"
 ### 6.1 基础状态
 
 ```bash
-gitnexus status
-gitnexus list
+$GN status
+$GN list
 ```
 
 通过标准：
@@ -159,10 +180,10 @@ gitnexus list
 > Unity 资源增强默认关闭（`unity_resources=off`）。仅在需要 Unity 资源字段时加 `--unity-resources on`。
 
 ```bash
-gitnexus query "<keyword-1>" --repo "$ALIAS" --limit 5
-gitnexus query "<keyword-2>" --repo "$ALIAS" --limit 5
+$GN query "<keyword-1>" --repo "$ALIAS" --limit 5
+$GN query "<keyword-2>" --repo "$ALIAS" --limit 5
 # 如需 Unity 资源增强：
-gitnexus query "<keyword-1>" --repo "$ALIAS" --limit 5 --unity-resources on
+$GN query "<keyword-1>" --repo "$ALIAS" --limit 5 --unity-resources on
 ```
 
 通过标准：
@@ -173,24 +194,24 @@ gitnexus query "<keyword-1>" --repo "$ALIAS" --limit 5 --unity-resources on
 ### 6.3 Context / Impact（用用户给出的关键符号）
 
 ```bash
-gitnexus context "<symbol-1>" --repo "$ALIAS"
+$GN context "<symbol-1>" --repo "$ALIAS"
 # 如需 Unity 资源增强：
-gitnexus context "<symbol-1>" --repo "$ALIAS" --unity-resources on
-gitnexus impact "<symbol-1>" --repo "$ALIAS" --depth 3
+$GN context "<symbol-1>" --repo "$ALIAS" --unity-resources on
+$GN impact "<symbol-1>" --repo "$ALIAS" --depth 3
 ```
 
 如果 `context` 出现同名歧义：
 
 ```bash
-gitnexus context "<symbol-1>" --repo "$ALIAS" -f "<relative/file/path>"
+$GN context "<symbol-1>" --repo "$ALIAS" -f "<relative/file/path>"
 # 或
-gitnexus context --repo "$ALIAS" -u "<uid>"
+$GN context --repo "$ALIAS" -u "<uid>"
 ```
 
 ### 6.4 Cypher 抽样
 
 ```bash
-gitnexus cypher "MATCH (n) RETURN count(n) AS total_nodes" --repo "$ALIAS"
+$GN cypher "MATCH (n) RETURN count(n) AS total_nodes" --repo "$ALIAS"
 ```
 
 通过标准：
@@ -219,10 +240,10 @@ gitnexus cypher "MATCH (n) RETURN count(n) AS total_nodes" --repo "$ALIAS"
 全局注册文件在 `~/.gitnexus/registry.json`，常用维护命令：
 
 ```bash
-npx -y @veewo/gitnexus@latest analyze [path]      # 注册/更新
-gitnexus list                # 查看（会清理失效项）
-gitnexus clean --force       # 反注册当前仓库
-gitnexus clean --all --force # 全量清理
+$GN analyze [path]      # 注册/更新
+$GN list                # 查看（会清理失效项）
+$GN clean --force       # 反注册当前仓库
+$GN clean --all --force # 全量清理
 ```
 
 ## 9. 验收完成后的会话重启要求（必须提示用户）
