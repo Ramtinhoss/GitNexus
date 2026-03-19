@@ -10,6 +10,7 @@ import { createLazyAction } from './lazy-action.js';
 const _require = createRequire(import.meta.url);
 const pkg = _require('../../package.json');
 const program = new Command();
+const collectValues = (value: string, previous: string[]) => [...previous, value];
 
 program
   .name('gitnexus')
@@ -18,18 +19,28 @@ program
 
 program
   .command('setup')
-  .description('One-time setup: configure MCP for Cursor, Claude Code, OpenCode')
+  .description('One-time setup: configure MCP for a selected coding agent (claude/opencode/codex)')
+  .option('--scope <scope>', 'Install target: global (default) or project')
+  .option('--agent <agent>', 'Target coding agent: claude, opencode, or codex')
   .action(createLazyAction(() => import('./setup.js'), 'setupCommand'));
 
 program
   .command('analyze [path]')
   .description('Index a repository (full analysis)')
   .option('-f, --force', 'Force full re-index even if up to date')
+  .option('--no-reuse-options', 'Do not reuse stored analyze options from previous index')
   .option('--embeddings', 'Enable embedding generation for semantic search (off by default)')
+  .option('--extensions <list>', 'Comma-separated file extensions to include (e.g. .cs,.ts)')
+  .option('--repo-alias <name>', 'Override indexed repository name with a stable alias')
   .option('--skills', 'Generate repo-specific skill files from detected communities')
-   .option('-v, --verbose', 'Enable verbose ingestion warnings (default: false)')
-   .addHelpText('after', '\nEnvironment variables:\n  GITNEXUS_NO_GITIGNORE=1  Skip .gitignore parsing (still reads .gitnexusignore)')
-   .action(createLazyAction(() => import('./analyze.js'), 'analyzeCommand'));
+  .option('-v, --verbose', 'Enable verbose ingestion warnings (default: false)')
+  .option(
+    '--scope-manifest <path>',
+    'Manifest file with scope rules (supports comments and * wildcard; recommended: .gitnexus/sync-manifest.txt)',
+  )
+  .option('--scope-prefix <pathPrefix>', 'Add a scope path prefix rule (repeatable)', collectValues, [])
+  .addHelpText('after', '\nEnvironment variables:\n  GITNEXUS_NO_GITIGNORE=1  Skip .gitignore parsing (still reads .gitnexusignore)')
+  .action(createLazyAction(() => import('./analyze.js'), 'analyzeCommand'));
 
 program
   .command('serve')
@@ -87,6 +98,8 @@ program
   .option('-g, --goal <text>', 'What you want to find')
   .option('-l, --limit <n>', 'Max processes to return (default: 5)')
   .option('--content', 'Include full symbol source code')
+  .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
+  .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
   .action(createLazyAction(() => import('./tool.js'), 'queryCommand'));
 
 program
@@ -96,14 +109,26 @@ program
   .option('-u, --uid <uid>', 'Direct symbol UID (zero-ambiguity lookup)')
   .option('-f, --file <path>', 'File path to disambiguate common names')
   .option('--content', 'Include full symbol source code')
+  .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
+  .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
   .action(createLazyAction(() => import('./tool.js'), 'contextCommand'));
+
+program
+  .command('unity-bindings <symbol>')
+  .description('Experimental: inspect Unity resource bindings for a C# symbol')
+  .option('--target-path <path>', 'Unity project root (default: cwd)')
+  .option('--json', 'Output JSON')
+  .action(createLazyAction(() => import('./unity-bindings.js'), 'unityBindingsCommand'));
 
 program
   .command('impact <target>')
   .description('Blast radius analysis: what breaks if you change a symbol')
   .option('-d, --direction <dir>', 'upstream (dependants) or downstream (dependencies)', 'upstream')
   .option('-r, --repo <name>', 'Target repository')
+  .option('-u, --uid <uid>', 'Exact target UID (disambiguates same-name symbols)')
+  .option('-f, --file <path>', 'File path filter to disambiguate target name')
   .option('--depth <n>', 'Max relationship depth (default: 3)')
+  .option('--min-confidence <n>', 'Minimum edge confidence 0-1 (default: 0.3)')
   .option('--include-tests', 'Include test files in results')
   .action(createLazyAction(() => import('./tool.js'), 'impactCommand'));
 
@@ -121,5 +146,44 @@ program
   .option('-p, --port <port>', 'Port number', '4848')
   .option('--idle-timeout <seconds>', 'Auto-shutdown after N seconds idle (0 = disabled)', '0')
   .action(createLazyAction(() => import('./eval-server.js'), 'evalServerCommand'));
+
+program
+  .command('benchmark-unity <dataset>')
+  .description('Run Unity accuracy baseline and hard-gated regression checks')
+  .option('-p, --profile <profile>', 'quick or full', 'quick')
+  .option('-r, --repo <name>', 'Target indexed repo')
+  .option('--repo-alias <name>', 'Analyze-time repo alias and default evaluation repo when --repo is omitted')
+  .option('--target-path <path>', 'Path to analyze before evaluation (required unless --skip-analyze)')
+  .option('--report-dir <path>', 'Output directory for benchmark-report.json and benchmark-summary.md', '.gitnexus/benchmark')
+  .option('--extensions <list>', 'Analyze extension filter (default: .cs)', '.cs')
+  .option('--scope-manifest <path>', 'Analyze scope manifest file')
+  .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
+  .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
+  .action(createLazyAction(() => import('./benchmark-unity.js'), 'benchmarkUnityCommand'));
+
+program
+  .command('benchmark-agent-context <dataset>')
+  .description('Run scenario-based agent refactor context benchmark')
+  .option('-p, --profile <profile>', 'quick or full', 'quick')
+  .option('-r, --repo <name>', 'Target indexed repo')
+  .option('--repo-alias <name>', 'Analyze-time repo alias and default evaluation repo when --repo is omitted')
+  .option('--target-path <path>', 'Path to analyze before evaluation (required unless --skip-analyze)')
+  .option(
+    '--report-dir <path>',
+    'Output directory for benchmark-report.json and benchmark-summary.md',
+    '.gitnexus/benchmark-agent-context',
+  )
+  .option('--extensions <list>', 'Analyze extension filter (default: .cs)', '.cs')
+  .option('--scope-manifest <path>', 'Analyze scope manifest file')
+  .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
+  .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
+  .action(createLazyAction(() => import('./benchmark-agent-context.js'), 'benchmarkAgentContextCommand'));
+
+program
+  .command('benchmark-u2-e2e')
+  .description('Run fail-fast full neonspark U2 E2E benchmark and emit evidence reports')
+  .option('--config <path>', 'Path to E2E config JSON')
+  .option('--report-dir <path>', 'Output directory for reports')
+  .action(createLazyAction(() => import('./benchmark-u2-e2e.js'), 'benchmarkU2E2ECommand'));
 
 program.parse(process.argv);

@@ -66,7 +66,7 @@ export const isBinaryContent = (content: string): boolean => {
  * symbol defined in it. Sized generously so most files stay cached during
  * the single-pass node iteration.
  */
-class FileContentCache {
+export class FileContentCache {
   private cache = new Map<string, string>();
   private accessOrder: string[] = [];
   private maxSize: number;
@@ -75,6 +75,14 @@ class FileContentCache {
   constructor(repoPath: string, maxSize: number = 3000) {
     this.repoPath = repoPath;
     this.maxSize = maxSize;
+  }
+
+  setForTest(relativePath: string, content: string): void {
+    this.set(relativePath, content);
+  }
+
+  hasForTest(relativePath: string): boolean {
+    return this.cache.has(relativePath);
   }
 
   async get(relativePath: string): Promise<string> {
@@ -109,6 +117,19 @@ class FileContentCache {
     this.accessOrder.push(key);
   }
 }
+
+export const toCodeElementCsvRow = async (node: GraphNode): Promise<string> => {
+  return [
+    escapeCSVField(node.id),
+    escapeCSVField(node.properties.name || ''),
+    escapeCSVField(node.properties.filePath || ''),
+    escapeCSVNumber(node.properties.startLine, -1),
+    escapeCSVNumber(node.properties.endLine, -1),
+    node.properties.isExported ? 'true' : 'false',
+    escapeCSVField(''),
+    escapeCSVField((node.properties as any).description || ''),
+  ].join(',');
+};
 
 const extractContent = async (
   node: GraphNode,

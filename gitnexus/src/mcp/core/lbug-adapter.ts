@@ -15,6 +15,7 @@
 
 import fs from 'fs/promises';
 import lbug from '@ladybugdb/core';
+import { getOpenLbugDatabase } from '../../core/lbug/lbug-adapter.js';
 
 /** Per-repo pool: one Database, many Connections */
 interface PoolEntry {
@@ -156,6 +157,13 @@ const WAITER_TIMEOUT_MS = 15_000;
 
 const LOCK_RETRY_ATTEMPTS = 3;
 const LOCK_RETRY_DELAY_MS = 2000;
+const CYPHER_WRITE_RE = /\b(CREATE|DELETE|SET|MERGE|REMOVE|DROP|ALTER|COPY|DETACH)\b/i;
+
+function assertReadOnlyQuery(cypher: string): void {
+  if (CYPHER_WRITE_RE.test(cypher)) {
+    throw new Error('Write operations are not allowed. The knowledge graph is read-only.');
+  }
+}
 
 /** Deduplicates concurrent initLbug calls for the same repoId */
 const initPromises = new Map<string, Promise<void>>();
@@ -207,6 +215,13 @@ async function doInitLbug(repoId: string, dbPath: string): Promise<void> {
   // Reuse an existing native Database if another repoId already opened this path.
   // This prevents buffer manager exhaustion from multiple mmap regions on the same file.
   let shared = dbCache.get(dbPath);
+  if (!shared) {
+    const coreDb = getOpenLbugDatabase(dbPath);
+    if (coreDb) {
+      shared = { db: coreDb, refCount: 0, ftsLoaded: true };
+      dbCache.set(dbPath, shared);
+    }
+  }
   if (!shared) {
     // Open in read-only mode — MCP server never writes to the database.
     // This allows multiple MCP server instances to read concurrently, and
@@ -347,6 +362,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 export const executeQuery = async (repoId: string, cypher: string): Promise<any[]> => {
+  assertReadOnlyQuery(cypher);
   const entry = pool.get(repoId);
   if (!entry) {
     throw new Error(`LadybugDB not initialized for repo "${repoId}". Call initLbug first.`);
@@ -374,6 +390,7 @@ export const executeParameterized = async (
   cypher: string,
   params: Record<string, any>,
 ): Promise<any[]> => {
+  assertReadOnlyQuery(cypher);
   const entry = pool.get(repoId);
   if (!entry) {
     throw new Error(`LadybugDB not initialized for repo "${repoId}". Call initLbug first.`);

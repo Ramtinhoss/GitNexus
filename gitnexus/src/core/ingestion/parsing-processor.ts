@@ -253,8 +253,8 @@ const processParsingSequential = async (
         properties: {
           name: nodeName,
           filePath: file.path,
-          startLine: definitionNodeForRange ? definitionNodeForRange.startPosition.row : startLine,
-          endLine: definitionNodeForRange ? definitionNodeForRange.endPosition.row : startLine,
+          startLine: nameNode.startPosition.row + 1,
+          endLine: nameNode.endPosition.row + 1,
           language: language,
           isExported: isNodeExported(nameNode || definitionNodeForRange, nodeName, language),
           ...(frameworkHint ? {

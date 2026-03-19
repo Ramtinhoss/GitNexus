@@ -18,6 +18,13 @@ let conn: lbug.Connection | null = null;
 let currentDbPath: string | null = null;
 let ftsLoaded = false;
 
+export const getOpenLbugDatabase = (dbPath: string): lbug.Database | null => {
+  if (currentDbPath !== dbPath || !db) {
+    return null;
+  }
+  return db;
+};
+
 // Global session lock for operations that touch module-level lbug globals.
 // This guarantees no DB switch can happen while an operation is running.
 let sessionLock: Promise<void> = Promise.resolve();

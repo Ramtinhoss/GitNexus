@@ -14,12 +14,17 @@ import { initLbug, loadGraphToLbug, getLbugStats, executeQuery, executeWithReuse
 // loaded when embeddings are not requested. This avoids crashes on Node
 // versions whose ABI is not yet supported by the native binary (#89).
 // disposeEmbedder intentionally not called — ONNX Runtime segfaults on cleanup (see #38)
-import { getStoragePaths, saveMeta, loadMeta, addToGitignore, registerRepo, getGlobalRegistryPath, cleanupOldKuzuFiles } from '../storage/repo-manager.js';
+import { getStoragePaths, saveMeta, loadMeta, addToGitignore, registerRepo, getGlobalRegistryPath, loadCLIConfig, cleanupOldKuzuFiles } from '../storage/repo-manager.js';
 import { getCurrentCommit, isGitRepo, getGitRoot } from '../storage/git.js';
 import { generateAIContextFiles } from './ai-context.js';
 import { generateSkillFiles, type GeneratedSkillInfo } from './skill-gen.js';
 import fs from 'fs/promises';
-
+import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
+import { formatFallbackSummary, formatUnityDiagnosticsSummary } from './analyze-summary.js';
+import { resolveChildProcessExit } from './exit-code.js';
+import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
+import type { PipelineResult } from '../types/pipeline.js';
+import type { UnityParitySeed } from '../core/ingestion/unity-parity-seed.js';
 
 const HEAP_MB = 8192;
 const HEAP_FLAG = `--max-old-space-size=${HEAP_MB}`;
@@ -38,7 +43,11 @@ function ensureHeap(): boolean {
       env: { ...process.env, NODE_OPTIONS: `${nodeOpts} ${HEAP_FLAG}`.trim() },
     });
   } catch (e: any) {
-    process.exitCode = e.status ?? 1;
+    const resolved = resolveChildProcessExit(e, 1);
+    if (resolved.bySignal && resolved.signal) {
+      console.error(`  analyze subprocess terminated by signal ${resolved.signal}`);
+    }
+    process.exitCode = resolved.code;
   }
   return true;
 }
@@ -46,6 +55,11 @@ function ensureHeap(): boolean {
 export interface AnalyzeOptions {
   force?: boolean;
   embeddings?: boolean;
+  extensions?: string;
+  repoAlias?: string;
+  scopeManifest?: string;
+  scopePrefix?: string[];
+  reuseOptions?: boolean;
   skills?: boolean;
   verbose?: boolean;
 }
@@ -112,9 +126,56 @@ export const analyzeCommand = async (
   const currentCommit = getCurrentCommit(repoPath);
   const existingMeta = await loadMeta(storagePath);
 
-  if (existingMeta && !options?.force && !options?.skills && existingMeta.lastCommit === currentCommit) {
-    console.log('  Already up to date\n');
+  let includeExtensions: string[] = [];
+  let scopeRules: string[] = [];
+  let repoAlias: string | undefined;
+  let embeddingsEnabled = false;
+  try {
+    const effectiveOptions = await resolveEffectiveAnalyzeOptions({
+      extensions: options?.extensions,
+      scopeManifest: options?.scopeManifest,
+      scopePrefix: options?.scopePrefix,
+      repoAlias: options?.repoAlias,
+      embeddings: options?.embeddings,
+      reuseOptions: options?.reuseOptions,
+    }, existingMeta?.analyzeOptions);
+    includeExtensions = effectiveOptions.includeExtensions;
+    scopeRules = effectiveOptions.scopeRules;
+    repoAlias = effectiveOptions.repoAlias;
+    embeddingsEnabled = effectiveOptions.embeddings;
+  } catch (error: any) {
+    console.log(`  ${error?.message || String(error)}\n`);
+    process.exitCode = 1;
     return;
+  }
+
+  if (existingMeta && !options?.force && existingMeta.lastCommit === currentCommit && !options?.skills) {
+    const hasScopePrefixInput = Array.isArray(options?.scopePrefix)
+      ? options.scopePrefix.length > 0
+      : Boolean(options?.scopePrefix);
+    const hasCliOverrides =
+      options?.extensions !== undefined ||
+      Boolean(options?.scopeManifest) ||
+      hasScopePrefixInput ||
+      options?.repoAlias !== undefined ||
+      options?.embeddings !== undefined ||
+      options?.reuseOptions === false;
+
+    if (!hasCliOverrides) {
+      console.log('  Already up to date\n');
+      return;
+    }
+
+    if (
+      options?.reuseOptions !== false &&
+      includeExtensions.length === 0 &&
+      scopeRules.length === 0 &&
+      !repoAlias &&
+      !embeddingsEnabled
+    ) {
+      console.log('  Already up to date\n');
+      return;
+    }
   }
 
   if (process.env.GITNEXUS_NO_GITIGNORE) {
@@ -189,7 +250,7 @@ export const analyzeCommand = async (
   let cachedEmbeddingNodeIds = new Set<string>();
   let cachedEmbeddings: Array<{ nodeId: string; embedding: number[] }> = [];
 
-  if (options?.embeddings && existingMeta && !options?.force) {
+  if (embeddingsEnabled && existingMeta && !options?.force) {
     try {
       updateBar(0, 'Caching embeddings...');
       await initLbug(lbugPath);
@@ -203,11 +264,28 @@ export const analyzeCommand = async (
   }
 
   // ── Phase 1: Full Pipeline (0–60%) ─────────────────────────────────
-  const pipelineResult = await runPipelineFromRepo(repoPath, (progress) => {
-    const phaseLabel = PHASE_LABELS[progress.phase] || progress.phase;
-    const scaled = Math.round(progress.percent * 0.6);
-    updateBar(scaled, phaseLabel);
-  });
+  let pipelineResult: PipelineResult | undefined;
+  try {
+    pipelineResult = await runPipelineFromRepo(
+      repoPath,
+      (progress) => {
+        const phaseLabel = PHASE_LABELS[progress.phase] || progress.phase;
+        const scaled = Math.round(progress.percent * 0.6);
+        updateBar(scaled, phaseLabel);
+      },
+      { includeExtensions, scopeRules },
+    );
+  } catch (error: any) {
+    clearInterval(elapsedTimer);
+    process.removeListener('SIGINT', sigintHandler);
+    console.log = origLog;
+    console.warn = origWarn;
+    console.error = origError;
+    bar.stop();
+    console.log(`\n  ${error?.message || String(error)}\n`);
+    process.exitCode = 1;
+    return;
+  }
 
   // ── Phase 2: LadybugDB (60–85%) ──────────────────────────────────────
   updateBar(60, 'Loading into LadybugDB...');
@@ -226,6 +304,9 @@ export const analyzeCommand = async (
     const progress = Math.min(84, 60 + Math.round((lbugMsgCount / (lbugMsgCount + 10)) * 24));
     updateBar(progress, msg);
   });
+  const pipelineForSkills = pipelineResult;
+  const pipelineRuntime = toPipelineRuntimeSummary(pipelineResult);
+  pipelineResult = undefined;
   const lbugTime = ((Date.now() - t0Lbug) / 1000).toFixed(1);
   const lbugWarnings = lbugResult.warnings;
 
@@ -266,7 +347,7 @@ export const analyzeCommand = async (
   let embeddingSkipped = true;
   let embeddingSkipReason = 'off (use --embeddings to enable)';
 
-  if (options?.embeddings) {
+  if (embeddingsEnabled) {
     if (stats.nodes > EMBEDDING_NODE_LIMIT) {
       embeddingSkipReason = `skipped (${stats.nodes.toLocaleString()} nodes > ${EMBEDDING_NODE_LIMIT.toLocaleString()} limit)`;
     } else {
@@ -306,24 +387,31 @@ export const analyzeCommand = async (
     repoPath,
     lastCommit: currentCommit,
     indexedAt: new Date().toISOString(),
+    analyzeOptions: {
+      includeExtensions,
+      scopeRules,
+      repoAlias,
+      embeddings: embeddingsEnabled,
+    },
     stats: {
-      files: pipelineResult.totalFileCount,
+      files: pipelineRuntime.totalFileCount,
       nodes: stats.nodes,
       edges: stats.edges,
-      communities: pipelineResult.communityResult?.stats.totalCommunities,
-      processes: pipelineResult.processResult?.stats.totalProcesses,
+      communities: pipelineRuntime.communityResult?.stats.totalCommunities,
+      processes: pipelineRuntime.processResult?.stats.totalProcesses,
       embeddings: embeddingCount,
     },
   };
   await saveMeta(storagePath, meta);
-  await registerRepo(repoPath, meta);
+  await persistUnityParitySeed(storagePath, pipelineRuntime.unityResult?.paritySeed);
+  const registeredRepo = await registerRepo(repoPath, meta, { repoAlias });
   await addToGitignore(repoPath);
 
   const projectName = path.basename(repoPath);
   let aggregatedClusterCount = 0;
-  if (pipelineResult.communityResult?.communities) {
+  if (pipelineRuntime.communityResult?.communities) {
     const groups = new Map<string, number>();
-    for (const c of pipelineResult.communityResult.communities) {
+    for (const c of pipelineRuntime.communityResult.communities) {
       const label = c.heuristicLabel || c.label || 'Unknown';
       groups.set(label, (groups.get(label) || 0) + c.symbolCount);
     }
@@ -331,19 +419,21 @@ export const analyzeCommand = async (
   }
 
   let generatedSkills: GeneratedSkillInfo[] = [];
-  if (options?.skills && pipelineResult.communityResult) {
+  if (options?.skills && pipelineForSkills.communityResult) {
     updateBar(99, 'Generating skill files...');
-    const skillResult = await generateSkillFiles(repoPath, projectName, pipelineResult);
+    const skillResult = await generateSkillFiles(repoPath, projectName, pipelineForSkills);
     generatedSkills = skillResult.skills;
   }
 
   const aiContext = await generateAIContextFiles(repoPath, storagePath, projectName, {
-    files: pipelineResult.totalFileCount,
+    files: pipelineRuntime.totalFileCount,
     nodes: stats.nodes,
     edges: stats.edges,
-    communities: pipelineResult.communityResult?.stats.totalCommunities,
+    communities: pipelineRuntime.communityResult?.stats.totalCommunities,
     clusters: aggregatedClusterCount,
-    processes: pipelineResult.processResult?.stats.totalProcesses,
+    processes: pipelineRuntime.processResult?.stats.totalProcesses,
+  }, {
+    skillScope: ((await loadCLIConfig()).setupScope === 'global') ? 'global' : 'project',
   }, generatedSkills);
 
   await closeLbug();
@@ -366,21 +456,56 @@ export const analyzeCommand = async (
   // ── Summary ───────────────────────────────────────────────────────
   const embeddingsCached = cachedEmbeddings.length > 0;
   console.log(`\n  Repository indexed successfully (${totalTime}s)${embeddingsCached ? ` [${cachedEmbeddings.length} embeddings cached]` : ''}\n`);
-  console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineResult.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineResult.processResult?.stats.totalProcesses || 0} flows`);
+  console.log(`  Repo Name: ${registeredRepo.name}`);
+  console.log(`  Repo Alias: ${registeredRepo.alias || 'none'}`);
+  console.log(`  Scope Rules: ${scopeRules.length}`);
+  console.log(`  Scoped Files: ${pipelineRuntime.totalFileCount}`);
+  if (scopeRules.length > 0 && pipelineRuntime.scopeDiagnostics) {
+    const diagnostics = pipelineRuntime.scopeDiagnostics;
+    console.log(`  Scope Overlap Files: ${diagnostics.overlapFiles} (${diagnostics.dedupedMatchCount} duplicate matches removed)`);
+    if (diagnostics.normalizedCollisions.length === 0) {
+      console.log('  Scope Collisions: none');
+    } else {
+      console.warn(`  Scope Collisions: ${diagnostics.normalizedCollisions.length} normalized path conflict(s) detected`);
+      diagnostics.normalizedCollisions.slice(0, 5).forEach((collision) => {
+        console.warn(`    - ${collision.normalizedPath} <= ${collision.paths.join(' | ')}`);
+      });
+      if (diagnostics.normalizedCollisions.length > 5) {
+        console.warn(`    ... ${diagnostics.normalizedCollisions.length - 5} more`);
+      }
+    }
+  }
+  const unitySummaryLines = formatUnityDiagnosticsSummary(pipelineRuntime.unityResult?.diagnostics);
+  for (const line of unitySummaryLines) {
+    console.log(`  ${line}`);
+  }
+  console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineRuntime.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineRuntime.processResult?.stats.totalProcesses || 0} flows`);
   console.log(`  LadybugDB ${lbugTime}s | FTS ${ftsTime}s | Embeddings ${embeddingSkipped ? embeddingSkipReason : embeddingTime + 's'}`);
+  if (includeExtensions.length > 0) {
+    console.log(`  File filter: ${includeExtensions.join(', ')}`);
+  }
   console.log(`  ${repoPath}`);
 
   if (aiContext.files.length > 0) {
     console.log(`  Context: ${aiContext.files.join(', ')}`);
   }
 
-  // Show a quiet summary if some edge types needed fallback insertion
   if (lbugWarnings.length > 0) {
-    const totalFallback = lbugWarnings.reduce((sum, w) => {
-      const m = w.match(/\((\d+) edges\)/);
-      return sum + (m ? parseInt(m[1]) : 0);
+    const totalFallback = lbugWarnings.reduce((sum, warning) => {
+      const match = warning.match(/\((\d+) edges\)/);
+      return sum + (match ? Number.parseInt(match[1], 10) : 0);
     }, 0);
-    console.log(`  Note: ${totalFallback} edges across ${lbugWarnings.length} types inserted via fallback (schema will be updated in next release)`);
+    const fallbackLines = formatFallbackSummary(
+      lbugWarnings,
+      {
+        attempted: totalFallback,
+        succeeded: totalFallback,
+        failed: 0,
+      },
+    );
+    for (const line of fallbackLines) {
+      console.log(`  ${line}`);
+    }
   }
 
   try {
@@ -396,3 +521,17 @@ export const analyzeCommand = async (
   // platforms (#38, #40). Force-exit to ensure clean termination.
   process.exit(0);
 };
+
+async function persistUnityParitySeed(
+  storagePath: string,
+  seed: UnityParitySeed | undefined,
+): Promise<void> {
+  const seedPath = path.join(storagePath, 'unity-parity-seed.json');
+  if (!seed) {
+    try {
+      await fs.rm(seedPath, { force: true });
+    } catch {}
+    return;
+  }
+  await fs.writeFile(seedPath, JSON.stringify(seed), 'utf-8');
+}

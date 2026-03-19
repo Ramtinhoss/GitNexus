@@ -1,0 +1,3 @@
+{"symbol_uid":"class:Assets/Scripts/MinionsManager.cs:MinionsManager","file_path":"Assets/Scripts/MinionsManager.cs","symbol_name":"MinionsManager","symbol_type":"Class","start_line":1,"end_line":24}
+{"symbol_uid":"class:Assets/Scripts/Minion.cs:Minion","file_path":"Assets/Scripts/Minion.cs","symbol_name":"Minion","symbol_type":"Class","start_line":1,"end_line":12}
+{"symbol_uid":"class:Assets/Scripts/MinionFactory.cs:MinionFactory","file_path":"Assets/Scripts/MinionFactory.cs","symbol_name":"MinionFactory","symbol_type":"Class","start_line":1,"end_line":18}

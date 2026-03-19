@@ -17,6 +17,7 @@
 
 import { writeSync } from 'node:fs';
 import { LocalBackend } from '../mcp/local/local-backend.js';
+import type { UnityHydrationMode, UnityResourcesMode } from '../core/unity/options.js';
 
 let _backend: LocalBackend | null = null;
 
@@ -62,6 +63,8 @@ export async function queryCommand(queryText: string, options?: {
   goal?: string;
   limit?: string;
   content?: boolean;
+  unityResources?: UnityResourcesMode;
+  unityHydration?: UnityHydrationMode;
 }): Promise<void> {
   if (!queryText?.trim()) {
     console.error('Usage: gitnexus query <search_query>');
@@ -75,6 +78,8 @@ export async function queryCommand(queryText: string, options?: {
     goal: options?.goal,
     limit: options?.limit ? parseInt(options.limit) : undefined,
     include_content: options?.content ?? false,
+    unity_resources: options?.unityResources,
+    unity_hydration_mode: options?.unityHydration,
     repo: options?.repo,
   });
   output(result);
@@ -85,6 +90,8 @@ export async function contextCommand(name: string, options?: {
   file?: string;
   uid?: string;
   content?: boolean;
+  unityResources?: UnityResourcesMode;
+  unityHydration?: UnityHydrationMode;
 }): Promise<void> {
   if (!name?.trim() && !options?.uid) {
     console.error('Usage: gitnexus context <symbol_name> [--uid <uid>] [--file <path>]');
@@ -97,6 +104,8 @@ export async function contextCommand(name: string, options?: {
     uid: options?.uid,
     file_path: options?.file,
     include_content: options?.content ?? false,
+    unity_resources: options?.unityResources,
+    unity_hydration_mode: options?.unityHydration,
     repo: options?.repo,
   });
   output(result);
@@ -106,6 +115,9 @@ export async function impactCommand(target: string, options?: {
   direction?: string;
   repo?: string;
   depth?: string;
+  uid?: string;
+  file?: string;
+  minConfidence?: string;
   includeTests?: boolean;
 }): Promise<void> {
   if (!target?.trim()) {
@@ -117,8 +129,11 @@ export async function impactCommand(target: string, options?: {
     const backend = await getBackend();
     const result = await backend.callTool('impact', {
       target,
+      target_uid: options?.uid,
+      file_path: options?.file,
       direction: options?.direction || 'upstream',
       maxDepth: options?.depth ? parseInt(options.depth, 10) : undefined,
+      minConfidence: options?.minConfidence ? parseFloat(options.minConfidence) : undefined,
       includeTests: options?.includeTests ?? false,
       repo: options?.repo,
     });
@@ -132,7 +147,6 @@ export async function impactCommand(target: string, options?: {
       direction: options?.direction || 'upstream',
       suggestion: 'Try reducing --depth or using gitnexus context <symbol> as a fallback',
     });
-    process.exit(1);
   }
 }
 

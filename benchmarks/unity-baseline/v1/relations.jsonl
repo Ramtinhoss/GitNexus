@@ -1,0 +1,2 @@
+{"src_uid":"class:Assets/Scripts/MinionsManager.cs:MinionsManager","edge_type":"CALLS","dst_uid":"class:Assets/Scripts/MinionFactory.cs:MinionFactory","must_exist":true}
+{"src_uid":"class:Assets/Scripts/MinionFactory.cs:MinionFactory","edge_type":"CALLS","dst_uid":"class:Assets/Scripts/Minion.cs:Minion","must_exist":true}

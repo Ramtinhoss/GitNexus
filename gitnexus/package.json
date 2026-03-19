@@ -1,5 +1,5 @@
 {
-  "name": "gitnexus",
+  "name": "@veewo/gitnexus",
   "version": "1.4.6",
   "description": "Graph-powered code intelligence for AI agents. Index any codebase, query via MCP or CLI.",
   "author": "Abhigyan Patwari",
@@ -37,7 +37,7 @@
     "vendor"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "dev": "tsx watch src/cli/index.ts",
     "test": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
@@ -46,7 +46,26 @@
     "test:coverage": "vitest run --coverage",
     "prepare": "npm run build",
     "postinstall": "node scripts/patch-tree-sitter-swift.cjs",
-    "prepack": "npm run build && chmod +x dist/cli/index.js"
+    "prepack": "npm run build && chmod +x dist/cli/index.js",
+    "check:release-paths": "node hooks/check-release-path-hygiene.mjs",
+    "check:neonspark-target": "node -e \"const p=(process.env.GITNEXUS_NEONSPARK_TARGET_PATH||'').trim();if(!p){console.error('Missing env: GITNEXUS_NEONSPARK_TARGET_PATH');process.exit(1);}\"",
+    "check:u2-e2e-target": "node -e \"const p=(process.env.GITNEXUS_U2_E2E_TARGET_PATH||'').trim();if(!p){console.error('Missing env: GITNEXUS_U2_E2E_TARGET_PATH');process.exit(1);}\"",
+    "test:unity": "npm run build && node --test dist/core/unity/*.test.js",
+    "test:u3:gates": "npm run check:release-paths && npm run build && node --test dist/benchmark/u2-e2e/*.test.js dist/mcp/local/unity-enrichment.test.js dist/core/ingestion/unity-resource-processor.test.js",
+    "test:benchmark": "npm run build && node --test dist/benchmark/*.test.js && node --test dist/cli/*.test.js",
+    "benchmark:quick": "npm run build && node dist/cli/index.js benchmark-unity ../benchmarks/unity-baseline/v1 --profile quick --target-path ../benchmarks/fixtures/unity-mini",
+    "benchmark:full": "npm run build && node dist/cli/index.js benchmark-unity ../benchmarks/unity-baseline/v1 --profile full --target-path ../benchmarks/fixtures/unity-mini",
+    "benchmark:neonspark:full": "npm run check:neonspark-target && npm run build && node dist/cli/index.js benchmark-unity ../benchmarks/unity-baseline/neonspark-v1 --profile full --target-path \"$GITNEXUS_NEONSPARK_TARGET_PATH\" --repo-alias neonspark-v1-subset --scope-manifest ../benchmarks/unity-baseline/neonspark-v1/sync-manifest.txt",
+    "benchmark:neonspark:quick": "npm run check:neonspark-target && npm run build && node dist/cli/index.js benchmark-unity ../benchmarks/unity-baseline/neonspark-v1 --profile quick --target-path \"$GITNEXUS_NEONSPARK_TARGET_PATH\" --repo-alias neonspark-v1-subset --scope-manifest ../benchmarks/unity-baseline/neonspark-v1/sync-manifest.txt",
+    "benchmark:neonspark:v2:full": "npm run check:neonspark-target && npm run build && node dist/cli/index.js benchmark-unity ../benchmarks/unity-baseline/neonspark-v2 --profile full --target-path \"$GITNEXUS_NEONSPARK_TARGET_PATH\" --repo-alias neonspark-v1-subset --scope-manifest ../benchmarks/unity-baseline/neonspark-v2/sync-manifest.txt",
+    "benchmark:neonspark:v2:quick": "npm run check:neonspark-target && npm run build && node dist/cli/index.js benchmark-unity ../benchmarks/unity-baseline/neonspark-v2 --profile quick --target-path \"$GITNEXUS_NEONSPARK_TARGET_PATH\" --repo-alias neonspark-v1-subset --scope-manifest ../benchmarks/unity-baseline/neonspark-v2/sync-manifest.txt",
+    "benchmark:agent-context:quick": "npm run check:neonspark-target && npm run build && node dist/cli/index.js benchmark-agent-context ../benchmarks/agent-context/neonspark-refactor-v1 --profile quick --target-path \"$GITNEXUS_NEONSPARK_TARGET_PATH\" --repo-alias neonspark-v1-subset --scope-manifest ../benchmarks/unity-baseline/neonspark-v2/sync-manifest.txt",
+    "benchmark:agent-context:full": "npm run check:neonspark-target && npm run build && node dist/cli/index.js benchmark-agent-context ../benchmarks/agent-context/neonspark-refactor-v1 --profile full --target-path \"$GITNEXUS_NEONSPARK_TARGET_PATH\" --repo-alias neonspark-v1-subset --scope-manifest ../benchmarks/unity-baseline/neonspark-v2/sync-manifest.txt",
+    "benchmark:u2:sample": "npm run build && node dist/benchmark/u2-performance-sampler.js",
+    "benchmark:analyze-memory:sample": "npm run build && node --test dist/benchmark/analyze-memory-sampler.test.js",
+    "benchmark:unity:lazy-context": "npm run build && node dist/benchmark/unity-lazy-context-sampler.js",
+    "benchmark:unity:hydration-gates": "npm run build && node dist/benchmark/unity-lazy-context-sampler.js",
+    "benchmark:u2:e2e": "npm run check:u2-e2e-target && npm run build && node dist/cli/index.js benchmark-u2-e2e --config ../benchmarks/u2-e2e/neonspark-full-u2-e2e.config.json"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.0.0",

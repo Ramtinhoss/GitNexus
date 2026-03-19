@@ -9,6 +9,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { initLbug, executeQuery, executeParameterized, closeLbug, isLbugReady } from '../core/lbug-adapter.js';
+import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
+import type { UnityContextPayload, UnityHydrationMeta } from './unity-enrichment.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
@@ -36,6 +38,99 @@ export function isTestFilePath(filePath: string): boolean {
     p.endsWith('_spec.rb') || p.endsWith('_test.rb') || p.includes('/spec/') ||
     p.includes('/test_') || p.includes('/conftest.')
   );
+}
+
+function normalizePath(filePath: string): string {
+  return String(filePath || '').replace(/\\/g, '/');
+}
+
+function bindingIdentity(binding: ResolvedUnityBinding): string {
+  return [
+    normalizePath(binding.resourcePath),
+    binding.bindingKind,
+    binding.componentObjectId,
+  ].join('|');
+}
+
+export function mergeUnityBindings(
+  baseBindings: ResolvedUnityBinding[],
+  resolvedByPath: Map<string, ResolvedUnityBinding[]>,
+): ResolvedUnityBinding[] {
+  const merged: ResolvedUnityBinding[] = [];
+  const expandedPaths = new Set<string>();
+
+  for (const binding of baseBindings) {
+    const resourcePath = normalizePath(binding.resourcePath);
+    if (!binding.lightweight) {
+      merged.push(binding);
+      continue;
+    }
+
+    const expanded = resolvedByPath.get(resourcePath);
+    if (expanded && expanded.length > 0) {
+      if (!expandedPaths.has(resourcePath)) {
+        merged.push(...expanded.map((row) => ({ ...row, lightweight: false })));
+        expandedPaths.add(resourcePath);
+      }
+      continue;
+    }
+
+    merged.push(binding);
+  }
+
+  return merged;
+}
+
+export function mergeParityUnityBindings(
+  baseNonLightweightBindings: ResolvedUnityBinding[],
+  resolvedBindings: ResolvedUnityBinding[],
+): ResolvedUnityBinding[] {
+  const merged: ResolvedUnityBinding[] = [];
+  const seen = new Set<string>();
+  for (const row of [...baseNonLightweightBindings, ...resolvedBindings]) {
+    const key = bindingIdentity(row);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push({ ...row, lightweight: false });
+  }
+  return merged;
+}
+
+export function attachUnityHydrationMeta(
+  payload: UnityContextPayload,
+  input: Pick<UnityHydrationMeta, 'requestedMode' | 'effectiveMode' | 'elapsedMs' | 'fallbackToCompact'> & {
+    hasExpandableBindings: boolean;
+  },
+): UnityContextPayload {
+  const { hasExpandableBindings, ...metaInput } = input;
+  const reasons: string[] = [];
+  if (metaInput.effectiveMode === 'compact' && hasExpandableBindings) {
+    reasons.push('mode_compact');
+  }
+  if (metaInput.fallbackToCompact) {
+    reasons.push('fallback_to_compact');
+  }
+  if (hasExpandableBindings) {
+    reasons.push('lightweight_bindings_remaining');
+  }
+  if ((payload.unityDiagnostics || []).some((diag) => /budget exceeded/i.test(String(diag || '')))) {
+    reasons.push('budget_exceeded');
+  }
+  const isComplete = reasons.length === 0;
+  const needsParityRetry = !isComplete && metaInput.effectiveMode === 'compact';
+
+  return {
+    ...payload,
+    hydrationMeta: {
+      ...metaInput,
+      resourceBindingCount: payload.resourceBindings.length,
+      unityDiagnosticsCount: payload.unityDiagnostics.length,
+      isComplete,
+      completenessReason: reasons,
+      needsParityRetry,
+      ...(needsParityRetry ? { retryHint: 'rerun_with_unity_hydration=parity' } : {}),
+    },
+  };
 }
 
 /** Valid LadybugDB node labels for safe Cypher query construction */

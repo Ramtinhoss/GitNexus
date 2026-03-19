@@ -1,0 +1,50 @@
+{
+  "tier": 1,
+  "focus": [
+    "graph lifetime",
+    "pair bucket streaming",
+    "scanContext script streaming"
+  ],
+  "measurements": {
+    "analyze": {
+      "command": "/usr/bin/time -l node gitnexus/dist/cli/index.js analyze /Volumes/Shuttle/projects/neonnew --repo-alias neonnew-core",
+      "realSec": 246.06,
+      "maxRssBytes": 5957943296,
+      "nodes": 176858,
+      "edges": 373584,
+      "kuzuSec": 155.2,
+      "ftsSec": 17.5
+    },
+    "queryCold": {
+      "command": "/usr/bin/time -l node gitnexus/dist/cli/index.js context DoorObj --repo neonnew-core --file Assets/NEON/Code/Game/Doors/DoorObj.cs --unity-resources auto",
+      "realSec": 1.72,
+      "maxRssBytes": 874774528,
+      "resourceBindings": 4828,
+      "unityDiagnostics": 0,
+      "status": "found"
+    },
+    "queryWarm": {
+      "command": "/usr/bin/time -l node gitnexus/dist/cli/index.js context DoorObj --repo neonnew-core --file Assets/NEON/Code/Game/Doors/DoorObj.cs --unity-resources auto",
+      "realSec": 1.72,
+      "maxRssBytes": 872284160,
+      "resourceBindings": 4828,
+      "unityDiagnostics": 0,
+      "status": "found"
+    }
+  },
+  "comparisonToBaseline": {
+    "source": "docs/plans/2026-03-14-analyze-memory-reduction-implementation-plan.md",
+    "baselineAnalyze": {
+      "realSec": 141.47,
+      "maxRssBytes": 6380000000
+    },
+    "tier1Delta": {
+      "analyzeRealSec": 104.59,
+      "analyzeMaxRssBytes": -422056704
+    }
+  },
+  "notes": [
+    "Analyze command was executed against explicit target repo path to reuse existing scoped options on neonnew-core.",
+    "Tier gate check: cold and warm Unity context queries both returned non-empty resource bindings and zero diagnostics."
+  ]
+}

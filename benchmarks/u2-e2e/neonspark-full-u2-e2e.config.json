@@ -1,0 +1,20 @@
+{
+  "runIdPrefix": "neonspark-u2-full-e2e",
+  "targetPath": "__SET_VIA_GITNEXUS_U2_E2E_TARGET_PATH__",
+  "repoAliasPrefix": "neonspark-u2-e2e",
+  "scope": {
+    "scriptPrefixes": [
+      "Assets",
+      "Packages"
+    ],
+    "resourcePrefixes": [
+      "Assets",
+      "Packages"
+    ]
+  },
+  "estimateRangeSec": {
+    "lower": 322.6,
+    "upper": 540.1
+  },
+  "symbolScenariosPath": "benchmarks/u2-e2e/neonspark-u2-symbol-scenarios.json"
+}

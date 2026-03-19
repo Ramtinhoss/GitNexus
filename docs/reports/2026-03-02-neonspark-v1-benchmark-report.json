@@ -1,0 +1,185 @@
+{
+  "generatedAt": "2026-03-02T06:58:38.798Z",
+  "repo": "neonspark-v1-subset",
+  "profile": {
+    "maxSymbols": 9007199254740991,
+    "maxTasks": 9007199254740991
+  },
+  "metrics": {
+    "queryPrecision": 0,
+    "queryRecall": 0,
+    "contextImpactF1": 0,
+    "smokePassRate": 0.3333333333333333,
+    "perfRegressionPct": 0
+  },
+  "thresholds": {
+    "query": {
+      "precisionMin": 0.9,
+      "recallMin": 0.85
+    },
+    "contextImpact": {
+      "f1Min": 0.8
+    },
+    "smoke": {
+      "passRateMin": 1
+    },
+    "performance": {
+      "analyzeTimeRegressionMaxPct": 15
+    }
+  },
+  "gate": {
+    "pass": false,
+    "failures": [
+      "query.precision",
+      "query.recall",
+      "contextImpact.f1",
+      "smoke.passRate"
+    ]
+  },
+  "analyze": {
+    "totalSeconds": 11.9,
+    "nodes": 48535,
+    "edges": 109639
+  },
+  "triage": [
+    {
+      "kind": "tool-error",
+      "count": 12
+    },
+    {
+      "kind": "missing-required-hit",
+      "count": 6
+    },
+    {
+      "kind": "insufficient-result-count",
+      "count": 6
+    }
+  ],
+  "failures": [
+    {
+      "kind": "missing-required-hit",
+      "taskIndex": 0,
+      "detail": "class:Assets/NEON/Code/Core/GameLoop.cs:GameLoop"
+    },
+    {
+      "kind": "insufficient-result-count",
+      "taskIndex": 0,
+      "detail": "0 < 1"
+    },
+    {
+      "kind": "missing-required-hit",
+      "taskIndex": 1,
+      "detail": "class:Assets/NEON/Code/Gameplay/PlayerController.cs:PlayerController"
+    },
+    {
+      "kind": "insufficient-result-count",
+      "taskIndex": 1,
+      "detail": "0 < 1"
+    },
+    {
+      "kind": "missing-required-hit",
+      "taskIndex": 2,
+      "detail": "class:Assets/NEON/Code/Gameplay/EnemyController.cs:EnemyController"
+    },
+    {
+      "kind": "insufficient-result-count",
+      "taskIndex": 2,
+      "detail": "0 < 1"
+    },
+    {
+      "kind": "missing-required-hit",
+      "taskIndex": 3,
+      "detail": "class:Assets/NEON/Code/Gameplay/CombatSystem.cs:CombatSystem"
+    },
+    {
+      "kind": "insufficient-result-count",
+      "taskIndex": 3,
+      "detail": "0 < 1"
+    },
+    {
+      "kind": "missing-required-hit",
+      "taskIndex": 4,
+      "detail": "class:Assets/NEON/Code/UI/HUDController.cs:HUDController"
+    },
+    {
+      "kind": "insufficient-result-count",
+      "taskIndex": 4,
+      "detail": "0 < 1"
+    },
+    {
+      "kind": "missing-required-hit",
+      "taskIndex": 5,
+      "detail": "class:Assets/NEON/Code/Systems/SaveSystem.cs:SaveSystem"
+    },
+    {
+      "kind": "insufficient-result-count",
+      "taskIndex": 5,
+      "detail": "0 < 1"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 6,
+      "detail": "Symbol 'GameLoop' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 7,
+      "detail": "Symbol 'PlayerController' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 8,
+      "detail": "Symbol 'EnemyController' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 9,
+      "detail": "Symbol 'HUDController' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 10,
+      "detail": "Symbol 'AudioManager' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 11,
+      "detail": "Symbol 'EventBus' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 12,
+      "detail": "Target 'GameLoop' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 13,
+      "detail": "Target 'CombatSystem' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 14,
+      "detail": "Target 'DamageSystem' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 15,
+      "detail": "Target 'InventorySystem' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 16,
+      "detail": "Target 'SkillSystem' not found"
+    },
+    {
+      "kind": "tool-error",
+      "taskIndex": 17,
+      "detail": "Target 'EventBus' not found"
+    }
+  ],
+  "stats": {
+    "symbols": 20,
+    "relations": 24,
+    "tasks": 18
+  }
+}

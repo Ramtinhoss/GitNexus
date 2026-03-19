@@ -13,8 +13,8 @@
  */
 /// <reference path="../vitest.d.ts" />
 import path from 'path';
-import { describe, beforeAll, afterAll, inject } from 'vitest';
-import type { TestDBHandle } from './test-db.js';
+import { describe, beforeAll, afterAll } from 'vitest';
+import { createTempDir, type TestDBHandle } from './test-db.js';
 import {
   NODE_TABLES,
   EMBEDDING_TABLE_NAME,
@@ -79,8 +79,10 @@ export function withTestLbugDB(
   const timeout = options?.timeout ?? 30000;
 
   const setup = async () => {
-    // Get shared DB path from globalSetup (created once with full schema)
-    const dbPath = inject<'lbugDbPath'>('lbugDbPath');
+    // Use an isolated DB per test file to avoid cross-worker file locks,
+    // WAL/shadow-file contamination, and shared state between suites.
+    const tmpHandle = await createTempDir(`gitnexus-${prefix}-`);
+    const dbPath = path.join(tmpHandle.dbPath, 'lbug');
     const repoId = `test-${prefix}-${Date.now()}-${repoCounter++}`;
 
     const adapter = await import('../../src/core/lbug/lbug-adapter.js');
@@ -137,12 +139,14 @@ export function withTestLbugDB(
     // because .closeSync() segfaults on Linux (LadybugDB N-API destructor bug).
     // CI runs each LadybugDB test file in its own vitest process, so the OS
     // reclaims all native resources on process exit — no explicit cleanup needed.
-    const cleanup = async () => {};
+    const cleanup = async () => {
+      try {
+        await tmpHandle.cleanup();
+      } catch {
+        // best-effort cleanup; native handles may still be released on process exit
+      }
+    };
 
-    // tmpHandle.dbPath → parent temp dir (not the lbug file) so tests
-    // that create sibling directories (e.g. 'storage') still work.
-    const tmpDir = path.dirname(dbPath);
-    const tmpHandle: TestDBHandle = { dbPath: tmpDir, cleanup: async () => {} };
     ref.handle = { dbPath, repoId, tmpHandle, cleanup };
 
     // 8. User's final setup (mocks, dynamic imports, etc.)

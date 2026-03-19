@@ -11,13 +11,15 @@ import { processHeritage, processHeritageFromExtracted } from './heritage-proces
 import { computeMRO } from './mro-processor.js';
 import { processCommunities } from './community-processor.js';
 import { processProcesses } from './process-processor.js';
+import { processUnityResources } from './unity-resource-processor.js';
 import { createResolutionContext } from './resolution-context.js';
 import { createASTCache } from './ast-cache.js';
-import { PipelineProgress, PipelineResult } from '../../types/pipeline.js';
-import { walkRepositoryPaths, readFileContents } from './filesystem-walker.js';
+import { PipelineProgress, PipelineResult, type PipelineRunOptions } from '../../types/pipeline.js';
+import { walkRepositoryPaths, readFileContents, walkUnityResourcePaths } from './filesystem-walker.js';
 import { getLanguageFromFilename } from './utils.js';
 import { isLanguageAvailable } from '../tree-sitter/parser-loader.js';
 import { createWorkerPool, WorkerPool } from './workers/worker-pool.js';
+import { selectEntriesByScopeRules } from './scope-filter.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -33,7 +35,7 @@ const CHUNK_BYTE_BUDGET = 20 * 1024 * 1024; // 20MB
 /** Max AST trees to keep in LRU cache */
 const AST_CACHE_CAP = 50;
 
-export interface PipelineOptions {
+export interface PipelineOptions extends PipelineRunOptions {
   /** Skip MRO, community detection, and process extraction for faster test runs. */
   skipGraphPhases?: boolean;
 }
@@ -72,7 +74,24 @@ export const runPipelineFromRepo = async (
       });
     });
 
-    const totalFiles = scannedFiles.length;
+    const scopeSelection = selectEntriesByScopeRules(scannedFiles, options?.scopeRules || []);
+    const scopedFiles = scopeSelection.selected;
+
+    if (scopeSelection.diagnostics.appliedRuleCount > 0 && scopedFiles.length === 0) {
+      throw new Error('Scope filters matched zero files. Check --scope-manifest/--scope-prefix.');
+    }
+
+    const includeExtensions = new Set(
+      (options?.includeExtensions || [])
+        .map(ext => ext.trim().toLowerCase())
+        .filter(Boolean)
+        .map(ext => (ext.startsWith('.') ? ext : `.${ext}`)),
+    );
+    const extensionFiltered = includeExtensions.size > 0
+      ? scopedFiles.filter(f => includeExtensions.has(path.extname(f.path).toLowerCase()))
+      : scopedFiles;
+
+    const totalFiles = extensionFiltered.length;
 
     onProgress({
       phase: 'extracting',
@@ -89,7 +108,15 @@ export const runPipelineFromRepo = async (
       stats: { filesProcessed: 0, totalFiles, nodesCreated: graph.nodeCount },
     });
 
-    const allPaths = scannedFiles.map(f => f.path);
+    const allPaths = extensionFiltered.map(f => f.path);
+    const unityCandidates = await walkUnityResourcePaths(repoPath);
+    const unityScopedPaths =
+      (options?.scopeRules && options.scopeRules.length > 0)
+        ? selectEntriesByScopeRules(
+          unityCandidates.map(path => ({ path })),
+          options.scopeRules,
+        ).selected.map(entry => entry.path)
+        : unityCandidates;
     processStructure(graph, allPaths);
 
     onProgress({
@@ -103,14 +130,14 @@ export const runPipelineFromRepo = async (
     // Group parseable files into byte-budget chunks so only ~20MB of source
     // is in memory at a time. Each chunk is: read → parse → extract → free.
 
-    const parseableScanned = scannedFiles.filter(f => {
+    const parseableScanned = extensionFiltered.filter(f => {
       const lang = getLanguageFromFilename(f.path);
       return lang && isLanguageAvailable(lang);
     });
 
     // Warn about files skipped due to unavailable parsers
     const skippedByLang = new Map<string, number>();
-    for (const f of scannedFiles) {
+    for (const f of extensionFiltered) {
       const lang = getLanguageFromFilename(f.path);
       if (lang && !isLanguageAvailable(lang)) {
         skippedByLang.set(lang, (skippedByLang.get(lang) || 0) + 1);
@@ -119,7 +146,6 @@ export const runPipelineFromRepo = async (
     for (const [lang, count] of skippedByLang) {
       console.warn(`Skipping ${count} ${lang} file(s) — ${lang} parser not available (native binding may not have built). Try: npm rebuild tree-sitter-${lang}`);
     }
-
     const totalParseable = parseableScanned.length;
 
     if (totalParseable === 0) {
@@ -461,6 +487,15 @@ export const runPipelineFromRepo = async (
     }
 
     onProgress({
+      phase: 'enriching',
+      percent: 99,
+      message: 'Extracting Unity resource bindings...',
+      stats: { filesProcessed: totalFiles, totalFiles, nodesCreated: graph.nodeCount },
+    });
+
+    const unityResult = await processUnityResources(graph, { repoPath, scopedPaths: unityScopedPaths });
+
+    onProgress({
       phase: 'complete',
       percent: 100,
       message: communityResult && processResult
@@ -475,7 +510,15 @@ export const runPipelineFromRepo = async (
 
     astCache.clear();
 
-    return { graph, repoPath, totalFileCount: totalFiles, communityResult, processResult };
+    return {
+      graph,
+      repoPath,
+      totalFileCount: totalFiles,
+      communityResult,
+      processResult,
+      unityResult,
+      scopeDiagnostics: scopeSelection.diagnostics,
+    };
   } catch (error) {
     cleanup();
     throw error;

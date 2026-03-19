@@ -1131,8 +1131,8 @@ const processFileGroup = (
         properties: {
           name: nodeName,
           filePath: file.path,
-          startLine: definitionNode ? definitionNode.startPosition.row : startLine,
-          endLine: definitionNode ? definitionNode.endPosition.row : startLine,
+          startLine: nameNode.startPosition.row + 1,
+          endLine: nameNode.endPosition.row + 1,
           language: language,
           isExported: isNodeExported(nameNode || definitionNode, nodeName, language),
           ...(frameworkHint ? {

@@ -52,7 +52,12 @@ Returns results grouped by process (execution flow):
 - process_symbols: all symbols in those flows with file locations and module (functional area)
 - definitions: standalone types/interfaces not in any process
 
-Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.`,
+Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
+
+Includes optional Unity retrieval contract:
+- Set unity_resources=on|auto to include Unity resource evidence.
+- Default unity_hydration_mode=compact (fast path).
+- Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -62,6 +67,18 @@ Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank
         limit: { type: 'number', description: 'Max processes to return (default: 5)', default: 5 },
         max_symbols: { type: 'number', description: 'Max symbols per process (default: 10)', default: 10 },
         include_content: { type: 'boolean', description: 'Include full symbol source code (default: false)', default: false },
+        unity_resources: {
+          type: 'string',
+          enum: ['off', 'on', 'auto'],
+          description: 'Unity resource retrieval mode (default: off)',
+          default: 'off',
+        },
+        unity_hydration_mode: {
+          type: 'string',
+          enum: ['parity', 'compact'],
+          description: 'Unity hydration mode when unity_resources is enabled (default: compact)',
+          default: 'compact',
+        },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
       },
       required: ['query'],
@@ -124,7 +141,12 @@ Shows categorized incoming/outgoing references (calls, imports, extends, impleme
 WHEN TO USE: After query() to understand a specific symbol in depth. When you need to know all callers, callees, and what execution flows a symbol participates in.
 AFTER THIS: Use impact() if planning changes, or READ gitnexus://repo/{name}/process/{processName} for full execution trace.
 
-Handles disambiguation: if multiple symbols share the same name, returns candidates for you to pick from. Use uid param for zero-ambiguity lookup from prior results.`,
+Handles disambiguation: if multiple symbols share the same name, returns candidates for you to pick from. Use uid param for zero-ambiguity lookup from prior results.
+
+Unity retrieval contract:
+- Set unity_resources=on|auto to include Unity resource evidence.
+- Default unity_hydration_mode=compact (fast path).
+- Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -132,6 +154,18 @@ Handles disambiguation: if multiple symbols share the same name, returns candida
         uid: { type: 'string', description: 'Direct symbol UID from prior tool results (zero-ambiguity lookup)' },
         file_path: { type: 'string', description: 'File path to disambiguate common names' },
         include_content: { type: 'boolean', description: 'Include full symbol source code (default: false)', default: false },
+        unity_resources: {
+          type: 'string',
+          enum: ['off', 'on', 'auto'],
+          description: 'Unity resource retrieval mode (default: off)',
+          default: 'off',
+        },
+        unity_hydration_mode: {
+          type: 'string',
+          enum: ['parity', 'compact'],
+          description: 'Unity hydration mode when unity_resources is enabled (default: compact)',
+          default: 'compact',
+        },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
       },
       required: [],
@@ -206,11 +240,13 @@ Confidence: 1.0 = certain, <0.8 = fuzzy match`,
       type: 'object',
       properties: {
         target: { type: 'string', description: 'Name of function, class, or file to analyze' },
+        target_uid: { type: 'string', description: 'Optional exact symbol UID (preferred when target name is ambiguous)' },
+        file_path: { type: 'string', description: 'Optional file path filter to disambiguate target name' },
         direction: { type: 'string', description: 'upstream (what depends on this) or downstream (what this depends on)' },
         maxDepth: { type: 'number', description: 'Max relationship depth (default: 3)', default: 3 },
         relationTypes: { type: 'array', items: { type: 'string' }, description: 'Filter: CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, OVERRIDES (default: usage-based)' },
         includeTests: { type: 'boolean', description: 'Include test files (default: false)' },
-        minConfidence: { type: 'number', description: 'Minimum confidence 0-1 (default: 0.7)' },
+        minConfidence: { type: 'number', description: 'Minimum confidence 0-1 (default: 0.3)' },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
       },
       required: ['target', 'direction'],

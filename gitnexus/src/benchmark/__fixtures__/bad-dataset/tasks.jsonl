@@ -1,0 +1,1 @@
+{"tool":"query","input":{"search_query":"Broken"},"must_hit_uids":["bad"],"must_not_hit_uids":[]}

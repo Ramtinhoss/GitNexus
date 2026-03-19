@@ -150,6 +150,9 @@ const IGNORED_EXTENSIONS = new Set([
     // Misc binary
     '.bin', '.dat', '.data', '.raw',
     '.iso', '.img', '.dmg',
+
+    // Unity metadata assets
+    '.meta',
 ]);
 
 // Files to ignore by exact name
@@ -245,7 +248,6 @@ export const shouldIgnorePath = (filePath: string): boolean => {
 
   return false;
 }
-
 /** Check if a directory name is in the hardcoded ignore list */
 export const isHardcodedIgnoredDirectory = (name: string): boolean => {
   return DEFAULT_IGNORE_LIST.has(name);
@@ -328,4 +330,3 @@ export const createIgnoreFilter = async (repoPath: string, options?: IgnoreOptio
     },
   };
 };
-
