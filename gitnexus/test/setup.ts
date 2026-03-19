@@ -17,11 +17,29 @@
  */
 import { afterAll } from 'vitest';
 
+function isVitestWorkerHandle(handle: unknown): boolean {
+  if (!handle || typeof handle !== 'object') return false;
+
+  // Keep the fork worker's own stdio and IPC channel referenced until
+  // Vitest finishes its result exchange with the parent process.
+  if (handle === process.stdin || handle === process.stdout || handle === process.stderr) {
+    return true;
+  }
+
+  if ('channel' in process && handle === (process as NodeJS.Process & { channel?: unknown }).channel) {
+    return true;
+  }
+
+  const fd = (handle as { fd?: unknown }).fd;
+  return fd === 0 || fd === 1 || fd === 2;
+}
+
 afterAll(() => {
   try {
     const handles = (process as any)._getActiveHandles?.();
     if (handles) {
       for (const h of handles) {
+        if (isVitestWorkerHandle(h)) continue;
         if (typeof h.unref === 'function') h.unref();
       }
     }
