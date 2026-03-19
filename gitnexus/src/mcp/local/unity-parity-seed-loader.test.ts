@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { loadUnityParitySeed } from './unity-parity-seed-loader.js';
+import { __resetUnityParitySeedLoaderCacheForTest, loadUnityParitySeed } from './unity-parity-seed-loader.js';
 
 const baseSeed = {
   version: 1 as const,
@@ -36,6 +36,7 @@ test('loadUnityParitySeed returns null on missing file and parsed object on vali
     assert.equal(loaded?.version, 1);
     assert.equal(loaded?.symbolToScriptPath.DoorObj, 'Assets/Code/DoorObj.cs');
   } finally {
+    __resetUnityParitySeedLoaderCacheForTest();
     await fs.rm(storagePath, { recursive: true, force: true });
   }
 });
@@ -58,6 +59,7 @@ test('loadUnityParitySeed deduplicates concurrent requests for same storage key'
     assert.equal(results.every((row) => row?.symbolToScriptPath.ConcurrentSymbol), true);
     assert.equal(readFileCalls, 1);
   } finally {
+    __resetUnityParitySeedLoaderCacheForTest();
     await fs.rm(storagePath, { recursive: true, force: true });
   }
 });
@@ -85,6 +87,7 @@ test('loadUnityParitySeed evicts idle cache entry after ttl', async (t) => {
     await loadUnityParitySeed(storagePath);
     assert.equal(readFileCalls, 2);
   } finally {
+    __resetUnityParitySeedLoaderCacheForTest();
     if (previousIdle === undefined) {
       delete process.env[idleEnvKey];
     } else {
@@ -120,6 +123,7 @@ test('loadUnityParitySeed invalidates cache when seed mtime changes', async (t) 
     assert.equal(third?.symbolToScriptPath.VersionB, 'Assets/Code/VersionB.cs');
     assert.equal(readFileCalls, 2);
   } finally {
+    __resetUnityParitySeedLoaderCacheForTest();
     await fs.rm(storagePath, { recursive: true, force: true });
   }
 });
