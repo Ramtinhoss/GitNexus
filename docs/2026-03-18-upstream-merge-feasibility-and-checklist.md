@@ -372,4 +372,4 @@ The merge should not be considered complete unless all of the following are true
 
 ## Notes
 
-This document reflects the state of investigation on 2026-03-18 before index rebuild. Any follow-up graph-based impact analysis should be done only after a fresh `gitnexus analyze`.
+This document reflects the state of investigation on 2026-03-18 before index rebuild. Any follow-up graph-based impact analysis should be done only after a fresh `npx -y @veewo/gitnexus@latest analyze`.

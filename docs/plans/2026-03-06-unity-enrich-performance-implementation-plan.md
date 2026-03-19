@@ -283,7 +283,7 @@ Expected: PASS with no Unity regression.
 
 ```bash
 # keep one scoped analyze sample for diagnostics comparison
-gitnexus analyze --repo-alias neonspark-unity-acceptance --scope-prefix Assets/NEON/Code/VeewoUI/MainUIManager.cs --extensions .cs --force
+npx -y /gitnexus analyze --repo-alias neonspark-unity-acceptance --scope-prefix Assets/NEON/Code/VeewoUI/MainUIManager.cs --extensions .cs --force
 ```
 
 Expected: enrich diagnostics now include scan-context stats.

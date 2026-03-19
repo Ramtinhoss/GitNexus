@@ -26,7 +26,7 @@ GitNexus 对你的目标是“可用但不够开箱即用”。
 
 GitNexus 的核心是“离线索引 + 在线查询”。
 
-离线索引阶段（`gitnexus analyze`）大致做 6 件事:
+离线索引阶段（`npx -y @veewo/gitnexus@latest analyze`）大致做 6 件事:
 1. 扫描文件系统，建立文件结构图
 2. 用 Tree-sitter 解析源码，提取函数/类/方法等符号
 3. 解析 import 与调用，建立 `IMPORTS`、`CALLS`、`DEFINES` 等关系

@@ -13,7 +13,7 @@
 Skill refs for execution: `@superpowers/test-driven-development`, `@superpowers/verification-before-completion`.
 
 **Execution Notes:**
-- GitNexus status on `2026-03-14`: index is stale (`Indexed commit: d2e651c`, `Current commit: 95faf8d`). If any execution step needs GitNexus retrieval context, first ask the user whether to rebuild with `npx -y gitnexus analyze`; do not auto-rebuild.
+- GitNexus status on `2026-03-14`: index is stale (`Indexed commit: d2e651c`, `Current commit: 95faf8d`). If any execution step needs GitNexus retrieval context, first ask the user whether to rebuild with `npx -y /npx -y /gitnexus analyze`; do not auto-rebuild.
 - Do not advance from Tier 1 to Tier 2 or Tier 2 to Tier 3 until the tier report is saved, the Unity query gates remain green, and the measurement deltas are explicitly compared against the previous tier.
 
 ### Task 1: Add Analyze Memory Sampler

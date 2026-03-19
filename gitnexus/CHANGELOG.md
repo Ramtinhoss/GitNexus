@@ -18,18 +18,23 @@ All notable changes to GitNexus will be documented in this file.
 - Analyze-scope and repo-alias workflow support for real-repo benchmark runs.
 - Setup workflow improvements for Codex/OpenCode MCP configuration and idempotent setup behavior.
 - Type resolution expansion through Phases 4-7 and broader language coverage.
+- Scoped CLI regression guard tests to prevent unscoped `npx gitnexus ...` command guidance from reappearing (`scoped-cli-commands.test.ts`).
 
 ### Changed
 - Storage/backend runtime migrated from KuzuDB to LadybugDB v0.15.
 - Analyze/runtime memory profile reduced via streaming and bounded intermediate structures.
 - Unity hydration strategy shifted from analyze-time full materialization to on-demand query-time hydration.
 - CI/release workflow hardening and scoped package distribution under `@veewo/gitnexus`.
+- Standardized all actionable CLI/MCP command guidance and workflow scripts to scoped package form:
+  - `npx -y @veewo/gitnexus@latest <subcommand>`
+  - covered generators (`ai-context`, MCP resources), setup defaults, hooks, skills, docs, eval harnesses, and fixtures.
 
 ### Fixed
 - Unity parity seed hot-path now uses singleflight + idle-bounded in-memory cache, reducing duplicate seed reads under concurrency.
 - Impact tool stability and relation coverage (`HAS_METHOD`, `OVERRIDES`) improvements.
 - CLI output and setup reliability fixes (stdout routing, duplicate MCP table guards, hook/postinstall robustness).
 - Test/runtime stability fixes, including Vitest worker `EPIPE` noise suppression.
+- Removed ambiguous unscoped package invocation paths (`gitnexus@latest` / `npx gitnexus ...`) that could resolve to the wrong npm package in mixed environments.
 
 ## [1.4.6] - 2026-03-18
 

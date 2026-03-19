@@ -9,7 +9,7 @@ This project is indexed by GitNexus as **unity-mini** (14 symbols, 15 relationsh
 2. **Match your task to a skill below** and **read that skill file**
 3. **Follow the skill's workflow and checklist**
 
-> If step 1 warns the index is stale, run `npx gitnexus analyze` in the terminal first.
+> If step 1 warns the index is stale, run `npx -y @veewo/gitnexus@latest analyze` in the terminal first.
 
 ## Skills
 

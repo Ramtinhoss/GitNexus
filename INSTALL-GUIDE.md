@@ -5,7 +5,7 @@
 1. 全局安装 `@veewo/gitnexus` CLI
 2. 执行 `gitnexus setup`（按用户选择 `global/project` + `--agent`）
 3. 与用户确认索引范围，生成 `.gitnexus/sync-manifest.txt`
-4. 执行 `gitnexus analyze` 构建索引
+4. 执行 `npx -y @veewo/gitnexus@latest analyze` 构建索引
 5. 完成检索测试验收（`query/context/impact/cypher`）
 
 ## 一句话指令模板（给任意 agent）
@@ -114,7 +114,7 @@ EOF
 ### 5.1 Scoped（推荐）
 
 ```bash
-gitnexus analyze \
+npx -y @veewo/gitnexus@latest analyze \
   --repo-alias "$ALIAS" \
   --scope-manifest .gitnexus/sync-manifest.txt
 ```
@@ -122,7 +122,7 @@ gitnexus analyze \
 可按仓库语言补充扩展名过滤，例如：
 
 ```bash
-gitnexus analyze \
+npx -y @veewo/gitnexus@latest analyze \
   --repo-alias "$ALIAS" \
   --scope-manifest .gitnexus/sync-manifest.txt \
   --extensions .ts,.tsx,.js,.jsx
@@ -131,7 +131,7 @@ gitnexus analyze \
 ### 5.2 Full（全量）
 
 ```bash
-gitnexus analyze --repo-alias "$ALIAS"
+npx -y @veewo/gitnexus@latest analyze --repo-alias "$ALIAS"
 ```
 
 预期结果：
@@ -219,7 +219,7 @@ gitnexus cypher "MATCH (n) RETURN count(n) AS total_nodes" --repo "$ALIAS"
 全局注册文件在 `~/.gitnexus/registry.json`，常用维护命令：
 
 ```bash
-gitnexus analyze [path]      # 注册/更新
+npx -y @veewo/gitnexus@latest analyze [path]      # 注册/更新
 gitnexus list                # 查看（会清理失效项）
 gitnexus clean --force       # 反注册当前仓库
 gitnexus clean --all --force # 全量清理

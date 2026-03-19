@@ -69,7 +69,7 @@ Required U3 outcomes in report:
 ## 5. Rollback Strategy
 
 1. Soft rollback (service continuity): switch retrieval calls to `--unity-resources off`.
-2. Data rollback (index reset): run `npx gitnexus clean --force` and rebuild index.
+2. Data rollback (index reset): run `npx -y @veewo/gitnexus@latest clean --force` and rebuild index.
 3. Code rollback (release rollback): revert U3 change set and publish patch release.
 
 Recommended order: soft rollback -> data rollback -> code rollback.

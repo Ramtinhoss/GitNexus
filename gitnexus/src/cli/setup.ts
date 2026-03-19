@@ -40,7 +40,7 @@ interface McpEntry {
 }
 
 type SetupAgent = 'claude' | 'opencode' | 'codex';
-const FALLBACK_MCP_PACKAGE = 'gitnexus@latest';
+const FALLBACK_MCP_PACKAGE = '@veewo/gitnexus@latest';
 const LEGACY_CURSOR_AGENT = 'cursor';
 
 function resolveSetupScope(rawScope?: string): SetupScope {
@@ -73,7 +73,7 @@ async function installLegacyCursorSkills(result: SetupResult): Promise<void> {
 
 /**
  * Resolve the package spec used by MCP commands.
- * Defaults to gitnexus@latest when package metadata is unavailable.
+ * Defaults to @veewo/gitnexus@latest when package metadata is unavailable.
  */
 function resolveMcpPackageSpec(): string {
   try {

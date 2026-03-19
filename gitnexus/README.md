@@ -19,12 +19,12 @@ AI coding tools don't understand your codebase structure. They edit a function w
 
 ```bash
 # Index your repo (run from repo root)
-npx gitnexus analyze
+npx -y @veewo/gitnexus@latest analyze
 ```
 
 That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
 
-To configure MCP for your editor, run `npx gitnexus setup` once — or set it up manually below.
+To configure MCP for your editor, run `npx -y @veewo/gitnexus@latest setup` once — or set it up manually below.
 
 `gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
 
@@ -52,7 +52,7 @@ If you prefer to configure manually instead of using `gitnexus setup`:
 ### Claude Code (full support — MCP + skills + hooks)
 
 ```bash
-claude mcp add gitnexus -- npx -y gitnexus@latest mcp
+claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
 ```
 
 ### Cursor / Windsurf
@@ -64,7 +64,7 @@ Add to `~/.cursor/mcp.json` (global — works for all projects):
   "mcpServers": {
     "gitnexus": {
       "command": "npx",
-      "args": ["-y", "gitnexus@latest", "mcp"]
+      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
     }
   }
 }
@@ -79,7 +79,7 @@ Add to `~/.config/opencode/config.json`:
   "mcp": {
     "gitnexus": {
       "command": "npx",
-      "args": ["-y", "gitnexus@latest", "mcp"]
+      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
     }
   }
 }
@@ -137,10 +137,10 @@ Your AI agent gets these tools automatically:
 
 ```bash
 gitnexus setup                    # Configure MCP for your editors (one-time)
-gitnexus analyze [path]           # Index a repository (or update stale index)
-gitnexus analyze --force          # Force full re-index
-gitnexus analyze --embeddings     # Enable embedding generation (slower, better search)
-gitnexus analyze --verbose        # Log skipped files when parsers are unavailable
+npx -y @veewo/gitnexus@latest analyze [path]           # Index a repository (or update stale index)
+npx -y @veewo/gitnexus@latest analyze --force          # Force full re-index
+npx -y @veewo/gitnexus@latest analyze --embeddings     # Enable embedding generation (slower, better search)
+npx -y @veewo/gitnexus@latest analyze --verbose        # Log skipped files when parsers are unavailable
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI
 gitnexus list                    # List all indexed repositories
@@ -153,7 +153,7 @@ gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-m
 
 ## Multi-Repo Support
 
-GitNexus supports indexing multiple repositories. Each `gitnexus analyze` registers the repo in a global registry (`~/.gitnexus/registry.json`). The MCP server serves all indexed repos automatically.
+GitNexus supports indexing multiple repositories. Each `npx -y @veewo/gitnexus@latest analyze` registers the repo in a global registry (`~/.gitnexus/registry.json`). The MCP server serves all indexed repos automatically.
 
 ## Supported Languages
 
@@ -188,7 +188,7 @@ GitNexus ships with skill files that teach AI agents how to use the tools effect
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
 
-Installed automatically by both `gitnexus analyze` (per-repo) and `gitnexus setup` (global).
+Installed automatically by both `npx -y @veewo/gitnexus@latest analyze` (per-repo) and `gitnexus setup` (global).
 
 ## Requirements
 

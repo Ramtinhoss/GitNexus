@@ -166,7 +166,7 @@ function sendHookResponse(hookEventName, message) {
 /**
  * PostToolUse handler — detect index staleness after git mutations.
  *
- * Instead of spawning a full `gitnexus analyze` synchronously (which blocks
+ * Instead of spawning a full `npx -y @veewo/gitnexus@latest analyze` synchronously (which blocks
  * the agent for up to 120s and risks KuzuDB corruption on timeout), we do a
  * lightweight staleness check: compare `git rev-parse HEAD` against the
  * lastCommit stored in `.gitnexus/meta.json`. If they differ, notify the
@@ -210,7 +210,7 @@ function handlePostToolUse(input) {
   // If HEAD matches last indexed commit, no reindex needed
   if (currentHead && currentHead === lastCommit) return;
 
-  const analyzeCmd = `npx gitnexus analyze${hadEmbeddings ? ' --embeddings' : ''}`;
+  const analyzeCmd = `npx -y @veewo/gitnexus@latest analyze${hadEmbeddings ? ' --embeddings' : ''}`;
   sendHookResponse('PostToolUse',
     `GitNexus index is stale (last indexed: ${lastCommit ? lastCommit.slice(0, 7) : 'never'}). ` +
     `Run \`${analyzeCmd}\` to update the knowledge graph.`
