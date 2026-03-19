@@ -22,7 +22,7 @@ Run from the project root. This parses all source files, builds the knowledge gr
 | `--force`      | Force full re-index even if up to date                           |
 | `--embeddings` | Enable embedding generation for semantic search (off by default) |
 
-**When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale.
+**When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale. In Claude Code, a PostToolUse hook runs `analyze` automatically after `git commit` and `git merge`, preserving embeddings if previously generated.
 
 ### status — Check index freshness
 
@@ -69,6 +69,24 @@ npx gitnexus list
 ```
 
 Lists all repositories registered in `~/.gitnexus/registry.json`. The MCP `list_repos` tool provides the same information.
+
+### query/context — Unity hydration mode
+
+For Unity resource retrieval:
+
+```bash
+npx gitnexus context DoorObj --repo neonnew-core --file Assets/NEON/Code/Game/Doors/DoorObj.cs --unity-resources on --unity-hydration compact
+```
+
+```bash
+npx gitnexus query "DoorObj binding" --repo neonnew-core --unity-resources on --unity-hydration compact
+```
+
+Rules:
+
+- `--unity-hydration compact` is the default (fast path).
+- If response `hydrationMeta.needsParityRetry=true`, rerun with `--unity-hydration parity`.
+- `--unity-hydration parity` is completeness-first mode for advanced verification.
 
 ## After Indexing
 

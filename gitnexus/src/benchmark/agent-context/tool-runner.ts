@@ -1,4 +1,4 @@
-import { closeKuzu } from '../../mcp/core/kuzu-adapter.js';
+import { closeLbug } from '../../mcp/core/lbug-adapter.js';
 import { LocalBackend } from '../../mcp/local/local-backend.js';
 
 export async function createAgentContextToolRunner() {
@@ -14,7 +14,7 @@ export async function createAgentContextToolRunner() {
     impact: (params: any) => backend.callTool('impact', params),
     cypher: (params: any) => backend.callTool('cypher', params),
     close: async () => {
-      await closeKuzu();
+      await closeLbug();
     },
   };
 }

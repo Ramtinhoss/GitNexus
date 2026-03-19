@@ -37,37 +37,36 @@ coverage/
 .vercel
 
 
+
+
+
+
 .env*.local
 .gitnexus
 .claude/settings.local.json
 
 # Claude Code worktrees
 .claude/worktrees/
-.worktrees/
+
+# Claude code skills
+.claude/skills/generated/
 
 # Assets (screenshots, images)
 assets/
-!benchmarks/fixtures/
-!benchmarks/fixtures/unity-mini/
-!benchmarks/fixtures/unity-mini/Assets/
-!benchmarks/fixtures/unity-mini/Assets/Scripts/
-!benchmarks/fixtures/unity-mini/Assets/Scripts/*.cs
-!gitnexus/src/core/unity/__fixtures__/mini-unity/Assets/
-!gitnexus/src/core/unity/__fixtures__/mini-unity/Assets/Prefabs/
-!gitnexus/src/core/unity/__fixtures__/mini-unity/Assets/Prefabs/*.prefab
-!gitnexus/src/core/unity/__fixtures__/mini-unity/Assets/Scene/
-!gitnexus/src/core/unity/__fixtures__/mini-unity/Assets/Scene/*.unity
-!gitnexus/src/core/unity/__fixtures__/mini-unity/Assets/Scripts/
-!gitnexus/src/core/unity/__fixtures__/mini-unity/Assets/Scripts/*.cs
-!gitnexus/src/core/unity/__fixtures__/mini-unity/Assets/Scripts/*.cs.meta
 
 # Generated files (should not be indexed)
 repomix-output*
-*.wal
-neonspark-unity-phase11-real-*
 
 # Design docs (local only)
 docs/plans/
 
-# obsidian
-.obsidian
+gitnexus/test/fixtures/mini-repo/*.md
+gitnexus/test/fixtures/mini-repo/.claude
+gitnexus/test/fixtures/mini-repo/.gitignore
+
+# Ignore csharp generated obj and bin folders
+gitnexus/test/fixtures/lang-resolution/**/obj
+gitnexus/test/fixtures/lang-resolution/**/bin
+GitNexus.sln
+# Git worktrees
+.worktrees/

@@ -17,17 +17,12 @@ npx gitnexus analyze
 
 Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and generates CLAUDE.md / AGENTS.md context files.
 
-| Flag | Effect |
-| --- | --- |
-| `[path]` | Analyze a specific repo path (default: current directory) |
-| `--force` | Force full re-index even if up to date |
+| Flag           | Effect                                                           |
+| -------------- | ---------------------------------------------------------------- |
+| `--force`      | Force full re-index even if up to date                           |
 | `--embeddings` | Enable embedding generation for semantic search (off by default) |
-| `--extensions <list>` | Comma-separated extension filter (e.g. `.cs,.ts`) |
-| `--repo-alias <name>` | Store index under a stable alias name |
-| `--scope-manifest <path>` | Restrict scan scope using manifest rules |
-| `--scope-prefix <pathPrefix>` | Add scope path prefix rule (repeatable) |
 
-**When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale.
+**When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale. In Claude Code, a PostToolUse hook runs `analyze` automatically after `git commit` and `git merge`, preserving embeddings if previously generated.
 
 ### status — Check index freshness
 
@@ -74,26 +69,6 @@ npx gitnexus list
 ```
 
 Lists all repositories registered in `~/.gitnexus/registry.json`. The MCP `list_repos` tool provides the same information.
-
-### benchmark-unity — Run benchmark dataset gates
-
-```bash
-npx gitnexus benchmark-unity <dataset>
-```
-
-Runs benchmark dataset evaluation with optional analyze stage.
-
-| Flag | Effect |
-| --- | --- |
-| `--profile <quick\|full>` | Select benchmark profile |
-| `--repo <name>` | Evaluate against an indexed repo |
-| `--repo-alias <name>` | Analyze-time alias and default eval repo |
-| `--target-path <path>` | Path to analyze before evaluation |
-| `--extensions <list>` | Extension filter for analyze stage |
-| `--scope-manifest <path>` | Scope manifest for analyze stage |
-| `--scope-prefix <pathPrefix>` | Scope path prefix (repeatable) |
-| `--skip-analyze` | Evaluate existing index only |
-| `--report-dir <path>` | Output directory for report artifacts |
 
 ## After Indexing
 

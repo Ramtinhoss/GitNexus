@@ -21,21 +21,33 @@ async function runSetup(args: string[], env: NodeJS.ProcessEnv, cwd = packageRoo
   return execFileAsync(process.execPath, [cliPath, 'setup', ...args], { cwd, env });
 }
 
-test('setup requires --agent', async () => {
+test('setup without --agent uses legacy Cursor install path', async () => {
   const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
 
   try {
-    try {
-      await runSetup([], {
-        ...process.env,
-        HOME: fakeHome,
-        USERPROFILE: fakeHome,
-      });
-      assert.fail('expected setup without --agent to fail');
-    } catch (err: any) {
-      assert.equal(typeof err?.stdout, 'string');
-      assert.match(err.stdout as string, /Missing --agent/);
-    }
+    await fs.mkdir(path.join(fakeHome, '.cursor'), { recursive: true });
+
+    await runSetup([], {
+      ...process.env,
+      HOME: fakeHome,
+      USERPROFILE: fakeHome,
+    });
+
+    const cursorMcpPath = path.join(fakeHome, '.cursor', 'mcp.json');
+    const cursorSkillPath = path.join(fakeHome, '.cursor', 'skills', 'gitnexus-cli', 'SKILL.md');
+    const configPath = path.join(fakeHome, '.gitnexus', 'config.json');
+
+    const cursorMcpRaw = await fs.readFile(cursorMcpPath, 'utf-8');
+    const cursorMcp = JSON.parse(cursorMcpRaw) as {
+      mcpServers?: Record<string, { command?: string; args?: string[] }>;
+    };
+    assert.equal(cursorMcp.mcpServers?.gitnexus?.command, 'npx');
+    assert.deepEqual(cursorMcp.mcpServers?.gitnexus?.args, ['-y', expectedMcpPackage, 'mcp']);
+    await fs.access(cursorSkillPath);
+
+    const configRaw = await fs.readFile(configPath, 'utf-8');
+    const config = JSON.parse(configRaw) as { setupScope?: string };
+    assert.equal(config.setupScope, 'global');
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
   }

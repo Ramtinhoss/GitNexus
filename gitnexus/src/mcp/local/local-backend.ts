@@ -3,33 +3,21 @@
  * 
  * Provides tool implementations using local .gitnexus/ indexes.
  * Supports multiple indexed repositories via a global registry.
- * KuzuDB connections are opened lazily per repo on first query.
+ * LadybugDB connections are opened lazily per repo on first query.
  */
 
 import fs from 'fs/promises';
 import path from 'path';
-import { initKuzu, executeQuery, closeKuzu, isKuzuReady } from '../core/kuzu-adapter.js';
-import { parseUnityHydrationMode, parseUnityResourcesMode, type UnityHydrationMode } from '../../core/unity/options.js';
-import { buildUnityScanContext, buildUnityScanContextFromSeed } from '../../core/unity/scan-context.js';
-import { resolveUnityBindings, type ResolvedUnityBinding } from '../../core/unity/resolver.js';
-import {
-  formatLazyHydrationBudgetDiagnostic,
-  loadUnityContext,
-  type UnityContextPayload,
-  type UnityHydrationMeta,
-} from './unity-enrichment.js';
-import { resolveUnityLazyConfig } from './unity-lazy-config.js';
-import { hydrateLazyBindings } from './unity-lazy-hydrator.js';
-import { readUnityOverlayBindings, upsertUnityOverlayBindings } from './unity-lazy-overlay.js';
-import { readUnityParityCache, upsertUnityParityCache } from './unity-parity-cache.js';
-import { createParityWarmupQueue } from './unity-parity-warmup-queue.js';
-import { loadUnityParitySeed } from './unity-parity-seed-loader.js';
+import { initLbug, executeQuery, executeParameterized, closeLbug, isLbugReady } from '../core/lbug-adapter.js';
+import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
+import type { UnityContextPayload, UnityHydrationMeta } from './unity-enrichment.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
 // import { isGitRepo, getCurrentCommit, getGitRoot } from '../../storage/git.js';
 import {
   listRegisteredRepos,
+  cleanupOldKuzuFiles,
   type RegistryEntry,
 } from '../../storage/repo-manager.js';
 // AI context generation is CLI-only (gitnexus analyze)
@@ -39,7 +27,7 @@ import {
  * Quick test-file detection for filtering impact results.
  * Matches common test file patterns across all supported languages.
  */
-function isTestFilePath(filePath: string): boolean {
+export function isTestFilePath(filePath: string): boolean {
   const p = filePath.toLowerCase().replace(/\\/g, '/');
   return (
     p.includes('.test.') || p.includes('.spec.') ||
@@ -47,6 +35,7 @@ function isTestFilePath(filePath: string): boolean {
     p.includes('/test/') || p.includes('/tests/') ||
     p.includes('/testing/') || p.includes('/fixtures/') ||
     p.endsWith('_test.go') || p.endsWith('_test.py') ||
+    p.endsWith('_spec.rb') || p.endsWith('_test.rb') || p.includes('/spec/') ||
     p.includes('/test_') || p.includes('/conftest.')
   );
 }
@@ -124,15 +113,15 @@ export function attachUnityHydrationMeta(
   if (hasExpandableBindings) {
     reasons.push('lightweight_bindings_remaining');
   }
-  if (payload.unityDiagnostics.some((diag) => /budget exceeded/i.test(String(diag || '')))) {
+  if ((payload.unityDiagnostics || []).some((diag) => /budget exceeded/i.test(String(diag || '')))) {
     reasons.push('budget_exceeded');
   }
   const isComplete = reasons.length === 0;
   const needsParityRetry = !isComplete && metaInput.effectiveMode === 'compact';
 
   return {
-      ...payload,
-      hydrationMeta: {
+    ...payload,
+    hydrationMeta: {
       ...metaInput,
       resourceBindingCount: payload.resourceBindings.length,
       unityDiagnosticsCount: payload.unityDiagnostics.length,
@@ -144,40 +133,29 @@ export function attachUnityHydrationMeta(
   };
 }
 
-const inFlightParityHydration = new Map<string, Promise<UnityContextPayload>>();
-const parityWarmupQueue = createParityWarmupQueue({
-  maxParallel: resolveParityWarmupMaxParallel(process.env),
-});
-
-function resolveParityWarmupMaxParallel(env: NodeJS.ProcessEnv): number {
-  const raw = String(env.GITNEXUS_UNITY_PARITY_WARMUP_MAX_PARALLEL || '').trim();
-  const parsed = Number.parseInt(raw, 10);
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
-  }
-  return 2;
-}
-
-/** Valid KuzuDB node labels for safe Cypher query construction */
-const VALID_NODE_LABELS = new Set([
+/** Valid LadybugDB node labels for safe Cypher query construction */
+export const VALID_NODE_LABELS = new Set([
   'File', 'Folder', 'Function', 'Class', 'Interface', 'Method', 'CodeElement',
   'Community', 'Process', 'Struct', 'Enum', 'Macro', 'Typedef', 'Union',
   'Namespace', 'Trait', 'Impl', 'TypeAlias', 'Const', 'Static', 'Property',
   'Record', 'Delegate', 'Annotation', 'Constructor', 'Template', 'Module',
 ]);
 
-function inferTypeFromId(id: unknown): string | undefined {
-  if (typeof id !== 'string' || id.length === 0) return undefined;
-  const firstColon = id.indexOf(':');
-  if (firstColon <= 0) return undefined;
-  return id.slice(0, firstColon);
+/** Valid relation types for impact analysis filtering */
+export const VALID_RELATION_TYPES = new Set(['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS', 'HAS_METHOD', 'OVERRIDES']);
+
+/** Regex to detect write operations in user-supplied Cypher queries */
+export const CYPHER_WRITE_RE = /\b(CREATE|DELETE|SET|MERGE|REMOVE|DROP|ALTER|COPY|DETACH)\b/i;
+
+/** Check if a Cypher query contains write operations */
+export function isWriteQuery(query: string): boolean {
+  return CYPHER_WRITE_RE.test(query);
 }
 
-function getRowValue<T = any>(row: any, key: string, index: number): T | undefined {
-  if (!row || typeof row !== 'object') return undefined;
-  const named = row[key];
-  if (named !== undefined) return named as T;
-  return row[index] as T | undefined;
+/** Structured error logging for query failures — replaces empty catch blocks */
+function logQueryError(context: string, err: unknown): void {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(`GitNexus [${context}]: ${msg}`);
 }
 
 export interface CodebaseContext {
@@ -195,7 +173,7 @@ interface RepoHandle {
   name: string;
   repoPath: string;
   storagePath: string;
-  kuzuPath: string;
+  lbugPath: string;
   indexedAt: string;
   lastCommit: string;
   stats?: RegistryEntry['stats'];
@@ -220,7 +198,7 @@ export class LocalBackend {
   /**
    * Re-read the global registry and update the in-memory repo map.
    * New repos are added, existing repos are updated, removed repos are pruned.
-   * KuzuDB connections for removed repos are NOT closed (they idle-timeout naturally).
+   * LadybugDB connections for removed repos are NOT closed (they idle-timeout naturally).
    */
   private async refreshRepos(): Promise<void> {
     const entries = await listRegisteredRepos({ validate: true });
@@ -231,14 +209,21 @@ export class LocalBackend {
       freshIds.add(id);
 
       const storagePath = entry.storagePath;
-      const kuzuPath = path.join(storagePath, 'kuzu');
+      const lbugPath = path.join(storagePath, 'lbug');
+
+      // Clean up any leftover KuzuDB files from before the LadybugDB migration.
+      // If kuzu exists but lbug doesn't, warn so the user knows to re-analyze.
+      const kuzu = await cleanupOldKuzuFiles(storagePath);
+      if (kuzu.found && kuzu.needsReindex) {
+        console.error(`GitNexus: "${entry.name}" has a stale KuzuDB index. Run: gitnexus analyze ${entry.path}`);
+      }
 
       const handle: RepoHandle = {
         id,
         name: entry.name,
         repoPath: entry.path,
         storagePath,
-        kuzuPath,
+        lbugPath,
         indexedAt: entry.indexedAt,
         lastCommit: entry.lastCommit,
         stats: entry.stats,
@@ -246,7 +231,7 @@ export class LocalBackend {
 
       this.repos.set(id, handle);
 
-      // Build lightweight context (no KuzuDB needed)
+      // Build lightweight context (no LadybugDB needed)
       const s = entry.stats || {};
       this.contextCache.set(id, {
         projectName: entry.name,
@@ -353,17 +338,17 @@ export class LocalBackend {
     return null; // Multiple repos, no param — ambiguous
   }
 
-  // ─── Lazy KuzuDB Init ────────────────────────────────────────────
+  // ─── Lazy LadybugDB Init ────────────────────────────────────────────
 
   private async ensureInitialized(repoId: string): Promise<void> {
     // Always check the actual pool — the idle timer may have evicted the connection
-    if (this.initializedRepos.has(repoId) && isKuzuReady(repoId)) return;
+    if (this.initializedRepos.has(repoId) && isLbugReady(repoId)) return;
 
     const handle = this.repos.get(repoId);
     if (!handle) throw new Error(`Unknown repo: ${repoId}`);
 
     try {
-      await initKuzu(repoId, handle.kuzuPath);
+      await initLbug(repoId, handle.lbugPath);
       this.initializedRepos.add(repoId);
     } catch (err: any) {
       // If lock error, mark as not initialized so next call retries
@@ -457,8 +442,6 @@ export class LocalBackend {
     limit?: number;
     max_symbols?: number;
     include_content?: boolean;
-    unity_resources?: string;
-    unity_hydration_mode?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
       return { error: 'query parameter is required and cannot be empty.' };
@@ -469,8 +452,6 @@ export class LocalBackend {
     const processLimit = params.limit || 5;
     const maxSymbolsPerProcess = params.max_symbols || 10;
     const includeContent = params.include_content ?? false;
-    const unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
-    const unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
     const searchQuery = params.query.trim();
     
     // Step 1: Run hybrid search to get matching symbols
@@ -527,46 +508,44 @@ export class LocalBackend {
         continue;
       }
       
-      const escaped = sym.nodeId.replace(/'/g, "''");
-      
       // Find processes this symbol participates in
       let processRows: any[] = [];
       try {
-        processRows = await executeQuery(repo.id, `
-          MATCH (n {id: '${escaped}'})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
+        processRows = await executeParameterized(repo.id, `
+          MATCH (n {id: $nodeId})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
           RETURN p.id AS pid, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount, r.step AS step
-        `);
-      } catch { /* symbol might not be in any process */ }
-      
+        `, { nodeId: sym.nodeId });
+      } catch (e) { logQueryError('query:process-lookup', e); }
+
       // Get cluster membership + cohesion (cohesion used as internal ranking signal)
       let cohesion = 0;
       let module: string | undefined;
       try {
-        const cohesionRows = await executeQuery(repo.id, `
-          MATCH (n {id: '${escaped}'})-[:CodeRelation {type: 'MEMBER_OF'}]->(c:Community)
+        const cohesionRows = await executeParameterized(repo.id, `
+          MATCH (n {id: $nodeId})-[:CodeRelation {type: 'MEMBER_OF'}]->(c:Community)
           RETURN c.cohesion AS cohesion, c.heuristicLabel AS module
           LIMIT 1
-        `);
+        `, { nodeId: sym.nodeId });
         if (cohesionRows.length > 0) {
           cohesion = (cohesionRows[0].cohesion ?? cohesionRows[0][0]) || 0;
           module = cohesionRows[0].module ?? cohesionRows[0][1];
         }
-      } catch { /* no cluster info */ }
-      
+      } catch (e) { logQueryError('query:cluster-info', e); }
+
       // Optionally fetch content
       let content: string | undefined;
       if (includeContent) {
         try {
-          const contentRows = await executeQuery(repo.id, `
-            MATCH (n {id: '${escaped}'})
+          const contentRows = await executeParameterized(repo.id, `
+            MATCH (n {id: $nodeId})
             RETURN n.content AS content
-          `);
+          `, { nodeId: sym.nodeId });
           if (contentRows.length > 0) {
             content = contentRows[0].content ?? contentRows[0][0];
           }
-        } catch { /* skip */ }
+        } catch (e) { logQueryError('query:content-fetch', e); }
       }
-      
+
       const symbolEntry = {
         id: sym.nodeId,
         name: sym.name,
@@ -576,15 +555,6 @@ export class LocalBackend {
         endLine: sym.endLine,
         ...(module ? { module } : {}),
         ...(includeContent && content ? { content } : {}),
-        ...((unityResourcesMode !== 'off' && sym.nodeId && sym.type === 'Class')
-          ? await this.hydrateUnityContext(repo, {
-            symbolUid: sym.nodeId,
-            symbolName: sym.name || '',
-            symbolFilePath: sym.filePath || '',
-            payload: await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query)),
-            hydrationMode: unityHydrationMode,
-          })
-          : {}),
       };
       
       if (processRows.length === 0) {
@@ -667,121 +637,63 @@ export class LocalBackend {
   }
 
   /**
-   * BM25 keyword search helper - uses KuzuDB FTS for always-fresh results
+   * BM25 keyword search helper - uses LadybugDB FTS for always-fresh results
    */
   private async bm25Search(repo: RepoHandle, query: string, limit: number): Promise<any[]> {
-    const escapedQuery = query.replace(/'/g, "''");
-    const symbolTables = [
-      { table: 'Function', index: 'function_fts', type: 'Function' },
-      { table: 'Class', index: 'class_fts', type: 'Class' },
-      { table: 'Method', index: 'method_fts', type: 'Method' },
-      { table: 'Interface', index: 'interface_fts', type: 'Interface' },
-    ];
-
-    const symbolHits: any[] = [];
-
-    for (const spec of symbolTables) {
-      try {
-        const rows = await executeQuery(repo.id, `
-          CALL QUERY_FTS_INDEX('${spec.table}', '${spec.index}', '${escapedQuery}', conjunctive := false)
-          RETURN node.id AS id, node.name AS name, node.filePath AS filePath, node.startLine AS startLine, node.endLine AS endLine, score AS score
-          ORDER BY score DESC
-          LIMIT ${limit}
-        `);
-
-        for (const row of rows) {
-          const nodeId = getRowValue<string>(row, 'id', 0);
-          if (!nodeId) continue;
-          symbolHits.push({
-            nodeId,
-            name: getRowValue<string>(row, 'name', 1) || '',
-            type: spec.type,
-            filePath: getRowValue<string>(row, 'filePath', 2) || '',
-            startLine: getRowValue<number>(row, 'startLine', 3),
-            endLine: getRowValue<number>(row, 'endLine', 4),
-            bm25Score: Number(getRowValue<number>(row, 'score', 5) ?? 0),
-          });
-        }
-      } catch {
-        // Missing FTS index for this table is expected in some repos/languages.
-      }
-    }
-
-    const rawTokens = query
-      .toLowerCase()
-      .split(/[^a-z0-9_]+/)
-      .filter(Boolean);
-    const stopTokens = new Set(['class', 'method', 'function', 'interface', 'file', 'symbol']);
-    const meaningfulTokens = rawTokens.filter(t => t.length >= 4 && !stopTokens.has(t));
-
-    // Add exact-name hits so symbol lookup queries rank correctly.
-    for (const token of meaningfulTokens) {
-      try {
-        const exactRows = await executeQuery(repo.id, `
-          MATCH (n)
-          WHERE toLower(n.name) = '${token.replace(/'/g, "''")}'
-          RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine
-          LIMIT ${limit}
-        `);
-        for (const row of exactRows) {
-          const nodeId = getRowValue<string>(row, 'id', 0);
-          if (!nodeId) continue;
-          symbolHits.push({
-            nodeId,
-            name: getRowValue<string>(row, 'name', 1) || '',
-            type: inferTypeFromId(nodeId) || 'CodeElement',
-            filePath: getRowValue<string>(row, 'filePath', 2) || '',
-            startLine: getRowValue<number>(row, 'startLine', 3),
-            endLine: getRowValue<number>(row, 'endLine', 4),
-            bm25Score: 10_000,
-          });
-        }
-      } catch {
-        // ignore exact-hit fallback failures
-      }
-    }
-
-    if (symbolHits.length > 0) {
-      const filteredByName = meaningfulTokens.length > 0
-        ? symbolHits.filter(hit => meaningfulTokens.some(t => (hit.name || '').toLowerCase().includes(t)))
-        : symbolHits;
-      const candidateHits = filteredByName.length > 0 ? filteredByName : symbolHits;
-
-      const deduped = new Map<string, any>();
-      for (const hit of candidateHits) {
-        const existing = deduped.get(hit.nodeId);
-        if (!existing || hit.bm25Score > existing.bm25Score) {
-          deduped.set(hit.nodeId, hit);
-        }
-      }
-      return Array.from(deduped.values())
-        .sort((a, b) => b.bm25Score - a.bm25Score)
-        .slice(0, limit);
-    }
-
-    // Fallback to file-level FTS when symbol indexes are missing/empty.
+    const { searchFTSFromLbug } = await import('../../core/search/bm25-index.js');
+    let bm25Results;
     try {
-      const fileRows = await executeQuery(repo.id, `
-        CALL QUERY_FTS_INDEX('File', 'file_fts', '${escapedQuery}', conjunctive := false)
-        RETURN node.filePath AS filePath, score AS score
-        ORDER BY score DESC
-        LIMIT ${limit}
-      `);
-
-      return fileRows.map((row: any) => {
-        const filePath = getRowValue<string>(row, 'filePath', 0) || '';
-        const fileName = filePath.split('/').pop() || filePath;
-        return {
-          name: fileName,
-          type: 'File',
-          filePath,
-          bm25Score: Number(getRowValue<number>(row, 'score', 1) ?? 0),
-        };
-      });
+      bm25Results = await searchFTSFromLbug(query, limit, repo.id);
     } catch (err: any) {
       console.error('GitNexus: BM25/FTS search failed (FTS indexes may not exist) -', err.message);
       return [];
     }
+    
+    const results: any[] = [];
+    
+    for (const bm25Result of bm25Results) {
+      const fullPath = bm25Result.filePath;
+      try {
+        const symbols = await executeParameterized(repo.id, `
+          MATCH (n)
+          WHERE n.filePath = $filePath
+          RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine
+          LIMIT 3
+        `, { filePath: fullPath });
+        
+        if (symbols.length > 0) {
+          for (const sym of symbols) {
+            results.push({
+              nodeId: sym.id || sym[0],
+              name: sym.name || sym[1],
+              type: sym.type || sym[2],
+              filePath: sym.filePath || sym[3],
+              startLine: sym.startLine || sym[4],
+              endLine: sym.endLine || sym[5],
+              bm25Score: bm25Result.score,
+            });
+          }
+        } else {
+          const fileName = fullPath.split('/').pop() || fullPath;
+          results.push({
+            name: fileName,
+            type: 'File',
+            filePath: bm25Result.filePath,
+            bm25Score: bm25Result.score,
+          });
+        }
+      } catch {
+        const fileName = fullPath.split('/').pop() || fullPath;
+        results.push({
+          name: fileName,
+          type: 'File',
+          filePath: bm25Result.filePath,
+          bm25Score: bm25Result.score,
+        });
+      }
+    }
+    
+    return results;
   }
 
   /**
@@ -825,12 +737,11 @@ export class LocalBackend {
         if (!VALID_NODE_LABELS.has(label)) continue;
         
         try {
-          const escapedId = nodeId.replace(/'/g, "''");
           const nodeQuery = label === 'File'
-            ? `MATCH (n:File {id: '${escapedId}'}) RETURN n.name AS name, n.filePath AS filePath`
-            : `MATCH (n:\`${label}\` {id: '${escapedId}'}) RETURN n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine`;
-          
-          const nodeRows = await executeQuery(repo.id, nodeQuery);
+            ? `MATCH (n:File {id: $nodeId}) RETURN n.name AS name, n.filePath AS filePath`
+            : `MATCH (n:\`${label}\` {id: $nodeId}) RETURN n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine`;
+
+          const nodeRows = await executeParameterized(repo.id, nodeQuery, { nodeId });
           if (nodeRows.length > 0) {
             const nodeRow = nodeRows[0];
             results.push({
@@ -861,8 +772,13 @@ export class LocalBackend {
   private async cypher(repo: RepoHandle, params: { query: string }): Promise<any> {
     await this.ensureInitialized(repo.id);
 
-    if (!isKuzuReady(repo.id)) {
-      return { error: 'KuzuDB not ready. Index may be corrupted.' };
+    if (!isLbugReady(repo.id)) {
+      return { error: 'LadybugDB not ready. Index may be corrupted.' };
+    }
+
+    // Block write operations (defense-in-depth — DB is already read-only)
+    if (CYPHER_WRITE_RE.test(params.query)) {
+      return { error: 'Write operations (CREATE, DELETE, SET, MERGE, REMOVE, DROP, ALTER, COPY, DETACH) are not allowed. The knowledge graph is read-only.' };
     }
 
     try {
@@ -880,27 +796,7 @@ export class LocalBackend {
   private formatCypherAsMarkdown(result: any): any {
     if (!Array.isArray(result) || result.length === 0) return result;
 
-    const normalizedRows = result.map((row: any) => {
-      if (!row || typeof row !== 'object') return row;
-      const next = { ...row };
-      if (Object.prototype.hasOwnProperty.call(next, 'type')) {
-        const typeValue = next.type;
-        if (typeValue === null || typeValue === undefined || (typeof typeValue === 'string' && typeValue.trim() === '')) {
-          const inferred = inferTypeFromId(next.id ?? next.uid ?? next.sourceId ?? next.targetId);
-          if (inferred) next.type = inferred;
-        }
-      }
-      if (Object.prototype.hasOwnProperty.call(next, 'kind')) {
-        const kindValue = next.kind;
-        if (kindValue === null || kindValue === undefined || (typeof kindValue === 'string' && kindValue.trim() === '')) {
-          const inferred = inferTypeFromId(next.id ?? next.uid ?? next.sourceId ?? next.targetId);
-          if (inferred) next.kind = inferred;
-        }
-      }
-      return next;
-    });
-
-    const firstRow = normalizedRows[0];
+    const firstRow = result[0];
     if (typeof firstRow !== 'object' || firstRow === null) return result;
 
     const keys = Object.keys(firstRow);
@@ -908,7 +804,7 @@ export class LocalBackend {
 
     const header = '| ' + keys.join(' | ') + ' |';
     const separator = '| ' + keys.map(() => '---').join(' | ') + ' |';
-    const dataRows = normalizedRows.map((row: any) =>
+    const dataRows = result.map((row: any) =>
       '| ' + keys.map(k => {
         const v = row[k];
         if (v === null || v === undefined) return '';
@@ -919,14 +815,14 @@ export class LocalBackend {
 
     return {
       markdown: [header, separator, ...dataRows].join('\n'),
-      row_count: normalizedRows.length,
+      row_count: result.length,
     };
   }
 
   /**
    * Aggregate same-named clusters: group by heuristicLabel, sum symbols,
    * weighted-average cohesion, filter out tiny clusters (<5 symbols).
-   * Raw communities stay intact in KuzuDB for Cypher queries.
+   * Raw communities stay intact in LadybugDB for Cypher queries.
    */
   private aggregateClusters(clusters: any[]): any[] {
     const groups = new Map<string, { ids: string[]; totalSymbols: number; weightedCohesion: number; largest: any }>();
@@ -1030,14 +926,10 @@ export class LocalBackend {
     uid?: string;
     file_path?: string;
     include_content?: boolean;
-    unity_resources?: string;
-    unity_hydration_mode?: string;
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
     
     const { name, uid, file_path, include_content } = params;
-    const unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
-    const unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
     
     if (!name && !uid) {
       return { error: 'Either "name" or "uid" parameter is required.' };
@@ -1047,31 +939,32 @@ export class LocalBackend {
     let symbols: any[];
     
     if (uid) {
-      const escaped = uid.replace(/'/g, "''");
-      symbols = await executeQuery(repo.id, `
-        MATCH (n {id: '${escaped}'})
-        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine${include_content ? ', n.content AS content' : ''}
+      symbols = await executeParameterized(repo.id, `
+        MATCH (n {id: $uid})
+        RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine${include_content ? ', n.content AS content' : ''}
         LIMIT 1
-      `);
+      `, { uid });
     } else {
-      const escaped = name!.replace(/'/g, "''");
       const isQualified = name!.includes('/') || name!.includes(':');
-      
+
       let whereClause: string;
+      let queryParams: Record<string, any>;
       if (file_path) {
-        const fpEscaped = file_path.replace(/'/g, "''");
-        whereClause = `WHERE n.name = '${escaped}' AND n.filePath CONTAINS '${fpEscaped}'`;
+        whereClause = `WHERE n.name = $symName AND n.filePath CONTAINS $filePath`;
+        queryParams = { symName: name!, filePath: file_path };
       } else if (isQualified) {
-        whereClause = `WHERE n.id = '${escaped}' OR n.name = '${escaped}'`;
+        whereClause = `WHERE n.id = $symName OR n.name = $symName`;
+        queryParams = { symName: name! };
       } else {
-        whereClause = `WHERE n.name = '${escaped}'`;
+        whereClause = `WHERE n.name = $symName`;
+        queryParams = { symName: name! };
       }
-      
-      symbols = await executeQuery(repo.id, `
+
+      symbols = await executeParameterized(repo.id, `
         MATCH (n) ${whereClause}
-        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine${include_content ? ', n.content AS content' : ''}
+        RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine${include_content ? ', n.content AS content' : ''}
         LIMIT 10
-      `);
+      `, queryParams);
     }
     
     if (symbols.length === 0) {
@@ -1084,114 +977,54 @@ export class LocalBackend {
         status: 'ambiguous',
         message: `Found ${symbols.length} symbols matching '${name}'. Use uid or file_path to disambiguate.`,
         candidates: symbols.map((s: any) => ({
-          uid: getRowValue<string>(s, 'id', 0),
-          name: getRowValue<string>(s, 'name', 1),
-          kind: inferTypeFromId(getRowValue<string>(s, 'id', 0)) || 'CodeElement',
-          filePath: getRowValue<string>(s, 'filePath', 2),
-          line: getRowValue<number>(s, 'startLine', 3),
+          uid: s.id || s[0],
+          name: s.name || s[1],
+          kind: s.type || s[2],
+          filePath: s.filePath || s[3],
+          line: s.startLine || s[4],
         })),
       };
     }
     
     // Step 3: Build full context
     const sym = symbols[0];
-    const symNodeId = getRowValue<string>(sym, 'id', 0) || '';
-    const symId = symNodeId.replace(/'/g, "''");
-    const symKind = inferTypeFromId(symNodeId) || 'CodeElement';
-    const symFilePath = getRowValue<string>(sym, 'filePath', 2) || '';
-    
+    const symId = sym.id || sym[0];
+
     // Categorized incoming refs
-    let incomingRows = await executeQuery(repo.id, `
-      MATCH (caller)-[r:CodeRelation]->(n {id: '${symId}'})
+    const incomingRows = await executeParameterized(repo.id, `
+      MATCH (caller)-[r:CodeRelation]->(n {id: $symId})
       WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
-      RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath
+      RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath, labels(caller)[0] AS kind
       LIMIT 30
-    `);
-    
+    `, { symId });
+
     // Categorized outgoing refs
-    let outgoingRows = await executeQuery(repo.id, `
-      MATCH (n {id: '${symId}'})-[r:CodeRelation]->(target)
+    const outgoingRows = await executeParameterized(repo.id, `
+      MATCH (n {id: $symId})-[r:CodeRelation]->(target)
       WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
-      RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath
+      RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath, labels(target)[0] AS kind
       LIMIT 30
-    `);
-    
+    `, { symId });
+
     // Process participation
     let processRows: any[] = [];
     try {
-      processRows = await executeQuery(repo.id, `
-        MATCH (n {id: '${symId}'})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
+      processRows = await executeParameterized(repo.id, `
+        MATCH (n {id: $symId})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
         RETURN p.id AS pid, p.heuristicLabel AS label, r.step AS step, p.stepCount AS stepCount
-      `);
-    } catch { /* no process info */ }
-
-    // Classes/interfaces are often represented by method/property level edges.
-    // When direct edges are empty, fall back to file-scoped references/processes.
-    if ((symKind === 'Class' || symKind === 'Interface') && symFilePath) {
-      const escapedPath = symFilePath.replace(/'/g, "''");
-
-      if (incomingRows.length === 0) {
-        try {
-          incomingRows = await executeQuery(repo.id, `
-            MATCH (caller)-[r:CodeRelation]->(n)
-            WHERE n.filePath = '${escapedPath}' AND r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
-            RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath
-            LIMIT 30
-          `);
-        } catch { /* ignore fallback failures */ }
-      }
-
-      if (outgoingRows.length === 0) {
-        try {
-          outgoingRows = await executeQuery(repo.id, `
-            MATCH (n)-[r:CodeRelation]->(target)
-            WHERE n.filePath = '${escapedPath}' AND r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
-            RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath
-            LIMIT 30
-          `);
-        } catch { /* ignore fallback failures */ }
-      }
-
-      if (processRows.length === 0) {
-        try {
-          const scopedProcessRows = await executeQuery(repo.id, `
-            MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
-            WHERE n.filePath = '${escapedPath}'
-            RETURN p.id AS pid, p.heuristicLabel AS label, r.step AS step, p.stepCount AS stepCount
-            LIMIT 200
-          `);
-
-          const minStepByProcess = new Map<string, any>();
-          for (const row of scopedProcessRows) {
-            const pid = getRowValue<string>(row, 'pid', 0);
-            if (!pid) continue;
-            const step = Number(getRowValue<number>(row, 'step', 2) ?? Number.MAX_SAFE_INTEGER);
-            const existing = minStepByProcess.get(pid);
-            if (!existing || step < existing.step) {
-              minStepByProcess.set(pid, {
-                pid,
-                label: getRowValue<string>(row, 'label', 1),
-                step,
-                stepCount: getRowValue<number>(row, 'stepCount', 3),
-              });
-            }
-          }
-          processRows = Array.from(minStepByProcess.values());
-        } catch { /* ignore fallback failures */ }
-      }
-    }
+      `, { symId });
+    } catch (e) { logQueryError('context:process-participation', e); }
     
     // Helper to categorize refs
     const categorize = (rows: any[]) => {
       const cats: Record<string, any[]> = {};
       for (const row of rows) {
-        const relType = String(getRowValue<string>(row, 'relType', 0) || '').toLowerCase();
-        const uid = getRowValue<string>(row, 'uid', 1);
+        const relType = (row.relType || row[0] || '').toLowerCase();
         const entry = {
-          uid,
-          name: getRowValue<string>(row, 'name', 2),
-          filePath: getRowValue<string>(row, 'filePath', 3),
-          kind: getRowValue<string>(row, 'kind', 4) || inferTypeFromId(uid) || 'CodeElement',
+          uid: row.uid || row[1],
+          name: row.name || row[2],
+          filePath: row.filePath || row[3],
+          kind: row.kind || row[4],
         };
         if (!cats[relType]) cats[relType] = [];
         cats[relType].push(entry);
@@ -1199,40 +1032,26 @@ export class LocalBackend {
       return cats;
     };
     
-    const result = {
+    return {
       status: 'found',
       symbol: {
-        uid: getRowValue<string>(sym, 'id', 0),
-        name: getRowValue<string>(sym, 'name', 1),
-        kind: symKind,
-        filePath: symFilePath,
-        startLine: getRowValue<number>(sym, 'startLine', 3),
-        endLine: getRowValue<number>(sym, 'endLine', 4),
-        ...(include_content && getRowValue<string>(sym, 'content', 5) ? { content: getRowValue<string>(sym, 'content', 5) } : {}),
+        uid: sym.id || sym[0],
+        name: sym.name || sym[1],
+        kind: sym.type || sym[2],
+        filePath: sym.filePath || sym[3],
+        startLine: sym.startLine || sym[4],
+        endLine: sym.endLine || sym[5],
+        ...(include_content && (sym.content || sym[6]) ? { content: sym.content || sym[6] } : {}),
       },
       incoming: categorize(incomingRows),
       outgoing: categorize(outgoingRows),
       processes: processRows.map((r: any) => ({
-        id: getRowValue<string>(r, 'pid', 0),
-        name: getRowValue<string>(r, 'label', 1),
-        step_index: getRowValue<number>(r, 'step', 2),
-        step_count: getRowValue<number>(r, 'stepCount', 3),
+        id: r.pid || r[0],
+        name: r.label || r[1],
+        step_index: r.step || r[2],
+        step_count: r.stepCount || r[3],
       })),
     };
-
-    if (unityResourcesMode !== 'off' && symNodeId && symKind === 'Class') {
-      const unityContext = await loadUnityContext(repo.id, symNodeId, (query) => executeQuery(repo.id, query));
-      const hydratedUnityContext = await this.hydrateUnityContext(repo, {
-        symbolUid: symNodeId,
-        symbolName: getRowValue<string>(sym, 'name', 1) || '',
-        symbolFilePath: symFilePath,
-        payload: unityContext,
-        hydrationMode: unityHydrationMode,
-      });
-      Object.assign(result, hydratedUnityContext);
-    }
-
-    return result;
   }
 
   /**
@@ -1248,33 +1067,31 @@ export class LocalBackend {
     }
     
     if (type === 'cluster') {
-      const escaped = name.replace(/'/g, "''");
-      const clusterQuery = `
+      const clusters = await executeParameterized(repo.id, `
         MATCH (c:Community)
-        WHERE c.label = '${escaped}' OR c.heuristicLabel = '${escaped}'
+        WHERE c.label = $clusterName OR c.heuristicLabel = $clusterName
         RETURN c.id AS id, c.label AS label, c.heuristicLabel AS heuristicLabel, c.cohesion AS cohesion, c.symbolCount AS symbolCount
-      `;
-      const clusters = await executeQuery(repo.id, clusterQuery);
+      `, { clusterName: name });
       if (clusters.length === 0) return { error: `Cluster '${name}' not found` };
-      
+
       const rawClusters = clusters.map((c: any) => ({
         id: c.id || c[0], label: c.label || c[1], heuristicLabel: c.heuristicLabel || c[2],
         cohesion: c.cohesion || c[3], symbolCount: c.symbolCount || c[4],
       }));
-      
+
       let totalSymbols = 0, weightedCohesion = 0;
       for (const c of rawClusters) {
         const s = c.symbolCount || 0;
         totalSymbols += s;
         weightedCohesion += (c.cohesion || 0) * s;
       }
-      
-      const members = await executeQuery(repo.id, `
+
+      const members = await executeParameterized(repo.id, `
         MATCH (n)-[:CodeRelation {type: 'MEMBER_OF'}]->(c:Community)
-        WHERE c.label = '${escaped}' OR c.heuristicLabel = '${escaped}'
-        RETURN DISTINCT n.id AS id, n.name AS name, n.filePath AS filePath
+        WHERE c.label = $clusterName OR c.heuristicLabel = $clusterName
+        RETURN DISTINCT n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
         LIMIT 30
-      `);
+      `, { clusterName: name });
       
       return {
         cluster: {
@@ -1286,29 +1103,27 @@ export class LocalBackend {
           subCommunities: rawClusters.length,
         },
         members: members.map((m: any) => ({
-          name: getRowValue<string>(m, 'name', 1),
-          type: inferTypeFromId(getRowValue<string>(m, 'id', 0)) || 'CodeElement',
-          filePath: getRowValue<string>(m, 'filePath', 2),
+          name: m.name || m[0], type: m.type || m[1], filePath: m.filePath || m[2],
         })),
       };
     }
     
     if (type === 'process') {
-      const processes = await executeQuery(repo.id, `
+      const processes = await executeParameterized(repo.id, `
         MATCH (p:Process)
-        WHERE p.label = '${name.replace(/'/g, "''")}' OR p.heuristicLabel = '${name.replace(/'/g, "''")}'
+        WHERE p.label = $processName OR p.heuristicLabel = $processName
         RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount
         LIMIT 1
-      `);
+      `, { processName: name });
       if (processes.length === 0) return { error: `Process '${name}' not found` };
-      
+
       const proc = processes[0];
       const procId = proc.id || proc[0];
-      const steps = await executeQuery(repo.id, `
-        MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p {id: '${procId}'})
-        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, r.step AS step
+      const steps = await executeParameterized(repo.id, `
+        MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p {id: $procId})
+        RETURN n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, r.step AS step
         ORDER BY r.step
-      `);
+      `, { procId });
       
       return {
         process: {
@@ -1316,321 +1131,12 @@ export class LocalBackend {
           processType: proc.processType || proc[3], stepCount: proc.stepCount || proc[4],
         },
         steps: steps.map((s: any) => ({
-          step: getRowValue<number>(s, 'step', 3),
-          name: getRowValue<string>(s, 'name', 1),
-          type: inferTypeFromId(getRowValue<string>(s, 'id', 0)) || 'CodeElement',
-          filePath: getRowValue<string>(s, 'filePath', 2),
+          step: s.step || s[3], name: s.name || s[0], type: s.type || s[1], filePath: s.filePath || s[2],
         })),
       };
     }
     
     return { error: 'Invalid type. Use: symbol, cluster, or process' };
-  }
-
-  private async hydrateUnityContext(
-    repo: RepoHandle,
-    input: {
-      symbolUid: string;
-      symbolName: string;
-      symbolFilePath: string;
-      payload: UnityContextPayload;
-      hydrationMode: UnityHydrationMode;
-    },
-  ): Promise<UnityContextPayload> {
-    const startedAt = Date.now();
-    if (input.hydrationMode === 'compact') {
-      const compactPayload = await this.hydrateUnityContextCompact(repo, input);
-      const withMeta = attachUnityHydrationMeta(compactPayload, {
-        requestedMode: 'compact',
-        effectiveMode: 'compact',
-        elapsedMs: Date.now() - startedAt,
-        fallbackToCompact: false,
-        hasExpandableBindings: compactPayload.resourceBindings.some(
-          (binding) => binding.lightweight || binding.componentObjectId === 'summary',
-        ),
-      });
-      if (withMeta.hydrationMeta?.needsParityRetry) {
-        this.scheduleParityWarmup(repo, input);
-      }
-      return withMeta;
-    }
-
-    const parityResult = await this.hydrateUnityContextParity(repo, input);
-    return attachUnityHydrationMeta(parityResult.payload, {
-      requestedMode: 'parity',
-      effectiveMode: parityResult.effectiveMode,
-      elapsedMs: Date.now() - startedAt,
-      fallbackToCompact: parityResult.fallbackToCompact,
-      hasExpandableBindings: parityResult.payload.resourceBindings.some(
-        (binding) => binding.lightweight || binding.componentObjectId === 'summary',
-      ),
-    });
-  }
-
-  private buildParityWarmupKey(repo: RepoHandle, symbolUid: string): string {
-    return `${repo.storagePath}::${repo.lastCommit}::${symbolUid}`;
-  }
-
-  private scheduleParityWarmup(
-    repo: RepoHandle,
-    input: {
-      symbolUid: string;
-      symbolName: string;
-      symbolFilePath: string;
-      payload: UnityContextPayload;
-      hydrationMode: UnityHydrationMode;
-    },
-  ): void {
-    if (!this.shouldEnableParityWarmup()) {
-      return;
-    }
-    if (!input.symbolUid || !input.symbolName || !input.symbolFilePath) {
-      return;
-    }
-
-    void parityWarmupQueue.run(() => this.getOrRunParityHydration(repo, input))
-      .then(() => undefined)
-      .catch(() => undefined);
-  }
-
-  private shouldEnableParityWarmup(): boolean {
-    const raw = String(process.env.GITNEXUS_UNITY_PARITY_WARMUP || '').trim().toLowerCase();
-    return raw === '1' || raw === 'true' || raw === 'on';
-  }
-
-  private async getOrRunParityHydration(
-    repo: RepoHandle,
-    input: {
-      symbolUid: string;
-      symbolName: string;
-      symbolFilePath: string;
-      payload: UnityContextPayload;
-      hydrationMode: UnityHydrationMode;
-    },
-  ): Promise<UnityContextPayload> {
-    const key = this.buildParityWarmupKey(repo, input.symbolUid);
-    const existing = inFlightParityHydration.get(key);
-    if (existing) {
-      return existing;
-    }
-
-    const pending = (async () => {
-      const cached = await readUnityParityCache(repo.storagePath, repo.lastCommit, input.symbolUid);
-      if (cached) {
-        return cached;
-      }
-      const payload = await this.computeParityPayload(repo, input);
-      await upsertUnityParityCache(repo.storagePath, repo.lastCommit, input.symbolUid, payload);
-      return payload;
-    })().finally(() => {
-      inFlightParityHydration.delete(key);
-    });
-
-    inFlightParityHydration.set(key, pending);
-    return pending;
-  }
-
-  private async computeParityPayload(
-    repo: RepoHandle,
-    input: {
-      symbolUid: string;
-      symbolName: string;
-      symbolFilePath: string;
-      payload: UnityContextPayload;
-      hydrationMode: UnityHydrationMode;
-    },
-  ): Promise<UnityContextPayload> {
-    const symbolDeclarations = [{ symbol: input.symbolName, scriptPath: input.symbolFilePath }];
-    const paritySeed = await loadUnityParitySeed(repo.storagePath);
-    const seededScanContext = paritySeed
-      ? buildUnityScanContextFromSeed({
-        seed: paritySeed,
-        symbolDeclarations,
-      })
-      : null;
-
-    let resolved = await resolveUnityBindings({
-      repoRoot: repo.repoPath,
-      symbol: input.symbolName,
-      scanContext: seededScanContext || await buildUnityScanContext({
-        repoRoot: repo.repoPath,
-        symbolDeclarations,
-      }),
-      deepParseLargeResources: true,
-    });
-
-    if (
-      seededScanContext
-      && resolved.resourceBindings.length === 0
-      && input.payload.resourceBindings.length > 0
-    ) {
-      const fallbackScanContext = await buildUnityScanContext({
-        repoRoot: repo.repoPath,
-        symbolDeclarations,
-      });
-      resolved = await resolveUnityBindings({
-        repoRoot: repo.repoPath,
-        symbol: input.symbolName,
-        scanContext: fallbackScanContext,
-        deepParseLargeResources: true,
-      });
-    }
-
-    if (resolved.resourceBindings.length === 0 && input.payload.resourceBindings.length > 0) {
-      throw new Error('parity-expand returned zero bindings');
-    }
-
-    const baseNonLightweight = input.payload.resourceBindings.filter(
-      (binding) => !binding.lightweight && binding.componentObjectId !== 'summary',
-    );
-    const mergedBindings = mergeParityUnityBindings(baseNonLightweight, resolved.resourceBindings);
-    return this.toUnityContextPayload(mergedBindings, [
-      ...input.payload.unityDiagnostics,
-      ...resolved.unityDiagnostics,
-    ]);
-  }
-
-  private async hydrateUnityContextParity(
-    repo: RepoHandle,
-    input: {
-      symbolUid: string;
-      symbolName: string;
-      symbolFilePath: string;
-      payload: UnityContextPayload;
-      hydrationMode: UnityHydrationMode;
-    },
-  ): Promise<{ payload: UnityContextPayload; effectiveMode: UnityHydrationMode; fallbackToCompact: boolean }> {
-    try {
-      return {
-        payload: await this.getOrRunParityHydration(repo, input),
-        effectiveMode: 'parity',
-        fallbackToCompact: false,
-      };
-    } catch (error) {
-      const compactFallback = await this.hydrateUnityContextCompact(repo, input);
-      const message = String(error instanceof Error ? error.message : error);
-      return {
-        payload: {
-          ...compactFallback,
-          unityDiagnostics: [
-            ...compactFallback.unityDiagnostics,
-            /parity-expand returned zero bindings/i.test(message)
-              ? 'parity-expand returned zero bindings; fell back to compact hydration'
-              : `parity-expand failed: ${message}`,
-          ],
-        },
-        effectiveMode: 'compact',
-        fallbackToCompact: true,
-      };
-    }
-  }
-
-  private async hydrateUnityContextCompact(
-    repo: RepoHandle,
-    input: {
-      symbolUid: string;
-      symbolName: string;
-      symbolFilePath: string;
-      payload: UnityContextPayload;
-      hydrationMode: UnityHydrationMode;
-    },
-  ): Promise<UnityContextPayload> {
-    const lightweightPaths = [...new Set(
-      input.payload.resourceBindings
-        .filter((binding) => binding.lightweight || binding.componentObjectId === 'summary')
-        .map((binding) => normalizePath(binding.resourcePath))
-        .filter((value) => value.length > 0),
-    )];
-
-    if (lightweightPaths.length === 0) {
-      return input.payload;
-    }
-
-    const overlayHits = await readUnityOverlayBindings(
-      repo.storagePath,
-      repo.lastCommit,
-      input.symbolUid,
-      lightweightPaths,
-    );
-    const pendingPaths = lightweightPaths.filter((resourcePath) => !overlayHits.has(resourcePath));
-    const resolvedByPath = new Map<string, ResolvedUnityBinding[]>(overlayHits);
-    const unityDiagnostics = [...input.payload.unityDiagnostics];
-
-    if (pendingPaths.length > 0) {
-      try {
-        const cfg = resolveUnityLazyConfig(process.env);
-        const hydration = await hydrateLazyBindings({
-          pendingPaths,
-          config: cfg,
-          dedupeKey: `${input.symbolUid}::${pendingPaths.slice().sort().join('|')}`,
-          resolveBatch: async (resourcePaths) => {
-            const scopedPaths = [
-              input.symbolFilePath,
-              `${input.symbolFilePath}.meta`,
-              ...resourcePaths,
-              ...resourcePaths.map((resourcePath) => `${resourcePath}.meta`),
-            ].map(normalizePath);
-
-            const scanContext = await buildUnityScanContext({
-              repoRoot: repo.repoPath,
-              scopedPaths,
-              symbolDeclarations: [{ symbol: input.symbolName, scriptPath: input.symbolFilePath }],
-            });
-
-            const resolved = await resolveUnityBindings({
-              repoRoot: repo.repoPath,
-              symbol: input.symbolName,
-              scanContext,
-              resourcePathAllowlist: resourcePaths,
-              deepParseLargeResources: true,
-            });
-
-            unityDiagnostics.push(...resolved.unityDiagnostics);
-            const byPath = new Map<string, ResolvedUnityBinding[]>();
-            for (const resourcePath of resourcePaths) {
-              byPath.set(resourcePath, resolved.resourceBindings.filter(
-                (binding) => normalizePath(binding.resourcePath) === normalizePath(resourcePath),
-              ));
-            }
-            return byPath;
-          },
-        });
-        const freshByPath = hydration.resolvedByPath;
-        if (hydration.timedOut) {
-          unityDiagnostics.push(formatLazyHydrationBudgetDiagnostic(hydration.elapsedMs));
-        }
-        const hydrationExtras = hydration.diagnostics.filter((diag) => !/budget exceeded/i.test(diag));
-        if (hydrationExtras.length > 0) {
-          unityDiagnostics.push(...hydrationExtras);
-        }
-
-        await upsertUnityOverlayBindings(repo.storagePath, repo.lastCommit, input.symbolUid, freshByPath);
-        for (const [resourcePath, bindings] of freshByPath.entries()) {
-          resolvedByPath.set(resourcePath, bindings);
-        }
-      } catch (error) {
-        unityDiagnostics.push(
-          `lazy-expand failed: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-
-    const mergedBindings = mergeUnityBindings(input.payload.resourceBindings, resolvedByPath);
-    return this.toUnityContextPayload(mergedBindings, unityDiagnostics);
-  }
-
-  private toUnityContextPayload(
-    resourceBindings: ResolvedUnityBinding[],
-    unityDiagnostics: string[],
-  ): UnityContextPayload {
-    return {
-      resourceBindings,
-      serializedFields: {
-        scalarFields: resourceBindings.flatMap((binding) => binding.serializedFields.scalarFields),
-        referenceFields: resourceBindings.flatMap((binding) => binding.serializedFields.referenceFields),
-      },
-      unityDiagnostics,
-    };
   }
 
   /**
@@ -1644,30 +1150,30 @@ export class LocalBackend {
     await this.ensureInitialized(repo.id);
     
     const scope = params.scope || 'unstaged';
-    const { execSync } = await import('child_process');
-    
-    // Build git diff command based on scope
-    let diffCmd: string;
+    const { execFileSync } = await import('child_process');
+
+    // Build git diff args based on scope (using execFileSync to avoid shell injection)
+    let diffArgs: string[];
     switch (scope) {
       case 'staged':
-        diffCmd = 'git diff --staged --name-only';
+        diffArgs = ['diff', '--staged', '--name-only'];
         break;
       case 'all':
-        diffCmd = 'git diff HEAD --name-only';
+        diffArgs = ['diff', 'HEAD', '--name-only'];
         break;
       case 'compare':
         if (!params.base_ref) return { error: 'base_ref is required for "compare" scope' };
-        diffCmd = `git diff ${params.base_ref} --name-only`;
+        diffArgs = ['diff', params.base_ref, '--name-only'];
         break;
       case 'unstaged':
       default:
-        diffCmd = 'git diff --name-only';
+        diffArgs = ['diff', '--name-only'];
         break;
     }
-    
+
     let changedFiles: string[];
     try {
-      const output = execSync(diffCmd, { cwd: repo.repoPath, encoding: 'utf-8' });
+      const output = execFileSync('git', diffArgs, { cwd: repo.repoPath, encoding: 'utf-8' });
       changedFiles = output.trim().split('\n').filter(f => f.length > 0);
     } catch (err: any) {
       return { error: `Git diff failed: ${err.message}` };
@@ -1684,35 +1190,33 @@ export class LocalBackend {
     // Map changed files to indexed symbols
     const changedSymbols: any[] = [];
     for (const file of changedFiles) {
-      const escaped = file.replace(/\\/g, '/').replace(/'/g, "''");
+      const normalizedFile = file.replace(/\\/g, '/');
       try {
-        const symbols = await executeQuery(repo.id, `
-          MATCH (n) WHERE n.filePath CONTAINS '${escaped}'
-          RETURN n.id AS id, n.name AS name, n.filePath AS filePath
+        const symbols = await executeParameterized(repo.id, `
+          MATCH (n) WHERE n.filePath CONTAINS $filePath
+          RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
           LIMIT 20
-        `);
+        `, { filePath: normalizedFile });
         for (const sym of symbols) {
-          const id = getRowValue<string>(sym, 'id', 0) || '';
           changedSymbols.push({
-            id,
-            name: getRowValue<string>(sym, 'name', 1),
-            type: inferTypeFromId(id) || 'CodeElement',
-            filePath: getRowValue<string>(sym, 'filePath', 2),
+            id: sym.id || sym[0],
+            name: sym.name || sym[1],
+            type: sym.type || sym[2],
+            filePath: sym.filePath || sym[3],
             change_type: 'Modified',
           });
         }
-      } catch { /* skip */ }
+      } catch (e) { logQueryError('detect-changes:file-symbols', e); }
     }
-    
+
     // Find affected processes
     const affectedProcesses = new Map<string, any>();
     for (const sym of changedSymbols) {
-      const escaped = (sym.id as string).replace(/'/g, "''");
       try {
-        const procs = await executeQuery(repo.id, `
-          MATCH (n {id: '${escaped}'})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
+        const procs = await executeParameterized(repo.id, `
+          MATCH (n {id: $nodeId})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
           RETURN p.id AS pid, p.heuristicLabel AS label, p.processType AS processType, p.stepCount AS stepCount, r.step AS step
-        `);
+        `, { nodeId: sym.id });
         for (const proc of procs) {
           const pid = proc.pid || proc[0];
           if (!affectedProcesses.has(pid)) {
@@ -1729,9 +1233,9 @@ export class LocalBackend {
             step: proc.step || proc[4],
           });
         }
-      } catch { /* skip */ }
+      } catch (e) { logQueryError('detect-changes:process-lookup', e); }
     }
-    
+
     const processCount = affectedProcesses.size;
     const risk = processCount === 0 ? 'low' : processCount <= 5 ? 'medium' : processCount <= 15 ? 'high' : 'critical';
     
@@ -1763,10 +1267,19 @@ export class LocalBackend {
     
     const { new_name, file_path } = params;
     const dry_run = params.dry_run ?? true;
-    
+
     if (!params.symbol_name && !params.symbol_uid) {
       return { error: 'Either symbol_name or symbol_uid is required.' };
     }
+
+    /** Guard: ensure a file path resolves within the repo root (prevents path traversal) */
+    const assertSafePath = (filePath: string): string => {
+      const full = path.resolve(repo.repoPath, filePath);
+      if (!full.startsWith(repo.repoPath + path.sep) && full !== repo.repoPath) {
+        throw new Error(`Path traversal blocked: ${filePath}`);
+      }
+      return full;
+    };
     
     // Step 1: Find the target symbol (reuse context's lookup)
     const lookupResult = await this.context(repo, {
@@ -1802,15 +1315,16 @@ export class LocalBackend {
     // The definition itself
     if (sym.filePath && sym.startLine) {
       try {
-        const content = await fs.readFile(path.join(repo.repoPath, sym.filePath), 'utf-8');
+        const content = await fs.readFile(assertSafePath(sym.filePath), 'utf-8');
         const lines = content.split('\n');
         const lineIdx = sym.startLine - 1;
         if (lineIdx >= 0 && lineIdx < lines.length && lines[lineIdx].includes(oldName)) {
-          addEdit(sym.filePath, sym.startLine, lines[lineIdx].trim(), lines[lineIdx].replace(oldName, new_name).trim(), 'graph');
+          const defRegex = new RegExp(`\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+          addEdit(sym.filePath, sym.startLine, lines[lineIdx].trim(), lines[lineIdx].replace(defRegex, new_name).trim(), 'graph');
         }
-      } catch { /* skip */ }
+      } catch (e) { logQueryError('rename:read-definition', e); }
     }
-    
+
     // All incoming refs from graph (callers, importers, etc.)
     const allIncoming = [
       ...(lookupResult.incoming.calls || []),
@@ -1824,7 +1338,7 @@ export class LocalBackend {
     for (const ref of allIncoming) {
       if (!ref.filePath) continue;
       try {
-        const content = await fs.readFile(path.join(repo.repoPath, ref.filePath), 'utf-8');
+        const content = await fs.readFile(assertSafePath(ref.filePath), 'utf-8');
         const lines = content.split('\n');
         for (let i = 0; i < lines.length; i++) {
           if (lines[i].includes(oldName)) {
@@ -1833,18 +1347,24 @@ export class LocalBackend {
             break; // one edit per file from graph refs
           }
         }
-      } catch { /* skip */ }
+      } catch (e) { logQueryError('rename:read-ref', e); }
     }
-    
+
     // Step 3: Text search for refs the graph might have missed
     let astSearchEdits = 0;
     const graphFiles = new Set([sym.filePath, ...allIncoming.map(r => r.filePath)].filter(Boolean));
     
     // Simple text search across the repo for the old name (in files not already covered by graph)
     try {
-      const { execSync } = await import('child_process');
-      const rgCmd = `rg -l --type-add "code:*.{ts,tsx,js,jsx,py,go,rs,java}" -t code "\\b${oldName}\\b" .`;
-      const output = execSync(rgCmd, { cwd: repo.repoPath, encoding: 'utf-8', timeout: 5000 });
+      const { execFileSync } = await import('child_process');
+      const rgArgs = [
+        '-l',
+        '--type-add', 'code:*.{ts,tsx,js,jsx,py,go,rs,java,c,h,cpp,cc,cxx,hpp,hxx,hh,cs,php,swift}',
+        '-t', 'code',
+        `\\b${oldName}\\b`,
+        '.',
+      ];
+      const output = execFileSync('rg', rgArgs, { cwd: repo.repoPath, encoding: 'utf-8', timeout: 5000 });
       const files = output.trim().split('\n').filter(f => f.length > 0);
       
       for (const file of files) {
@@ -1852,19 +1372,20 @@ export class LocalBackend {
         if (graphFiles.has(normalizedFile)) continue; // already covered by graph
         
         try {
-          const content = await fs.readFile(path.join(repo.repoPath, normalizedFile), 'utf-8');
+          const content = await fs.readFile(assertSafePath(normalizedFile), 'utf-8');
           const lines = content.split('\n');
           const regex = new RegExp(`\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
           for (let i = 0; i < lines.length; i++) {
+            regex.lastIndex = 0;
             if (regex.test(lines[i])) {
+              regex.lastIndex = 0;
               addEdit(normalizedFile, i + 1, lines[i].trim(), lines[i].replace(regex, new_name).trim(), 'text_search');
               astSearchEdits++;
-              regex.lastIndex = 0; // reset regex
             }
           }
-        } catch { /* skip */ }
+        } catch (e) { logQueryError('rename:text-search-read', e); }
       }
-    } catch { /* rg not available or no additional matches */ }
+    } catch (e) { logQueryError('rename:ripgrep', e); }
     
     // Step 4: Apply or preview
     const allChanges = Array.from(changes.values());
@@ -1874,12 +1395,12 @@ export class LocalBackend {
       // Apply edits to files
       for (const change of allChanges) {
         try {
-          const fullPath = path.join(repo.repoPath, change.file_path);
+          const fullPath = assertSafePath(change.file_path);
           let content = await fs.readFile(fullPath, 'utf-8');
           const regex = new RegExp(`\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
           content = content.replace(regex, new_name);
           await fs.writeFile(fullPath, content, 'utf-8');
-        } catch { /* skip failed files */ }
+        } catch (e) { logQueryError('rename:apply-edit', e); }
       }
     }
     
@@ -1898,8 +1419,29 @@ export class LocalBackend {
 
   private async impact(repo: RepoHandle, params: {
     target: string;
-    target_uid?: string;
-    file_path?: string;
+    direction: 'upstream' | 'downstream';
+    maxDepth?: number;
+    relationTypes?: string[];
+    includeTests?: boolean;
+    minConfidence?: number;
+  }): Promise<any> {
+    try {
+      return await this._impactImpl(repo, params);
+    } catch (err: any) {
+      // Return structured error instead of crashing (#321)
+      return {
+        error: (err instanceof Error ? err.message : String(err)) || 'Impact analysis failed',
+        target: { name: params.target },
+        direction: params.direction,
+        impactedCount: 0,
+        risk: 'UNKNOWN',
+        suggestion: 'The graph query failed — try gitnexus context <symbol> as a fallback',
+      };
+    }
+  }
+
+  private async _impactImpl(repo: RepoHandle, params: {
+    target: string;
     direction: 'upstream' | 'downstream';
     maxDepth?: number;
     relationTypes?: string[];
@@ -1909,89 +1451,32 @@ export class LocalBackend {
     await this.ensureInitialized(repo.id);
     
     const { target, direction } = params;
-    const maxDepth = params.maxDepth ?? 3;
-    const relationTypes = params.relationTypes && params.relationTypes.length > 0
-      ? params.relationTypes
+    const maxDepth = params.maxDepth || 3;
+    const rawRelTypes = params.relationTypes && params.relationTypes.length > 0
+      ? params.relationTypes.filter(t => VALID_RELATION_TYPES.has(t))
       : ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS'];
+    const relationTypes = rawRelTypes.length > 0 ? rawRelTypes : ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS'];
     const includeTests = params.includeTests ?? false;
-    const minConfidence = params.minConfidence ?? 0.3;
-    
+    const minConfidence = params.minConfidence ?? 0;
+
     const relTypeFilter = relationTypes.map(t => `'${t}'`).join(', ');
     const confidenceFilter = minConfidence > 0 ? ` AND r.confidence >= ${minConfidence}` : '';
 
-    let targets: any[] = [];
-    if (params.target_uid?.trim()) {
-      const escapedUid = params.target_uid.trim().replace(/'/g, "''");
-      targets = await executeQuery(repo.id, `
-        MATCH (n {id: '${escapedUid}'})
-        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine
-        LIMIT 1
-      `);
-    } else {
-      const escapedTarget = target.replace(/'/g, "''");
-      const fileFilter = params.file_path?.trim()
-        ? ` AND n.filePath CONTAINS '${params.file_path.trim().replace(/'/g, "''")}'`
-        : '';
-      targets = await executeQuery(repo.id, `
-        MATCH (n)
-        WHERE n.name = '${escapedTarget}'${fileFilter}
-        RETURN n.id AS id, n.name AS name, n.filePath AS filePath, n.startLine AS startLine
-        LIMIT 20
-      `);
-    }
-
+    const targets = await executeParameterized(repo.id, `
+      MATCH (n)
+      WHERE n.name = $targetName
+      RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
+      LIMIT 1
+    `, { targetName: target });
     if (targets.length === 0) return { error: `Target '${target}' not found` };
-    if (targets.length > 1 && !params.target_uid) {
-      return {
-        status: 'ambiguous',
-        message: `Found ${targets.length} symbols matching '${target}'. Use target_uid or file_path to disambiguate.`,
-        candidates: targets.map((s: any) => ({
-          uid: getRowValue<string>(s, 'id', 0),
-          name: getRowValue<string>(s, 'name', 1),
-          kind: inferTypeFromId(getRowValue<string>(s, 'id', 0)) || 'CodeElement',
-          filePath: getRowValue<string>(s, 'filePath', 2),
-          line: getRowValue<number>(s, 'startLine', 3),
-        })),
-      };
-    }
-
+    
     const sym = targets[0];
-    const symId = getRowValue<string>(sym, 'id', 0) || '';
-    const symType = inferTypeFromId(symId) || 'CodeElement';
-    let seedIds = [symId];
-
-    // Class/interface references are frequently attached to member symbols.
-    // Seed traversal with symbols from the same file to approximate class blast radius.
-    if ((symType === 'Class' || symType === 'Interface')) {
-      const targetFilePath = getRowValue<string>(sym, 'filePath', 2);
-      if (targetFilePath) {
-        try {
-          const escapedPath = targetFilePath.replace(/'/g, "''");
-          const seedRows = await executeQuery(repo.id, `
-            MATCH (n)
-            WHERE n.filePath = '${escapedPath}'
-            RETURN n.id AS id
-            LIMIT 200
-          `);
-          const seedSet = new Set<string>([symId]);
-          for (const row of seedRows) {
-            const id = getRowValue<string>(row, 'id', 0);
-            if (!id) continue;
-            if (id.startsWith('File:') || id.startsWith('Folder:') || id.startsWith('Community:') || id.startsWith('Process:')) {
-              continue;
-            }
-            seedSet.add(id);
-          }
-          seedIds = Array.from(seedSet);
-        } catch {
-          // fallback to class node only
-        }
-      }
-    }
+    const symId = sym.id || sym[0];
     
     const impacted: any[] = [];
-    const visited = new Set<string>(seedIds);
-    let frontier = [...seedIds];
+    const visited = new Set<string>([symId]);
+    let frontier = [symId];
+    let traversalComplete = true;
     
     for (let depth = 1; depth <= maxDepth && frontier.length > 0; depth++) {
       const nextFrontier: string[] = [];
@@ -1999,19 +1484,17 @@ export class LocalBackend {
       // Batch frontier nodes into a single Cypher query per depth level
       const idList = frontier.map(id => `'${id.replace(/'/g, "''")}'`).join(', ');
       const query = direction === 'upstream'
-        ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, caller.filePath AS filePath, r.type AS relType, r.confidence AS confidence`
-        : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, callee.filePath AS filePath, r.type AS relType, r.confidence AS confidence`;
+        ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, labels(caller)[0] AS type, caller.filePath AS filePath, r.type AS relType, r.confidence AS confidence`
+        : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, labels(callee)[0] AS type, callee.filePath AS filePath, r.type AS relType, r.confidence AS confidence`;
       
       try {
         const related = await executeQuery(repo.id, query);
         
         for (const rel of related) {
-          const relId = getRowValue<string>(rel, 'id', 1) || '';
-          const filePath = getRowValue<string>(rel, 'filePath', 3) || '';
-          const relNodeType = inferTypeFromId(relId) || 'CodeElement';
+          const relId = rel.id || rel[1];
+          const filePath = rel.filePath || rel[4] || '';
           
           if (!includeTests && isTestFilePath(filePath)) continue;
-          if (relNodeType === 'File' || relNodeType === 'Folder' || relNodeType === 'Community' || relNodeType === 'Process') continue;
           
           if (!visited.has(relId)) {
             visited.add(relId);
@@ -2019,15 +1502,21 @@ export class LocalBackend {
             impacted.push({
               depth,
               id: relId,
-              name: getRowValue<string>(rel, 'name', 2),
-              type: relNodeType,
+              name: rel.name || rel[2],
+              type: rel.type || rel[3],
               filePath,
-              relationType: getRowValue<string>(rel, 'relType', 4),
-              confidence: Number(getRowValue<number>(rel, 'confidence', 5) ?? 1.0),
+              relationType: rel.relType || rel[5],
+              confidence: rel.confidence || rel[6] || 1.0,
             });
           }
         }
-      } catch { /* query failed for this depth level */ }
+      } catch (e) {
+        logQueryError('impact:depth-traversal', e);
+        // Break out of depth loop on query failure but return partial results
+        // collected so far, rather than silently swallowing the error (#321)
+        traversalComplete = false;
+        break;
+      }
       
       frontier = nextFrontier;
     }
@@ -2103,13 +1592,14 @@ export class LocalBackend {
     return {
       target: {
         id: symId,
-        name: getRowValue<string>(sym, 'name', 1),
-        type: symType,
-        filePath: getRowValue<string>(sym, 'filePath', 2),
+        name: sym.name || sym[1],
+        type: sym.type || sym[2],
+        filePath: sym.filePath || sym[3],
       },
       direction,
       impactedCount: impacted.length,
       risk,
+      ...(!traversalComplete && { partial: true }),
       summary: {
         direct: directCount,
         processes_affected: processCount,
@@ -2189,13 +1679,11 @@ export class LocalBackend {
     const repo = await this.resolveRepo(repoName);
     await this.ensureInitialized(repo.id);
 
-    const escaped = name.replace(/'/g, "''");
-    const clusterQuery = `
+    const clusters = await executeParameterized(repo.id, `
       MATCH (c:Community)
-      WHERE c.label = '${escaped}' OR c.heuristicLabel = '${escaped}'
+      WHERE c.label = $clusterName OR c.heuristicLabel = $clusterName
       RETURN c.id AS id, c.label AS label, c.heuristicLabel AS heuristicLabel, c.cohesion AS cohesion, c.symbolCount AS symbolCount
-    `;
-    const clusters = await executeQuery(repo.id, clusterQuery);
+    `, { clusterName: name });
     if (clusters.length === 0) return { error: `Cluster '${name}' not found` };
 
     const rawClusters = clusters.map((c: any) => ({
@@ -2210,12 +1698,12 @@ export class LocalBackend {
       weightedCohesion += (c.cohesion || 0) * s;
     }
 
-    const members = await executeQuery(repo.id, `
+    const members = await executeParameterized(repo.id, `
       MATCH (n)-[:CodeRelation {type: 'MEMBER_OF'}]->(c:Community)
-      WHERE c.label = '${escaped}' OR c.heuristicLabel = '${escaped}'
-      RETURN DISTINCT n.id AS id, n.name AS name, n.filePath AS filePath
+      WHERE c.label = $clusterName OR c.heuristicLabel = $clusterName
+      RETURN DISTINCT n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
       LIMIT 30
-    `);
+    `, { clusterName: name });
 
     return {
       cluster: {
@@ -2227,9 +1715,7 @@ export class LocalBackend {
         subCommunities: rawClusters.length,
       },
       members: members.map((m: any) => ({
-        name: getRowValue<string>(m, 'name', 1),
-        type: inferTypeFromId(getRowValue<string>(m, 'id', 0)) || 'CodeElement',
-        filePath: getRowValue<string>(m, 'filePath', 2),
+        name: m.name || m[0], type: m.type || m[1], filePath: m.filePath || m[2],
       })),
     };
   }
@@ -2242,22 +1728,21 @@ export class LocalBackend {
     const repo = await this.resolveRepo(repoName);
     await this.ensureInitialized(repo.id);
 
-    const escaped = name.replace(/'/g, "''");
-    const processes = await executeQuery(repo.id, `
+    const processes = await executeParameterized(repo.id, `
       MATCH (p:Process)
-      WHERE p.label = '${escaped}' OR p.heuristicLabel = '${escaped}'
+      WHERE p.label = $processName OR p.heuristicLabel = $processName
       RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount
       LIMIT 1
-    `);
+    `, { processName: name });
     if (processes.length === 0) return { error: `Process '${name}' not found` };
 
     const proc = processes[0];
     const procId = proc.id || proc[0];
-    const steps = await executeQuery(repo.id, `
-      MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p {id: '${procId}'})
-      RETURN n.id AS id, n.name AS name, n.filePath AS filePath, r.step AS step
+    const steps = await executeParameterized(repo.id, `
+      MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p {id: $procId})
+      RETURN n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, r.step AS step
       ORDER BY r.step
-    `);
+    `, { procId });
 
     return {
       process: {
@@ -2265,16 +1750,13 @@ export class LocalBackend {
         processType: proc.processType || proc[3], stepCount: proc.stepCount || proc[4],
       },
       steps: steps.map((s: any) => ({
-        step: getRowValue<number>(s, 'step', 3),
-        name: getRowValue<string>(s, 'name', 1),
-        type: inferTypeFromId(getRowValue<string>(s, 'id', 0)) || 'CodeElement',
-        filePath: getRowValue<string>(s, 'filePath', 2),
+        step: s.step || s[3], name: s.name || s[0], type: s.type || s[1], filePath: s.filePath || s[2],
       })),
     };
   }
 
   async disconnect(): Promise<void> {
-    await closeKuzu(); // close all connections
+    await closeLbug(); // close all connections
     // Note: we intentionally do NOT call disposeEmbedder() here.
     // ONNX Runtime's native cleanup segfaults on macOS and some Linux configs,
     // and importing the embedder module on Node v24+ crashes if onnxruntime

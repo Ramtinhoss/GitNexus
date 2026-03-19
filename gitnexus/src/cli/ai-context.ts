@@ -9,6 +9,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { type GeneratedSkillInfo } from './skill-gen.js';
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -29,18 +30,29 @@ const GITNEXUS_END_MARKER = '<!-- gitnexus:end -->';
 
 /**
  * Generate the full GitNexus context content.
- * 
- * Design principles (learned from real agent behavior):
- * - AGENTS.md is the ROUTER — it tells the agent WHICH skill to read
- * - Skills contain the actual workflows — AGENTS.md does NOT duplicate them
- * - Bold **IMPORTANT** block + "Skills — Read First" heading — agents skip soft suggestions
- * - One-line quick start (read context resource) gives agents an entry point
- * - Tools/Resources sections are labeled "Reference" — agents treat them as lookup, not workflow
+ *
+ * Design principles (learned from real agent behavior and industry research):
+ * - Inline critical workflows — skills are skipped 56% of the time (Vercel eval data)
+ * - Use RFC 2119 language (MUST, NEVER, ALWAYS) — models follow imperative rules
+ * - Three-tier boundaries (Always/When/Never) — proven to change model behavior
+ * - Keep under 120 lines — adherence degrades past 150 lines
+ * - Exact tool commands with parameters — vague directives get ignored
+ * - Self-review checklist — forces model to verify its own work
  */
-function generateGitNexusContent(projectName: string, stats: RepoStats, skillScope: SkillScope): string {
+function generateGitNexusContent(
+  projectName: string,
+  stats: RepoStats,
+  skillScope: SkillScope,
+  generatedSkills?: GeneratedSkillInfo[],
+): string {
   const skillRoot = skillScope === 'global'
     ? '~/.agents/skills/gitnexus'
     : '.agents/skills/gitnexus';
+  const generatedRows = (generatedSkills && generatedSkills.length > 0)
+    ? `\n${generatedSkills.map((s) =>
+      `| Work in the ${s.label} area (${s.symbolCount} symbols) | \`.claude/skills/generated/${s.name}/SKILL.md\` |`,
+    ).join('\n')}`
+    : '';
 
   return `${GITNEXUS_START_MARKER}
 # GitNexus MCP
@@ -64,7 +76,7 @@ This project is indexed by GitNexus as **${projectName}** (${stats.nodes || 0} s
 | Trace bugs / "Why is X failing?" | \`${skillRoot}/gitnexus-debugging/SKILL.md\` |
 | Rename / extract / split / refactor | \`${skillRoot}/gitnexus-refactoring/SKILL.md\` |
 | Tools, resources, schema reference | \`${skillRoot}/gitnexus-guide/SKILL.md\` |
-| Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |
+| Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |${generatedRows}
 
 ${GITNEXUS_END_MARKER}`;
 }
@@ -105,7 +117,7 @@ async function upsertGitNexusSection(
   const startIdx = existingContent.indexOf(GITNEXUS_START_MARKER);
   const endIdx = existingContent.indexOf(GITNEXUS_END_MARKER);
 
-  if (startIdx !== -1 && endIdx !== -1) {
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
     // Replace existing section
     const before = existingContent.substring(0, startIdx);
     const after = existingContent.substring(endIdx + GITNEXUS_END_MARKER.length);
@@ -207,9 +219,10 @@ export async function generateAIContextFiles(
   options?: {
     skillScope?: SkillScope;
   },
+  generatedSkills?: GeneratedSkillInfo[]
 ): Promise<{ files: string[] }> {
   const skillScope: SkillScope = options?.skillScope === 'global' ? 'global' : 'project';
-  const content = generateGitNexusContent(projectName, stats, skillScope);
+  const content = generateGitNexusContent(projectName, stats, skillScope, generatedSkills);
   const createdFiles: string[] = [];
 
   // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Codex, Cline, etc.)
