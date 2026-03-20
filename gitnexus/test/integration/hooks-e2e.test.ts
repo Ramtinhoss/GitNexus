@@ -26,11 +26,23 @@ const HOOKS = [
 
 let tmpDir: string;
 let gitNexusDir: string;
+let tmpHome: string;
+let hookEnv: NodeJS.ProcessEnv;
 
 beforeAll(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hooks-e2e-'));
   gitNexusDir = path.join(tmpDir, '.gitnexus');
+  tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'hooks-e2e-home-'));
   fs.mkdirSync(gitNexusDir, { recursive: true });
+  fs.mkdirSync(path.join(tmpHome, '.gitnexus'), { recursive: true });
+  fs.writeFileSync(
+    path.join(tmpHome, '.gitnexus', 'config.json'),
+    JSON.stringify({ cliPackageSpec: '@veewo/gitnexus@latest' }),
+  );
+  hookEnv = {
+    HOME: tmpHome,
+    USERPROFILE: tmpHome,
+  };
 
   // Initialize a real git repo
   spawnSync('git', ['init'], { cwd: tmpDir, stdio: 'pipe' });
@@ -45,6 +57,7 @@ beforeAll(() => {
 
 afterAll(() => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
+  fs.rmSync(tmpHome, { recursive: true, force: true });
 });
 
 // ─── Tests ──────────────────────────────────────────────────────────
@@ -64,7 +77,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
         tool_input: { command: 'git commit -m "test"' },
         tool_output: { exit_code: 0 },
         cwd: tmpDir,
-      });
+      }, undefined, hookEnv);
 
       const output = parseHookOutput(result.stdout);
       expect(output).not.toBeNull();
@@ -91,7 +104,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
         tool_input: { command: 'git commit -m "test"' },
         tool_output: { exit_code: 0 },
         cwd: tmpDir,
-      });
+      }, undefined, hookEnv);
 
       const output = parseHookOutput(result.stdout);
       expect(output).toBeNull();
@@ -109,7 +122,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
         tool_input: { command: 'git commit -m "test"' },
         tool_output: { exit_code: 0 },
         cwd: tmpDir,
-      });
+      }, undefined, hookEnv);
 
       const output = parseHookOutput(result.stdout);
       expect(output).not.toBeNull();
@@ -127,7 +140,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
         tool_input: { command: 'git commit -m "test"' },
         tool_output: { exit_code: 0 },
         cwd: tmpDir,
-      });
+      }, undefined, hookEnv);
 
       const output = parseHookOutput(result.stdout);
       expect(output).not.toBeNull();
@@ -146,7 +159,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
         tool_input: { command: 'git commit -m "test"' },
         tool_output: { exit_code: 1 },
         cwd: tmpDir,
-      });
+      }, undefined, hookEnv);
 
       const output = parseHookOutput(result.stdout);
       expect(output).toBeNull();

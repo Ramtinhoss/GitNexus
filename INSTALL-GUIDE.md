@@ -10,19 +10,33 @@
 
 ## 版本与执行策略（必须遵守）
 
-- 本文档默认 `latest`，但**用户在 prompt 指定版本时必须优先使用用户版本**（例如 `1.4.7-rc`）
-- 整个会话只能有一个 CLI 版本源，禁止混用 `latest` / 固定版本
-- 建议先设置一次 `GITNEXUS_CLI_SPEC`，并在整个流程统一复用 `$GN`
+- `setup` 完成后，`~/.gitnexus/config.json` 是 npx 版本源的单一事实来源
+- 整个会话只能有一个 CLI 版本源，禁止混用本地 `gitnexus` / 固定 `npx` 包版本 / `latest`
+- 若用户在 prompt 指定版本，必须通过 `setup --cli-version` 或 `setup --cli-spec` 写入 `~/.gitnexus/config.json`
+- 整个流程统一复用 `$GN`，不要在中途手写新的 npx 包版本
 - `setup` 支持写入版本源：`--cli-version <version>` 或 `--cli-spec <packageSpec>`
 
 ```bash
-# 如果用户 prompt 指定版本，请先设置：
-# export GITNEXUS_CLI_SPEC="@veewo/gitnexus@1.4.7-rc"
-GITNEXUS_CLI_SPEC="${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}"
-
 if command -v gitnexus >/dev/null 2>&1; then
   GN="gitnexus"
 else
+  GITNEXUS_CLI_SPEC="$(
+    node -e 'const fs=require("fs");const os=require("os");const path=require("path");
+    try {
+      const raw=fs.readFileSync(path.join(os.homedir(),".gitnexus","config.json"),"utf8");
+      const parsed=JSON.parse(raw);
+      const spec=typeof parsed.cliPackageSpec==="string" && parsed.cliPackageSpec.trim()
+        ? parsed.cliPackageSpec.trim()
+        : typeof parsed.cliVersion==="string" && parsed.cliVersion.trim()
+          ? `@veewo/gitnexus@${parsed.cliVersion.trim()}`
+          : "";
+      if (spec) process.stdout.write(spec);
+    } catch {}'
+  )"
+  if [ -z "$GITNEXUS_CLI_SPEC" ]; then
+    echo "Missing GitNexus CLI package spec in ~/.gitnexus/config.json. Run gitnexus setup --cli-spec <packageSpec> first." >&2
+    exit 1
+  fi
   GN="npx -y ${GITNEXUS_CLI_SPEC}"
 fi
 ```
@@ -62,10 +76,26 @@ which gitnexus
 gitnexus --version
 npm view @veewo/gitnexus version --registry=https://registry.npmjs.org
 
-GITNEXUS_CLI_SPEC="${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}"
 if command -v gitnexus >/dev/null 2>&1; then
   GN="gitnexus"
 else
+  GITNEXUS_CLI_SPEC="$(
+    node -e 'const fs=require("fs");const os=require("os");const path=require("path");
+    try {
+      const raw=fs.readFileSync(path.join(os.homedir(),".gitnexus","config.json"),"utf8");
+      const parsed=JSON.parse(raw);
+      const spec=typeof parsed.cliPackageSpec==="string" && parsed.cliPackageSpec.trim()
+        ? parsed.cliPackageSpec.trim()
+        : typeof parsed.cliVersion==="string" && parsed.cliVersion.trim()
+          ? `@veewo/gitnexus@${parsed.cliVersion.trim()}`
+          : "";
+      if (spec) process.stdout.write(spec);
+    } catch {}'
+  )"
+  if [ -z "$GITNEXUS_CLI_SPEC" ]; then
+    echo "Missing GitNexus CLI package spec in ~/.gitnexus/config.json. Run gitnexus setup --cli-spec <packageSpec> first." >&2
+    exit 1
+  fi
   GN="npx -y ${GITNEXUS_CLI_SPEC}"
 fi
 ```

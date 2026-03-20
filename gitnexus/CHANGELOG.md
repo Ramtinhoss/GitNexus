@@ -2,6 +2,17 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.8-rc.2] - 2026-03-20
+
+### Changed
+- Standardized workflow-facing command guidance to treat `~/.gitnexus/config.json` as the single npx package-spec source after `setup`.
+- Updated INSTALL-GUIDE, AGENTS/CLAUDE generation, bundled skills, installed skill copies, README snippets, and fixture guidance to remove misleading hard-coded `@latest` fallback examples.
+- Updated Claude/Cursor hook runtime fallback resolution to load package specs from config instead of maintaining a separate hard-coded `@latest` default.
+
+### Fixed
+- Fixed false-negative workflow consistency checks caused by mixed version hints between setup-persisted config, repo docs, skill templates, and hook scripts.
+- Added regression coverage for workflow-facing version guidance and hook config resolution so future workflow text drift is caught in tests.
+
 ## [1.4.8-rc] - 2026-03-19
 
 ### Added

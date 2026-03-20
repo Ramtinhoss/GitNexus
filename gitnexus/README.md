@@ -18,17 +18,16 @@ AI coding tools don't understand your codebase structure. They edit a function w
 ## Quick Start
 
 ```bash
-# Optional: pin one version for the whole session (example RC)
-# export GITNEXUS_CLI_SPEC="@veewo/gitnexus@1.4.7-rc"
-GITNEXUS_CLI_SPEC="${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}"
-
-# Index your repo (run from repo root)
-npx -y "${GITNEXUS_CLI_SPEC}" analyze
+npm install -g @veewo/gitnexus
+gitnexus setup --cli-spec @veewo/gitnexus
+gitnexus analyze
 ```
 
 That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
 
-To configure MCP for your editor, run `npx -y "${GITNEXUS_CLI_SPEC}" setup --cli-spec "$GITNEXUS_CLI_SPEC"` once — or set it up manually below.
+After `setup`, repository workflows resolve any npx package fallback from `~/.gitnexus/config.json` instead of defaulting to `@latest`.
+
+To configure MCP for your editor, run `gitnexus setup --cli-spec <packageSpec>` once — or set it up manually below.
 
 `gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
 
@@ -56,7 +55,7 @@ If you prefer to configure manually instead of using `gitnexus setup`:
 ### Claude Code (full support — MCP + skills + hooks)
 
 ```bash
-claude mcp add gitnexus -- npx -y "${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}" mcp
+claude mcp add gitnexus -- gitnexus mcp
 ```
 
 ### Cursor / Windsurf
@@ -67,8 +66,8 @@ Add to `~/.cursor/mcp.json` (global — works for all projects):
 {
   "mcpServers": {
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     }
   }
 }
@@ -82,8 +81,8 @@ Add to `~/.config/opencode/config.json`:
 {
   "mcp": {
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     }
   }
 }
@@ -141,10 +140,10 @@ Your AI agent gets these tools automatically:
 
 ```bash
 gitnexus setup                    # Configure MCP for your editors (one-time)
-npx -y "${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}" analyze [path]           # Index a repository (or update stale index)
-npx -y "${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}" analyze --force          # Force full re-index
-npx -y "${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}" analyze --embeddings     # Enable embedding generation (slower, better search)
-npx -y "${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}" analyze --verbose        # Log skipped files when parsers are unavailable
+gitnexus analyze [path]           # Index a repository (or update stale index)
+gitnexus analyze --force          # Force full re-index
+gitnexus analyze --embeddings     # Enable embedding generation (slower, better search)
+gitnexus analyze --verbose        # Log skipped files when parsers are unavailable
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI
 gitnexus list                    # List all indexed repositories
@@ -157,7 +156,7 @@ gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-m
 
 ## Multi-Repo Support
 
-GitNexus supports indexing multiple repositories. Each `npx -y "${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}" analyze` registers the repo in a global registry (`~/.gitnexus/registry.json`). The MCP server serves all indexed repos automatically.
+GitNexus supports indexing multiple repositories. Each `gitnexus analyze` registers the repo in a global registry (`~/.gitnexus/registry.json`). The MCP server serves all indexed repos automatically.
 
 ## Supported Languages
 
@@ -192,7 +191,7 @@ GitNexus ships with skill files that teach AI agents how to use the tools effect
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
 
-Installed automatically by both `npx -y "${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}" analyze` (per-repo) and `gitnexus setup` (global).
+Installed automatically by both `gitnexus analyze` (per-repo) and `gitnexus setup` (global).
 
 ## Requirements
 

@@ -5,15 +5,29 @@ description: "Use when the user needs to run GitNexus CLI commands like analyze/
 
 # GitNexus CLI Commands
 
-Use one command alias in the session so every CLI/MCP call stays on one version line.
+Use one command alias in the session so every CLI/MCP call stays on one version line. After `setup`, treat `~/.gitnexus/config.json` as the only npx version source.
 
 ```bash
-# If user prompt specifies a version (example: 1.4.7-rc), set it once:
-# export GITNEXUS_CLI_SPEC="@veewo/gitnexus@1.4.7-rc"
-GITNEXUS_CLI_SPEC="${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest}"
 if command -v gitnexus >/dev/null 2>&1; then
   GN="gitnexus"
 else
+  GITNEXUS_CLI_SPEC="$(
+    node -e 'const fs=require("fs");const os=require("os");const path=require("path");
+    try {
+      const raw=fs.readFileSync(path.join(os.homedir(),".gitnexus","config.json"),"utf8");
+      const parsed=JSON.parse(raw);
+      const spec=typeof parsed.cliPackageSpec==="string" && parsed.cliPackageSpec.trim()
+        ? parsed.cliPackageSpec.trim()
+        : typeof parsed.cliVersion==="string" && parsed.cliVersion.trim()
+          ? `@veewo/gitnexus@${parsed.cliVersion.trim()}`
+          : "";
+      if (spec) process.stdout.write(spec);
+    } catch {}'
+  )"
+  if [ -z "$GITNEXUS_CLI_SPEC" ]; then
+    echo "Missing GitNexus CLI package spec in ~/.gitnexus/config.json. Run gitnexus setup --cli-spec <packageSpec> first." >&2
+    exit 1
+  fi
   GN="npx -y ${GITNEXUS_CLI_SPEC}"
 fi
 ```

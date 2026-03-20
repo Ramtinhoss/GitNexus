@@ -66,13 +66,16 @@ The CLI indexes your repository and runs an MCP server that gives AI agents deep
 ### Quick Start
 
 ```bash
-# Index your repo (run from repo root)
-npx -y @veewo/gitnexus@latest analyze
+npm install -g @veewo/gitnexus
+gitnexus setup --cli-spec @veewo/gitnexus
+gitnexus analyze
 ```
 
 That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
 
-To configure MCP for your editor, run `npx -y @veewo/gitnexus@latest setup` once — or set it up manually below.
+After `setup`, repository workflows resolve any npx package fallback from `~/.gitnexus/config.json` instead of defaulting to `@latest`.
+
+To configure MCP for your editor, run `gitnexus setup --cli-spec <packageSpec>` once — or set it up manually below.
 
 ### MCP Setup
 
@@ -101,7 +104,7 @@ If you prefer manual configuration:
 **Claude Code** (full support — MCP + skills + hooks):
 
 ```bash
-claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
+claude mcp add gitnexus -- gitnexus mcp
 ```
 
 **Cursor** (`~/.cursor/mcp.json` — global, works for all projects):
@@ -110,8 +113,8 @@ claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
 {
   "mcpServers": {
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     }
   }
 }
@@ -123,8 +126,8 @@ claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
 {
   "mcp": {
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     }
   }
 }
@@ -134,20 +137,20 @@ claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
 
 ```toml
 [mcp_servers.gitnexus]
-command = "npx"
-args = ["-y", "@veewo/gitnexus@latest", "mcp"]
+command = "gitnexus"
+args = ["mcp"]
 ```
 
 ### CLI Commands
 
 ```bash
 gitnexus setup                    # Configure MCP for your editors (one-time)
-npx -y @veewo/gitnexus@latest analyze [path]           # Index a repository (or update stale index)
-npx -y @veewo/gitnexus@latest analyze --force          # Force full re-index
-npx -y @veewo/gitnexus@latest analyze --skills         # Generate repo-specific skill files from detected communities
-npx -y @veewo/gitnexus@latest analyze --skip-embeddings  # Skip embedding generation (faster)
-npx -y @veewo/gitnexus@latest analyze --embeddings     # Enable embedding generation (slower, better search)
-npx -y @veewo/gitnexus@latest analyze --verbose        # Log skipped files when parsers are unavailable
+gitnexus analyze [path]           # Index a repository (or update stale index)
+gitnexus analyze --force          # Force full re-index
+gitnexus analyze --skills         # Generate repo-specific skill files from detected communities
+gitnexus analyze --skip-embeddings  # Skip embedding generation (faster)
+gitnexus analyze --embeddings     # Enable embedding generation (slower, better search)
+gitnexus analyze --verbose        # Log skipped files when parsers are unavailable
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI connection
 gitnexus list                    # List all indexed repositories
@@ -203,7 +206,7 @@ gitnexus wiki --base-url <url>   # Wiki with custom LLM API base URL
 
 **Repo-specific skills** generated with `--skills`:
 
-When you run `npx -y @veewo/gitnexus@latest analyze --skills`, GitNexus detects the functional areas of your codebase (via Leiden community detection) and generates a `SKILL.md` file for each one under `.claude/skills/generated/`. Each skill describes a module's key files, entry points, execution flows, and cross-area connections — so your AI agent gets targeted context for the exact area of code you're working in. Skills are regenerated on each `--skills` run to stay current with the codebase.
+When you run `gitnexus analyze --skills`, GitNexus detects the functional areas of your codebase (via Leiden community detection) and generates a `SKILL.md` file for each one under `.claude/skills/generated/`. Each skill describes a module's key files, entry points, execution flows, and cross-area connections — so your AI agent gets targeted context for the exact area of code you're working in. Skills are regenerated on each `--skills` run to stay current with the codebase.
 
 ---
 
@@ -215,7 +218,7 @@ GitNexus uses a **global registry** so one MCP server can serve multiple indexed
 flowchart TD
     subgraph CLI [CLI Commands]
         Setup["gitnexus setup"]
-        Analyze["npx -y @veewo/gitnexus@latest analyze"]
+        Analyze["gitnexus analyze"]
         Clean["gitnexus clean"]
         List["gitnexus list"]
     end
@@ -251,7 +254,7 @@ flowchart TD
     ConnB -->|"queries"| RepoB
 ```
 
-**How it works:** Each `npx -y @veewo/gitnexus@latest analyze` stores the index in `.gitnexus/` inside the repo (portable, gitignored) and registers a pointer in `~/.gitnexus/registry.json`. When an AI agent starts, the MCP server reads the registry and can serve any indexed repo. LadybugDB connections are opened lazily on first query and evicted after 5 minutes of inactivity (max 5 concurrent). If only one repo is indexed, the `repo` parameter is optional on all tools — agents don't need to change anything.
+**How it works:** Each `gitnexus analyze` stores the index in `.gitnexus/` inside the repo (portable, gitignored) and registers a pointer in `~/.gitnexus/registry.json`. When an AI agent starts, the MCP server reads the registry and can serve any indexed repo. LadybugDB connections are opened lazily on first query and evicted after 5 minutes of inactivity (max 5 concurrent). If only one repo is indexed, the `repo` parameter is optional on all tools — agents don't need to change anything.
 
 ---
 

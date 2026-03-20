@@ -15,7 +15,7 @@ For any task involving code understanding, debugging, impact analysis, or refact
 2. **Match your task to a skill below** and **read that skill file**
 3. **Follow the skill's workflow and checklist**
 
-> If step 1 warns the index is stale, run `gitnexus analyze` when local CLI exists; otherwise run `npx -y ${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest} analyze`.
+> If step 1 warns the index is stale, run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
 
 ## Skills
 

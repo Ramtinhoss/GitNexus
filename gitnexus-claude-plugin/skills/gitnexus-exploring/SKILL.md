@@ -23,7 +23,7 @@ description: "Use when the user asks how code works, wants to understand archite
 5. READ gitnexus://repo/{name}/process/{name}      → Trace full execution flow
 ```
 
-> If step 2 says "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise run `npx -y ${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest} analyze` in terminal.
+> If step 2 says "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze` in terminal.
 
 ## Checklist
 

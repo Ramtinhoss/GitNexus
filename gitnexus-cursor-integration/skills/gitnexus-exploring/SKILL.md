@@ -22,7 +22,7 @@ description: Navigate unfamiliar code using GitNexus knowledge graph
 5. READ gitnexus://repo/{name}/process/{name}      → Trace full execution flow
 ```
 
-> If step 2 says "Index is stale" → run `npx -y @veewo/gitnexus@latest analyze` in terminal.
+> If step 2 says "Index is stale" → resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze` in terminal.
 
 ## Checklist
 

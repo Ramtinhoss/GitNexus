@@ -26,7 +26,7 @@ description: "Use when the user wants to review a pull request, understand what 
 6. Summarize findings with risk assessment
 ```
 
-> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise run `npx -y ${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest} analyze` before reviewing.
+> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze` before reviewing.
 
 ## Checklist
 

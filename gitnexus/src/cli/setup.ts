@@ -311,10 +311,6 @@ async function installClaudeCodeHooks(result: SetupResult, mcpPackageSpec: strin
         "let cliPath = path.resolve(__dirname, '..', '..', 'dist', 'cli', 'index.js');",
         `let cliPath = ${jsonCli};`
       );
-      content = content.replace(
-        "const DEFAULT_NPX_SPEC = '@veewo/gitnexus@latest';",
-        `const DEFAULT_NPX_SPEC = ${JSON.stringify(mcpPackageSpec)};`,
-      );
       await fs.writeFile(dest, content, 'utf-8');
     } catch {
       // Script not found in source — skip

@@ -15,7 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawnSync } = require('child_process');
-const DEFAULT_NPX_SPEC = '@veewo/gitnexus@latest';
+const DEFAULT_NPX_SPEC = '';
 const DEFAULT_PACKAGE_NAME = '@veewo/gitnexus';
 
 function normalizeNpxSpec(raw) {
@@ -150,6 +150,7 @@ function runGitNexusCli(cliPath, args, cwd, timeout, npxSpec) {
       { encoding: 'utf-8', timeout, cwd, stdio: ['pipe', 'pipe', 'pipe'] }
     );
   }
+  if (!npxSpec) return null;
   // On Windows, invoke npx.cmd directly (no shell needed)
   return spawnSync(
     isWin ? 'npx.cmd' : 'npx',
@@ -179,7 +180,7 @@ function handlePreToolUse(input) {
   let result = '';
   try {
     const child = runGitNexusCli(cliPath, ['augment', '--', pattern], cwd, 7000, npxSpec);
-    if (!child.error && child.status === 0) {
+    if (child && !child.error && child.status === 0) {
       result = child.stderr || '';
     }
   } catch { /* graceful failure */ }
@@ -248,10 +249,14 @@ function handlePostToolUse(input) {
   const npxSpec = resolveNpxSpec();
   const analyzeArgs = `analyze${hadEmbeddings ? ' --embeddings' : ''}`;
   const analyzeCmd = `gitnexus ${analyzeArgs}`;
-  const fallbackCmd = `npx -y ${npxSpec} ${analyzeArgs}`;
+  const fallbackCmd = npxSpec
+    ? `npx -y ${npxSpec} ${analyzeArgs}`
+    : null;
   sendHookResponse('PostToolUse',
     `GitNexus index is stale (last indexed: ${lastCommit ? lastCommit.slice(0, 7) : 'never'}). ` +
-    `Run \`${analyzeCmd}\` (or \`${fallbackCmd}\`) to update the knowledge graph.`
+    (fallbackCmd
+      ? `Run \`${analyzeCmd}\` (or \`${fallbackCmd}\`) to update the knowledge graph.`
+      : `Run \`${analyzeCmd}\` to update the knowledge graph. If local CLI is unavailable, populate ~/.gitnexus/config.json via \`gitnexus setup --cli-spec <packageSpec>\` first.`)
   );
 }
 

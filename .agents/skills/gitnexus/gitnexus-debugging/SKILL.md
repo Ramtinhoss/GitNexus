@@ -23,7 +23,7 @@ description: "Use when the user is debugging a bug, tracing an error, or asking 
 5. gitnexus_cypher({query: "MATCH path..."})                 → Custom traces if needed
 ```
 
-> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise run `npx -y ${GITNEXUS_CLI_SPEC:-@veewo/gitnexus@latest} analyze`.
+> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
 
 ## Checklist
 
