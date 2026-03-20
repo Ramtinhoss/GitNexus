@@ -22,4 +22,8 @@ This project is indexed by GitNexus as **GitNexus** (2983 symbols, 6734 relation
 | Tools, resources, schema reference | `.agents/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.agents/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
+## Release
+
+For version bumps, tags, GitHub release copy, distribution checks, or agent install release prompts, read `DISTRIBUTION.md` first.
+
 <!-- gitnexus:end -->
