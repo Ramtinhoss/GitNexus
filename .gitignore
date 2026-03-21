@@ -60,6 +60,10 @@ repomix-output*
 # Design docs (local only)
 docs/plans/
 
+# Local workspace metadata
+.codex/
+.obsidian/
+
 gitnexus/test/fixtures/mini-repo/*.md
 gitnexus/test/fixtures/mini-repo/.agents/
 gitnexus/test/fixtures/mini-repo/.claude
