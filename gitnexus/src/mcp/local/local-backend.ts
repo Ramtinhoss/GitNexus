@@ -1628,6 +1628,8 @@ export class LocalBackend {
 
   private async impact(repo: RepoHandle, params: {
     target: string;
+    target_uid?: string;
+    file_path?: string;
     direction: 'upstream' | 'downstream';
     maxDepth?: number;
     relationTypes?: string[];
@@ -1651,6 +1653,8 @@ export class LocalBackend {
 
   private async _impactImpl(repo: RepoHandle, params: {
     target: string;
+    target_uid?: string;
+    file_path?: string;
     direction: 'upstream' | 'downstream';
     maxDepth?: number;
     relationTypes?: string[];
@@ -1659,24 +1663,41 @@ export class LocalBackend {
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
     
-    const { target, direction } = params;
+    const { target, target_uid, file_path, direction } = params;
     const maxDepth = params.maxDepth || 3;
+    const usesDefaultRelationTypes = !params.relationTypes || params.relationTypes.length === 0;
     const rawRelTypes = params.relationTypes && params.relationTypes.length > 0
       ? params.relationTypes.filter(t => VALID_RELATION_TYPES.has(t))
       : ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS'];
     const relationTypes = rawRelTypes.length > 0 ? rawRelTypes : ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS'];
     const includeTests = params.includeTests ?? false;
     const minConfidence = params.minConfidence ?? 0;
+    const shouldBridgeClassMethods = usesDefaultRelationTypes;
 
     const relTypeFilter = relationTypes.map(t => `'${t}'`).join(', ');
     const confidenceFilter = minConfidence > 0 ? ` AND r.confidence >= ${minConfidence}` : '';
 
+    const targetQueryParts: string[] = [];
+    const targetParams: Record<string, any> = { targetName: target };
+    if (target_uid) {
+      targetQueryParts.push('n.id = $targetUid');
+      targetParams.targetUid = target_uid;
+    } else if (file_path) {
+      targetQueryParts.push('n.name = $targetName');
+      targetQueryParts.push('n.filePath CONTAINS $filePath');
+      targetParams.filePath = file_path;
+    } else if (target.includes('/') || target.includes(':')) {
+      targetQueryParts.push('(n.id = $targetName OR n.name = $targetName)');
+    } else {
+      targetQueryParts.push('n.name = $targetName');
+    }
+
     const targets = await executeParameterized(repo.id, `
       MATCH (n)
-      WHERE n.name = $targetName
+      WHERE ${targetQueryParts.join(' AND ')}
       RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath
-      LIMIT 1
-    `, { targetName: target });
+      LIMIT 10
+    `, targetParams);
     if (targets.length === 0) return { error: `Target '${target}' not found` };
     
     const sym = targets[0];
@@ -1685,13 +1706,66 @@ export class LocalBackend {
     const impacted: any[] = [];
     const visited = new Set<string>([symId]);
     let frontier = [symId];
+    let frontierKindById = new Map<string, string>([[symId, sym.type || sym[2] || '']]);
     let traversalComplete = true;
     
     for (let depth = 1; depth <= maxDepth && frontier.length > 0; depth++) {
       const nextFrontier: string[] = [];
       
+      let traversalFrontier = [...frontier];
+
+      // Bridge class-like symbols through HAS_METHOD so class-level impact includes method-level dependencies.
+      if (shouldBridgeClassMethods) {
+        if (frontier.length > 0) {
+          const bridgeIdList = frontier.map(id => `'${id.replace(/'/g, "''")}'`).join(', ');
+          try {
+            const bridgeRows = await executeQuery(repo.id, `
+              MATCH (container)-[r:CodeRelation {type: 'HAS_METHOD'}]->(method)
+              WHERE container.id IN [${bridgeIdList}]${confidenceFilter}
+              RETURN container.id AS containerId, method.id AS methodId, method.name AS methodName, labels(method)[0] AS methodType, method.filePath AS methodFilePath
+            `);
+
+            for (const bridge of bridgeRows) {
+              const methodId = bridge.methodId || bridge[1];
+              const methodType = bridge.methodType || bridge[3];
+              if (!methodId) continue;
+              if (!frontierKindById.has(methodId)) {
+                frontierKindById.set(methodId, methodType || '');
+              }
+
+              if (direction === 'upstream') {
+                traversalFrontier.push(methodId);
+              } else {
+                const methodFilePath = bridge.methodFilePath || bridge[4] || '';
+                if (!includeTests && isTestFilePath(methodFilePath)) continue;
+                if (!visited.has(methodId)) {
+                  visited.add(methodId);
+                  nextFrontier.push(methodId);
+                  impacted.push({
+                    depth,
+                    id: methodId,
+                    name: bridge.methodName || bridge[2],
+                    type: methodType,
+                    filePath: methodFilePath,
+                    relationType: 'HAS_METHOD',
+                    confidence: 1.0,
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            logQueryError('impact:class-method-bridge', e);
+            traversalComplete = false;
+            break;
+          }
+        }
+      }
+
+      // de-dupe traversal frontier (class + bridged methods)
+      traversalFrontier = [...new Set(traversalFrontier)];
+
       // Batch frontier nodes into a single Cypher query per depth level
-      const idList = frontier.map(id => `'${id.replace(/'/g, "''")}'`).join(', ');
+      const idList = traversalFrontier.map(id => `'${id.replace(/'/g, "''")}'`).join(', ');
       const query = direction === 'upstream'
         ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, labels(caller)[0] AS type, caller.filePath AS filePath, r.type AS relType, r.confidence AS confidence`
         : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, labels(callee)[0] AS type, callee.filePath AS filePath, r.type AS relType, r.confidence AS confidence`;
@@ -1708,11 +1782,15 @@ export class LocalBackend {
           if (!visited.has(relId)) {
             visited.add(relId);
             nextFrontier.push(relId);
+            const relType = rel.type || rel[3];
+            if (!frontierKindById.has(relId)) {
+              frontierKindById.set(relId, relType || '');
+            }
             impacted.push({
               depth,
               id: relId,
               name: rel.name || rel[2],
-              type: rel.type || rel[3],
+              type: relType,
               filePath,
               relationType: rel.relType || rel[5],
               confidence: rel.confidence || rel[6] || 1.0,
