@@ -44,6 +44,148 @@ function normalizePath(filePath: string): string {
   return String(filePath || '').replace(/\\/g, '/');
 }
 
+type QueryScopePreset = 'unity-gameplay' | 'unity-all';
+
+const UNITY_GAMEPLAY_INCLUDE_PREFIXES = ['assets/'];
+const UNITY_GAMEPLAY_EXCLUDE_PREFIXES = [
+  'assets/plugins/',
+  'packages/',
+  'library/',
+  'projectsettings/',
+  'usersettings/',
+  'temp/',
+];
+const UNITY_PLUGIN_INTENT_TOKENS = new Set(['plugin', 'plugins', 'fmod', 'steam', 'crash', 'sdk', 'package']);
+const QUERY_STOP_WORDS = new Set([
+  'the', 'and', 'for', 'from', 'with', 'that', 'this', 'into',
+  'using', 'use', 'in', 'on', 'of', 'to', 'a', 'an',
+]);
+
+export interface ExpandedSymbolCandidate {
+  id: string;
+  name: string;
+  type: string;
+  filePath: string;
+  startLine?: number;
+  endLine?: number;
+}
+
+function tokenizeQuery(query: string): string[] {
+  const normalized = String(query || '').toLowerCase();
+  return normalized
+    .split(/[^a-z0-9_]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2 && !QUERY_STOP_WORDS.has(token));
+}
+
+function matchesAnyPrefix(pathLower: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => pathLower.startsWith(prefix));
+}
+
+function isUnityPluginPath(filePath: string): boolean {
+  const p = normalizePath(filePath).toLowerCase();
+  return p.startsWith('assets/plugins/') || p.startsWith('packages/') || p.startsWith('library/packagecache/');
+}
+
+function isUnityGameplayPath(filePath: string): boolean {
+  const p = normalizePath(filePath).toLowerCase();
+  return p.startsWith('assets/') && !isUnityPluginPath(p);
+}
+
+function resolveQueryScopePreset(scopePreset?: string): QueryScopePreset | undefined {
+  if (!scopePreset) return undefined;
+  const normalized = String(scopePreset).trim().toLowerCase();
+  if (normalized === 'unity-gameplay' || normalized === 'unity-all') {
+    return normalized as QueryScopePreset;
+  }
+  return undefined;
+}
+
+export function filterBm25ResultsByScopePreset<T extends { filePath?: string }>(
+  rows: T[],
+  scopePreset?: string,
+): T[] {
+  const preset = resolveQueryScopePreset(scopePreset);
+  if (!preset || preset === 'unity-all') return rows;
+
+  if (preset === 'unity-gameplay') {
+    return rows.filter((row) => {
+      const p = normalizePath(row.filePath || '').toLowerCase();
+      if (!p) return false;
+      if (!matchesAnyPrefix(p, UNITY_GAMEPLAY_INCLUDE_PREFIXES)) return false;
+      if (matchesAnyPrefix(p, UNITY_GAMEPLAY_EXCLUDE_PREFIXES)) return false;
+      return true;
+    });
+  }
+
+  return rows;
+}
+
+function scoreExpandedSymbolForQuery(
+  symbol: ExpandedSymbolCandidate,
+  queryTokens: string[],
+  scopePreset?: string,
+): number {
+  const name = String(symbol.name || '').toLowerCase();
+  const filePath = normalizePath(symbol.filePath || '').toLowerCase();
+  const pathText = filePath.replace(/[^a-z0-9_]+/g, ' ');
+  const hasPluginIntent = queryTokens.some((token) => UNITY_PLUGIN_INTENT_TOKENS.has(token));
+  let score = 0;
+
+  for (const token of queryTokens) {
+    if (name === token) score += 8;
+    else if (name.includes(token)) score += 3;
+    if (pathText.includes(token)) score += 1;
+  }
+
+  if (queryTokens.length > 0) {
+    const fileName = filePath.split('/').pop() || '';
+    const fileNameNoExt = fileName.replace(/\.[a-z0-9]+$/i, '');
+    if (queryTokens.includes(fileNameNoExt)) {
+      score += 2;
+    }
+  }
+
+  if (isUnityPluginPath(filePath) && !hasPluginIntent) {
+    score -= scopePreset === 'unity-gameplay' ? 10 : 4;
+  } else if (scopePreset === 'unity-gameplay' && isUnityGameplayPath(filePath)) {
+    score += 2;
+  }
+
+  return score;
+}
+
+export function rankExpandedSymbolsForQuery(
+  symbols: ExpandedSymbolCandidate[],
+  query: string,
+  limit: number = 3,
+  scopePreset?: string,
+): ExpandedSymbolCandidate[] {
+  const queryTokens = tokenizeQuery(query);
+  return [...symbols]
+    .sort((a, b) => {
+      const scoreDelta = scoreExpandedSymbolForQuery(b, queryTokens, scopePreset)
+        - scoreExpandedSymbolForQuery(a, queryTokens, scopePreset);
+      if (scoreDelta !== 0) return scoreDelta;
+      const aLine = a.startLine ?? Number.MAX_SAFE_INTEGER;
+      const bLine = b.startLine ?? Number.MAX_SAFE_INTEGER;
+      if (aLine !== bLine) return aLine - bLine;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    })
+    .slice(0, Math.max(1, limit));
+}
+
+function getUnityPathScoreMultiplier(filePath: string, queryTokens: string[], scopePreset?: string): number {
+  const hasPluginIntent = queryTokens.some((token) => UNITY_PLUGIN_INTENT_TOKENS.has(token));
+  if (isUnityPluginPath(filePath) && !hasPluginIntent) {
+    return scopePreset === 'unity-gameplay' ? 0.1 : 0.45;
+  }
+  if (scopePreset === 'unity-gameplay' && isUnityGameplayPath(filePath)) {
+    return 1.15;
+  }
+  return 1;
+}
+
 function bindingIdentity(binding: ResolvedUnityBinding): string {
   return [
     normalizePath(binding.resourcePath),
@@ -442,6 +584,7 @@ export class LocalBackend {
     limit?: number;
     max_symbols?: number;
     include_content?: boolean;
+    scope_preset?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
       return { error: 'query parameter is required and cannot be empty.' };
@@ -457,7 +600,7 @@ export class LocalBackend {
     // Step 1: Run hybrid search to get matching symbols
     const searchLimit = processLimit * maxSymbolsPerProcess; // fetch enough raw results
     const [bm25Results, semanticResults] = await Promise.all([
-      this.bm25Search(repo, searchQuery, searchLimit),
+      this.bm25Search(repo, searchQuery, searchLimit, params.scope_preset),
       this.semanticSearch(repo, searchQuery, searchLimit),
     ]);
     
@@ -639,8 +782,9 @@ export class LocalBackend {
   /**
    * BM25 keyword search helper - uses LadybugDB FTS for always-fresh results
    */
-  private async bm25Search(repo: RepoHandle, query: string, limit: number): Promise<any[]> {
+  private async bm25Search(repo: RepoHandle, query: string, limit: number, scopePreset?: string): Promise<any[]> {
     const { searchFTSFromLbug } = await import('../../core/search/bm25-index.js');
+    const queryTokens = tokenizeQuery(query);
     let bm25Results;
     try {
       bm25Results = await searchFTSFromLbug(query, limit, repo.id);
@@ -648,29 +792,45 @@ export class LocalBackend {
       console.error('GitNexus: BM25/FTS search failed (FTS indexes may not exist) -', err.message);
       return [];
     }
-    
+
+    bm25Results = filterBm25ResultsByScopePreset(bm25Results, scopePreset);
     const results: any[] = [];
-    
+
     for (const bm25Result of bm25Results) {
       const fullPath = bm25Result.filePath;
+      const adjustedScore = Number(bm25Result.score || 0) * getUnityPathScoreMultiplier(fullPath, queryTokens, scopePreset);
       try {
         const symbols = await executeParameterized(repo.id, `
           MATCH (n)
           WHERE n.filePath = $filePath
           RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine, n.endLine AS endLine
-          LIMIT 3
+          LIMIT 50
         `, { filePath: fullPath });
-        
+
         if (symbols.length > 0) {
-          for (const sym of symbols) {
-            results.push({
-              nodeId: sym.id || sym[0],
+          const rankedSymbols = rankExpandedSymbolsForQuery(
+            symbols.map((sym) => ({
+              id: sym.id || sym[0],
               name: sym.name || sym[1],
               type: sym.type || sym[2],
               filePath: sym.filePath || sym[3],
               startLine: sym.startLine || sym[4],
               endLine: sym.endLine || sym[5],
-              bm25Score: bm25Result.score,
+            })),
+            query,
+            3,
+            scopePreset,
+          );
+
+          for (const sym of rankedSymbols) {
+            results.push({
+              nodeId: sym.id,
+              name: sym.name,
+              type: sym.type,
+              filePath: sym.filePath,
+              startLine: sym.startLine,
+              endLine: sym.endLine,
+              bm25Score: adjustedScore,
             });
           }
         } else {
@@ -679,7 +839,7 @@ export class LocalBackend {
             name: fileName,
             type: 'File',
             filePath: bm25Result.filePath,
-            bm25Score: bm25Result.score,
+            bm25Score: adjustedScore,
           });
         }
       } catch {
@@ -688,12 +848,12 @@ export class LocalBackend {
           name: fileName,
           type: 'File',
           filePath: bm25Result.filePath,
-          bm25Score: bm25Result.score,
+          bm25Score: adjustedScore,
         });
       }
     }
-    
-    return results;
+
+    return results.sort((a, b) => (Number(b.bm25Score || 0) - Number(a.bm25Score || 0)));
   }
 
   /**

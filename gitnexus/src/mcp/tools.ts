@@ -53,6 +53,9 @@ Returns results grouped by process (execution flow):
 - definitions: standalone types/interfaces not in any process
 
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
+Supports optional scope controls for noisy codebases:
+- scope_preset=unity-gameplay to prioritize project gameplay code and suppress plugin-heavy paths.
+- scope_preset=unity-all (default behavior) to keep full Unity search scope.
 
 Includes optional Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
@@ -67,6 +70,11 @@ Includes optional Unity retrieval contract:
         limit: { type: 'number', description: 'Max processes to return (default: 5)', default: 5 },
         max_symbols: { type: 'number', description: 'Max symbols per process (default: 10)', default: 10 },
         include_content: { type: 'boolean', description: 'Include full symbol source code (default: false)', default: false },
+        scope_preset: {
+          type: 'string',
+          enum: ['unity-gameplay', 'unity-all'],
+          description: 'Optional retrieval preset. unity-gameplay reduces plugin/package noise in Unity projects.',
+        },
         unity_resources: {
           type: 'string',
           enum: ['off', 'on', 'auto'],
