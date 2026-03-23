@@ -5,7 +5,7 @@ description: "Use when the user needs to run GitNexus CLI commands like analyze/
 
 # GitNexus CLI Commands
 
-Resolve command runner once, then use it consistently in the session. After `setup`, treat `~/.gitnexus/config.json` as the only npx version source:
+Use one command alias in the session so every CLI/MCP call stays on one version line. After `setup`, treat `~/.gitnexus/config.json` as the only npx version source.
 
 ```bash
 if command -v gitnexus >/dev/null 2>&1; then
