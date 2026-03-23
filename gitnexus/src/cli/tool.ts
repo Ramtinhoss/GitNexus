@@ -63,6 +63,7 @@ export async function queryCommand(queryText: string, options?: {
   goal?: string;
   limit?: string;
   content?: boolean;
+  scopePreset?: 'unity-gameplay' | 'unity-all';
   unityResources?: UnityResourcesMode;
   unityHydration?: UnityHydrationMode;
 }): Promise<void> {
@@ -78,6 +79,7 @@ export async function queryCommand(queryText: string, options?: {
     goal: options?.goal,
     limit: options?.limit ? parseInt(options.limit) : undefined,
     include_content: options?.content ?? false,
+    scope_preset: options?.scopePreset,
     unity_resources: options?.unityResources,
     unity_hydration_mode: options?.unityHydration,
     repo: options?.repo,

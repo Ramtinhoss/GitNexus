@@ -100,6 +100,7 @@ program
   .option('-g, --goal <text>', 'What you want to find')
   .option('-l, --limit <n>', 'Max processes to return (default: 5)')
   .option('--content', 'Include full symbol source code')
+  .option('--scope-preset <preset>', 'Scope preset for retrieval: unity-gameplay|unity-all')
   .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
   .action(createLazyAction(() => import('./tool.js'), 'queryCommand'));
