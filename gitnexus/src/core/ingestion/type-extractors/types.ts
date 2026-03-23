@@ -16,8 +16,10 @@ export type InitializerExtractor = (node: SyntaxNode, env: Map<string, string>, 
 /** Scans an AST node for untyped `var = callee()` patterns for return-type inference.
  *  Returns { varName, calleeName } if the node matches, undefined otherwise.
  *  `receiverClassName` — optional hint for method calls on known receivers
- *  (e.g. $this->getUser() in PHP provides the enclosing class name). */
-export type ConstructorBindingScanner = (node: SyntaxNode) => { varName: string; calleeName: string; receiverClassName?: string } | undefined;
+ *  (e.g. $this->getUser() in PHP provides the enclosing class name).
+ *  `inferredTypeName` — optional direct type hint from safe generic invocations
+ *  (e.g. `var x = GetComponentInParent<User>()` gives `User`). */
+export type ConstructorBindingScanner = (node: SyntaxNode) => { varName: string; calleeName: string; receiverClassName?: string; inferredTypeName?: string } | undefined;
 
 /** Extracts a return type string from a method/function definition node.
  *  Used for languages where return types are expressed in comments (e.g. YARD @return [Type])
