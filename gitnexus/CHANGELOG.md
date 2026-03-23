@@ -2,6 +2,25 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.8] - 2026-03-23
+
+> Stable release notes comparing `v1.3.11` -> `v1.4.8`.
+
+### Added
+- Expanded type resolution through Phases 4-7 with constructor/self-super inference, doc-comment return typing, chained-call and pattern analysis, and broader resolver coverage across supported languages.
+- Added Ruby CLI/web support, stronger Kotlin/Swift ingestion paths, AST decorator entrypoint hints, and `.gitignore` / `.gitnexusignore` aware file discovery.
+- Added benchmark and regression coverage for scoped CLI guidance, hook config resolution, Unity retrieval quality, and agent-context workflows.
+
+### Changed
+- Migrated the storage/runtime backend from KuzuDB to LadybugDB and shifted Unity resource retrieval to summary-first persistence with compact/parity lazy hydration at query time.
+- Standardized workflow-facing setup, analyze, status, and hook guidance around local `gitnexus` first with npx fallback resolved from `~/.gitnexus/config.json`, and persisted the selected CLI package spec during `setup`.
+- Refreshed release/install documentation, generated agent context, bundled skills, and hook scripts to use consistent scoped `@veewo/gitnexus` command guidance.
+
+### Fixed
+- Fixed status/analyze recovery when GitNexus metadata exists but the LadybugDB store is missing, and reduced duplicate Unity parity seed loads under concurrency with singleflight plus idle-bounded caching.
+- Fixed impact handling to return structured partial results instead of crashing and restored `HAS_METHOD` / `OVERRIDES` relation coverage.
+- Fixed CLI and workflow reliability issues including stdout routing, dynamic skill installation, postinstall permissions, same-directory Python imports, unavailable native parser fallback, multi-repo tool test guidance, and Vitest worker `EPIPE` noise.
+
 ## [1.4.8-rc.2] - 2026-03-20
 
 ### Changed
