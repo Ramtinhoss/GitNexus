@@ -209,7 +209,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
 
   describe('PreToolUse — silent without gitnexus CLI', () => {
     // PreToolUse tries to spawn `gitnexus augment` which won't be available in CI.
-    // Verify it fails gracefully (no output, no crash).
+    // Verify it fails gracefully and returns promptly (no output, no crash).
 
     it('handles Grep pattern gracefully when CLI is unavailable', () => {
       const result = runHook(hookPath, {
@@ -219,9 +219,7 @@ describe.each(HOOKS)('hooks e2e ($name)', ({ name, path: hookPath }) => {
         cwd: tmpDir,
       });
 
-      // Should not crash — status is 0 if it exits cleanly, or null if the
-      // spawned `gitnexus augment` hangs and the 10s timeout kills the process.
-      expect(result.status === 0 || result.status === null).toBe(true);
+      expect(result.status).toBe(0);
     });
 
     it('ignores patterns shorter than 3 chars', () => {

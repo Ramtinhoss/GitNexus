@@ -11,6 +11,12 @@ export default defineConfig({
     setupFiles: ['test/setup.ts'],
     teardownTimeout: 3000,
     dangerouslyIgnoreUnhandledErrors: true, // LadybugDB N-API destructor segfaults on fork exit — not a test failure
+    onUnhandledError(error) {
+      const message = String(error?.message || '');
+      if (message.includes('[vitest-pool]: Worker forks emitted error.')) {
+        return false;
+      }
+    },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
