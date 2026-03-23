@@ -650,6 +650,30 @@ describe('C# return type inference via var + invocation', () => {
   });
 });
 
+describe('C# var receiver inference from generic invocation', () => {
+  let result: PipelineResult;
+
+  beforeAll(async () => {
+    result = await runPipelineFromRepo(
+      path.join(FIXTURES, 'csharp-generic-var-receiver'),
+      () => {},
+    );
+  }, 60000);
+
+  it('resolves user.Save() to User#Save from GetComponentInParent<User>() type argument', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const userSave = calls.find(c =>
+      c.target === 'Save' && c.source === 'Run' && c.targetFilePath.includes('User.cs'),
+    );
+    expect(userSave).toBeDefined();
+
+    const repoSave = calls.find(c =>
+      c.target === 'Save' && c.source === 'Run' && c.targetFilePath.includes('Repo.cs'),
+    );
+    expect(repoSave).toBeUndefined();
+  });
+});
+
 describe('C# null-conditional call resolution (user?.Save())', () => {
   let result: PipelineResult;
 
