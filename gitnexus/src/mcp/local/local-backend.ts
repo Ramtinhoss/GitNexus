@@ -990,21 +990,68 @@ export class LocalBackend {
     const sym = symbols[0];
     const symId = sym.id || sym[0];
 
-    // Categorized incoming refs
-    const incomingRows = await executeParameterized(repo.id, `
+    // Direct incoming refs for the selected symbol.
+    const directIncomingRows = await executeParameterized(repo.id, `
       MATCH (caller)-[r:CodeRelation]->(n {id: $symId})
       WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
       RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath, labels(caller)[0] AS kind
       LIMIT 30
     `, { symId });
 
-    // Categorized outgoing refs
-    const outgoingRows = await executeParameterized(repo.id, `
+    // Direct outgoing refs for the selected symbol.
+    const directOutgoingRows = await executeParameterized(repo.id, `
       MATCH (n {id: $symId})-[r:CodeRelation]->(target)
       WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
       RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath, labels(target)[0] AS kind
       LIMIT 30
     `, { symId });
+
+    const kind = sym.type || sym[2];
+    const symIdLower = String(symId).toLowerCase();
+    const isMethodContainer = new Set(['Class', 'Interface', 'Struct', 'Trait', 'Impl', 'Record']).has(kind)
+      || symIdLower.startsWith('class:')
+      || symIdLower.startsWith('interface:')
+      || symIdLower.startsWith('struct:')
+      || symIdLower.startsWith('trait:')
+      || symIdLower.startsWith('impl:')
+      || symIdLower.startsWith('record:');
+    let incomingRows = [...directIncomingRows];
+    let outgoingRows = [...directOutgoingRows];
+
+    if (isMethodContainer) {
+      const methodIncomingRows = await executeParameterized(repo.id, `
+        MATCH (n {id: $symId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
+        MATCH (caller)-[r:CodeRelation]->(m)
+        WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
+        RETURN r.type AS relType, caller.id AS uid, caller.name AS name, caller.filePath AS filePath, labels(caller)[0] AS kind
+        LIMIT 60
+      `, { symId });
+
+      const methodOutgoingRows = await executeParameterized(repo.id, `
+        MATCH (n {id: $symId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
+        MATCH (m)-[r:CodeRelation]->(target)
+        WHERE r.type IN ['CALLS', 'IMPORTS', 'EXTENDS', 'IMPLEMENTS']
+        RETURN r.type AS relType, target.id AS uid, target.name AS name, target.filePath AS filePath, labels(target)[0] AS kind
+        LIMIT 60
+      `, { symId });
+
+      const dedupe = (rows: any[]) => {
+        const seen = new Set<string>();
+        const out: any[] = [];
+        for (const row of rows) {
+          const relType = row.relType || row[0] || '';
+          const uidVal = row.uid || row[1] || '';
+          const key = `${relType}:${uidVal}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push(row);
+        }
+        return out;
+      };
+
+      incomingRows = dedupe([...directIncomingRows, ...methodIncomingRows]);
+      outgoingRows = dedupe([...directOutgoingRows, ...methodOutgoingRows]);
+    }
 
     // Process participation
     let processRows: any[] = [];
@@ -1037,7 +1084,7 @@ export class LocalBackend {
       symbol: {
         uid: sym.id || sym[0],
         name: sym.name || sym[1],
-        kind: sym.type || sym[2],
+        kind,
         filePath: sym.filePath || sym[3],
         startLine: sym.startLine || sym[4],
         endLine: sym.endLine || sym[5],
@@ -1045,6 +1092,8 @@ export class LocalBackend {
       },
       incoming: categorize(incomingRows),
       outgoing: categorize(outgoingRows),
+      directIncoming: categorize(directIncomingRows),
+      directOutgoing: categorize(directOutgoingRows),
       processes: processRows.map((r: any) => ({
         id: r.pid || r[0],
         name: r.label || r[1],

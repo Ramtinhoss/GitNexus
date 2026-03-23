@@ -70,6 +70,23 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(calleeNames).toContain('hash');
     });
 
+    it('context tool aggregates method-level relations for class symbols and keeps direct relations separate', async () => {
+      const result = await backend.callTool('context', { name: 'AuthService' });
+      expect(result).not.toHaveProperty('error');
+      expect(result.status).toBe('found');
+      expect(result.symbol.name).toBe('AuthService');
+
+      // Aggregated via HAS_METHOD -> method CALLS graph
+      expect(result.incoming?.calls?.map((r: any) => r.name)).toContain('login');
+      expect(result.outgoing?.calls?.map((r: any) => r.name)).toContain('validate');
+
+      // Direct class-level relations remain available and separate.
+      expect(result.directIncoming).toBeDefined();
+      expect(result.directOutgoing).toBeDefined();
+      expect(result.directIncoming.calls || []).toHaveLength(0);
+      expect(result.directOutgoing.calls || []).toHaveLength(0);
+    });
+
     it('impact tool returns upstream dependents', async () => {
       const result = await backend.callTool('impact', {
         target: 'validate',

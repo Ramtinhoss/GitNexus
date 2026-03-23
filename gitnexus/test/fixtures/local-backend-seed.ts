@@ -23,6 +23,10 @@ export const LOCAL_BACKEND_SEED_DATA = [
    CREATE (a)-[:CodeRelation {type: 'CALLS', confidence: 1.0, reason: 'direct', step: 0}]->(b)`,
   `MATCH (a:Function), (b:Function) WHERE a.id = 'func:login' AND b.id = 'func:hash'
    CREATE (a)-[:CodeRelation {type: 'CALLS', confidence: 0.9, reason: 'import-resolved', step: 0}]->(b)`,
+  `MATCH (a:Function), (b:Method) WHERE a.id = 'func:login' AND b.id = 'method:AuthService.authenticate'
+   CREATE (a)-[:CodeRelation {type: 'CALLS', confidence: 1.0, reason: 'member-call', step: 0}]->(b)`,
+  `MATCH (a:Method), (b:Function) WHERE a.id = 'method:AuthService.authenticate' AND b.id = 'func:validate'
+   CREATE (a)-[:CodeRelation {type: 'CALLS', confidence: 1.0, reason: 'delegate', step: 0}]->(b)`,
   `MATCH (a:Function), (c:Community) WHERE a.id = 'func:login' AND c.id = 'comm:auth'
    CREATE (a)-[:CodeRelation {type: 'MEMBER_OF', confidence: 1.0, reason: '', step: 0}]->(c)`,
   `MATCH (a:Function), (p:Process) WHERE a.id = 'func:login' AND p.id = 'proc:login-flow'
