@@ -22,4 +22,9 @@ This project is indexed by GitNexus as **GitNexus** (3019 symbols, 6830 relation
 | Tools, resources, schema reference | `.agents/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.agents/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
+## Release
+
+For version bumps, tags, GitHub release copy, distribution checks, or agent install release prompts, read [`DISTRIBUTION.md`](/Users/nantasmac/projects/agentic/GitNexus/DISTRIBUTION.md) first.
+That workflow defines the required bilingual release format, user-facing changelog rules, upstream release-link rule, and the agent-facing one-line install prompt.
+
 <!-- gitnexus:end -->

@@ -81,7 +81,7 @@ Workflow-facing files include:
 7. Commit release changes.
 8. Create the matching annotated tag.
 9. Push branch and tag.
-10. Draft the GitHub release page using the template below.
+10. Create or update the GitHub release page with `gh` using the release-page standard below.
 
 ## Verification Commands
 
@@ -149,47 +149,96 @@ git push origin v1.4.8-rc.2
 
 ## GitHub Release Page Template
 
+## GitHub Release Page Standard
+
+Every GitHub release page for this repository must follow these rules:
+
+1. Write **bilingual release notes**, with **Chinese first** and **English second**.
+2. Write from a **user-facing perspective**:
+   - describe feature changes, installation/setup improvements, retrieval improvements, compatibility changes, and bug fixes
+   - avoid internal roadmap or implementation-progress terms such as phase numbers, benchmark gate jargon, or refactor-only summaries
+3. If this release includes merged upstream work, summarize it as:
+   - "Synced upstream `<version>` changes"
+   - include a direct link to the upstream release page
+   - avoid dumping internal cherry-pick or merge history into the notes
+4. Include the **agent-facing one-line install prompt** instead of ad hoc install instructions when the release needs an agent workflow prompt.
+5. Use `gh release create` or `gh release edit` to ensure the GitHub page matches the final verified wording.
+
+Recommended release-page structure:
+
+- `## 中文更新说明`
+- version / tag / package / compare range
+- `### 主要更新`
+- `### 修复`
+- `### 上游同步` when applicable
+- `### Agent 安装提示`
+- `## English Release Notes`
+- version / tag / package / compare range
+- `### Highlights`
+- `### Fixes`
+- `### Upstream Sync` when applicable
+- `### Agent Install Prompt`
+
 Title:
 
 ```text
-v1.4.8-rc.2
+v1.4.8
 ```
 
 Release body template:
 
 ```md
-## Summary
+## 中文更新说明
 
-- Version: `1.4.8-rc.2`
-- Tag: `v1.4.8-rc.2`
-- Package: `@veewo/gitnexus@1.4.8-rc.2`
+- 版本：`1.4.8`
+- 标签：`v1.4.8`
+- 包名：`@veewo/gitnexus@1.4.8`
+- 对比范围：[`v1.3.11...v1.4.8`](https://github.com/nantas/GitNexus/compare/v1.3.11...v1.4.8)
 
-## Highlights
+### 主要更新
 
-- Standardized workflow-facing command guidance to load npx fallback from `~/.gitnexus/config.json` after `setup`.
-- Removed misleading hard-coded `@latest` fallback examples across docs, skills, fixtures, and hook scripts.
-- Added regression coverage for workflow version guidance and hook config resolution.
+- 用面向用户的语言概括本次版本的功能变化。
+- 只描述用户能感知到的改进，例如安装流程、检索质量、多语言支持、稳定性提升。
 
-## Agent Install Prompt
+### 修复
 
-阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@1.4.8-rc.2，请先确认 agent 类型与索引范围，再按文档执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
+- 用面向用户的语言概括本次版本的 bug 修复与兼容性修复。
 
-## Install
+### 上游同步
 
-```bash
-npm install -g @veewo/gitnexus@1.4.8-rc.2
-gitnexus setup --cli-spec @veewo/gitnexus@1.4.8-rc.2
+- 已同步上游 `v1.4.7` 的变更，详见上游 release 页面：<https://github.com/abhigyanpatwari/GitNexus/releases/tag/v1.4.7>
+
+### Agent 安装提示
+
+```text
+阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@1.4.8，请先确认 agent 类型与索引范围，再按文档执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
 ```
 
-## Verification
+## English Release Notes
 
-- `cd gitnexus && npm run build`
-- `cd gitnexus && npx vitest run test/unit/workflow-version-guidance.test.ts test/unit/scoped-cli-commands.test.ts test/integration/hooks-e2e.test.ts`
-- `cd gitnexus && node --test dist/cli/setup.test.js`
+- Version: `1.4.8`
+- Tag: `v1.4.8`
+- Package: `@veewo/gitnexus@1.4.8`
+- Compare: [`v1.3.11...v1.4.8`](https://github.com/nantas/GitNexus/compare/v1.3.11...v1.4.8)
 
-## Changelog
+### Highlights
 
-See [`gitnexus/CHANGELOG.md`](./gitnexus/CHANGELOG.md).
+- Summarize the user-visible feature changes in plain language.
+- Focus on install/setup improvements, retrieval improvements, language support, and stability.
+
+### Fixes
+
+- Summarize the user-visible bug fixes in plain language.
+
+### Upstream Sync
+
+- This release also includes the upstream `v1.4.7` changes. See the upstream release page: <https://github.com/abhigyanpatwari/GitNexus/releases/tag/v1.4.7>
+
+### Agent Install Prompt
+
+```text
+Read /path/to/repo/INSTALL-GUIDE.md, then complete GitNexus installation, setup, index build, and retrieval acceptance in the current repository; if this release is pinned to @veewo/gitnexus@1.4.8, confirm the agent type and indexing scope first, then follow the guide, and ensure all npx fallbacks resolve through ~/.gitnexus/config.json.
+```
 ```
 
 ## Agent-Facing One-Line Prompt
