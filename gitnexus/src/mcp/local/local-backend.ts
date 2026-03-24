@@ -10,6 +10,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { initLbug, executeQuery, executeParameterized, closeLbug, isLbugReady } from '../core/lbug-adapter.js';
 import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
+import type { UnityUiTraceGoal } from '../../core/unity/ui-trace.js';
+import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
 import type { UnityContextPayload, UnityHydrationMeta } from './unity-enrichment.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
@@ -551,6 +553,8 @@ export class LocalBackend {
         return this.context(repo, params);
       case 'impact':
         return this.impact(repo, params);
+      case 'unity_ui_trace':
+        return this.unityUiTrace(repo, params);
       case 'detect_changes':
         return this.detectChanges(repo, params);
       case 'rename':
@@ -564,6 +568,30 @@ export class LocalBackend {
         return this.overview(repo, params);
       default:
         throw new Error(`Unknown tool: ${method}`);
+    }
+  }
+
+  private async unityUiTrace(repo: RepoHandle, params: {
+    target?: string;
+    goal?: UnityUiTraceGoal;
+  }): Promise<any> {
+    const target = String(params?.target || '').trim();
+    const goal = params?.goal;
+    if (!target) {
+      return { error: 'target parameter is required and cannot be empty.' };
+    }
+    if (goal !== 'asset_refs' && goal !== 'template_refs' && goal !== 'selector_bindings') {
+      return { error: 'goal must be one of: asset_refs, template_refs, selector_bindings.' };
+    }
+
+    try {
+      return await runUnityUiTrace({
+        repoRoot: repo.repoPath,
+        target,
+        goal,
+      });
+    } catch (err: any) {
+      return { error: err?.message || 'unity_ui_trace failed' };
     }
   }
 

@@ -223,6 +223,30 @@ Each edit is tagged with confidence:
     },
   },
   {
+    name: 'unity_ui_trace',
+    description: `Resolve Unity UI evidence chains (query-time only, no graph writes).
+
+Supports three goals:
+- asset_refs: which prefab/asset points to a target UXML
+- template_refs: which UXML templates are referenced by a target UXML
+- selector_bindings: static C# selector bindings traced to USS selectors
+
+Output enforces unique-result policy and includes path+line evidence hops.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: 'Target C# class or UXML path' },
+        goal: {
+          type: 'string',
+          enum: ['asset_refs', 'template_refs', 'selector_bindings'],
+          description: 'Trace goal',
+        },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['target', 'goal'],
+    },
+  },
+  {
     name: 'impact',
     description: `Analyze the blast radius of changing a code symbol.
 Returns affected symbols grouped by depth, plus risk assessment, affected execution flows, and affected modules.

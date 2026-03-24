@@ -124,6 +124,13 @@ program
   .action(createLazyAction(() => import('./unity-bindings.js'), 'unityBindingsCommand'));
 
 program
+  .command('unity-ui-trace <target>')
+  .description('Query-time Unity UI evidence tracing (asset_refs|template_refs|selector_bindings)')
+  .option('-r, --repo <name>', 'Target repository (omit if only one indexed)')
+  .option('--goal <goal>', 'Trace goal: asset_refs|template_refs|selector_bindings', 'asset_refs')
+  .action(createLazyAction(() => import('./tool.js'), 'unityUiTraceCommand'));
+
+program
   .command('impact <target>')
   .description('Blast radius analysis: what breaks if you change a symbol')
   .option('-d, --direction <dir>', 'upstream (dependants) or downstream (dependencies)', 'upstream')

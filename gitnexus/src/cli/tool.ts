@@ -18,6 +18,7 @@
 import { writeSync } from 'node:fs';
 import { LocalBackend } from '../mcp/local/local-backend.js';
 import type { UnityHydrationMode, UnityResourcesMode } from '../core/unity/options.js';
+import type { UnityUiTraceGoal } from '../core/unity/ui-trace.js';
 
 let _backend: LocalBackend | null = null;
 
@@ -55,6 +56,10 @@ function output(data: any): void {
     // Fallback: stderr (previous behavior, works on all platforms)
     process.stderr.write(text + '\n');
   }
+}
+
+function isUnityUiTraceGoal(value: string): value is UnityUiTraceGoal {
+  return value === 'asset_refs' || value === 'template_refs' || value === 'selector_bindings';
 }
 
 export async function queryCommand(queryText: string, options?: {
@@ -166,4 +171,31 @@ export async function cypherCommand(query: string, options?: {
     repo: options?.repo,
   });
   output(result);
+}
+
+export async function unityUiTraceCommand(target: string, options?: {
+  repo?: string;
+  goal?: string;
+}, deps?: {
+  backend?: { callTool: (method: string, params: any) => Promise<any> };
+  output?: (data: any) => void;
+}): Promise<void> {
+  if (!target?.trim()) {
+    console.error('Usage: gitnexus unity-ui-trace <target> --goal asset_refs|template_refs|selector_bindings');
+    process.exit(1);
+  }
+
+  const goal = String(options?.goal || 'asset_refs').trim();
+  if (!isUnityUiTraceGoal(goal)) {
+    console.error('Invalid --goal. Use one of: asset_refs, template_refs, selector_bindings');
+    process.exit(1);
+  }
+
+  const backend = deps?.backend || await getBackend();
+  const result = await backend.callTool('unity_ui_trace', {
+    target,
+    goal,
+    repo: options?.repo,
+  });
+  (deps?.output || output)(result);
 }
