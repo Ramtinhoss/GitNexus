@@ -153,6 +153,7 @@ gitnexus analyze --embeddings     # Enable embedding generation (slower, better 
 gitnexus analyze --verbose        # Log skipped files when parsers are unavailable
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI connection
+gitnexus unity-ui-trace <target> --goal <asset_refs|template_refs|selector_bindings>
 gitnexus list                    # List all indexed repositories
 gitnexus status                  # Show index status for current repo
 gitnexus clean                   # Delete index for current repo
@@ -164,17 +165,20 @@ gitnexus wiki --base-url <url>   # Wiki with custom LLM API base URL
 
 ### What Your AI Agent Gets
 
-**7 tools** exposed via MCP:
+**8 tools** exposed via MCP:
 
 | Tool               | What It Does                                                      | `repo` Param |
 | ------------------ | ----------------------------------------------------------------- | -------------- |
 | `list_repos`     | Discover all indexed repositories                                 | —             |
 | `query`          | Process-grouped hybrid search (BM25 + semantic + RRF)             | Optional       |
 | `context`        | 360-degree symbol view — categorized refs, process participation | Optional       |
+| `unity_ui_trace` | Unity UI evidence chains (query-time; no DB writes)               | Optional       |
 | `impact`         | Blast radius analysis with depth grouping and confidence          | Optional       |
 | `detect_changes` | Git-diff impact — maps changed lines to affected processes       | Optional       |
 | `rename`         | Multi-file coordinated rename with graph + text search            | Optional       |
 | `cypher`         | Raw Cypher graph queries                                          | Optional       |
+
+`unity_ui_trace` V1 is query-time only (no schema migration, no persisted UXML/USS edges).
 
 > When only one repo is indexed, the `repo` parameter is optional. With multiple repos, specify which one: `query({query: "auth", repo: "my-app"})`.
 
