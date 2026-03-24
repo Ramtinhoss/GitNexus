@@ -27,8 +27,8 @@ export function parseUxmlRefs(content: string): ParsedUxmlRefs {
       snippet: line.trim(),
     };
 
-    if (/<\s*Template\b/i.test(line)) templates.push(entry);
-    if (/<\s*Style\b/i.test(line)) styles.push(entry);
+    if (/<\s*(?:[A-Za-z_][\w.-]*\s*:\s*)?Template\b/i.test(line)) templates.push(entry);
+    if (/<\s*(?:[A-Za-z_][\w.-]*\s*:\s*)?Style\b/i.test(line)) styles.push(entry);
   }
 
   return { templates, styles };

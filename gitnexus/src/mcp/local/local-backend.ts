@@ -10,7 +10,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { initLbug, executeQuery, executeParameterized, closeLbug, isLbugReady } from '../core/lbug-adapter.js';
 import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
-import type { UnityUiTraceGoal } from '../../core/unity/ui-trace.js';
+import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../../core/unity/ui-trace.js';
 import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
 import type { UnityContextPayload, UnityHydrationMeta } from './unity-enrichment.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
@@ -574,14 +574,19 @@ export class LocalBackend {
   private async unityUiTrace(repo: RepoHandle, params: {
     target?: string;
     goal?: UnityUiTraceGoal;
+    selector_mode?: UnityUiSelectorMode;
   }): Promise<any> {
     const target = String(params?.target || '').trim();
     const goal = params?.goal;
+    const selectorMode = params?.selector_mode || 'balanced';
     if (!target) {
       return { error: 'target parameter is required and cannot be empty.' };
     }
     if (goal !== 'asset_refs' && goal !== 'template_refs' && goal !== 'selector_bindings') {
       return { error: 'goal must be one of: asset_refs, template_refs, selector_bindings.' };
+    }
+    if (selectorMode !== 'strict' && selectorMode !== 'balanced') {
+      return { error: 'selector_mode must be one of: strict, balanced.' };
     }
 
     try {
@@ -589,6 +594,7 @@ export class LocalBackend {
         repoRoot: repo.repoPath,
         target,
         goal,
+        selectorMode,
       });
     } catch (err: any) {
       return { error: err?.message || 'unity_ui_trace failed' };

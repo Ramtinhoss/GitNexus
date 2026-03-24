@@ -231,6 +231,10 @@ Supports three goals:
 - template_refs: which UXML templates are referenced by a target UXML
 - selector_bindings: static C# selector bindings traced to USS selectors
 
+Selector matching modes for selector_bindings:
+- balanced (default): match class tokens inside composite selectors (higher recall)
+- strict: only exact \`.className\` selectors (higher precision)
+
 Output enforces unique-result policy and includes path+line evidence hops.`,
     inputSchema: {
       type: 'object',
@@ -240,6 +244,11 @@ Output enforces unique-result policy and includes path+line evidence hops.`,
           type: 'string',
           enum: ['asset_refs', 'template_refs', 'selector_bindings'],
           description: 'Trace goal',
+        },
+        selector_mode: {
+          type: 'string',
+          enum: ['strict', 'balanced'],
+          description: 'Selector matching mode for selector_bindings (default: balanced)',
         },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
       },

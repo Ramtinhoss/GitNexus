@@ -18,7 +18,7 @@
 import { writeSync } from 'node:fs';
 import { LocalBackend } from '../mcp/local/local-backend.js';
 import type { UnityHydrationMode, UnityResourcesMode } from '../core/unity/options.js';
-import type { UnityUiTraceGoal } from '../core/unity/ui-trace.js';
+import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../core/unity/ui-trace.js';
 
 let _backend: LocalBackend | null = null;
 
@@ -60,6 +60,10 @@ function output(data: any): void {
 
 function isUnityUiTraceGoal(value: string): value is UnityUiTraceGoal {
   return value === 'asset_refs' || value === 'template_refs' || value === 'selector_bindings';
+}
+
+function isUnityUiSelectorMode(value: string): value is UnityUiSelectorMode {
+  return value === 'strict' || value === 'balanced';
 }
 
 export async function queryCommand(queryText: string, options?: {
@@ -176,6 +180,7 @@ export async function cypherCommand(query: string, options?: {
 export async function unityUiTraceCommand(target: string, options?: {
   repo?: string;
   goal?: string;
+  selectorMode?: string;
 }, deps?: {
   backend?: { callTool: (method: string, params: any) => Promise<any> };
   output?: (data: any) => void;
@@ -190,11 +195,17 @@ export async function unityUiTraceCommand(target: string, options?: {
     console.error('Invalid --goal. Use one of: asset_refs, template_refs, selector_bindings');
     process.exit(1);
   }
+  const selectorMode = String(options?.selectorMode || 'balanced').trim();
+  if (!isUnityUiSelectorMode(selectorMode)) {
+    console.error('Invalid --selector-mode. Use one of: strict, balanced');
+    process.exit(1);
+  }
 
   const backend = deps?.backend || await getBackend();
   const result = await backend.callTool('unity_ui_trace', {
     target,
     goal,
+    selector_mode: selectorMode,
     repo: options?.repo,
   });
   (deps?.output || output)(result);

@@ -8,7 +8,7 @@ test('unity-ui-trace command forwards params and prints result', async () => {
 
   await unityUiTraceCommand(
     'EliteBossScreenController',
-    { goal: 'selector_bindings', repo: 'mini-unity-ui' },
+    { goal: 'selector_bindings', selectorMode: 'strict', repo: 'mini-unity-ui' },
     {
       backend: {
         async callTool(method: string, params: any) {
@@ -26,5 +26,6 @@ test('unity-ui-trace command forwards params and prints result', async () => {
   assert.equal(calls[0].method, 'unity_ui_trace');
   assert.equal(calls[0].params.target, 'EliteBossScreenController');
   assert.equal(calls[0].params.goal, 'selector_bindings');
+  assert.equal(calls[0].params.selector_mode, 'strict');
   assert.equal(printed.goal, 'selector_bindings');
 });

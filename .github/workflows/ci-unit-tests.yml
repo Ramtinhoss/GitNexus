@@ -26,6 +26,10 @@ jobs:
           --coverage.reportOnFailure=true
         working-directory: gitnexus
 
+      - name: Run unity-ui-trace smoke
+        run: npm run test:unity-ui-trace:smoke
+        working-directory: gitnexus
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

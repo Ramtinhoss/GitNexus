@@ -22,3 +22,17 @@ test('extracts uxml template/style refs with line evidence', async () => {
   assert.equal(out.templates[0].line > 0, true);
   assert.equal(out.styles[0].line > 0, true);
 });
+
+test('supports namespaced ui:Template and ui:Style tags', () => {
+  const source = [
+    '<ui:UXML xmlns:ui="UnityEngine.UIElements">',
+    '  <ui:Style src="project://database/Assets/UI/Styles/A.uss?guid=11111111111111111111111111111111&amp;type=3" />',
+    '  <ui:Template src="project://database/Assets/UI/Components/B.uxml?guid=22222222222222222222222222222222&amp;type=3" />',
+    '</ui:UXML>',
+  ].join('\n');
+  const out = parseUxmlRefs(source);
+  assert.equal(out.styles.length, 1);
+  assert.equal(out.templates.length, 1);
+  assert.equal(out.styles[0].guid, '11111111111111111111111111111111');
+  assert.equal(out.templates[0].guid, '22222222222222222222222222222222');
+});

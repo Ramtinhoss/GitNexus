@@ -128,6 +128,7 @@ program
   .description('Query-time Unity UI evidence tracing (asset_refs|template_refs|selector_bindings)')
   .option('-r, --repo <name>', 'Target repository (omit if only one indexed)')
   .option('--goal <goal>', 'Trace goal: asset_refs|template_refs|selector_bindings', 'asset_refs')
+  .option('--selector-mode <mode>', 'Selector matching mode for selector_bindings: strict|balanced', 'balanced')
   .action(createLazyAction(() => import('./tool.js'), 'unityUiTraceCommand'));
 
 program
