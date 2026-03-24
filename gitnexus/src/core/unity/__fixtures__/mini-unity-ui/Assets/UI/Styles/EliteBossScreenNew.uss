@@ -1,0 +1,7 @@
+.elite-boss-screen {
+  flex-grow: 1;
+}
+
+.tooltip-box {
+  color: rgb(255, 245, 196);
+}
