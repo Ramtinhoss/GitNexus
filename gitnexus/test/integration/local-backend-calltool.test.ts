@@ -102,6 +102,29 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(depNames).toContain('login');
     });
 
+    it('impact honors target_uid disambiguation over target name', async () => {
+      const result = await backend.callTool('impact', {
+        target: 'definitely-not-a-real-symbol-name',
+        target_uid: 'func:validate',
+        direction: 'upstream',
+      });
+      expect(result).not.toHaveProperty('error');
+      expect(result.target.id).toBe('func:validate');
+      expect(result.target.name).toBe('validate');
+    });
+
+    it('impact honors file_path disambiguation for duplicate symbol names', async () => {
+      const result = await backend.callTool('impact', {
+        target: 'authenticate',
+        file_path: 'src/base.ts',
+        direction: 'downstream',
+        relationTypes: ['OVERRIDES'],
+      });
+      expect(result).not.toHaveProperty('error');
+      expect(result.target.name).toBe('authenticate');
+      expect(result.target.filePath).toBe('src/base.ts');
+    });
+
     it('query tool returns results for keyword search', async () => {
       const result = await backend.callTool('query', { query: 'login' });
       expect(result).not.toHaveProperty('error');
@@ -173,6 +196,17 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(result).not.toHaveProperty('error');
       // AuthService has no outgoing CALLS edges, only HAS_METHOD
       expect(result.impactedCount).toBe(0);
+    });
+
+    it('bridges class-target upstream traversal through HAS_METHOD by default', async () => {
+      const result = await backend.callTool('impact', {
+        target: 'AuthService',
+        direction: 'upstream',
+      });
+      expect(result).not.toHaveProperty('error');
+      const d1 = result.byDepth[1] || result.byDepth['1'] || [];
+      const names = d1.map((d: any) => d.name);
+      expect(names).toContain('login');
     });
   });
 
