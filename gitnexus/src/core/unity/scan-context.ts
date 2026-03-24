@@ -4,6 +4,7 @@ import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { glob } from 'glob';
 import { buildAssetMetaIndex, buildMetaIndex } from './meta-index.js';
+import { buildUnityUiMetaIndex } from './ui-meta-index.js';
 import type { UnityResourceGuidHit } from './resource-hit-scanner.js';
 import type { UnityObjectBlock } from './yaml-object-graph.js';
 import { buildSerializableTypeIndexFromFiles } from './serialized-type-index.js';
@@ -33,6 +34,8 @@ export interface UnityScanContext {
   serializableSymbols: Set<string>;
   hostFieldTypeHints: Map<string, Map<string, string>>;
   assetGuidToPath?: Map<string, string>;
+  uxmlGuidToPath?: Map<string, string>;
+  ussGuidToPath?: Map<string, string>;
   resourceDocCache: Map<string, UnityObjectBlock[]>;
 }
 
@@ -66,6 +69,7 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
   const guidToResourceHits = await buildGuidHitIndex(input.repoRoot, scriptPathToGuid, resourceFiles);
   const assetMetaFiles = resolveAssetMetaFiles(input.repoRoot, input.scopedPaths, scriptFiles, resourceFiles);
   const assetGuidToPath = await buildAssetMetaIndex(input.repoRoot, { metaFiles: assetMetaFiles });
+  const uiMetaIndex = await buildUnityUiMetaIndex(input.repoRoot, { scopedPaths: input.scopedPaths });
   const symbolToCanonicalScriptPath = buildCanonicalScriptPathIndex(
     symbolToScriptPaths,
     scriptPathToGuid,
@@ -82,6 +86,8 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     serializableSymbols: serializableTypeIndex.serializableSymbols,
     hostFieldTypeHints: serializableTypeIndex.hostFieldTypeHints,
     assetGuidToPath,
+    uxmlGuidToPath: uiMetaIndex.uxmlGuidToPath,
+    ussGuidToPath: uiMetaIndex.ussGuidToPath,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
 }
@@ -161,10 +167,21 @@ export function buildUnityScanContextFromSeed(input: {
   }
 
   const assetGuidToPath = new Map<string, string>();
+  const uxmlGuidToPath = new Map<string, string>();
+  const ussGuidToPath = new Map<string, string>();
   for (const [guid, assetPath] of Object.entries(seed.assetGuidToPath || {})) {
     const normalizedPath = normalizeSlashes(String(assetPath || '').trim());
     if (!guid || !normalizedPath) continue;
     assetGuidToPath.set(guid, normalizedPath);
+    assetGuidToPath.set(guid.toLowerCase(), normalizedPath);
+    if (normalizedPath.endsWith('.uxml')) {
+      uxmlGuidToPath.set(guid, normalizedPath);
+      uxmlGuidToPath.set(guid.toLowerCase(), normalizedPath);
+    }
+    if (normalizedPath.endsWith('.uss')) {
+      ussGuidToPath.set(guid, normalizedPath);
+      ussGuidToPath.set(guid.toLowerCase(), normalizedPath);
+    }
   }
 
   return {
@@ -176,6 +193,8 @@ export function buildUnityScanContextFromSeed(input: {
     serializableSymbols: new Set(),
     hostFieldTypeHints: new Map<string, Map<string, string>>(),
     assetGuidToPath,
+    uxmlGuidToPath,
+    ussGuidToPath,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
 }
