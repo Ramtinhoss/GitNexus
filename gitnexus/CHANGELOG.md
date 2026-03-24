@@ -2,6 +2,24 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.9-rc] - 2026-03-24
+
+### Added
+- Added a query-time `selector_mode` control for Unity UI trace `selector_bindings` (`balanced` default for higher recall, `strict` for precision-first exact selector matches).
+- Added selector result ranking metadata in Unity UI trace with `score` and user-facing `confidence` (`high|medium|low`) to prioritize likely-correct evidence chains.
+- Added a dedicated Unity UI trace smoke test command (`test:unity-ui-trace:smoke`) and wired it into CI unit workflow for continuous regression checks.
+- Added neonspark sample regression reports under `docs/reports/` to baseline `asset_refs/template_refs/selector_bindings` hit-rate and latency.
+
+### Changed
+- Improved Unity UI trace target resolution for `.uxml` path inputs to enforce exact-path uniqueness before canonical-name expansion, reducing false `ambiguous` diagnostics.
+- Expanded selector binding matching in `balanced` mode to support class-token hits inside composite USS selectors (for example `.isLock .patchPreview-icon`), increasing real-project recall.
+- Updated GitNexus skill workflow guides (CLI + Guide, repo and installed copies) with Unity UI trace usage, selector-mode tradeoffs, and output interpretation (`score/confidence/diagnostics`).
+
+### Fixed
+- Fixed Unity UXML reference parsing to correctly recognize namespaced tags (`ui:Template` / `ui:Style`) for `template_refs` coverage in real Unity projects.
+- Fixed Unity asset reference scanning stability and recall by moving to stream-based scanning with GUID-prefilter candidate narrowing and multiline YAML object-block matching.
+- Fixed `selector_bindings` misses for path targets by preferring `UXML -> resource -> m_Script -> C#` tracing before filename-canonical fallback.
+
 ## [1.4.8] - 2026-03-23
 
 > Stable release notes comparing `v1.3.11` -> `v1.4.8`.
