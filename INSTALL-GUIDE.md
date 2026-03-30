@@ -4,7 +4,7 @@
 
 1. 全局安装 `@veewo/gitnexus` CLI
 2. 执行 `gitnexus setup`（按用户选择 `global/project` + `--agent`）
-3. 与用户确认索引范围，生成 `.gitnexus/sync-manifest.txt`
+3. 按“已保存 scope 优先”策略确定索引范围（优先读取 `.gitnexus/sync-manifest.txt`）
 4. 执行 `gitnexus analyze` 构建索引
 5. 完成检索测试验收（`query/context/impact/cypher`）
 
@@ -46,22 +46,25 @@ fi
 把下面这句话直接发给 agent：
 
 ```text
-阅读 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；按文档先与我确认 agent 类型与索引范围，再执行。
+阅读 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；按文档先确认 agent 类型，并先检查 .gitnexus/sync-manifest.txt 是否已有 scope，若已有则优先复用后再执行。
 ```
 
 如果你在本地使用，可改为本地路径：
 
 ```text
-阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；按文档先与我确认 agent 类型与索引范围，再执行。
+阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；按文档先确认 agent 类型，并先检查 .gitnexus/sync-manifest.txt 是否已有 scope，若已有则优先复用后再执行。
 ```
 
-## 0. 执行前必须确认（先问用户）
+## 0. 执行前必须确认（先检查，再确认）
 
-在执行命令前，先确认这 4 项：
+在执行命令前，先确认这 4 项（第 3 项必须遵循“已保存 scope 优先”）：
 
 1. `setup` 作用域：`global` 或 `project`
 2. 目标 agent：`claude` / `opencode` / `codex`
-3. 索引范围：全量还是 scoped（若 scoped，确认要包含/排除的目录）
+3. 索引范围决策：
+   - 先检查仓库内 `.gitnexus/sync-manifest.txt` 是否存在且非空
+   - 若存在：默认按该 manifest 走 scoped analyze，先向用户复述“将复用已有 scope”，不再先问“全量还是 scoped”
+   - 若不存在：再询问用户是全量还是新建 scoped（新建时确认包含/排除目录）
 4. 验收输入：至少 2-3 个业务关键词，以及 1-2 个关键符号名（用于 `context/impact`）
 
 ## 1. 安装与版本确认
@@ -148,9 +151,26 @@ cd "$REPO_ROOT"
 ALIAS="$(basename "$REPO_ROOT")-core"
 ```
 
-## 4. 生成 scoped manifest（若用户选择 scoped）
+## 4. Scope 决策与 manifest 处理（已保存 scope 优先）
 
 manifest 统一放在：`.gitnexus/sync-manifest.txt`
+
+执行顺序（必须遵守）：
+
+1. 先检查 `.gitnexus/sync-manifest.txt` 是否存在且非空
+2. 若存在：直接复用该 manifest 作为 scoped 输入，并向用户确认“本次将复用已有 scope”
+3. 若不存在：才进入“全量 / 新 scoped”选择
+4. 只有用户明确要求改 scope 时，才覆盖写 manifest
+
+```bash
+if [ -s .gitnexus/sync-manifest.txt ]; then
+  echo "Using existing scope manifest: .gitnexus/sync-manifest.txt"
+else
+  echo "No existing scope manifest found."
+fi
+```
+
+若用户选择新建或覆盖 scoped manifest：
 
 ```bash
 mkdir -p .gitnexus
@@ -161,14 +181,15 @@ packages
 EOF
 ```
 
-注意：
+注意（必须遵守）：
 
 - 这里的目录内容必须先由用户确认，不要直接套用固定模板
-- 若用户选择全量索引，可跳过 manifest，直接全量 analyze
+- 若已存在 manifest，默认复用；除非用户明确要求改 scope，否则不要覆盖
+- 仅在“无 manifest 且用户选择全量”时，才跳过 manifest 并执行全量 analyze
 
 ## 5. 执行 Analyze
 
-### 5.1 Scoped（推荐）
+### 5.1 Scoped（优先：复用已有 manifest）
 
 ```bash
 $GN analyze \

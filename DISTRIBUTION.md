@@ -254,7 +254,7 @@ Release body template:
 ### Agent 安装提示
 
 ```text
-阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@1.4.8，请先确认 agent 类型与索引范围，再按文档执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
+阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@1.4.8，请先确认 agent 类型，并先检查 .gitnexus/sync-manifest.txt 是否已有 scope（若有则优先复用），再按文档执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
 ```
 
 ## English Release Notes
@@ -280,7 +280,7 @@ Release body template:
 ### Agent Install Prompt
 
 ```text
-Read /path/to/repo/INSTALL-GUIDE.md, then complete GitNexus installation, setup, index build, and retrieval acceptance in the current repository; if this release is pinned to @veewo/gitnexus@1.4.8, confirm the agent type and indexing scope first, then follow the guide, and ensure all npx fallbacks resolve through ~/.gitnexus/config.json.
+Read /path/to/repo/INSTALL-GUIDE.md, then complete GitNexus installation, setup, index build, and retrieval acceptance in the current repository; if this release is pinned to @veewo/gitnexus@1.4.8, confirm the agent type first, then check whether .gitnexus/sync-manifest.txt already stores scope (reuse it when present), then follow the guide, and ensure all npx fallbacks resolve through ~/.gitnexus/config.json.
 ```
 ```
 
@@ -289,7 +289,7 @@ Read /path/to/repo/INSTALL-GUIDE.md, then complete GitNexus installation, setup,
 Generic template:
 
 ```text
-阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@<VERSION>，请先确认 agent 类型与索引范围，再按文档执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
+阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@<VERSION>，请先确认 agent 类型，并先检查 .gitnexus/sync-manifest.txt 是否已有 scope（若有则优先复用），再按文档执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
 ```
 
 ## Definition of Done (DoD)
