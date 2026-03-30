@@ -2,6 +2,18 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.9] - 2026-03-30
+
+### Added
+- Added a repository configuration/state reference document at `docs/gitnexus-config-files.md` and linked it from generated agent context (`AGENTS.md`/`CLAUDE.md`) workflow instructions.
+
+### Changed
+- Removed repository identity and index stats from generated `AGENTS.md`/`CLAUDE.md` context blocks to reduce cross-user merge conflicts.
+- Updated direct CLI tools (`query/context/impact/cypher/unity-ui-trace`) to auto-resolve default `repo` from local index metadata when `--repo` is omitted.
+
+### Fixed
+- Persisted canonical `repoId` into `.gitnexus/meta.json` during `analyze` and added backward-compatible fallback to global registry path matching when `repoId` is missing.
+
 ## [1.4.9-rc] - 2026-03-24
 
 ### Added

@@ -50,6 +50,7 @@ test('saveMeta/loadMeta persists analyzeOptions for future re-index reuse', asyn
 
   await saveMeta(storagePath, {
     repoPath: tmpDir,
+    repoId: 'neonspark-v1-subset',
     lastCommit: 'abc1234',
     indexedAt: '2026-03-12T00:00:00.000Z',
     analyzeOptions: {
@@ -68,4 +69,5 @@ test('saveMeta/loadMeta persists analyzeOptions for future re-index reuse', asyn
     repoAlias: 'neonspark-v1-subset',
     embeddings: true,
   });
+  assert.equal(meta?.repoId, 'neonspark-v1-subset');
 });

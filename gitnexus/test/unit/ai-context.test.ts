@@ -40,7 +40,7 @@ describe('generateAIContextFiles', () => {
     const content = await fs.readFile(claudeMdPath, 'utf-8');
     expect(content).toContain('gitnexus:start');
     expect(content).toContain('gitnexus:end');
-    expect(content).toContain('TestProject');
+    expect(content).not.toContain('This project is indexed by GitNexus as');
   });
 
   it('handles empty stats', async () => {

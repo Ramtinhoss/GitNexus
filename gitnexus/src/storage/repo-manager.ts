@@ -12,6 +12,7 @@ import os from 'os';
 
 export interface RepoMeta {
   repoPath: string;
+  repoId?: string;
   lastCommit: string;
   indexedAt: string;
   analyzeOptions?: {

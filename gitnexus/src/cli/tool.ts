@@ -16,9 +16,12 @@
  */
 
 import { writeSync } from 'node:fs';
+import path from 'node:path';
 import { LocalBackend } from '../mcp/local/local-backend.js';
 import type { UnityHydrationMode, UnityResourcesMode } from '../core/unity/options.js';
 import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../core/unity/ui-trace.js';
+import { getGitRoot } from '../storage/git.js';
+import { getStoragePaths, listRegisteredRepos, loadMeta } from '../storage/repo-manager.js';
 
 let _backend: LocalBackend | null = null;
 
@@ -66,6 +69,23 @@ function isUnityUiSelectorMode(value: string): value is UnityUiSelectorMode {
   return value === 'strict' || value === 'balanced';
 }
 
+async function resolveRepoOption(explicitRepo?: string): Promise<string | undefined> {
+  if (explicitRepo?.trim()) return explicitRepo.trim();
+
+  const gitRoot = getGitRoot(process.cwd());
+  if (!gitRoot) return undefined;
+
+  const { storagePath } = getStoragePaths(gitRoot);
+  const meta = await loadMeta(storagePath);
+  const repoId = typeof meta?.repoId === 'string' ? meta.repoId.trim() : '';
+  if (repoId) return repoId;
+
+  // Backward compatibility for indexes created before repoId persisted in meta.json.
+  const entries = await listRegisteredRepos({ validate: false });
+  const matched = entries.find((entry) => path.resolve(entry.path) === gitRoot);
+  return matched?.name || undefined;
+}
+
 export async function queryCommand(queryText: string, options?: {
   repo?: string;
   context?: string;
@@ -82,6 +102,7 @@ export async function queryCommand(queryText: string, options?: {
   }
 
   const backend = await getBackend();
+  const repo = await resolveRepoOption(options?.repo);
   const result = await backend.callTool('query', {
     query: queryText,
     task_context: options?.context,
@@ -91,7 +112,7 @@ export async function queryCommand(queryText: string, options?: {
     scope_preset: options?.scopePreset,
     unity_resources: options?.unityResources,
     unity_hydration_mode: options?.unityHydration,
-    repo: options?.repo,
+    repo,
   });
   output(result);
 }
@@ -110,6 +131,7 @@ export async function contextCommand(name: string, options?: {
   }
 
   const backend = await getBackend();
+  const repo = await resolveRepoOption(options?.repo);
   const result = await backend.callTool('context', {
     name: name || undefined,
     uid: options?.uid,
@@ -117,7 +139,7 @@ export async function contextCommand(name: string, options?: {
     include_content: options?.content ?? false,
     unity_resources: options?.unityResources,
     unity_hydration_mode: options?.unityHydration,
-    repo: options?.repo,
+    repo,
   });
   output(result);
 }
@@ -138,6 +160,7 @@ export async function impactCommand(target: string, options?: {
 
   try {
     const backend = await getBackend();
+    const repo = await resolveRepoOption(options?.repo);
     const result = await backend.callTool('impact', {
       target,
       target_uid: options?.uid,
@@ -146,7 +169,7 @@ export async function impactCommand(target: string, options?: {
       maxDepth: options?.depth ? parseInt(options.depth, 10) : undefined,
       minConfidence: options?.minConfidence ? parseFloat(options.minConfidence) : undefined,
       includeTests: options?.includeTests ?? false,
-      repo: options?.repo,
+      repo,
     });
     output(result);
   } catch (err: unknown) {
@@ -170,9 +193,10 @@ export async function cypherCommand(query: string, options?: {
   }
 
   const backend = await getBackend();
+  const repo = await resolveRepoOption(options?.repo);
   const result = await backend.callTool('cypher', {
     query,
-    repo: options?.repo,
+    repo,
   });
   output(result);
 }
@@ -202,11 +226,12 @@ export async function unityUiTraceCommand(target: string, options?: {
   }
 
   const backend = deps?.backend || await getBackend();
+  const repo = await resolveRepoOption(options?.repo);
   const result = await backend.callTool('unity_ui_trace', {
     target,
     goal,
     selector_mode: selectorMode,
-    repo: options?.repo,
+    repo,
   });
   (deps?.output || output)(result);
 }

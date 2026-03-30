@@ -60,13 +60,12 @@ function generateGitNexusContent(
   return `${GITNEXUS_START_MARKER}
 # GitNexus MCP
 
-This project is indexed by GitNexus as **${projectName}** (${stats.nodes || 0} symbols, ${stats.edges || 0} relationships, ${stats.processes || 0} execution flows).
-
 ## Always Start Here
 
 1. **Read \`gitnexus://repo/{name}/context\`** — codebase overview + check index freshness
 2. **Match your task to a skill below** and **read that skill file**
 3. **Follow the skill's workflow and checklist**
+4. **Follow config/state file rules:** \`docs/gitnexus-config-files.md\`
 
 > If step 1 warns the index is stale, ask user whether to rebuild index via \`gitnexus analyze\` when local CLI exists; otherwise resolve the pinned npx package spec from \`~/.gitnexus/config.json\` (\`cliPackageSpec\` first, then \`cliVersion\`) and run \`${reindexCmd}\` with that exact package spec (it reuses previous analyze scope/options by default; add \`--no-reuse-options\` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
 

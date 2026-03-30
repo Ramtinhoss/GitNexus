@@ -14,7 +14,7 @@ import { initLbug, loadGraphToLbug, getLbugStats, executeQuery, executeWithReuse
 // loaded when embeddings are not requested. This avoids crashes on Node
 // versions whose ABI is not yet supported by the native binary (#89).
 // disposeEmbedder intentionally not called — ONNX Runtime segfaults on cleanup (see #38)
-import { getStoragePaths, saveMeta, loadMeta, addToGitignore, registerRepo, getGlobalRegistryPath, loadCLIConfig, cleanupOldKuzuFiles } from '../storage/repo-manager.js';
+import { getStoragePaths, saveMeta, loadMeta, addToGitignore, registerRepo, getGlobalRegistryPath, loadCLIConfig, cleanupOldKuzuFiles, type RepoMeta } from '../storage/repo-manager.js';
 import { getCurrentCommit, isGitRepo, getGitRoot } from '../storage/git.js';
 import { generateAIContextFiles } from './ai-context.js';
 import { generateSkillFiles, type GeneratedSkillInfo } from './skill-gen.js';
@@ -395,7 +395,7 @@ export const analyzeCommand = async (
     embeddingCount = embResult?.[0]?.cnt ?? 0;
   } catch { /* table may not exist if embeddings never ran */ }
 
-  const meta = {
+  const meta: RepoMeta = {
     repoPath,
     lastCommit: currentCommit,
     indexedAt: new Date().toISOString(),
@@ -414,9 +414,10 @@ export const analyzeCommand = async (
       embeddings: embeddingCount,
     },
   };
+  const registeredRepo = await registerRepo(repoPath, meta, { repoAlias });
+  meta.repoId = registeredRepo.name;
   await saveMeta(storagePath, meta);
   await persistUnityParitySeed(storagePath, pipelineRuntime.unityResult?.paritySeed);
-  const registeredRepo = await registerRepo(repoPath, meta, { repoAlias });
   await addToGitignore(repoPath);
 
   const projectName = path.basename(repoPath);
