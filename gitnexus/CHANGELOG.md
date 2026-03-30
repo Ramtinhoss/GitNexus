@@ -4,15 +4,28 @@ All notable changes to GitNexus will be documented in this file.
 
 ## [1.4.9] - 2026-03-30
 
+> Stable release notes comparing `v1.4.8` -> `v1.4.9`.
+
 ### Added
-- Added a repository configuration/state reference document at `docs/gitnexus-config-files.md` and linked it from generated agent context (`AGENTS.md`/`CLAUDE.md`) workflow instructions.
+- Added Unity UI trace query controls and ranking signals:
+  - `selector_mode` for `selector_bindings` (`balanced` default, `strict` precision mode)
+  - result `score` and user-facing `confidence` (`high|medium|low`) for evidence prioritization
+- Added Unity UI trace smoke coverage (`test:unity-ui-trace:smoke`) and CI wiring for regression detection.
+- Added repository configuration/state reference documentation at `docs/gitnexus-config-files.md`, and linked it from generated agent context (`AGENTS.md`/`CLAUDE.md`).
 
 ### Changed
+- Improved Unity UI trace resolution and recall:
+  - enforce exact-path uniqueness for `.uxml` targets before canonical-name expansion
+  - support class-token matches inside composite USS selectors in `balanced` mode
+- Updated skill/workflow guidance for Unity UI trace usage, selector-mode tradeoffs, and output interpretation.
 - Removed repository identity and index stats from generated `AGENTS.md`/`CLAUDE.md` context blocks to reduce cross-user merge conflicts.
 - Updated direct CLI tools (`query/context/impact/cypher/unity-ui-trace`) to auto-resolve default `repo` from local index metadata when `--repo` is omitted.
 
 ### Fixed
-- Persisted canonical `repoId` into `.gitnexus/meta.json` during `analyze` and added backward-compatible fallback to global registry path matching when `repoId` is missing.
+- Fixed Unity UXML namespaced tag parsing (`ui:Template` / `ui:Style`) for better `template_refs` coverage.
+- Fixed Unity asset reference scanning stability/recall via streaming scan, GUID-prefilter narrowing, and multiline YAML object-block matching.
+- Fixed `selector_bindings` path-target misses by preferring `UXML -> resource -> m_Script -> C#` trace path before filename fallback.
+- Persisted canonical `repoId` into `.gitnexus/meta.json` during `analyze`, with backward-compatible fallback to global registry path matching when `repoId` is missing.
 
 ## [1.4.9-rc] - 2026-03-24
 
