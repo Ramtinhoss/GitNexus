@@ -104,7 +104,7 @@ Workflow-facing files include:
 7. Commit release changes.
 8. Create the matching annotated tag.
 9. Push branch and tag.
-10. Create or update the GitHub release page with `gh` using the release-page standard below.
+10. Create or update the GitHub release page with `gh` using the release-page standard below (manual step, not CI-owned).
 
 Execution policy by mode:
 
@@ -191,22 +191,19 @@ Every GitHub release page for this repository must follow these rules:
    - include a direct link to the upstream release page
    - avoid dumping internal cherry-pick or merge history into the notes
 4. Include the **agent-facing one-line install prompt** instead of ad hoc install instructions when the release needs an agent workflow prompt.
-5. Use `gh release create` or `gh release edit` only when CI auto-release is unavailable or non-compliant.
+5. Always use `gh release create` or `gh release edit` for the release page in this repository.
 
 ## CI vs Manual Release Page Ownership
 
-Current policy: CI-first with explicit fallback.
+Current policy: manual `gh` ownership.
 
-1. Prefer CI auto-release page generation from `.github/workflows/publish.yml`.
-2. If publish workflow succeeds and release body is acceptable, do not manually recreate it.
-3. If publish workflow fails before release step, or generated content does not meet release-page standard, use `gh release create` / `gh release edit` manually.
-4. Move to strict CI-only ownership only after at least one recent stable release confirms end-to-end success (CI green + acceptable release body) on this repository.
+1. Release page is always authored/updated via `gh`.
+2. CI publish workflow must not create or mutate GitHub release pages.
+3. If a release page already exists (for example created earlier), use `gh release edit` to reconcile it to this standard.
 
 Validation command before deciding ownership:
 
 ```bash
-gh run list --workflow publish.yml --limit 5
-gh run view <run-id> --json conclusion,jobs,url
 gh release view <tag> --json name,tagName,url,body
 ```
 
