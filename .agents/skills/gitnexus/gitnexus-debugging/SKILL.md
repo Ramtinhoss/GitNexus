@@ -25,6 +25,14 @@ description: "Use when the user is debugging a bug, tracing an error, or asking 
 
 > If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
 
+Debug escalation triggers:
+- If root-cause analysis depends on Unity serialized/resource binding interpretation, apply `_shared/unity-resource-binding-contract.md` and enforce compact-to-parity completeness checks (`needsParityRetry` gate) before conclusions.
+- If debugging concerns UIToolkit visual semantics, apply `_shared/unity-ui-trace-contract.md` with the UI semantic failure path:
+  1. `asset_refs`
+  2. `template_refs`
+  3. `selector_bindings`
+  4. strict re-check when ambiguity remains
+
 ## Checklist
 
 ```
@@ -34,6 +42,8 @@ description: "Use when the user is debugging a bug, tracing an error, or asking 
 - [ ] gitnexus_context to see callers and callees
 - [ ] For Unity retrieval, start with `unity_hydration_mode: "compact"` and inspect `hydrationMeta`
 - [ ] If `hydrationMeta.needsParityRetry === true`, rerun with `unity_hydration_mode: "parity"` before concluding root cause
+- [ ] Run `_shared/unity-resource-binding-contract.md` when lifecycle ambiguity depends on serialized/resource binding state
+- [ ] Run `_shared/unity-ui-trace-contract.md` for UIToolkit visual-semantic failures
 - [ ] Trace execution flow via process resource if applicable
 - [ ] gitnexus_cypher for custom call chain traces if needed
 - [ ] Read source files to confirm root cause
