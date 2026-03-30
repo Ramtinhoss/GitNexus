@@ -2,6 +2,18 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.10-rc] - 2026-03-30
+
+> Release candidate notes comparing `v1.4.9` -> `v1.4.10-rc`.
+
+### Added
+- Added shared workflow contracts for the main-matrix GitNexus skills, covering MCP/CLI routing, Unity resource-binding escalation, and Unity UI trace trigger ordering.
+
+### Changed
+- Updated the repository skill-matrix workflow guidance to enforce MCP-first analysis with explicit CLI fallback and stale-index recovery handoff.
+- Clarified role boundaries between `gitnexus-guide` (routing/index guidance), `gitnexus-cli` (command-operation manual), and scenario skills (contract-driven execution).
+- Added mandatory shared-contract references in `AGENTS.md` so Unity binding and UIToolkit visual-semantic trigger paths are consistently applied.
+
 ## [1.4.9] - 2026-03-30
 
 > Stable release notes comparing `v1.4.8` -> `v1.4.9`.
