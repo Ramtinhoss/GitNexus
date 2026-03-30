@@ -2,11 +2,13 @@
 
 This document is the maintainer release and distribution handbook for this repository.
 
-Current RC baseline on this branch:
+Current baseline should be derived dynamically (do not trust static text):
 
-- Package version: `1.4.8-rc.2`
-- Git tag: `v1.4.8-rc.2`
-- Release commit: `f62fafc`
+```bash
+node -p "require('./gitnexus/package.json').version"
+git tag --sort=-creatordate | sed -n '1,10p'
+git show --no-patch --decorate --oneline HEAD
+```
 
 ## Scope
 
@@ -17,6 +19,20 @@ Use this guide when you need to:
 - write GitHub release notes
 - publish agent-facing installation guidance
 - verify release assets before pushing or tagging
+
+## Release Trigger and Modes
+
+When user intent is explicit (for example: "发布 1.4.9", "release v1.4.9"), treat it as a release workflow trigger.
+
+Default mode is `full-release` unless user explicitly requests otherwise.
+
+| Mode | What to do |
+|------|------------|
+| `full-release` (default) | version/changelog update -> verification -> commit -> tag -> push branch+tag -> release page |
+| `prepare-only` | version/changelog update -> verification -> commit -> tag (no push, no release page) |
+| `publish-only` | no version edits; publish/release-page actions only for an existing pushed tag |
+
+If the user does not specify mode, run `full-release` end-to-end.
 
 This repository's distributable package lives under [`gitnexus/`](/Users/nantasmac/projects/agentic/GitNexus/gitnexus).
 The canonical release files are:
@@ -46,6 +62,13 @@ Tag format:
 
 - package `1.4.8-rc.2` -> git tag `v1.4.8-rc.2`
 - package `1.4.8` -> git tag `v1.4.8`
+
+Changelog compare baseline rules:
+
+- Stable release `X.Y.Z`: compare from previous stable tag to new stable tag.
+  - Example: `v1.4.8...v1.4.9`
+- RC release `X.Y.Z-rc.N`: compare from previous RC (or current stable if first RC) to new RC.
+  - Example: `v1.4.9-rc...v1.4.9-rc.2`
 
 ## Workflow Standard
 
@@ -82,6 +105,12 @@ Workflow-facing files include:
 8. Create the matching annotated tag.
 9. Push branch and tag.
 10. Create or update the GitHub release page with `gh` using the release-page standard below.
+
+Execution policy by mode:
+
+- `full-release`: execute all 10 steps.
+- `prepare-only`: execute through step 8 only.
+- `publish-only`: execute steps 9-10 only (requires an already prepared version/tag).
 
 ## Verification Commands
 
@@ -162,7 +191,24 @@ Every GitHub release page for this repository must follow these rules:
    - include a direct link to the upstream release page
    - avoid dumping internal cherry-pick or merge history into the notes
 4. Include the **agent-facing one-line install prompt** instead of ad hoc install instructions when the release needs an agent workflow prompt.
-5. Use `gh release create` or `gh release edit` to ensure the GitHub page matches the final verified wording.
+5. Use `gh release create` or `gh release edit` only when CI auto-release is unavailable or non-compliant.
+
+## CI vs Manual Release Page Ownership
+
+Current policy: CI-first with explicit fallback.
+
+1. Prefer CI auto-release page generation from `.github/workflows/publish.yml`.
+2. If publish workflow succeeds and release body is acceptable, do not manually recreate it.
+3. If publish workflow fails before release step, or generated content does not meet release-page standard, use `gh release create` / `gh release edit` manually.
+4. Move to strict CI-only ownership only after at least one recent stable release confirms end-to-end success (CI green + acceptable release body) on this repository.
+
+Validation command before deciding ownership:
+
+```bash
+gh run list --workflow publish.yml --limit 5
+gh run view <run-id> --json conclusion,jobs,url
+gh release view <tag> --json name,tagName,url,body
+```
 
 Recommended release-page structure:
 
@@ -182,7 +228,7 @@ Recommended release-page structure:
 Title:
 
 ```text
-v1.4.8
+v<version>
 ```
 
 Release body template:
@@ -249,18 +295,18 @@ Generic template:
 阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@<VERSION>，请先确认 agent 类型与索引范围，再按文档执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
 ```
 
-Current RC example:
+## Definition of Done (DoD)
 
-```text
-阅读 /Users/nantasmac/projects/agentic/GitNexus/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@1.4.8-rc.2，请先确认 agent 类型与索引范围，再按文档执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
-```
+A release task is complete only when all items below are true:
 
-## Current Release Record
-
-This branch currently contains:
-
-- release commit: `f62fafc`
-- release tag: `v1.4.8-rc.2`
-- package version: `1.4.8-rc.2`
-
-If these diverge, fix the branch before publishing.
+1. Package version/tag/changelog entry are consistent.
+2. Required verification commands completed successfully (or failures explicitly accepted by user).
+3. Commit and annotated tag exist locally.
+4. For `full-release`/`publish-only`: branch and tag are pushed.
+5. Release page exists and matches repository release-page standard.
+6. Final report includes:
+   - version
+   - release commit SHA
+   - tag
+   - workflow run URL/status (if CI path used)
+   - release page URL
