@@ -257,7 +257,10 @@ export const streamAllCSVsToDisk = async (
   const methodWriter = new BufferedCSVWriter(path.join(csvDir, 'method.csv'), methodHeader);
   const codeElemWriter = new BufferedCSVWriter(path.join(csvDir, 'codeelement.csv'), codeElementHeader);
   const communityWriter = new BufferedCSVWriter(path.join(csvDir, 'community.csv'), 'id,label,heuristicLabel,keywords,description,enrichedBy,cohesion,symbolCount');
-  const processWriter = new BufferedCSVWriter(path.join(csvDir, 'process.csv'), 'id,label,heuristicLabel,processType,stepCount,communities,entryPointId,terminalId');
+  const processWriter = new BufferedCSVWriter(
+    path.join(csvDir, 'process.csv'),
+    'id,label,heuristicLabel,processType,processSubtype,runtimeChainConfidence,sourceReasons,sourceConfidences,stepCount,communities,entryPointId,terminalId',
+  );
 
   // Multi-language node types share the same CSV shape (no isExported column)
   const multiLangHeader = 'id,name,filePath,startLine,endLine,content,description';
@@ -317,11 +320,21 @@ export const streamAllCSVsToDisk = async (
       case 'Process': {
         const communities = (node.properties as any).communities || [];
         const communitiesStr = `[${communities.map((c: string) => `'${c.replace(/'/g, "''")}'`).join(',')}]`;
+        const sourceReasons = (node.properties as any).sourceReasons || [];
+        const sourceReasonsStr = `[${sourceReasons.map((reason: string) => `'${String(reason).replace(/'/g, "''")}'`).join(',')}]`;
+        const sourceConfidences = (node.properties as any).sourceConfidences || [];
+        const sourceConfidencesStr = `[${sourceConfidences
+          .map((confidence: number) => Number.isFinite(confidence) ? String(confidence) : '0')
+          .join(',')}]`;
         await processWriter.addRow([
           escapeCSVField(node.id),
           escapeCSVField(node.properties.name || ''),
           escapeCSVField((node.properties as any).heuristicLabel || ''),
           escapeCSVField((node.properties as any).processType || ''),
+          escapeCSVField((node.properties as any).processSubtype || ''),
+          escapeCSVField((node.properties as any).runtimeChainConfidence || ''),
+          escapeCSVField(sourceReasonsStr),
+          escapeCSVField(sourceConfidencesStr),
           escapeCSVNumber((node.properties as any).stepCount, 0),
           escapeCSVField(communitiesStr),
           escapeCSVField((node.properties as any).entryPointId || ''),
