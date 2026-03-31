@@ -205,3 +205,39 @@ test('runSymbolScenario fails when compact context hydrationMeta.needsParityRetr
   assert.equal(out.assertions.pass, false);
   assert.ok(out.assertions.failures.some((f) => f.includes('hydrationMeta.needsParityRetry')));
 });
+
+test('runSymbolScenario fails when query(on) has no unity serialized/resource evidence', async () => {
+  const runner = {
+    context: async (input: Record<string, unknown>) => {
+      if (input.unity_resources === 'on') {
+        return {
+          status: 'found',
+          hydrationMeta: {
+            requestedMode: 'compact',
+            effectiveMode: 'compact',
+            isComplete: false,
+            needsParityRetry: true,
+          },
+          resourceBindings: [{ resourcePath: 'Assets/Prefabs/A.prefab', resourceType: 'prefab' }],
+          serializedFields: { scalarFields: [], referenceFields: [] },
+        };
+      }
+      return { status: 'found' };
+    },
+    query: async () => ({ process_symbols: [{ id: 'Class:A' }] }),
+    impact: async () => ({ impactedCount: 1 }),
+    cypher: async () => ({ rows: [] }),
+  };
+
+  const out = await runSymbolScenario(runner as any, {
+    symbol: 'MainUIManager',
+    kind: 'component',
+    objectives: ['verify query evidence gate'],
+    deepDivePlan: [{ tool: 'query', input: { query: 'MainUIManager', unity_resources: 'on' } }],
+  });
+
+  assert.equal(out.assertions.pass, false);
+  assert.ok(
+    out.assertions.failures.some((f) => f.includes('query(on) must include unity serialized/resource evidence')),
+  );
+});
