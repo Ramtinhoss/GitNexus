@@ -78,3 +78,10 @@ test('resolveFallbackStats prefers runtime fallback insert stats when available'
     { attempted: 12, succeeded: 3, failed: 9 },
   );
 });
+
+test('resolveFallbackStats derives attempted/failed from warnings when runtime stats are missing', () => {
+  assert.deepEqual(
+    resolveFallbackStats(['Class->File (7 edges): missing rel pair in schema'], undefined),
+    { attempted: 7, succeeded: 0, failed: 7 },
+  );
+});
