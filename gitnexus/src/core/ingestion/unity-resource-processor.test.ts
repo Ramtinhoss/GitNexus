@@ -13,6 +13,31 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = path.resolve(here, '../../../src/core/unity/__fixtures__/mini-unity');
 const symbols = ['Global', 'BattleMode', 'PlayerActor', 'MainUIManager'];
 
+const listRelativeFixtureFiles = async (root: string): Promise<string[]> => {
+  const out: string[] = [];
+  const stack = ['.'];
+
+  while (stack.length > 0) {
+    const relDir = stack.pop()!;
+    const absDir = path.join(root, relDir);
+    const entries = await fs.readdir(absDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const relPath = path.join(relDir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(relPath);
+        continue;
+      }
+      if (!entry.isFile()) {
+        continue;
+      }
+      out.push(relPath.startsWith('./') ? relPath.slice(2) : relPath);
+    }
+  }
+
+  return out;
+};
+
 test('processUnityResources does not emit UNITY_COMPONENT_IN or synthetic resource File nodes', async () => {
   const graph = createKnowledgeGraph();
 
@@ -103,6 +128,18 @@ test('processUnityResources persists UNITY_RESOURCE_SUMMARY in LadybugDB', async
       targetId: classId,
       confidence: 1.0,
       reason: '',
+    });
+  }
+
+  for (const relPath of await listRelativeFixtureFiles(fixtureRoot)) {
+    const normalized = relPath.replace(/\\/g, '/');
+    graph.addNode({
+      id: generateId('File', normalized),
+      label: 'File',
+      properties: {
+        name: path.basename(normalized),
+        filePath: normalized,
+      },
     });
   }
 
