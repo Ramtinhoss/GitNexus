@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateId } from '../../lib/utils.js';
 import { createKnowledgeGraph } from '../graph/graph.js';
+import { closeLbug, executeQuery, initLbug, loadGraphToLbug } from '../lbug/lbug-adapter.js';
 import { processUnityResources } from './unity-resource-processor.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -65,6 +68,61 @@ test('processUnityResources does not emit UNITY_COMPONENT_IN or synthetic resour
   assert.ok(result.timingsMs.scanContext >= 0);
   assert.ok(result.timingsMs.resolve >= 0);
   assert.ok(result.timingsMs.graphWrite > 0);
+});
+
+test('processUnityResources persists UNITY_RESOURCE_SUMMARY in LadybugDB', async () => {
+  const graph = createKnowledgeGraph();
+
+  for (const symbol of symbols) {
+    const filePath = `Assets/Scripts/${symbol}.cs`;
+    const fileId = generateId('File', filePath);
+    const classId = generateId('Class', `${filePath}:${symbol}`);
+
+    graph.addNode({
+      id: fileId,
+      label: 'File',
+      properties: {
+        name: `${symbol}.cs`,
+        filePath,
+      },
+    });
+
+    graph.addNode({
+      id: classId,
+      label: 'Class',
+      properties: {
+        name: symbol,
+        filePath,
+      },
+    });
+
+    graph.addRelationship({
+      id: generateId('DEFINES', `${fileId}->${classId}`),
+      type: 'DEFINES',
+      sourceId: fileId,
+      targetId: classId,
+      confidence: 1.0,
+      reason: '',
+    });
+  }
+
+  await processUnityResources(graph, { repoPath: fixtureRoot });
+
+  const storageDir = await fs.mkdtemp(path.join(os.tmpdir(), 'unity-resource-summary-'));
+  const dbPath = path.join(storageDir, 'graph.lbug');
+
+  try {
+    await initLbug(dbPath);
+    await loadGraphToLbug(graph, fixtureRoot, storageDir);
+    const rows = await executeQuery(
+      `MATCH (c:Class)-[r:CodeRelation {type:'UNITY_RESOURCE_SUMMARY'}]->(f:File)
+       RETURN count(r) AS cnt`,
+    );
+    assert.ok((rows?.[0]?.cnt ?? 0) > 0, 'UNITY_RESOURCE_SUMMARY must persist in LadybugDB');
+  } finally {
+    await closeLbug();
+    await fs.rm(storageDir, { recursive: true, force: true });
+  }
 });
 
 test('processUnityResources builds scan context once and enriches all class nodes', async () => {

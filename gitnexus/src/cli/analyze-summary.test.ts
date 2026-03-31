@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatFallbackSummary, formatUnityDiagnosticsSummary } from './analyze-summary.js';
+import { formatFallbackSummary, formatUnityDiagnosticsSummary, resolveFallbackStats } from './analyze-summary.js';
 
 test('formatUnityDiagnosticsSummary returns empty when diagnostics are missing', () => {
   const lines = formatUnityDiagnosticsSummary([]);
@@ -67,4 +67,14 @@ test('formatFallbackSummary renders attempted/succeeded/failed with warning prev
     '- Constructor->Property (97 edges): missing rel pair in schema',
     '... 1 more',
   ]);
+});
+
+test('resolveFallbackStats prefers runtime fallback insert stats when available', () => {
+  assert.deepEqual(
+    resolveFallbackStats(
+      ['Class->File (12 edges): missing rel pair in schema'],
+      { attempted: 12, succeeded: 3, failed: 9 },
+    ),
+    { attempted: 12, succeeded: 3, failed: 9 },
+  );
 });

@@ -6,6 +6,7 @@ test('RELATION_SCHEMA includes audited fallback pairs for Property/Delegate link
   const requiredPairs = [
     'FROM Method TO `Delegate`',
     'FROM Class TO `Property`',
+    'FROM Class TO File',
     'FROM `Constructor` TO `Property`',
     'FROM Function TO `Property`',
     'FROM `Property` TO Class',
