@@ -83,7 +83,9 @@ export function processRequest() {
       processNode.trace.some((nodeId) => nodeId.includes('unity-runtime-root')),
     )).toBe(true);
     expect(unityResult.processResult?.processes.some((processNode) => processNode.stepCount >= 3)).toBe(true);
-    expect(runtimeRootProcesses).toHaveLength(1);
+    expect(runtimeRootProcesses.length).toBeGreaterThanOrEqual(2);
+    expect(runtimeRootProcesses.some((processNode) => processNode.trace.some((nodeId) => nodeId.includes('RegisterEvents')))).toBe(true);
+    expect(runtimeRootProcesses.some((processNode) => processNode.trace.some((nodeId) => nodeId.includes('GetValue')))).toBe(true);
     expect(nonUnityWithFlag.processResult?.stats.totalProcesses).toBe(nonUnityBaseline.processResult?.stats.totalProcesses);
   }, 180000);
 });

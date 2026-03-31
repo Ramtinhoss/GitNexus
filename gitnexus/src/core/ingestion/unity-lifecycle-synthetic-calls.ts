@@ -50,8 +50,8 @@ export interface UnityLifecycleSyntheticConfig {
 
 export const DEFAULT_UNITY_LIFECYCLE_SYNTHETIC_CONFIG: UnityLifecycleSyntheticConfig = {
   enabled: false,
-  maxSyntheticEdgesPerClass: 6,
-  maxSyntheticEdgesTotal: 64,
+  maxSyntheticEdgesPerClass: 12,
+  maxSyntheticEdgesTotal: 256,
   lifecycleEdgeConfidence: 0.72,
   loaderEdgeConfidence: 0.68,
 };
@@ -93,10 +93,18 @@ export const detectUnityLifecycleHosts = (graph: KnowledgeGraph): UnityLifecycle
     extendsByClass.set(rel.sourceId, edges);
   }
 
+  const classIdsByName = new Map<string, string[]>();
+  for (const node of graph.iterNodes()) {
+    if (node.label !== 'Class') continue;
+    const ids = classIdsByName.get(String(node.properties.name)) ?? [];
+    ids.push(node.id);
+    classIdsByName.set(String(node.properties.name), ids);
+  }
+
   const hosts: UnityLifecycleHost[] = [];
   for (const node of graph.iterNodes()) {
     if (node.label !== 'Class') continue;
-    const baseType = resolveUnityBaseType(graph, extendsByClass.get(node.id) ?? []);
+    const baseType = resolveUnityBaseType(graph, extendsByClass, classIdsByName, node.id);
     if (!baseType) continue;
     const methods = methodsByClass.get(node.id) ?? [];
     const lifecycleCallbacks = methods.filter((method) => LIFECYCLE_CALLBACKS.has(method.properties.name));
@@ -144,6 +152,8 @@ export const applyUnityLifecycleSyntheticCalls = (
     acceptedHosts.push(host);
   }
 
+  acceptedHosts.sort((left, right) => scoreUnityHost(right) - scoreUnityHost(left));
+
   if (acceptedHosts.length === 0) {
     return {
       syntheticEdgeCount: 0,
@@ -176,9 +186,12 @@ export const applyUnityLifecycleSyntheticCalls = (
   let syntheticEdgeCount = 0;
   let lifecycleEdgeCount = 0;
   let loaderEdgeCount = 0;
+  const reservedBridgeBudget = Math.max(1, Math.floor(cfg.maxSyntheticEdgesTotal * 0.5));
+  const preBridgeBudget = Math.max(0, cfg.maxSyntheticEdgesTotal - reservedBridgeBudget);
 
-  const canAllocate = (classId: string): boolean => {
+  const canAllocate = (classId: string, phase: 'pre_bridge' | 'bridge' = 'pre_bridge'): boolean => {
     if (syntheticEdgeCount >= cfg.maxSyntheticEdgesTotal) return false;
+    if (phase === 'pre_bridge' && syntheticEdgeCount >= preBridgeBudget) return false;
     const classCount = syntheticEdgesPerClass.get(classId) ?? 0;
     return classCount < cfg.maxSyntheticEdgesPerClass;
   };
@@ -189,9 +202,10 @@ export const applyUnityLifecycleSyntheticCalls = (
     reason: 'unity-lifecycle-synthetic' | 'unity-runtime-loader-synthetic',
     confidence: number,
     classId: string,
+    phase: 'pre_bridge' | 'bridge' = 'pre_bridge',
   ): boolean => {
     if (sourceId === targetId) return false;
-    if (!canAllocate(classId)) return false;
+    if (!canAllocate(classId, phase)) return false;
     if (PLACEHOLDER_RE.test(sourceId) || PLACEHOLDER_RE.test(targetId)) return false;
 
     const pairKey = `${sourceId}->${targetId}`;
@@ -223,6 +237,7 @@ export const applyUnityLifecycleSyntheticCalls = (
         'unity-lifecycle-synthetic',
         cfg.lifecycleEdgeConfidence,
         classId,
+        'pre_bridge',
       );
     }
 
@@ -237,27 +252,47 @@ export const applyUnityLifecycleSyntheticCalls = (
           'unity-runtime-loader-synthetic',
           cfg.loaderEdgeConfidence,
           classId,
+          'pre_bridge',
         );
       }
     }
   }
 
   for (const [sourceName, targetName] of DETERMINISTIC_LOADER_BRIDGES) {
-    const sourceMethods = methodsByName.get(sourceName) ?? [];
-    const targetMethods = methodsByName.get(targetName) ?? [];
+    const sourceMethods = [...(methodsByName.get(sourceName) ?? [])].sort(
+      (left, right) => scoreRuntimeLoaderMethod(right) - scoreRuntimeLoaderMethod(left),
+    );
+    const targetMethods = [...(methodsByName.get(targetName) ?? [])].sort(
+      (left, right) => scoreRuntimeLoaderMethod(right) - scoreRuntimeLoaderMethod(left),
+    );
     if (sourceMethods.length === 0 || targetMethods.length === 0) continue;
+
+    const topSource = sourceMethods[0];
+    const topTarget = targetMethods[0];
+    const topSourceClassId = topSource ? hostMethodToClassId.get(topSource.id) : undefined;
+    if (topSource && topTarget && topSourceClassId) {
+      addSyntheticEdge(
+        topSource.id,
+        topTarget.id,
+        'unity-runtime-loader-synthetic',
+        cfg.loaderEdgeConfidence,
+        topSourceClassId,
+        'bridge',
+      );
+    }
 
     for (const sourceMethod of sourceMethods) {
       const classId = hostMethodToClassId.get(sourceMethod.id);
-      if (!classId || !canAllocate(classId)) continue;
+      if (!classId || !canAllocate(classId, 'bridge')) continue;
       for (const targetMethod of targetMethods) {
-        if (!canAllocate(classId)) break;
+        if (!canAllocate(classId, 'bridge')) break;
         addSyntheticEdge(
           sourceMethod.id,
           targetMethod.id,
           'unity-runtime-loader-synthetic',
           cfg.loaderEdgeConfidence,
           classId,
+          'bridge',
         );
       }
     }
@@ -275,9 +310,15 @@ export const applyUnityLifecycleSyntheticCalls = (
 
 const resolveUnityBaseType = (
   graph: KnowledgeGraph,
-  extendsEdges: GraphRelationship[],
+  extendsByClass: Map<string, GraphRelationship[]>,
+  classIdsByName: Map<string, string[]>,
+  classId: string,
+  visited = new Set<string>(),
 ): 'MonoBehaviour' | 'ScriptableObject' | undefined => {
-  for (const edge of extendsEdges) {
+  if (visited.has(classId)) return undefined;
+  visited.add(classId);
+
+  for (const edge of extendsByClass.get(classId) ?? []) {
     const targetNode = graph.getNode(edge.targetId);
     const candidates = [
       targetNode?.properties?.name ?? '',
@@ -287,6 +328,16 @@ const resolveUnityBaseType = (
     for (const candidate of candidates) {
       const normalized = normalizeBaseType(candidate);
       if (normalized) return normalized;
+    }
+
+    if (targetNode?.label === 'Class') {
+      const inherited = resolveUnityBaseType(graph, extendsByClass, classIdsByName, targetNode.id, visited);
+      if (inherited) return inherited;
+    }
+
+    for (const candidateId of resolveNamedClassTargets(classIdsByName, edge.targetId)) {
+      const inherited = resolveUnityBaseType(graph, extendsByClass, classIdsByName, candidateId, visited);
+      if (inherited) return inherited;
     }
   }
   return undefined;
@@ -330,3 +381,67 @@ const sortMethodsByName = (methods: GraphNode[]): GraphNode[] =>
     if (byName !== 0) return byName;
     return left.id.localeCompare(right.id);
   });
+
+const scoreUnityHost = (host: UnityLifecycleHost): number => {
+  const filePath = String(host.classNode.properties.filePath || '');
+  let score = 0;
+
+  score += host.loaderAnchors.length * 40;
+  score += host.lifecycleCallbacks.length * 8;
+
+  if (filePath.includes('Assets/NEON/Code/Game/')) score += 200;
+  else if (filePath.includes('Assets/NEON/Code/')) score += 120;
+  else if (filePath.includes('Assets/')) score += 40;
+
+  if (filePath.includes('/Graph/')) score += 60;
+  if (filePath.includes('/PowerUps/')) score += 40;
+  if (filePath.includes('/Core/')) score += 30;
+  if (filePath.includes('/Reload')) score += 30;
+
+  if (filePath.includes('/Packages/')) score -= 120;
+  if (filePath.includes('/Legacy/')) score -= 80;
+  if (filePath.startsWith('Assets/Scripts/')) score -= 60;
+
+  for (const method of host.loaderAnchors) {
+    const methodName = String(method.properties.name || '');
+    if (methodName === 'RegisterGraphEvents' || methodName === 'RegisterEvents') score += 25;
+    if (methodName === 'StartRoutineWithEvents') score += 25;
+    if (methodName === 'GetValue' || methodName === 'CheckReload' || methodName === 'ReloadRoutine') score += 20;
+    if (methodName === 'Equip' || methodName === 'EquipWithEvent') score += 15;
+  }
+
+  return score;
+};
+
+const scoreRuntimeLoaderMethod = (method: GraphNode): number => {
+  const filePath = String(method.properties.filePath || '');
+  const methodName = String(method.properties.name || '');
+  let score = 0;
+
+  if (filePath.includes('GunGraphMB')) score += 200;
+  if (filePath.includes('/Graph/Graphs/GunGraph.cs')) score += 220;
+  if (filePath.includes('/Graph/Nodes/Reloads/')) score += 240;
+  if (filePath.includes('/PowerUps/WeaponPowerUp.cs')) score += 180;
+  if (filePath.includes('/Game/Core/')) score += 80;
+  if (filePath.includes('/Game/Graph/')) score += 120;
+  if (filePath.includes('/Packages/')) score -= 100;
+  if (filePath.includes('/Legacy/')) score -= 80;
+  if (filePath.includes('/MonoScript/Minion')) score -= 60;
+
+  if (methodName === 'RegisterGraphEvents') score += 50;
+  if (methodName === 'RegisterEvents') score += 60;
+  if (methodName === 'StartRoutineWithEvents') score += 70;
+  if (methodName === 'GetValue') score += 90;
+  if (methodName === 'CheckReload') score += 90;
+  if (methodName === 'ReloadRoutine') score += 90;
+  if (methodName === 'Equip' || methodName === 'EquipWithEvent') score += 50;
+
+  return score;
+};
+
+const resolveNamedClassTargets = (classIdsByName: Map<string, string[]>, rawTargetId: string): string[] => {
+  const text = String(rawTargetId || '').trim();
+  if (!text.startsWith('Class:')) return [];
+  const className = text.slice('Class:'.length);
+  return classIdsByName.get(className) ?? [];
+};

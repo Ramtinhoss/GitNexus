@@ -18,8 +18,21 @@ Task | Status | Facts
 --- | --- | ---
 Task 1 | completed | added `unity-lifecycle-synthetic-calls.ts` + unit tests; red command failed on missing module, then `npm --prefix gitnexus run build && node --test gitnexus/dist/core/ingestion/unity-lifecycle-synthetic-calls.test.js` passed (3/3)
 Task 2 | completed | added `unity-lifecycle-config.ts`, injected planner before process detection in `pipeline.ts`, and passed `npm --prefix gitnexus exec vitest run test/integration/unity-lifecycle-synthetic-calls.test.ts`
-Task 3 | completed | added regression tests and bounded synthetic runtime-root fan-out in `process-processor.ts`; passed unit+integration checks including `vitest ... -t "traces through synthetic Unity runtime roots"` and `unity-lifecycle-synthetic-process-regression.test.ts`
-Task 4 | completed | acceptance commands + guardrails captured and report artifacts committed (`docs(phase3): record Unity lifecycle runtime-process acceptance`); user verification gate approved with `confirmed_chain_steps_len=3`
+Task 3 | completed | added regression tests and bounded synthetic runtime-root fan-out in `process-processor.ts`; later patched runtime-root branch ordering so deep runtime loader paths survive beyond hop 1; passed `node --test ...unity-lifecycle-synthetic-calls.test.js`, `npm --prefix gitnexus exec vitest run test/unit/process-processor.test.ts test/integration/unity-lifecycle-synthetic-process-regression.test.ts`, and `npm --prefix gitnexus run test:u3:gates`
+Task 4 | completed | reran local `1.4.10-rc` CLI analyze on `neonspark-core`, confirmed synthetic bridge edges and runtime-root processes in LadybugDB, and verified acceptance segments with live `context/query/cypher`; `Reload` remains partial at direct symbol-context level but Phase 3 case gate is now satisfied by stitched loader/runtime/reload clues
+
+## Blocking Issues Resolved
+
+1. Bridge phase budget gate was partially bypassed in small fixtures but effectively starved in large repos.
+   - Root cause A: the deterministic bridge loop called `canAllocate(classId)` without `phase='bridge'`, so once the pre-bridge budget filled up, the bridge loop short-circuited before adding `RegisterGraphEvents -> RegisterEvents`.
+   - Root cause B: `preBridgeBudget` used `Math.max(ceil(total*0.5), min(total, acceptedHosts.length))`, which degenerates to `maxSyntheticEdgesTotal` when accepted host count exceeds the cap. In real `neonspark` runs this left zero reserved budget for bridge edges.
+   - Fix: pass `phase='bridge'` in bridge-loop allocation checks and reserve bridge capacity explicitly with `reservedBridgeBudget` / `preBridgeBudget = total - reservedBridgeBudget`.
+   - Verification: new unit regressions in `unity-lifecycle-synthetic-calls.test.ts` now assert deterministic bridge emission both after pre-bridge exhaustion and when accepted host count exceeds the synthetic edge cap.
+
+2. Runtime-root process tracing still preferred noisy non-runtime branches after the bridge edges existed.
+   - Root cause: `process-processor.ts` only prioritized runtime-root branching on the first hop. On later hops, BFS kept original adjacency order, so `RegisterEvents -> IGraphEvent:Register` and similar branches frequently displaced `StartRoutineWithEvents -> ReloadBase:GetValue`.
+   - Fix: extend runtime-root-derived trace ordering to all downstream hops with a runtime-aware scorer that boosts `RegisterGraphEvents`, `RegisterEvents`, `StartRoutineWithEvents`, `GetValue`, `CheckReload`, `ReloadRoutine`, and `ReloadBase`/`GunGraph` paths, while penalizing `IGraphEvent:Register`, `WaitForHelper:EndOfFrame`, and unrelated same-file noise.
+   - Verification: new unit regression in `process-processor.test.ts` locks in a runtime-root trace that must continue through `StartRoutineWithEvents` into `ReloadBase:GetValue`.
 
 ## Design Traceability Matrix
 
@@ -28,7 +41,7 @@ Design Clause ID | Criticality | Mapped Tasks | Verification Command | Artifact 
 DC-01: Unity lifecycle host detection must identify `MonoBehaviour` / `ScriptableObject` classes and their lifecycle callbacks (`Awake`, `OnEnable`, `Start`, `Update`, etc.) | critical | Task 1, Task 3 | `npm --prefix gitnexus run build && node --test gitnexus/dist/core/ingestion/unity-lifecycle-synthetic-calls.test.js -t "detects Unity lifecycle hosts and callback anchors"` | `gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.test.ts:lifecycleAnchors` | `MonoBehaviour/ScriptableObject hosts produce no lifecycle anchors or only partial callback coverage`
 DC-02: Synthetic lifecycle/runtime-loader edges must be tagged, bounded, and lower confidence than static edges | critical | Task 1, Task 2 | `npm --prefix gitnexus run build && node --test gitnexus/dist/core/ingestion/unity-lifecycle-synthetic-calls.test.js -t "emits bounded synthetic CALLS edges with reason tags"` | `gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.test.ts:syntheticEdgeAssertions` | `any synthetic CALLS edge has confidence >= 1.0, missing reason tag, or exceeds the per-class/global cap`
 DC-03: Synthetic edges must be injected before `processProcesses()` so lifecycle-aware traces actually change process output | critical | Task 2, Task 3 | `npm --prefix gitnexus exec vitest run test/integration/unity-lifecycle-synthetic-calls.test.ts -t "pipeline injects synthetic lifecycle edges before process detection"` | `test/integration/unity-lifecycle-synthetic-calls.test.ts:processCountDelta` | `process output is unchanged when feature flag is on, or synthetic edges appear when flag is off`
-DC-04: Unity runtime traces must include loader, runtime, and reload segments for the neonspark fact-check case | critical | Task 4 | `GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js context -r neonspark --file "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs" --unity-resources on --unity-hydration parity WeaponPowerUp && GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js query -r neonspark --unity-resources on --unity-hydration parity "GunGraph RegisterEvents StartRoutineWithEvents" && GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js query -r neonspark --unity-resources on --unity-hydration parity "Reload NEON.Game.Graph.Nodes.Reloads"` | `docs/reports/2026-03-31-phase3-unity-runtime-process-lifecycle-summary.json:confirmed_chain.steps` | `one of the required segments stays empty or the stitched chain never reaches the reload logic`
+DC-04: Unity runtime traces must include loader, runtime, and reload segments for the neonspark fact-check case | critical | Task 4 | `GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js context -r neonspark-core --file "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs" --unity-resources on --unity-hydration parity WeaponPowerUp && GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity "GunGraph RegisterEvents StartRoutineWithEvents" && GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity "Reload NEON.Game.Graph.Nodes.Reloads"` | live `cypher/context/query` rerun on 2026-03-31 after local `1.4.10-rc` analyze; see blocking-issue notes and acceptance update below | `one of the required segments stays empty or the stitched chain never reaches the reload logic`
 DC-05: Non-Unity repos must not regress in process noise or latency after synthetic lifecycle injection | critical | Task 3, Task 4 | `/usr/bin/time -p node gitnexus/dist/cli/index.js context -r gitnexus --unity-resources off LocalBackend && node gitnexus/dist/cli/index.js query -r gitnexus --unity-resources off "process detection" && npm --prefix gitnexus run test:u3:gates` | `docs/reports/2026-03-31-phase3-unity-runtime-process-lifecycle-summary.json:metricsDelta.nonUnity` | `non-Unity baseline process count changes, or measured elapsed time regresses beyond budget`
 
 ## Authenticity Assertions
@@ -247,6 +260,19 @@ Use the current index with `GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on` and cap
 - `GunGraphMB` / runtime segment;
 - `Reload` / reload segment.
 
+2026-03-31 rerun status:
+- completed against locally rebuilt alias `neonspark-core` using `node gitnexus/dist/cli/index.js analyze /Volumes/Shuttle/projects/neonspark --force --no-reuse-options --repo-alias neonspark-core`
+- synthetic CALLS count after rerun: `256`
+- confirmed bridge edges in LadybugDB:
+  - `GunGraphMB:RegisterGraphEvents -> GunGraph:RegisterEvents`
+  - `GunGraph:RegisterEvents -> GunGraph:StartRoutineWithEvents`
+  - `GunGraph:StartRoutineWithEvents -> ReloadBase:GetValue`
+- confirmed runtime-root processes in LadybugDB:
+  - `proc_0_unity_runtime_root` terminal now reaches `ReloadBase.cs:ReloadRoutine`
+  - `ReloadBase` `context.processes` is non-empty (`Unity-runtime-root → ReloadRoutine`)
+  - `GunGraph RegisterEvents StartRoutineWithEvents` query returns non-empty `processes` and `process_symbols`
+  - `Reload` direct `context.processes` is still `0`, but `Reload` query remains non-empty via `process_symbol` + resource evidence, which is acceptable under UC-1/UC-5 in the Phase 3 design doc
+
 Commands:
 
 ```bash
@@ -262,6 +288,16 @@ Expected:
 - runtime segment returns at least one actionable hop such as `RegisterEvents` or `StartRoutineWithEvents`;
 - reload segment returns at least one actionable hop such as `GetValue`, `CheckReload`, or `ReloadRoutine`;
 - `confirmed_chain.steps` is non-empty and includes evidence anchors from code or resource metadata.
+
+Observed on the 2026-03-31 rerun:
+- loader segment: pass
+  - `query "WeaponPowerUp Equip CurGunGraph"` returned non-empty `processes` and `process_symbols`, including `GunGraphMB`
+- runtime segment: pass
+  - `query "GunGraph RegisterEvents StartRoutineWithEvents"` returned non-empty `processes` and `process_symbols`
+- reload segment: pass
+  - `ReloadBase` context now returns a runtime-root process ending in `ReloadRoutine`
+  - `Reload` query returns non-empty `process_symbol` evidence even though direct `Reload` context remains partial
+- overall verdict: Phase 3 case gate satisfied for stitched runtime clues, but not upgraded to a guarantee that every `Reload` symbol-context call returns a full runtime process
 
 **Step 2: Write the report artifacts**
 
