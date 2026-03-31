@@ -33,6 +33,8 @@ export const LOCAL_BACKEND_SEED_DATA = [
    CREATE (a)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 1.0, reason: '', step: 1}]->(p)`,
   `MATCH (a:Function), (p:Process) WHERE a.id = 'func:validate' AND p.id = 'proc:login-flow'
    CREATE (a)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 1.0, reason: '', step: 2}]->(p)`,
+  `MATCH (m:Method), (p:Process) WHERE m.id = 'method:AuthService.authenticate' AND p.id = 'proc:login-flow'
+   CREATE (m)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 1.0, reason: 'phase2-test', step: 2}]->(p)`,
   // HAS_METHOD: AuthService -> authenticate
   `MATCH (c:Class), (m:Method) WHERE c.id = 'class:AuthService' AND m.id = 'method:AuthService.authenticate'
    CREATE (c)-[:CodeRelation {type: 'HAS_METHOD', confidence: 1.0, reason: 'class-method', step: 0}]->(m)`,

@@ -15,6 +15,7 @@ import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../../core/unity/ui-
 import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
 import { loadUnityContext, type UnityContextPayload, type UnityHydrationMeta } from './unity-enrichment.js';
 import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
+import { mergeProcessEvidence } from './process-evidence.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
@@ -1296,14 +1297,30 @@ export class LocalBackend {
       outgoingRows = dedupe([...directOutgoingRows, ...methodOutgoingRows]);
     }
 
-    // Process participation
-    let processRows: any[] = [];
+    // Process participation with class-level method projection.
+    let directProcessRows: any[] = [];
+    let projectedProcessRows: any[] = [];
     try {
-      processRows = await executeParameterized(repo.id, `
+      directProcessRows = await executeParameterized(repo.id, `
         MATCH (n {id: $symId})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
         RETURN p.id AS pid, p.heuristicLabel AS label, r.step AS step, p.stepCount AS stepCount
       `, { symId });
     } catch (e) { logQueryError('context:process-participation', e); }
+
+    if (isMethodContainer) {
+      try {
+        projectedProcessRows = await executeParameterized(repo.id, `
+          MATCH (n {id: $symId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
+          MATCH (m)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
+          RETURN p.id AS pid, p.heuristicLabel AS label, MIN(r.step) AS step, p.stepCount AS stepCount
+        `, { symId });
+      } catch (e) { logQueryError('context:method-process-projection', e); }
+    }
+
+    const processRows = mergeProcessEvidence({
+      directRows: directProcessRows,
+      projectedRows: projectedProcessRows,
+    });
     
     // Helper to categorize refs
     const categorize = (rows: any[]) => {
@@ -1342,6 +1359,8 @@ export class LocalBackend {
         name: r.label || r[1],
         step_index: r.step || r[2],
         step_count: r.stepCount || r[3],
+        evidence_mode: r.evidence_mode,
+        confidence: r.confidence,
       })),
     };
 

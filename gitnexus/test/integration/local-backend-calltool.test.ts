@@ -87,6 +87,15 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(result.directOutgoing.calls || []).toHaveLength(0);
     });
 
+    it('context tool projects method-level process participation for class symbols', async () => {
+      const result = await backend.callTool('context', { name: 'AuthService' });
+
+      expect(result.processes?.length).toBeGreaterThan(0);
+      expect(result.processes.some((p: any) => p.evidence_mode === 'method_projected')).toBe(true);
+      expect(result.processes.every((p: any) => ['high', 'medium'].includes(p.confidence))).toBe(true);
+      expect(result.processes.some((p: any) => p.evidence_mode === 'direct_step')).toBe(false);
+    });
+
     it('impact tool returns upstream dependents', async () => {
       const result = await backend.callTool('impact', {
         target: 'validate',
