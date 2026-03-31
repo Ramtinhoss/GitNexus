@@ -33,6 +33,18 @@ test('hydrateUnityForSymbol(compact) marks needsParityRetry when lightweight bin
       name: 'A',
       filePath: 'Assets/Scripts/A.cs',
     },
+    runtime: {
+      shouldEnableWarmup: () => false,
+      resolveLazyConfig: () => ({ maxPendingPathsPerRequest: 10, batchSize: 10, maxHydrationMs: 5000 }),
+      hydrateLazyBindings: async () => ({
+        resolvedByPath: new Map(),
+        timedOut: false,
+        elapsedMs: 1,
+        diagnostics: [],
+      }),
+      readOverlayBindings: async () => new Map(),
+      upsertOverlayBindings: async () => undefined,
+    },
   } as any);
 
   assert.equal(out.hydrationMeta?.effectiveMode, 'compact');
@@ -69,6 +81,29 @@ test('hydrateUnityForSymbol(parity) sets isComplete=true on parity success', asy
       uid: 'Class:Assets/Scripts/A.cs:A',
       name: 'A',
       filePath: 'Assets/Scripts/A.cs',
+    },
+    runtime: {
+      shouldEnableWarmup: () => false,
+      readParityCache: async () => null,
+      upsertParityCache: async () => undefined,
+      loadParitySeed: async () => null,
+      buildScanContext: async () => ({}) as any,
+      resolveBindings: async () => ({
+        resourceBindings: [
+          {
+            resourcePath: 'Assets/A.prefab',
+            resourceType: 'prefab',
+            bindingKind: 'direct',
+            componentObjectId: '114',
+            lightweight: false,
+            evidence: { line: 1, lineText: 'stub' },
+            serializedFields: { scalarFields: [], referenceFields: [] },
+            resolvedReferences: [],
+            assetRefPaths: [],
+          },
+        ],
+        unityDiagnostics: [],
+      }),
     },
   } as any);
 

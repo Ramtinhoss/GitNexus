@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { projectUnityBindings } from './unity-enrichment.js';
 import { hydrateLazyBindings } from './unity-lazy-hydrator.js';
-import { attachUnityHydrationMeta, mergeParityUnityBindings, mergeUnityBindings } from './local-backend.js';
+import { attachUnityHydrationMeta, mergeParityUnityBindings, mergeUnityBindings } from './unity-runtime-hydration.js';
 
 test('summary-only rows hydrate and merge into full bindings with preserved field coverage', async () => {
   const projected = projectUnityBindings([
