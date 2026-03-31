@@ -1,0 +1,718 @@
+{
+  "runId": 1,
+  "at": "2026-03-31T06:15:50.569Z",
+  "repos": {
+    "neonspark": {
+      "status": "Repository: /Volumes/Shuttle/unity-projects/neonspark\nIndexed: 3/30/2026, 5:12:08 PM\nIndexed commit: 9d105b2\nCurrent commit: 9d105b2\nStatus: ✅ up-to-date",
+      "symbolChecks": [
+        {
+          "name": "Reload",
+          "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "ReloadBase",
+          "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "WeaponPowerUp",
+          "file": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "FirearmsPowerUp",
+          "file": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "name": "GunGraphMB",
+          "file": "Assets/NEON/Code/Game/Core/GunGraphMB.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "GunGraph",
+          "file": "Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "GunOutput",
+          "file": "Assets/NEON/Code/Game/Graph/Nodes/GunOutput.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "Pickup",
+          "file": "Assets/NEON/Code/Game/PowerUps/Pickup.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "PlayerActor",
+          "file": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "Gun",
+          "file": "Assets/NEON/Code/Game/Core/Gun.cs",
+          "processCount": 0,
+          "status": "found"
+        }
+      ],
+      "queryChecks": [
+        {
+          "query": "Reload runtime chain",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "WeaponPowerUp Equip CurGunGraph",
+          "processCount": 1,
+          "processSymbolsCount": 1
+        },
+        {
+          "query": "GunGraph RegisterEvents StartRoutineWithEvents",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "OnPlayerShooting OnPlayerStopShooting reload",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "ScriptableObject graph node runtime",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "MonoBehaviour Awake Start Update OnEnable",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "Pickup PickItUp EquipWithEvent",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "IGraphEvent Register Unregister",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        }
+      ],
+      "lifecycleChecks": [
+        {
+          "callback": "Awake",
+          "name": "Awake",
+          "file": "Assets/Scripts/TransformToScreenShaderSync.cs",
+          "line": 21,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Awake",
+          "name": "Awake",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 16,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Awake",
+          "name": "Awake",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 66,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Start",
+          "name": "Start",
+          "file": "Assets/zTest/Steam/SteamInventoryTest.cs",
+          "line": 18,
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "callback": "Start",
+          "name": "Start",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 23,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Start",
+          "name": "Start",
+          "file": "Assets/Scripts/TestScipts/BulletReflection.cs",
+          "line": 9,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Update",
+          "name": "Update",
+          "file": "Assets/Veewo/UnityTests/PlayModeTests/PlayModeBridgeTests.cs",
+          "line": 191,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Update",
+          "name": "Update",
+          "file": "Assets/Scripts/TransformToScreenShaderSync.cs",
+          "line": 43,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Update",
+          "name": "Update",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 42,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "FixedUpdate",
+          "name": "FixedUpdate",
+          "file": "Assets/NEON/Code/Behaviors/UselessScript/JumpOffScreenAttack.cs",
+          "line": 47,
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "callback": "FixedUpdate",
+          "name": "FixedUpdate",
+          "file": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.cs",
+          "line": 991,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "FixedUpdate",
+          "name": "FixedUpdate",
+          "file": "Assets/NEON/Code/Behaviors/Actions/NewNodes/JumpOffScreenAttack2.cs",
+          "line": 61,
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "callback": "OnEnable",
+          "name": "OnEnable",
+          "file": "Assets/Scripts/TestScipts/LinePosEditor.cs",
+          "line": 18,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "OnEnable",
+          "name": "OnEnable",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 136,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "OnEnable",
+          "name": "OnEnable",
+          "file": "Assets/Plugins/I2/Localization/Scripts/Utils/SetLanguageDropdown.cs",
+          "line": 10,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "OnDisable",
+          "name": "OnDisable",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 155,
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "callback": "OnDisable",
+          "name": "OnDisable",
+          "file": "Assets/NEON/Code/VeewoUI/UiToolkitUIManager.cs",
+          "line": 113,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "OnDisable",
+          "name": "OnDisable",
+          "file": "Assets/NEON/Code/VeewoUI/Tutorial/TutChooseModeScreen.cs",
+          "line": 39,
+          "processCount": 0,
+          "status": "found"
+        }
+      ]
+    },
+    "neonnew-core": {
+      "status": "Repository: /Volumes/Shuttle/unity-projects/neonnew\nIndexed: 3/31/2026, 2:10:50 PM\nIndexed commit: 79f051a\nCurrent commit: 6b5db95\nStatus: ⚠️ stale (re-run gitnexus analyze)",
+      "symbolChecks": [
+        {
+          "name": "Reload",
+          "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "ReloadBase",
+          "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "WeaponPowerUp",
+          "file": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "FirearmsPowerUp",
+          "file": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "name": "GunGraphMB",
+          "file": "Assets/NEON/Code/Game/Core/GunGraphMB.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "GunGraph",
+          "file": "Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "GunOutput",
+          "file": "Assets/NEON/Code/Game/Graph/Nodes/GunOutput.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "Pickup",
+          "file": "Assets/NEON/Code/Game/PowerUps/Pickup.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "PlayerActor",
+          "file": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "Gun",
+          "file": "Assets/NEON/Code/Game/Core/Gun.cs",
+          "processCount": 0,
+          "status": "found"
+        }
+      ],
+      "queryChecks": [
+        {
+          "query": "Reload runtime chain",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "WeaponPowerUp Equip CurGunGraph",
+          "processCount": 1,
+          "processSymbolsCount": 1
+        },
+        {
+          "query": "GunGraph RegisterEvents StartRoutineWithEvents",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "OnPlayerShooting OnPlayerStopShooting reload",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "ScriptableObject graph node runtime",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "MonoBehaviour Awake Start Update OnEnable",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "Pickup PickItUp EquipWithEvent",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "IGraphEvent Register Unregister",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        }
+      ],
+      "lifecycleChecks": [
+        {
+          "callback": "Awake",
+          "name": "Awake",
+          "file": "Assets/Scripts/TransformToScreenShaderSync.cs",
+          "line": 21,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Awake",
+          "name": "Awake",
+          "file": "Assets/Scripts/SpriteCameraSync.cs",
+          "line": 24,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Awake",
+          "name": "Awake",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 16,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Start",
+          "name": "Start",
+          "file": "Assets/zTest/Steam/SteamInventoryTest.cs",
+          "line": 18,
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "callback": "Start",
+          "name": "Start",
+          "file": "Assets/Veewo/TestServer/TestServer.cs",
+          "line": 156,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Start",
+          "name": "Start",
+          "file": "Assets/Editor/AutoBuilder.cs",
+          "line": 562,
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "callback": "Update",
+          "name": "Update",
+          "file": "Assets/Veewo/UnityTests/PlayModeTests/PlayModeBridgeTests.cs",
+          "line": 191,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Update",
+          "name": "Update",
+          "file": "Assets/Scripts/TransformToScreenShaderSync.cs",
+          "line": 43,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "Update",
+          "name": "Update",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 42,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "FixedUpdate",
+          "name": "FixedUpdate",
+          "file": "Assets/Plugins/NiceTouch/Demos/MovementDemo/Scripts/MMControlsMovementDemoPlayer.cs",
+          "line": 65,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "FixedUpdate",
+          "name": "FixedUpdate",
+          "file": "Assets/Plugins/unity-ui-extensions/Scripts/ToolTips/ToolTip.cs",
+          "line": 98,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "FixedUpdate",
+          "name": "FixedUpdate",
+          "file": "Assets/Plugins/Mirror/Runtime/NetworkLoop.cs",
+          "line": 18,
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "callback": "OnEnable",
+          "name": "OnEnable",
+          "file": "Assets/Scripts/TestScipts/LinePosEditor.cs",
+          "line": 18,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "OnEnable",
+          "name": "OnEnable",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 136,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "OnEnable",
+          "name": "OnEnable",
+          "file": "Assets/Veewo/TestServer/Editor/AutoTestTools.cs",
+          "line": 119,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "OnDisable",
+          "name": "OnDisable",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 155,
+          "processCount": 0,
+          "status": "unknown"
+        },
+        {
+          "callback": "OnDisable",
+          "name": "OnDisable",
+          "file": "Assets/Veewo/TestServer/InputTrace/Editor/InputRecorderWindow.cs",
+          "line": 309,
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "callback": "OnDisable",
+          "name": "OnDisable",
+          "file": "Assets/Veewo/TestServer/Editor/AutoTestTools.cs",
+          "line": 128,
+          "processCount": 0,
+          "status": "found"
+        }
+      ]
+    },
+    "unity-mini-phase0": {
+      "status": "Repository: /private/tmp/unity-mini-phase0\nIndexed: 3/31/2026, 2:13:42 PM\nIndexed commit: fc9a841\nCurrent commit: fc9a841\nStatus: ✅ up-to-date",
+      "symbolChecks": [
+        {
+          "name": "Minion",
+          "file": "Assets/Scripts/Minion.cs",
+          "processCount": 0,
+          "status": "ambiguous"
+        },
+        {
+          "name": "MinionFactory",
+          "file": "Assets/Scripts/MinionFactory.cs",
+          "processCount": 0,
+          "status": "found"
+        },
+        {
+          "name": "MinionsManager",
+          "file": "Assets/Scripts/MinionsManager.cs",
+          "processCount": 0,
+          "status": "found"
+        }
+      ],
+      "queryChecks": [
+        {
+          "query": "Reload runtime chain",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "WeaponPowerUp Equip CurGunGraph",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "GunGraph RegisterEvents StartRoutineWithEvents",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "OnPlayerShooting OnPlayerStopShooting reload",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "ScriptableObject graph node runtime",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "MonoBehaviour Awake Start Update OnEnable",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "Pickup PickItUp EquipWithEvent",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        },
+        {
+          "query": "IGraphEvent Register Unregister",
+          "processCount": 0,
+          "processSymbolsCount": 0
+        }
+      ],
+      "lifecycleChecks": []
+    }
+  },
+  "metrics": {
+    "repos": {
+      "neonspark": {
+        "symbolNonEmpty": {
+          "nonEmpty": 0,
+          "total": 10,
+          "ratio": 0
+        },
+        "queryProcessSymbolsNonEmpty": {
+          "nonEmpty": 1,
+          "total": 8,
+          "ratio": 0.125
+        },
+        "lifecycleCoverage": {
+          "Awake": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "Start": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "Update": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "FixedUpdate": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "OnEnable": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "OnDisable": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          }
+        }
+      },
+      "neonnew-core": {
+        "symbolNonEmpty": {
+          "nonEmpty": 0,
+          "total": 10,
+          "ratio": 0
+        },
+        "queryProcessSymbolsNonEmpty": {
+          "nonEmpty": 1,
+          "total": 8,
+          "ratio": 0.125
+        },
+        "lifecycleCoverage": {
+          "Awake": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "Start": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "Update": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "FixedUpdate": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "OnEnable": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          },
+          "OnDisable": {
+            "sampled": 3,
+            "nonEmpty": 0,
+            "coverageRatio": 0
+          }
+        }
+      },
+      "unity-mini-phase0": {
+        "symbolNonEmpty": {
+          "nonEmpty": 0,
+          "total": 3,
+          "ratio": 0
+        },
+        "queryProcessSymbolsNonEmpty": {
+          "nonEmpty": 0,
+          "total": 8,
+          "ratio": 0
+        },
+        "lifecycleCoverage": {
+          "Awake": {
+            "sampled": 0,
+            "nonEmpty": 0,
+            "coverageRatio": null
+          },
+          "Start": {
+            "sampled": 0,
+            "nonEmpty": 0,
+            "coverageRatio": null
+          },
+          "Update": {
+            "sampled": 0,
+            "nonEmpty": 0,
+            "coverageRatio": null
+          },
+          "FixedUpdate": {
+            "sampled": 0,
+            "nonEmpty": 0,
+            "coverageRatio": null
+          },
+          "OnEnable": {
+            "sampled": 0,
+            "nonEmpty": 0,
+            "coverageRatio": null
+          },
+          "OnDisable": {
+            "sampled": 0,
+            "nonEmpty": 0,
+            "coverageRatio": null
+          }
+        }
+      }
+    },
+    "totals": {
+      "symbolNonEmptyRatio": 0,
+      "queryProcessSymbolsNonEmptyRatio": 0.08333333333333333
+    }
+  }
+}

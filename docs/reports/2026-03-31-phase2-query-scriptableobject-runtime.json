@@ -1,0 +1,189 @@
+{
+  "processes": [
+    {
+      "id": "proc_96_controls",
+      "summary": "Controls → Settings",
+      "priority": 0.011,
+      "symbol_count": 1,
+      "process_type": "cross_community",
+      "step_count": 5,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    },
+    {
+      "id": "proc_94_controls",
+      "summary": "Controls → ToJson",
+      "priority": 0.011,
+      "symbol_count": 1,
+      "process_type": "cross_community",
+      "step_count": 5,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    },
+    {
+      "id": "proc_95_controls",
+      "summary": "Controls → GetDefaultPreferences",
+      "priority": 0.011,
+      "symbol_count": 1,
+      "process_type": "cross_community",
+      "step_count": 5,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    }
+  ],
+  "process_symbols": [
+    {
+      "id": "Class:Assets/Plugins/xNode/Scripts/Editor/NodeEditorAction.cs:NodeEditorWindow",
+      "name": "NodeEditorWindow",
+      "filePath": "Assets/Plugins/xNode/Scripts/Editor/NodeEditorAction.cs",
+      "startLine": 9,
+      "endLine": 9,
+      "process_id": "proc_96_controls",
+      "step_index": 1,
+      "process_evidence_mode": "method_projected",
+      "process_confidence": "medium"
+    }
+  ],
+  "definitions": [
+    {
+      "id": "Method:Assets/NEON/Code/Editor/Affixes/Services/BatchStatsService.cs:AddStatsToGraph",
+      "name": "AddStatsToGraph",
+      "filePath": "Assets/NEON/Code/Editor/Affixes/Services/BatchStatsService.cs",
+      "startLine": 202,
+      "endLine": 202,
+      "module": "Services"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Editor/Affixes/Services/BatchStatsService.cs:RemoveStatsFromGraph",
+      "name": "RemoveStatsFromGraph",
+      "filePath": "Assets/NEON/Code/Editor/Affixes/Services/BatchStatsService.cs",
+      "startLine": 283,
+      "endLine": 283,
+      "module": "Services"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Editor/Affixes/Services/BatchStatsService.cs:NEON.Editor.Affixes.Services",
+      "name": "NEON.Editor.Affixes.Services",
+      "filePath": "Assets/NEON/Code/Editor/Affixes/Services/BatchStatsService.cs",
+      "startLine": 9,
+      "endLine": 9
+    },
+    {
+      "id": "Class:Assets/Plugins/xNode/Scripts/NodeGraph.cs:NodeGraph",
+      "name": "NodeGraph",
+      "filePath": "Assets/Plugins/xNode/Scripts/NodeGraph.cs",
+      "startLine": 8,
+      "endLine": 8
+    },
+    {
+      "id": "File:Assets/Plugins/xNode/Scripts/NodeGraph.cs",
+      "name": "NodeGraph.cs",
+      "filePath": "Assets/Plugins/xNode/Scripts/NodeGraph.cs"
+    },
+    {
+      "id": "Namespace:Assets/Plugins/xNode/Scripts/NodeGraph.cs:XNode",
+      "name": "XNode",
+      "filePath": "Assets/Plugins/xNode/Scripts/NodeGraph.cs",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Editor/Affixes/Services/GraphScanService.cs:GraphScanService",
+      "name": "GraphScanService",
+      "filePath": "Assets/NEON/Code/Editor/Affixes/Services/GraphScanService.cs",
+      "startLine": 12,
+      "endLine": 12
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Editor/Affixes/Services/GraphScanService.cs:GraphItem",
+      "name": "GraphItem",
+      "filePath": "Assets/NEON/Code/Editor/Affixes/Services/GraphScanService.cs",
+      "startLine": 17,
+      "endLine": 17
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Editor/Affixes/Services/GraphScanService.cs:GraphStatMatchItem",
+      "name": "GraphStatMatchItem",
+      "filePath": "Assets/NEON/Code/Editor/Affixes/Services/GraphScanService.cs",
+      "startLine": 25,
+      "endLine": 25
+    },
+    {
+      "id": "Namespace:Packages/com.veewo.veenode/Veewo/Graph/Editor/GraphEditor.cs:Veewo.Graph.Editor",
+      "name": "Veewo.Graph.Editor",
+      "filePath": "Packages/com.veewo.veenode/Veewo/Graph/Editor/GraphEditor.cs",
+      "startLine": 23,
+      "endLine": 23
+    },
+    {
+      "id": "Class:Packages/com.veewo.veenode/Veewo/Graph/Editor/GraphEditor.cs:GraphEditor",
+      "name": "GraphEditor",
+      "filePath": "Packages/com.veewo.veenode/Veewo/Graph/Editor/GraphEditor.cs",
+      "startLine": 25,
+      "endLine": 25
+    },
+    {
+      "id": "Property:Packages/com.veewo.veenode/Veewo/Graph/Editor/GraphEditor.cs:CurrentGraph",
+      "name": "CurrentGraph",
+      "filePath": "Packages/com.veewo.veenode/Veewo/Graph/Editor/GraphEditor.cs",
+      "startLine": 47,
+      "endLine": 47
+    },
+    {
+      "id": "Namespace:Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.Serialization.cs:Veewo.Test.TestGraph",
+      "name": "Veewo.Test.TestGraph",
+      "filePath": "Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.Serialization.cs",
+      "startLine": 14,
+      "endLine": 14
+    },
+    {
+      "id": "Class:Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.Serialization.cs:ComplexNodeSerializeData",
+      "name": "ComplexNodeSerializeData",
+      "filePath": "Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.Serialization.cs",
+      "startLine": 34,
+      "endLine": 34
+    },
+    {
+      "id": "Class:Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.Serialization.cs:GraphSerializeData",
+      "name": "GraphSerializeData",
+      "filePath": "Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.Serialization.cs",
+      "startLine": 53,
+      "endLine": 53
+    },
+    {
+      "id": "Namespace:Assets/Veewo/NodeGraph/NeonTestGraph.cs:Veewo.Graph",
+      "name": "Veewo.Graph",
+      "filePath": "Assets/Veewo/NodeGraph/NeonTestGraph.cs",
+      "startLine": 22,
+      "endLine": 22
+    },
+    {
+      "id": "Class:Assets/Veewo/NodeGraph/NeonTestGraph.cs:LevelConfigNodeInput",
+      "name": "LevelConfigNodeInput",
+      "filePath": "Assets/Veewo/NodeGraph/NeonTestGraph.cs",
+      "startLine": 25,
+      "endLine": 25
+    },
+    {
+      "id": "Class:Assets/Veewo/NodeGraph/NeonTestGraph.cs:NeonTestGraph",
+      "name": "NeonTestGraph",
+      "filePath": "Assets/Veewo/NodeGraph/NeonTestGraph.cs",
+      "startLine": 31,
+      "endLine": 31
+    },
+    {
+      "id": "Class:Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.cs:TestGraphNodeInput",
+      "name": "TestGraphNodeInput",
+      "filePath": "Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.cs",
+      "startLine": 50,
+      "endLine": 50
+    },
+    {
+      "id": "Namespace:Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.cs:Veewo.Test.TestGraph",
+      "name": "Veewo.Test.TestGraph",
+      "filePath": "Packages/com.veewo.tester/TestGraph/Runtime/BaseTestGraph.cs",
+      "startLine": 18,
+      "endLine": 18
+    }
+  ]
+}

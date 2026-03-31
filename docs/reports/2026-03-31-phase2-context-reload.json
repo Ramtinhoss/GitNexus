@@ -1,0 +1,181 @@
+{
+  "status": "found",
+  "symbol": {
+    "uid": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:Reload",
+    "name": "Reload",
+    "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs",
+    "startLine": 14,
+    "endLine": 14
+  },
+  "incoming": {
+    "calls": [
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs:Init",
+        "name": "Init",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs:OnEquip",
+        "name": "OnEquip",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs:OnRevoke",
+        "name": "OnRevoke",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:OnPlayerEntersRoom",
+        "name": "OnPlayerEntersRoom",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:OnStopShooting",
+        "name": "OnStopShooting",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:AutoReloadTimer",
+        "name": "AutoReloadTimer",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:ReloadRoutine",
+        "name": "ReloadRoutine",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs:Init",
+        "name": "Init",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs:OnEquip",
+        "name": "OnEquip",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs:OnRevoke",
+        "name": "OnRevoke",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs:OnReloadFinish",
+        "name": "OnReloadFinish",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/EnergyStatusReload.cs:OnEquip",
+        "name": "OnEquip",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/EnergyStatusReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/EnergyStatusReload.cs:NeedReload",
+        "name": "NeedReload",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/EnergyStatusReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/CloudArrowReload.cs:OnEquip",
+        "name": "OnEquip",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/CloudArrowReload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/CloudArrowReload.cs:OnRevoke",
+        "name": "OnRevoke",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/CloudArrowReload.cs"
+      }
+    ]
+  },
+  "outgoing": {
+    "overrides": [
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:LoadData",
+        "name": "LoadData",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      }
+    ],
+    "calls": [
+      {
+        "uid": "Method:Assets/Veewo/Framework/Foundation/NewEventHub.cs:Raise",
+        "name": "Raise",
+        "filePath": "Assets/Veewo/Framework/Foundation/NewEventHub.cs"
+      },
+      {
+        "uid": "Method:Assets/Plugins/xNode/Scripts/Node.cs:AddDynamicInput",
+        "name": "AddDynamicInput",
+        "filePath": "Assets/Plugins/xNode/Scripts/Node.cs"
+      },
+      {
+        "uid": "Method:Assets/Plugins/xNode/Scripts/Node.cs:GetInputPort",
+        "name": "GetInputPort",
+        "filePath": "Assets/Plugins/xNode/Scripts/Node.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:Init",
+        "name": "Init",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:OnEquip",
+        "name": "OnEquip",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:OnRevoke",
+        "name": "OnRevoke",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:NeedReload",
+        "name": "NeedReload",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:StartReloadEvent",
+        "name": "StartReloadEvent",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:OnReloadFinish",
+        "name": "OnReloadFinish",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:AutoReloadTimer",
+        "name": "AutoReloadTimer",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:AddModify",
+        "name": "AddModify",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:ReloadRoutine",
+        "name": "ReloadRoutine",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:OnReloadFinish",
+        "name": "OnReloadFinish",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "uid": "Struct:Assets/NEON/Code/UI/WeaponHUD/WeaponClipManager.cs:SetClipWeaponHintNumEvent",
+        "name": "SetClipWeaponHintNumEvent",
+        "filePath": "Assets/NEON/Code/UI/WeaponHUD/WeaponClipManager.cs"
+      }
+    ]
+  },
+  "directIncoming": {},
+  "directOutgoing": {
+    "overrides": [
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:LoadData",
+        "name": "LoadData",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      }
+    ]
+  },
+  "processes": []
+}

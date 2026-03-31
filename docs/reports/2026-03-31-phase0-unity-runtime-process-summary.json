@@ -1,0 +1,405 @@
+{
+  "generatedAt": "2026-03-31T06:27:58.460Z",
+  "querySetPath": "docs/reports/2026-03-31-phase0-unity-runtime-process-queryset.json",
+  "runFiles": [
+    "docs/reports/2026-03-31-phase0-unity-runtime-process-run1.json",
+    "docs/reports/2026-03-31-phase0-unity-runtime-process-run2.json",
+    "docs/reports/2026-03-31-phase0-unity-runtime-process-run3.json"
+  ],
+  "reproducibilityThresholds": {
+    "ratioSpreadMax": 0.05,
+    "note": "spread = max(run ratios) - min(run ratios)"
+  },
+  "byRepo": {
+    "neonspark": {
+      "symbolNonEmptyRatio": {
+        "runRatios": [
+          0,
+          0,
+          0
+        ],
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "pass": true
+      },
+      "queryProcessSymbolsNonEmptyRatio": {
+        "runRatios": [
+          0.125,
+          0.125,
+          0.125
+        ],
+        "min": 0.125,
+        "max": 0.125,
+        "spread": 0,
+        "pass": true
+      },
+      "lifecycleCoverage": {
+        "Awake": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "Start": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "Update": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "FixedUpdate": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "OnEnable": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "OnDisable": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        }
+      }
+    },
+    "neonnew-core": {
+      "symbolNonEmptyRatio": {
+        "runRatios": [
+          0,
+          0,
+          0
+        ],
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "pass": true
+      },
+      "queryProcessSymbolsNonEmptyRatio": {
+        "runRatios": [
+          0.125,
+          0.125,
+          0.125
+        ],
+        "min": 0.125,
+        "max": 0.125,
+        "spread": 0,
+        "pass": true
+      },
+      "lifecycleCoverage": {
+        "Awake": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "Start": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "Update": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "FixedUpdate": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "OnEnable": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        },
+        "OnDisable": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            3,
+            3,
+            3
+          ]
+        }
+      }
+    },
+    "unity-mini-phase0": {
+      "symbolNonEmptyRatio": {
+        "runRatios": [
+          0,
+          0,
+          0
+        ],
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "pass": true
+      },
+      "queryProcessSymbolsNonEmptyRatio": {
+        "runRatios": [
+          0,
+          0,
+          0
+        ],
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "pass": true
+      },
+      "lifecycleCoverage": {
+        "Awake": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            0,
+            0,
+            0
+          ]
+        },
+        "Start": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            0,
+            0,
+            0
+          ]
+        },
+        "Update": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            0,
+            0,
+            0
+          ]
+        },
+        "FixedUpdate": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            0,
+            0,
+            0
+          ]
+        },
+        "OnEnable": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            0,
+            0,
+            0
+          ]
+        },
+        "OnDisable": {
+          "runRatios": [
+            0,
+            0,
+            0
+          ],
+          "min": 0,
+          "max": 0,
+          "spread": 0,
+          "pass": true,
+          "sampledPerRun": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  },
+  "overall": {
+    "symbolNonEmptyRatio": {
+      "runRatios": [
+        0,
+        0,
+        0
+      ],
+      "min": 0,
+      "max": 0,
+      "spread": 0,
+      "pass": true
+    },
+    "queryProcessSymbolsNonEmptyRatio": {
+      "runRatios": [
+        0.08333333333333333,
+        0.08333333333333333,
+        0.08333333333333333
+      ],
+      "min": 0.08333333333333333,
+      "max": 0.08333333333333333,
+      "spread": 0,
+      "pass": true
+    }
+  }
+}

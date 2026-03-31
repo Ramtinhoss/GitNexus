@@ -72,3 +72,12 @@ gitnexus/test/fixtures/lang-resolution/**/bin
 GitNexus.sln
 # Git worktrees
 .worktrees/
+
+# docs/reports temporary raw captures (keep summary/report artifacts tracked)
+docs/reports/*.on.json
+docs/reports/*.off.json
+docs/reports/*.time.txt
+docs/reports/*-gitnexus-list.txt
+docs/reports/*-test-u3-gates.log
+docs/reports/*-nonunity-context-*.json
+docs/reports/*-nonunity-query-*.json
