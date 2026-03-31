@@ -7,14 +7,6 @@ description: "Use when the user asks about GitNexus itself — available tools, 
 
 Quick reference for all GitNexus MCP tools, resources, and the knowledge graph schema.
 
-## Role Boundary
-
-- This file is routing/index guidance.
-- Scenario execution rules come from `_shared/*` contracts:
-  - `_shared/workflow-contract.md`
-  - `_shared/unity-resource-binding-contract.md`
-  - `_shared/unity-ui-trace-contract.md`
-
 ## Always Start Here
 
 For any task involving code understanding, debugging, impact analysis, or refactoring:

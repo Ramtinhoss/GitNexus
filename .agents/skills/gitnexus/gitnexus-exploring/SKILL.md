@@ -26,10 +26,6 @@ description: "Use when the user asks how code works, wants to understand archite
 
 > If step 2 says "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
 
-Workflow trigger branches:
-- If lifecycle meaning depends on Unity serialized/resource binding state, follow `_shared/unity-resource-binding-contract.md`.
-- If the question concerns UIToolkit visual semantics, follow `_shared/unity-ui-trace-contract.md`.
-
 ## Checklist
 
 ```
@@ -39,8 +35,6 @@ Workflow trigger branches:
 - [ ] gitnexus_context on key symbols for callers/callees
 - [ ] For Unity evidence, call context/query with `unity_resources: "on"` and `unity_hydration_mode: "compact"`
 - [ ] If `hydrationMeta.needsParityRetry === true`, rerun with `unity_hydration_mode: "parity"`
-- [ ] You must run `_shared/unity-resource-binding-contract.md` when lifecycle interpretation depends on serialized/resource binding state
-- [ ] You must run `_shared/unity-ui-trace-contract.md` when the request touches UIToolkit visual semantics
 - [ ] READ process resource for full execution traces
 - [ ] Read source files for implementation details
 ```

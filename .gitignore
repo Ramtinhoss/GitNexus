@@ -57,9 +57,6 @@ assets/
 # Generated files (should not be indexed)
 repomix-output*
 
-# Design docs (local only)
-docs/plans/
-
 # Local workspace metadata
 .codex/
 .obsidian/

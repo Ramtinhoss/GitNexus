@@ -5,14 +5,6 @@ description: "Use when the user needs to run GitNexus CLI commands like analyze/
 
 # GitNexus CLI Commands
 
-## Role Boundary
-
-- This file is command-operation manual.
-- For scenario decision logic, follow `gitnexus-guide` plus `_shared/*` contracts:
-  - `_shared/workflow-contract.md`
-  - `_shared/unity-resource-binding-contract.md`
-  - `_shared/unity-ui-trace-contract.md`
-
 Use one command alias in the session so every CLI/MCP call stays on one version line. After `setup`, treat `~/.gitnexus/config.json` as the only npx version source.
 
 ```bash

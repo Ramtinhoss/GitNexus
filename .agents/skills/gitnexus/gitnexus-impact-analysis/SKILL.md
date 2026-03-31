@@ -25,10 +25,6 @@ description: "Use when the user wants to know what will break if they change som
 
 > If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
 
-Conditional triggers:
-- If analysis touches Unity serialized/binding-state interpretation, apply `_shared/unity-resource-binding-contract.md`.
-- If analysis touches UIToolkit visual semantics, apply `_shared/unity-ui-trace-contract.md`.
-
 ## Checklist
 
 ```
