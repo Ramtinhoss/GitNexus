@@ -403,8 +403,85 @@ describe('processProcesses', () => {
 
     expect(result.processes.some((processNode) => processNode.trace.some((id) => id.includes('unity-runtime-root')))).toBe(true);
     expect(result.processes.some((processNode) => processNode.stepCount >= 3)).toBe(true);
-    expect(runtimeRootProcesses).toHaveLength(1);
+    expect(runtimeRootProcesses.length).toBeGreaterThanOrEqual(2);
+    expect(runtimeRootProcesses.some((processNode) => processNode.trace.includes('method:RegisterEvents'))).toBe(true);
+    expect(runtimeRootProcesses.some((processNode) => processNode.trace.includes('method:StartRoutineWithEvents'))).toBe(true);
     expect(result.processes.every((processNode) => !processNode.trace.includes('method:Noise'))).toBe(true);
+  });
+
+  it('classifies persisted unity lifecycle process subtype', async () => {
+    const graph = createKnowledgeGraph();
+    const nodes = [
+      { id: 'method:unity-runtime-root', label: 'Method', name: 'unity-runtime-root', filePath: 'Assets/Scripts/RuntimeRoot.cs', isExported: false },
+      { id: 'method:Awake', label: 'Method', name: 'Awake', filePath: 'Assets/Scripts/GunGraphMB.cs', isExported: false },
+      { id: 'method:RegisterEvents', label: 'Method', name: 'RegisterEvents', filePath: 'Assets/Scripts/GunGraph.cs', isExported: false },
+      { id: 'method:StartRoutineWithEvents', label: 'Method', name: 'StartRoutineWithEvents', filePath: 'Assets/Scripts/GunGraph.cs', isExported: false },
+      { id: 'func:handleRequest', label: 'Function', name: 'handleRequest', filePath: 'src/handler.ts', isExported: true },
+      { id: 'func:validateInput', label: 'Function', name: 'validateInput', filePath: 'src/validator.ts', isExported: true },
+      { id: 'func:saveToDb', label: 'Function', name: 'saveToDb', filePath: 'src/db.ts', isExported: true },
+    ] as const;
+
+    for (const node of nodes) {
+      graph.addNode({
+        id: node.id,
+        label: node.label,
+        properties: {
+          name: node.name,
+          filePath: node.filePath,
+          isExported: node.isExported,
+        },
+      });
+    }
+
+    const addCall = (
+      id: string,
+      sourceId: string,
+      targetId: string,
+      confidence: number,
+      reason: string,
+    ) => {
+      graph.addRelationship({
+        id,
+        sourceId,
+        targetId,
+        type: 'CALLS',
+        confidence,
+        reason,
+      });
+    };
+
+    addCall('call:runtime-awake', 'method:unity-runtime-root', 'method:Awake', 0.68, 'unity-lifecycle-synthetic');
+    addCall('call:awake-register', 'method:Awake', 'method:RegisterEvents', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:register-start', 'method:RegisterEvents', 'method:StartRoutineWithEvents', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:handle-validate', 'func:handleRequest', 'func:validateInput', 0.95, 'import-resolved');
+    addCall('call:validate-save', 'func:validateInput', 'func:saveToDb', 0.95, 'same-file');
+
+    const memberships: CommunityMembership[] = nodes.map((node) => ({
+      nodeId: node.id,
+      communityId: 'community:test',
+    }));
+
+    const result = await processProcesses(graph, memberships);
+    const runtimeProc = result.processes.find((processNode) => processNode.entryPointId === 'method:unity-runtime-root');
+    const staticProc = result.processes.find((processNode) => processNode.entryPointId === 'func:handleRequest');
+
+    expect(runtimeProc).toBeDefined();
+    expect(staticProc).toBeDefined();
+    expect(runtimeProc!.processSubtype).toBe('unity_lifecycle');
+    expect(staticProc!.processSubtype).toBe('static_calls');
+    expect(runtimeProc!.runtimeChainConfidence).toBe('medium');
+    expect(staticProc!.runtimeChainConfidence).toBe('high');
+    expect(runtimeProc!.sourceReasons).toContain('unity-runtime-loader-synthetic');
+    expect(runtimeProc!.sourceConfidences.length).toBeGreaterThan(0);
+
+    const runtimeSteps = result.steps.filter((step) => step.processId === runtimeProc!.id);
+    expect(runtimeSteps.some((step) => step.reason === 'unity-runtime-loader-synthetic')).toBe(true);
+    expect(runtimeSteps.every((step) => step.confidence !== undefined)).toBe(true);
+    expect(
+      runtimeSteps.every(
+        (step) => !/TODO|TBD|placeholder/i.test(`${step.nodeId} ${step.reason ?? ''}`),
+      ),
+    ).toBe(true);
   });
 
   it('limits output to maxProcesses', async () => {
@@ -445,5 +522,87 @@ describe('processProcesses', () => {
 
     expect(result.processes.length).toBeLessThanOrEqual(3);
     expect(result.stats.totalProcesses).toBeLessThanOrEqual(3);
+  });
+
+  it('prioritizes runtime-relevant synthetic branches beyond the first hop', async () => {
+    const graph = createKnowledgeGraph();
+    const nodes = [
+      { id: 'Method:unity-runtime-root', name: 'unity-runtime-root', filePath: '' },
+      { id: 'Method:Assets/NEON/Code/Game/Core/GunGraphMB.cs:Awake', name: 'Awake', filePath: 'Assets/NEON/Code/Game/Core/GunGraphMB.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Core/GunGraphMB.cs:RegisterGraphEvents', name: 'RegisterGraphEvents', filePath: 'Assets/NEON/Code/Game/Core/GunGraphMB.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:RegisterEvents', name: 'RegisterEvents', filePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents', name: 'StartRoutineWithEvents', filePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:AttackRoutineWithEvents', name: 'AttackRoutineWithEvents', filePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue', name: 'GetValue', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload', name: 'CheckReload', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:ReloadRoutine', name: 'ReloadRoutine', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Nodes/GraphEventHub/IGraphEvent.cs:Register', name: 'Register', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/GraphEventHub/IGraphEvent.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs:GetValue', name: 'GetValue', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/NoAttackReload.cs:GetValue', name: 'GetValue', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/NoAttackReload.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/PressEnergyTank.cs:GetValue', name: 'GetValue', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/PressEnergyTank.cs' },
+      { id: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue', name: 'GetValue', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs' },
+      { id: 'Method:Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs:EndOfFrame', name: 'EndOfFrame', filePath: 'Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs' },
+    ];
+
+    for (const node of nodes) {
+      graph.addNode({
+        id: node.id,
+        label: 'Method',
+        properties: {
+          name: node.name,
+          filePath: node.filePath,
+          isExported: false,
+        },
+      });
+    }
+
+    const addCall = (
+      id: string,
+      sourceId: string,
+      targetId: string,
+      confidence: number,
+      reason: string,
+    ) => {
+      graph.addRelationship({
+        id,
+        sourceId,
+        targetId,
+        type: 'CALLS',
+        confidence,
+        reason,
+      });
+    };
+
+    addCall('call:root-awake', 'Method:unity-runtime-root', 'Method:Assets/NEON/Code/Game/Core/GunGraphMB.cs:Awake', 0.68, 'unity-lifecycle-synthetic');
+    addCall('call:awake-register-graph', 'Method:Assets/NEON/Code/Game/Core/GunGraphMB.cs:Awake', 'Method:Assets/NEON/Code/Game/Core/GunGraphMB.cs:RegisterGraphEvents', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:register-graph-noise', 'Method:Assets/NEON/Code/Game/Core/GunGraphMB.cs:RegisterGraphEvents', 'Method:Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs:EndOfFrame', 0.5, 'global');
+    addCall('call:register-graph-register-events', 'Method:Assets/NEON/Code/Game/Core/GunGraphMB.cs:RegisterGraphEvents', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:RegisterEvents', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:register-events-igraph', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:RegisterEvents', 'Method:Assets/NEON/Code/Game/Graph/Nodes/GraphEventHub/IGraphEvent.cs:Register', 0.5, 'global');
+    addCall('call:register-events-start', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:RegisterEvents', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:start-attack', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:AttackRoutineWithEvents', 0.95, 'same-file');
+    addCall('call:start-fire', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs:GetValue', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:start-noattack', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/NoAttackReload.cs:GetValue', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:start-press', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/PressEnergyTank.cs:GetValue', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:start-resource', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:start-reloadbase', 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue', 0.68, 'unity-runtime-loader-synthetic');
+    addCall('call:getvalue-checkreload', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload', 0.95, 'same-file');
+    addCall('call:checkreload-routine', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload', 'Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:ReloadRoutine', 0.68, 'unity-runtime-loader-synthetic');
+
+    const memberships: CommunityMembership[] = nodes.map((node) => ({
+      nodeId: node.id,
+      communityId: 'community:unity',
+    }));
+
+    const result = await processProcesses(graph, memberships);
+    const runtimeRootProcesses = result.processes.filter((processNode) =>
+      processNode.entryPointId.includes('unity-runtime-root'),
+    );
+
+    expect(
+      runtimeRootProcesses.some((processNode) =>
+        processNode.trace.includes('Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents') &&
+        processNode.trace.includes('Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue'),
+      ),
+    ).toBe(true);
   });
 });
