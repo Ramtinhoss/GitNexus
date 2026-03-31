@@ -744,7 +744,9 @@ export class LocalBackend {
         endLine: sym.endLine,
         ...(module ? { module } : {}),
         ...(includeContent && content ? { content } : {}),
-        ...((unityResourcesMode !== 'off' && sym.nodeId && sym.type === 'Class')
+        ...((unityResourcesMode !== 'off'
+          && sym.nodeId
+          && (sym.type === 'Class' || String(sym.nodeId).toLowerCase().startsWith('class:')))
           ? await hydrateUnityForSymbol({
             mode: unityHydrationMode,
             basePayload: await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query)),
@@ -1343,7 +1345,7 @@ export class LocalBackend {
       })),
     };
 
-    if (unityResourcesMode !== 'off' && symNodeId && kind === 'Class') {
+    if (unityResourcesMode !== 'off' && symNodeId && (kind === 'Class' || symNodeId.toLowerCase().startsWith('class:'))) {
       const unityContext = await loadUnityContext(repo.id, symNodeId, (query) => executeQuery(repo.id, query));
       const hydratedUnityContext = await hydrateUnityForSymbol({
         mode: unityHydrationMode,

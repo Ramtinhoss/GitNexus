@@ -82,7 +82,10 @@ function hasDeepDiveEvidence(output: any): boolean {
 }
 
 function hasQueryUnityEvidence(output: any): boolean {
-  const symbols = Array.isArray(output?.process_symbols) ? output.process_symbols : [];
+  const symbols = [
+    ...(Array.isArray(output?.process_symbols) ? output.process_symbols : []),
+    ...(Array.isArray(output?.definitions) ? output.definitions : []),
+  ];
   return symbols.some((symbol: any) => {
     const bindings = Array.isArray(symbol?.resourceBindings) ? symbol.resourceBindings.length : 0;
     const scalarFields = Array.isArray(symbol?.serializedFields?.scalarFields) ? symbol.serializedFields.scalarFields.length : 0;
