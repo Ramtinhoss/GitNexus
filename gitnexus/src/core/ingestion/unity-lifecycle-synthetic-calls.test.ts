@@ -1,0 +1,215 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { generateId } from '../../lib/utils.js';
+import { createKnowledgeGraph } from '../graph/graph.js';
+import {
+  applyUnityLifecycleSyntheticCalls,
+  detectUnityLifecycleHosts,
+} from './unity-lifecycle-synthetic-calls.js';
+
+const PLACEHOLDER_RE = /(TODO|TBD|\/placeholder\/)/i;
+
+const addClass = (
+  graph: ReturnType<typeof createKnowledgeGraph>,
+  input: {
+    className: string;
+    filePath: string;
+    baseType?: string;
+    callbackNames?: string[];
+    loaderNames?: string[];
+    extraMethods?: string[];
+  },
+) => {
+  const classId = generateId('Class', `${input.filePath}:${input.className}`);
+  graph.addNode({
+    id: classId,
+    label: 'Class',
+    properties: {
+      name: input.className,
+      filePath: input.filePath,
+    },
+  });
+
+  if (input.baseType) {
+    const baseTypeId = generateId('Type', input.baseType);
+    graph.addNode({
+      id: baseTypeId,
+      label: 'Type',
+      properties: {
+        name: input.baseType,
+        filePath: '',
+      },
+    });
+    graph.addRelationship({
+      id: generateId('EXTENDS', `${classId}->${baseTypeId}`),
+      type: 'EXTENDS',
+      sourceId: classId,
+      targetId: baseTypeId,
+      confidence: 1,
+      reason: 'test-fixture',
+    });
+  }
+
+  const methodNames = [
+    ...(input.callbackNames ?? []),
+    ...(input.loaderNames ?? []),
+    ...(input.extraMethods ?? []),
+  ];
+
+  for (const methodName of methodNames) {
+    const methodId = generateId('Method', `${input.filePath}:${input.className}.${methodName}`);
+    graph.addNode({
+      id: methodId,
+      label: 'Method',
+      properties: {
+        name: methodName,
+        filePath: input.filePath,
+      },
+    });
+    graph.addRelationship({
+      id: generateId('HAS_METHOD', `${classId}->${methodId}`),
+      type: 'HAS_METHOD',
+      sourceId: classId,
+      targetId: methodId,
+      confidence: 1,
+      reason: 'test-fixture',
+    });
+  }
+
+  return classId;
+};
+
+test('detects Unity lifecycle hosts and callback anchors', () => {
+  const graph = createKnowledgeGraph();
+
+  const monoClassId = addClass(graph, {
+    className: 'GunGraphMB',
+    filePath: 'Assets/Scripts/GunGraphMB.cs',
+    baseType: 'MonoBehaviour',
+    callbackNames: ['Awake', 'OnEnable', 'Start', 'Update'],
+    loaderNames: ['RegisterEvents', 'StartRoutineWithEvents'],
+  });
+
+  addClass(graph, {
+    className: 'ReloadConfig',
+    filePath: 'Assets/Scripts/ReloadConfig.cs',
+    baseType: 'ScriptableObject',
+    callbackNames: ['OnEnable'],
+    loaderNames: ['GetValue', 'CheckReload'],
+  });
+
+  addClass(graph, {
+    className: 'PlainService',
+    filePath: 'Assets/Scripts/PlainService.cs',
+    callbackNames: ['Start'],
+    extraMethods: ['DoWork'],
+  });
+
+  const hosts = detectUnityLifecycleHosts(graph);
+  const hostIds = new Set(hosts.map((host) => host.classNode.id));
+
+  assert.equal(hostIds.has(monoClassId), true);
+  assert.equal(hosts.length >= 2, true);
+  assert.equal(hosts.some((host) => host.baseType === 'MonoBehaviour'), true);
+  assert.equal(hosts.some((host) => host.baseType === 'ScriptableObject'), true);
+  assert.equal(hosts.some((host) => host.classNode.properties.name === 'PlainService'), false);
+
+  const monoHost = hosts.find((host) => host.classNode.id === monoClassId);
+  assert.ok(monoHost);
+  assert.deepEqual(
+    monoHost.lifecycleCallbacks.map((method) => method.properties.name).sort(),
+    ['Awake', 'OnEnable', 'Start', 'Update'],
+  );
+});
+
+test('emits bounded synthetic CALLS edges with reason tags', () => {
+  const graph = createKnowledgeGraph();
+  const plainClassId = addClass(graph, {
+    className: 'PlainService',
+    filePath: 'Assets/Scripts/PlainService.cs',
+    callbackNames: ['Start'],
+    extraMethods: ['DoWork'],
+  });
+
+  addClass(graph, {
+    className: 'GunGraphMB',
+    filePath: 'Assets/Scripts/GunGraphMB.cs',
+    baseType: 'MonoBehaviour',
+    callbackNames: ['Awake', 'Start'],
+    loaderNames: ['RegisterEvents', 'StartRoutineWithEvents'],
+  });
+
+  addClass(graph, {
+    className: 'ReloadConfig',
+    filePath: 'Assets/Scripts/ReloadConfig.cs',
+    baseType: 'ScriptableObject',
+    callbackNames: ['OnEnable'],
+    loaderNames: ['GetValue', 'CheckReload'],
+  });
+
+  const result = applyUnityLifecycleSyntheticCalls(graph, {
+    enabled: true,
+    maxSyntheticEdgesPerClass: 4,
+    maxSyntheticEdgesTotal: 10,
+  });
+
+  const edges = [...graph.iterRelationships()].filter((edge) => edge.reason.includes('unity-'));
+  const plainMethods = new Set(
+    [...graph.iterRelationships()]
+      .filter((edge) => edge.type === 'HAS_METHOD' && edge.sourceId === plainClassId)
+      .map((edge) => edge.targetId),
+  );
+
+  assert.equal(result.syntheticEdgeCount, edges.length);
+  assert.equal(result.syntheticEdgeCount > 0, true);
+  assert.equal(result.syntheticEdgeCount <= 10, true);
+  assert.equal(edges.every((edge) => edge.type === 'CALLS'), true);
+  assert.equal(edges.every((edge) => edge.confidence < 1), true);
+  assert.equal(
+    edges.every((edge) => /unity-(lifecycle|runtime-loader)-synthetic/.test(edge.reason)),
+    true,
+  );
+  assert.equal(edges.some((edge) => edge.sourceId.includes('unity-runtime-root')), true);
+  assert.equal(
+    edges.some((edge) => plainMethods.has(edge.sourceId) || plainMethods.has(edge.targetId)),
+    false,
+  );
+});
+
+test('rejects placeholder paths and fake compliance', () => {
+  const graph = createKnowledgeGraph();
+  addClass(graph, {
+    className: 'FakeHost',
+    filePath: '/placeholder/FakeHost.cs',
+    baseType: 'MonoBehaviour',
+    callbackNames: ['Awake'],
+    loaderNames: ['RegisterEvents'],
+  });
+  addClass(graph, {
+    className: 'RealHost',
+    filePath: 'Assets/Scripts/RealHost.cs',
+    baseType: 'MonoBehaviour',
+    callbackNames: ['Awake'],
+    loaderNames: ['RegisterEvents'],
+  });
+
+  const result = applyUnityLifecycleSyntheticCalls(graph, {
+    enabled: true,
+    maxSyntheticEdgesPerClass: 4,
+    maxSyntheticEdgesTotal: 8,
+  });
+
+  const syntheticRoot = [...graph.iterNodes()].find(
+    (node) => node.label === 'Method' && node.properties.name === 'unity-runtime-root',
+  );
+  const syntheticEdges = [...graph.iterRelationships()].filter((edge) => edge.reason.includes('unity-'));
+
+  assert.equal(result.rejectedHostCount >= 1, true);
+  assert.equal(result.syntheticEdgeCount > 0, true);
+  assert.ok(syntheticRoot);
+  assert.equal(syntheticRoot.properties.filePath === '' || !PLACEHOLDER_RE.test(syntheticRoot.properties.filePath), true);
+  assert.equal(
+    syntheticEdges.every((edge) => !PLACEHOLDER_RE.test(`${edge.sourceId} ${edge.targetId} ${edge.reason}`)),
+    true,
+  );
+});
