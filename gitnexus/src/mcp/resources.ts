@@ -79,10 +79,10 @@ export function getResourceTemplates(): ResourceTemplate[] {
       description: 'Deep dive into a specific functional area',
       mimeType: 'text/yaml',
     },
-    {
+  {
       uriTemplate: 'gitnexus://repo/{name}/process/{processName}',
       name: 'Process Trace',
-      description: 'Step-by-step execution trace',
+      description: 'Step-by-step execution trace with lifecycle subtype and step evidence when available',
       mimeType: 'text/yaml',
     },
   ];
@@ -419,6 +419,8 @@ async function getProcessDetailResource(name: string, backend: LocalBackend, rep
     const lines: string[] = [
       `name: "${proc.heuristicLabel || proc.label || proc.id}"`,
       `type: ${proc.processType || 'unknown'}`,
+      `subtype: ${proc.processSubtype || 'static_calls'}`,
+      `runtime_chain_confidence: ${proc.runtimeChainConfidence || 'high'}`,
       `step_count: ${proc.stepCount || steps.length}`,
     ];
 
@@ -426,7 +428,9 @@ async function getProcessDetailResource(name: string, backend: LocalBackend, rep
       lines.push('');
       lines.push('trace:');
       for (const step of steps) {
-        lines.push(`  ${step.step}: ${step.name} (${step.filePath})`);
+        const reason = step.reason ? ` reason=${step.reason}` : '';
+        const confidence = step.confidence !== undefined ? ` confidence=${step.confidence}` : '';
+        lines.push(`  ${step.step}: ${step.name} (${step.filePath})${reason}${confidence}`);
       }
     }
 

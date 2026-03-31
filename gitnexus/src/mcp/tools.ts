@@ -53,8 +53,12 @@ Returns results grouped by process (execution flow):
 - definitions: standalone types/interfaces not in any process
 - processes[].evidence_mode: direct_step | method_projected
 - processes[].confidence: high | medium
+- processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
+- processes[].runtime_chain_confidence: high | medium (when persisted metadata exists)
 - process_symbols[].process_evidence_mode: direct_step | method_projected
 - process_symbols[].process_confidence: high | medium
+- process_symbols[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
+- process_symbols[].runtime_chain_confidence: high | medium (when persisted metadata exists)
 
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
 Supports optional scope controls for noisy codebases:
@@ -158,6 +162,8 @@ Handles disambiguation: if multiple symbols share the same name, returns candida
 Process participation metadata:
 - processes[].evidence_mode: direct_step | method_projected
 - processes[].confidence: high | medium
+- processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
+- processes[].runtime_chain_confidence: high | medium (when persisted metadata exists)
 
 Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.

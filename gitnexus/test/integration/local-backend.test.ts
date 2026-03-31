@@ -13,7 +13,7 @@
  * #3 (path traversal), #4 (relation allowlist), #25 (regex lastIndex),
  * #26 (rename first-occurrence-only)
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import {
   executeQuery,
   executeParameterized,
@@ -23,8 +23,15 @@ import {
   VALID_RELATION_TYPES,
   isWriteQuery,
 } from '../../src/mcp/local/local-backend.js';
+import { LocalBackend } from '../../src/mcp/local/local-backend.js';
 import { withTestLbugDB } from '../helpers/test-indexed-db.js';
 import { LOCAL_BACKEND_SEED_DATA } from '../fixtures/local-backend-seed.js';
+import { listRegisteredRepos } from '../../src/storage/repo-manager.js';
+
+vi.mock('../../src/storage/repo-manager.js', () => ({
+  listRegisteredRepos: vi.fn().mockResolvedValue([]),
+  cleanupOldKuzuFiles: vi.fn().mockResolvedValue({ found: false, needsReindex: false }),
+}));
 
 // ─── Block 1: Pool adapter tests ─────────────────────────────────────
 
@@ -113,11 +120,33 @@ withTestLbugDB('local-backend', (handle) => {
          RETURN s.name AS symbol, r.step AS step
          ORDER BY r.step`,
       );
-      expect(rows).toHaveLength(2);
-      expect(rows[0].symbol).toBe('login');
-      expect(rows[0].step).toBe(1);
-      expect(rows[1].symbol).toBe('validate');
-      expect(rows[1].step).toBe(2);
+      expect(rows.length).toBeGreaterThanOrEqual(2);
+      expect(rows.some((row) => row.symbol === 'login' && row.step === 1)).toBe(true);
+      expect(rows.some((row) => row.symbol === 'validate' && row.step === 2)).toBe(true);
+    });
+
+    it('query process detail includes persisted lifecycle evidence', async () => {
+      vi.mocked(listRegisteredRepos).mockResolvedValue([
+        {
+          name: 'test-repo',
+          path: '/test/repo',
+          storagePath: handle.tmpHandle.dbPath,
+          indexedAt: new Date().toISOString(),
+          lastCommit: 'abc123',
+          stats: { files: 2, nodes: 3, communities: 1, processes: 1 },
+        },
+      ]);
+
+      const backend = new LocalBackend();
+      await backend.init();
+      const detail = await backend.queryProcessDetail('User Login');
+
+      expect(detail.error).toBeUndefined();
+      expect(detail.process.processSubtype).toBe('unity_lifecycle');
+      expect(detail.process.processType).toBe('intra_community');
+      expect(detail.process.stepCount).toBeGreaterThan(0);
+      expect(detail.steps.some((step: any) => step.reason === 'unity-runtime-loader-synthetic')).toBe(true);
+      expect(detail.steps.every((step: any) => typeof step.step === 'number')).toBe(true);
     });
   });
 

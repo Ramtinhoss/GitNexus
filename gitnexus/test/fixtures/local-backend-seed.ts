@@ -17,8 +17,8 @@ export const LOCAL_BACKEND_SEED_DATA = [
   // Community
   `CREATE (c:Community {id: 'comm:auth', label: 'Auth', heuristicLabel: 'Authentication', keywords: ['auth', 'login'], description: 'Auth module', enrichedBy: 'heuristic', cohesion: 0.8, symbolCount: 3})`,
   // Process
-  `CREATE (p:Process {id: 'proc:login-flow', label: 'LoginFlow', heuristicLabel: 'User Login', processType: 'intra_community', stepCount: 2, communities: ['auth'], entryPointId: 'func:login', terminalId: 'func:validate'})`,
-  `CREATE (p:Process {id: 'proc:auth-method-flow', label: 'AuthMethodFlow', heuristicLabel: 'Auth Method Flow', processType: 'intra_community', stepCount: 1, communities: ['auth'], entryPointId: 'method:AuthService.authenticate', terminalId: 'method:AuthService.authenticate'})`,
+  `CREATE (p:Process {id: 'proc:login-flow', label: 'LoginFlow', heuristicLabel: 'User Login', processType: 'intra_community', processSubtype: 'unity_lifecycle', runtimeChainConfidence: 'medium', sourceReasons: ['unity-runtime-loader-synthetic'], sourceConfidences: [0.68], stepCount: 2, communities: ['auth'], entryPointId: 'func:login', terminalId: 'func:validate'})`,
+  `CREATE (p:Process {id: 'proc:auth-method-flow', label: 'AuthMethodFlow', heuristicLabel: 'Auth Method Flow', processType: 'intra_community', processSubtype: 'static_calls', runtimeChainConfidence: 'high', sourceReasons: ['member-call'], sourceConfidences: [1.0], stepCount: 1, communities: ['auth'], entryPointId: 'method:AuthService.authenticate', terminalId: 'method:AuthService.authenticate'})`,
   // Relationships
   `MATCH (a:Function), (b:Function) WHERE a.id = 'func:login' AND b.id = 'func:validate'
    CREATE (a)-[:CodeRelation {type: 'CALLS', confidence: 1.0, reason: 'direct', step: 0}]->(b)`,
@@ -31,11 +31,11 @@ export const LOCAL_BACKEND_SEED_DATA = [
   `MATCH (a:Function), (c:Community) WHERE a.id = 'func:login' AND c.id = 'comm:auth'
    CREATE (a)-[:CodeRelation {type: 'MEMBER_OF', confidence: 1.0, reason: '', step: 0}]->(c)`,
   `MATCH (a:Function), (p:Process) WHERE a.id = 'func:login' AND p.id = 'proc:login-flow'
-   CREATE (a)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 1.0, reason: '', step: 1}]->(p)`,
+   CREATE (a)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 0.68, reason: 'unity-runtime-loader-synthetic', step: 1}]->(p)`,
   `MATCH (a:Function), (p:Process) WHERE a.id = 'func:validate' AND p.id = 'proc:login-flow'
-   CREATE (a)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 1.0, reason: '', step: 2}]->(p)`,
+   CREATE (a)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 0.95, reason: 'same-file', step: 2}]->(p)`,
   `MATCH (m:Method), (p:Process) WHERE m.id = 'method:AuthService.authenticate' AND p.id = 'proc:login-flow'
-   CREATE (m)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 1.0, reason: 'phase2-test', step: 2}]->(p)`,
+   CREATE (m)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 0.68, reason: 'unity-runtime-loader-synthetic', step: 2}]->(p)`,
   `MATCH (m:Method), (p:Process) WHERE m.id = 'method:AuthService.authenticate' AND p.id = 'proc:auth-method-flow'
    CREATE (m)-[:CodeRelation {type: 'STEP_IN_PROCESS', confidence: 1.0, reason: 'phase2-test', step: 1}]->(p)`,
   // HAS_METHOD: AuthService -> authenticate

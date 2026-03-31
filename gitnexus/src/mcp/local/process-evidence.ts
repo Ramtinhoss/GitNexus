@@ -18,6 +18,14 @@ export interface MergedProcessEvidenceRow extends ProcessEvidenceRow {
   confidence: ProcessConfidence;
 }
 
+const normalizeProcessConfidence = (
+  raw: unknown,
+  fallback: ProcessConfidence,
+): ProcessConfidence => {
+  if (raw === 'high' || raw === 'medium') return raw;
+  return fallback;
+};
+
 export function mergeProcessEvidence(input: {
   directRows: ProcessEvidenceRow[];
   projectedRows: ProjectedProcessEvidenceRow[];
@@ -37,6 +45,10 @@ export function mergeProcessEvidence(input: {
   }
 
   for (const row of input.directRows) {
+    const persistedConfidence = normalizeProcessConfidence(
+      (row as any).runtimeChainConfidence ?? (row as any).runtime_chain_confidence,
+      'high',
+    );
     byPid.set(row.pid, {
       ...row,
       pid: row.pid,
@@ -44,7 +56,7 @@ export function mergeProcessEvidence(input: {
       step: row.step,
       stepCount: row.stepCount,
       evidence_mode: 'direct_step',
-      confidence: 'high',
+      confidence: persistedConfidence,
     });
   }
 

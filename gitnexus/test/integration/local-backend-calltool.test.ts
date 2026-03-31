@@ -164,6 +164,17 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(loginSymbol.process_confidence).toBe('high');
     });
 
+    it('returns lifecycle process metadata without breaking legacy fields', async () => {
+      const queryResult = await backend.callTool('query', { query: 'login' });
+      expect(queryResult.processes.some((p: any) => p.process_subtype === 'unity_lifecycle')).toBe(true);
+      expect(queryResult.processes.every((p: any) => typeof p.step_count === 'number')).toBe(true);
+      expect(queryResult.processes.every((p: any) => typeof p.process_type === 'string')).toBe(true);
+
+      const contextResult = await backend.callTool('context', { name: 'login' });
+      expect(contextResult.processes.some((p: any) => p.process_subtype === 'unity_lifecycle')).toBe(true);
+      expect(contextResult.processes.every((p: any) => typeof p.step_count === 'number')).toBe(true);
+    });
+
     it('unknown tool throws', async () => {
       await expect(
         backend.callTool('nonexistent_tool', {}),

@@ -683,7 +683,18 @@ export class LocalBackend {
       .slice(0, searchLimit);
     
     // Step 2: For each match with a nodeId, trace to process(es)
-    const processMap = new Map<string, { id: string; label: string; heuristicLabel: string; processType: string; stepCount: number; totalScore: number; cohesionBoost: number; symbols: any[] }>();
+    const processMap = new Map<string, {
+      id: string;
+      label: string;
+      heuristicLabel: string;
+      processType: string;
+      processSubtype?: string;
+      runtimeChainConfidence?: string;
+      stepCount: number;
+      totalScore: number;
+      cohesionBoost: number;
+      symbols: any[];
+    }>();
     const definitions: any[] = []; // standalone symbols not in any process
     
     for (const [_, item] of merged) {
@@ -702,9 +713,9 @@ export class LocalBackend {
       let directProcessRows: any[] = [];
       let projectedProcessRows: any[] = [];
       try {
-        directProcessRows = await executeParameterized(repo.id, `
+          directProcessRows = await executeParameterized(repo.id, `
           MATCH (n {id: $nodeId})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
-          RETURN p.id AS pid, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount, r.step AS step
+          RETURN p.id AS pid, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, p.stepCount AS stepCount, r.step AS step
         `, { nodeId: sym.nodeId });
       } catch (e) { logQueryError('query:process-lookup', e); }
       const symIdLower = String(sym.nodeId).toLowerCase();
@@ -720,7 +731,7 @@ export class LocalBackend {
           projectedProcessRows = await executeParameterized(repo.id, `
             MATCH (n {id: $nodeId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
             MATCH (m)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
-            RETURN p.id AS pid, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount, MIN(r.step) AS step
+            RETURN p.id AS pid, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, p.stepCount AS stepCount, MIN(r.step) AS step
           `, { nodeId: sym.nodeId });
         } catch (e) { logQueryError('query:method-process-projection', e); }
       }
@@ -813,6 +824,8 @@ export class LocalBackend {
               heuristicLabel: hLabel,
               processType: pType,
               stepCount,
+              processSubtype: String((row as any).processSubtype || ''),
+              runtimeChainConfidence: String((row as any).runtimeChainConfidence || ''),
               totalScore: 0,
               cohesionBoost: 0,
               symbols: [],
@@ -826,6 +839,8 @@ export class LocalBackend {
             ...symbolEntry,
             process_id: pid,
             step_index: step,
+            process_subtype: String((row as any).processSubtype || ''),
+            runtime_chain_confidence: String((row as any).runtimeChainConfidence || ''),
             process_evidence_mode: row.evidence_mode,
             process_confidence: row.confidence,
           });
@@ -849,7 +864,9 @@ export class LocalBackend {
       priority: Math.round(p.priority * 1000) / 1000,
       symbol_count: p.symbols.length,
       process_type: p.processType,
+      process_subtype: (p as any).processSubtype || undefined,
       step_count: p.stepCount,
+      runtime_chain_confidence: (p as any).runtimeChainConfidence || undefined,
       evidence_mode: p.symbols.some((s: any) => s.process_evidence_mode === 'direct_step')
         ? 'direct_step'
         : 'method_projected',
@@ -1333,7 +1350,7 @@ export class LocalBackend {
     try {
       directProcessRows = await executeParameterized(repo.id, `
         MATCH (n {id: $symId})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
-        RETURN p.id AS pid, p.heuristicLabel AS label, r.step AS step, p.stepCount AS stepCount
+        RETURN p.id AS pid, p.heuristicLabel AS label, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, r.step AS step, p.stepCount AS stepCount
       `, { symId });
     } catch (e) { logQueryError('context:process-participation', e); }
 
@@ -1342,7 +1359,7 @@ export class LocalBackend {
         projectedProcessRows = await executeParameterized(repo.id, `
           MATCH (n {id: $symId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
           MATCH (m)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
-          RETURN p.id AS pid, p.heuristicLabel AS label, MIN(r.step) AS step, p.stepCount AS stepCount
+          RETURN p.id AS pid, p.heuristicLabel AS label, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, MIN(r.step) AS step, p.stepCount AS stepCount
         `, { symId });
       } catch (e) { logQueryError('context:method-process-projection', e); }
     }
@@ -1387,8 +1404,10 @@ export class LocalBackend {
       processes: processRows.map((r: any) => ({
         id: r.pid || r[0],
         name: r.label || r[1],
-        step_index: r.step || r[2],
-        step_count: r.stepCount || r[3],
+        process_subtype: r.processSubtype || r[2],
+        runtime_chain_confidence: r.runtimeChainConfidence || r[3],
+        step_index: r.step || r[4],
+        step_count: r.stepCount || r[5],
         evidence_mode: r.evidence_mode,
         confidence: r.confidence,
       })),
@@ -1480,7 +1499,7 @@ export class LocalBackend {
       const processes = await executeParameterized(repo.id, `
         MATCH (p:Process)
         WHERE p.label = $processName OR p.heuristicLabel = $processName
-        RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount
+        RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, p.stepCount AS stepCount
         LIMIT 1
       `, { processName: name });
       if (processes.length === 0) return { error: `Process '${name}' not found` };
@@ -1489,17 +1508,25 @@ export class LocalBackend {
       const procId = proc.id || proc[0];
       const steps = await executeParameterized(repo.id, `
         MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p {id: $procId})
-        RETURN n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, r.step AS step
+        RETURN n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, r.step AS step, r.reason AS reason, r.confidence AS confidence
         ORDER BY r.step
       `, { procId });
       
       return {
         process: {
           id: procId, label: proc.label || proc[1], heuristicLabel: proc.heuristicLabel || proc[2],
-          processType: proc.processType || proc[3], stepCount: proc.stepCount || proc[4],
+          processType: proc.processType || proc[3],
+          processSubtype: proc.processSubtype || proc[4],
+          runtimeChainConfidence: proc.runtimeChainConfidence || proc[5],
+          stepCount: proc.stepCount || proc[6],
         },
         steps: steps.map((s: any) => ({
-          step: s.step || s[3], name: s.name || s[0], type: s.type || s[1], filePath: s.filePath || s[2],
+          step: s.step || s[3],
+          reason: s.reason || s[4],
+          confidence: s.confidence || s[5],
+          name: s.name || s[0],
+          type: s.type || s[1],
+          filePath: s.filePath || s[2],
         })),
       };
     }
@@ -2177,7 +2204,7 @@ export class LocalBackend {
     const processes = await executeParameterized(repo.id, `
       MATCH (p:Process)
       WHERE p.label = $processName OR p.heuristicLabel = $processName
-      RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount
+      RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, p.stepCount AS stepCount
       LIMIT 1
     `, { processName: name });
     if (processes.length === 0) return { error: `Process '${name}' not found` };
@@ -2186,17 +2213,25 @@ export class LocalBackend {
     const procId = proc.id || proc[0];
     const steps = await executeParameterized(repo.id, `
       MATCH (n)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p {id: $procId})
-      RETURN n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, r.step AS step
+      RETURN n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, r.step AS step, r.reason AS reason, r.confidence AS confidence
       ORDER BY r.step
     `, { procId });
 
     return {
       process: {
         id: procId, label: proc.label || proc[1], heuristicLabel: proc.heuristicLabel || proc[2],
-        processType: proc.processType || proc[3], stepCount: proc.stepCount || proc[4],
+        processType: proc.processType || proc[3],
+        processSubtype: proc.processSubtype || proc[4],
+        runtimeChainConfidence: proc.runtimeChainConfidence || proc[5],
+        stepCount: proc.stepCount || proc[6],
       },
       steps: steps.map((s: any) => ({
-        step: s.step || s[3], name: s.name || s[0], type: s.type || s[1], filePath: s.filePath || s[2],
+        step: s.step || s[3],
+        reason: s.reason || s[4],
+        confidence: s.confidence || s[5],
+        name: s.name || s[0],
+        type: s.type || s[1],
+        filePath: s.filePath || s[2],
       })),
     };
   }
