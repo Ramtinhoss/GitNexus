@@ -9,10 +9,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { initLbug, executeQuery, executeParameterized, closeLbug, isLbugReady } from '../core/lbug-adapter.js';
+import { parseUnityHydrationMode, parseUnityResourcesMode } from '../../core/unity/options.js';
 import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
 import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../../core/unity/ui-trace.js';
 import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
-import type { UnityContextPayload, UnityHydrationMeta } from './unity-enrichment.js';
+import { loadUnityContext, type UnityContextPayload, type UnityHydrationMeta } from './unity-enrichment.js';
+import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
@@ -1120,10 +1122,20 @@ export class LocalBackend {
     uid?: string;
     file_path?: string;
     include_content?: boolean;
+    unity_resources?: string;
+    unity_hydration_mode?: string;
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
     
     const { name, uid, file_path, include_content } = params;
+    let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
+    let unityHydrationMode: 'compact' | 'parity' = 'compact';
+    try {
+      unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
+      unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error) };
+    }
     
     if (!name && !uid) {
       return { error: 'Either "name" or "uid" parameter is required.' };
@@ -1183,6 +1195,9 @@ export class LocalBackend {
     // Step 3: Build full context
     const sym = symbols[0];
     const symId = sym.id || sym[0];
+    const symNodeId = String(symId || '');
+    const symName = String(sym.name || sym[1] || '');
+    const symFilePath = String(sym.filePath || sym[3] || '');
 
     // Direct incoming refs for the selected symbol.
     const directIncomingRows = await executeParameterized(repo.id, `
@@ -1273,13 +1288,13 @@ export class LocalBackend {
       return cats;
     };
     
-    return {
+    const result = {
       status: 'found',
       symbol: {
         uid: sym.id || sym[0],
-        name: sym.name || sym[1],
+        name: symName,
         kind,
-        filePath: sym.filePath || sym[3],
+        filePath: symFilePath,
         startLine: sym.startLine || sym[4],
         endLine: sym.endLine || sym[5],
         ...(include_content && (sym.content || sym[6]) ? { content: sym.content || sym[6] } : {}),
@@ -1295,6 +1310,33 @@ export class LocalBackend {
         step_count: r.stepCount || r[3],
       })),
     };
+
+    if (unityResourcesMode !== 'off' && symNodeId && kind === 'Class') {
+      const unityContext = await loadUnityContext(repo.id, symNodeId, (query) => executeQuery(repo.id, query));
+      const hydratedUnityContext = await hydrateUnityForSymbol({
+        mode: unityHydrationMode,
+        basePayload: unityContext,
+        deps: {
+          executeQuery: (query, queryParams) => {
+            if (queryParams && Object.keys(queryParams).length > 0) {
+              return executeParameterized(repo.id, query, queryParams);
+            }
+            return executeQuery(repo.id, query);
+          },
+          repoPath: repo.repoPath,
+          storagePath: repo.storagePath,
+          indexedCommit: repo.lastCommit,
+        },
+        symbol: {
+          uid: symNodeId,
+          name: symName,
+          filePath: symFilePath,
+        },
+      });
+      Object.assign(result, hydratedUnityContext);
+    }
+
+    return result;
   }
 
   /**
