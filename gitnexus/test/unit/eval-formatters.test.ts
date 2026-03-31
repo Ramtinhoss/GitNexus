@@ -141,6 +141,27 @@ describe('formatContextResult', () => {
     expect(result).toContain('1 execution flow');
     expect(result).toContain('Auth Flow');
   });
+
+  it('includes process evidence mode', () => {
+    const text = formatContextResult({
+      status: 'found',
+      symbol: { kind: 'Class', name: 'AuthService', filePath: 'src/auth.ts' },
+      incoming: {},
+      outgoing: {},
+      processes: [
+        {
+          name: 'User Login',
+          step_index: 2,
+          step_count: 4,
+          evidence_mode: 'method_projected',
+          confidence: 'medium',
+        },
+      ],
+    });
+
+    expect(text).toContain('method_projected');
+    expect(text).toContain('medium');
+  });
 });
 
 // ─── formatImpactResult ──────────────────────────────────────────────

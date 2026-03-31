@@ -51,6 +51,10 @@ Returns results grouped by process (execution flow):
 - processes: ranked execution flows with relevance priority
 - process_symbols: all symbols in those flows with file locations and module (functional area)
 - definitions: standalone types/interfaces not in any process
+- processes[].evidence_mode: direct_step | method_projected
+- processes[].confidence: high | medium
+- process_symbols[].process_evidence_mode: direct_step | method_projected
+- process_symbols[].process_confidence: high | medium
 
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
 Supports optional scope controls for noisy codebases:
@@ -143,13 +147,17 @@ TIPS:
   },
   {
     name: 'context',
-    description: `360-degree view of a single code symbol.
+description: `360-degree view of a single code symbol.
 Shows categorized incoming/outgoing references (calls, imports, extends, implements), process participation, and file location.
 
 WHEN TO USE: After query() to understand a specific symbol in depth. When you need to know all callers, callees, and what execution flows a symbol participates in.
 AFTER THIS: Use impact() if planning changes, or READ gitnexus://repo/{name}/process/{processName} for full execution trace.
 
 Handles disambiguation: if multiple symbols share the same name, returns candidates for you to pick from. Use uid param for zero-ambiguity lookup from prior results.
+
+Process participation metadata:
+- processes[].evidence_mode: direct_step | method_projected
+- processes[].confidence: high | medium
 
 Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
