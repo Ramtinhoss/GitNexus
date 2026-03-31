@@ -319,6 +319,94 @@ describe('processProcesses', () => {
     expect(progress).toBeLessThanOrEqual(100);
   });
 
+  it('traces through synthetic Unity runtime roots', async () => {
+    const graph = createKnowledgeGraph();
+    const nodes = [
+      { id: 'method:unity-runtime-root', name: 'unity-runtime-root' },
+      { id: 'method:Awake', name: 'Awake' },
+      { id: 'method:OnEnable', name: 'OnEnable' },
+      { id: 'method:RegisterEvents', name: 'RegisterEvents' },
+      { id: 'method:StartRoutineWithEvents', name: 'StartRoutineWithEvents' },
+      { id: 'method:Noise', name: 'Noise' },
+    ];
+
+    for (const node of nodes) {
+      graph.addNode({
+        id: node.id,
+        label: 'Method',
+        properties: {
+          name: node.name,
+          filePath: 'Assets/Scripts/GunGraphMB.cs',
+          isExported: false,
+        },
+      });
+    }
+
+    graph.addRelationship({
+      id: 'call:runtime-awake',
+      sourceId: 'method:unity-runtime-root',
+      targetId: 'method:Awake',
+      type: 'CALLS',
+      confidence: 0.68,
+      reason: 'unity-lifecycle-synthetic',
+    });
+    graph.addRelationship({
+      id: 'call:runtime-onenable',
+      sourceId: 'method:unity-runtime-root',
+      targetId: 'method:OnEnable',
+      type: 'CALLS',
+      confidence: 0.68,
+      reason: 'unity-lifecycle-synthetic',
+    });
+    graph.addRelationship({
+      id: 'call:awake-register',
+      sourceId: 'method:Awake',
+      targetId: 'method:RegisterEvents',
+      type: 'CALLS',
+      confidence: 0.68,
+      reason: 'unity-runtime-loader-synthetic',
+    });
+    graph.addRelationship({
+      id: 'call:onenable-register',
+      sourceId: 'method:OnEnable',
+      targetId: 'method:RegisterEvents',
+      type: 'CALLS',
+      confidence: 0.68,
+      reason: 'unity-runtime-loader-synthetic',
+    });
+    graph.addRelationship({
+      id: 'call:register-start',
+      sourceId: 'method:RegisterEvents',
+      targetId: 'method:StartRoutineWithEvents',
+      type: 'CALLS',
+      confidence: 0.68,
+      reason: 'unity-runtime-loader-synthetic',
+    });
+    graph.addRelationship({
+      id: 'call:register-noise-low-confidence',
+      sourceId: 'method:RegisterEvents',
+      targetId: 'method:Noise',
+      type: 'CALLS',
+      confidence: 0.3,
+      reason: 'fuzzy-global',
+    });
+
+    const memberships: CommunityMembership[] = nodes.map((node) => ({
+      nodeId: node.id,
+      communityId: 'community:unity',
+    }));
+
+    const result = await processProcesses(graph, memberships);
+    const runtimeRootProcesses = result.processes.filter((processNode) =>
+      processNode.entryPointId.includes('unity-runtime-root'),
+    );
+
+    expect(result.processes.some((processNode) => processNode.trace.some((id) => id.includes('unity-runtime-root')))).toBe(true);
+    expect(result.processes.some((processNode) => processNode.stepCount >= 3)).toBe(true);
+    expect(runtimeRootProcesses).toHaveLength(1);
+    expect(result.processes.every((processNode) => !processNode.trace.includes('method:Noise'))).toBe(true);
+  });
+
   it('limits output to maxProcesses', async () => {
     const graph = createKnowledgeGraph();
 

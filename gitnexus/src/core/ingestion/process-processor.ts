@@ -16,6 +16,7 @@ import { calculateEntryPointScore, isTestFile } from './entry-point-scoring.js';
 import { SupportedLanguages } from '../../config/supported-languages.js';
 
 const isDev = process.env.NODE_ENV === 'development';
+const SYNTHETIC_RUNTIME_ROOT_MARKER = 'unity-runtime-root';
 
 // ============================================================================
 // CONFIGURATION
@@ -125,11 +126,12 @@ export const processProcesses = async (
   
   // Step 3b: Deduplicate by entry+terminal pair (keep longest path per pair)
   const endpointDeduped = deduplicateByEndpoints(uniqueTraces);
+  const syntheticRootBounded = capSyntheticRuntimeRootTraces(endpointDeduped);
   
-  onProgress?.(`Deduped ${uniqueTraces.length} → ${endpointDeduped.length} unique endpoint pairs`, 70);
+  onProgress?.(`Deduped ${uniqueTraces.length} → ${syntheticRootBounded.length} unique endpoint pairs`, 70);
   
   // Step 4: Limit to max processes (prioritize longer traces)
-  const limitedTraces = endpointDeduped
+  const limitedTraces = syntheticRootBounded
     .sort((a, b) => b.length - a.length)
     .slice(0, cfg.maxProcesses);
   
@@ -439,6 +441,25 @@ const deduplicateByEndpoints = (traces: string[][]): string[][] => {
   }
   
   return Array.from(byEndpoints.values());
+};
+
+/**
+ * Keep synthetic runtime-root traces useful but bounded to one longest trace.
+ * This prevents synthetic fan-out from dominating process output.
+ */
+const capSyntheticRuntimeRootTraces = (traces: string[][]): string[][] => {
+  if (traces.length === 0) return [];
+
+  const runtimeRootTraces = traces
+    .filter((trace) => trace[0]?.includes(SYNTHETIC_RUNTIME_ROOT_MARKER))
+    .sort((a, b) => b.length - a.length);
+
+  if (runtimeRootTraces.length <= 1) return traces;
+
+  const keep = runtimeRootTraces[0];
+  const filtered = traces.filter((trace) => !trace[0]?.includes(SYNTHETIC_RUNTIME_ROOT_MARKER));
+  filtered.push(keep);
+  return filtered;
 };
 
 // ============================================================================

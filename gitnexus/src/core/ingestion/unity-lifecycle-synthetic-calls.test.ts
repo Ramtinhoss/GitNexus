@@ -213,3 +213,26 @@ test('rejects placeholder paths and fake compliance', () => {
     true,
   );
 });
+
+test('emits no synthetic edges when there is no Unity host signal', () => {
+  const graph = createKnowledgeGraph();
+  addClass(graph, {
+    className: 'PlainService',
+    filePath: 'Assets/Scripts/PlainService.cs',
+    callbackNames: ['Start', 'Update'],
+    loaderNames: ['RegisterEvents', 'CheckReload'],
+  });
+
+  const result = applyUnityLifecycleSyntheticCalls(graph, {
+    enabled: true,
+    maxSyntheticEdgesPerClass: 4,
+    maxSyntheticEdgesTotal: 8,
+  });
+
+  const syntheticEdges = [...graph.iterRelationships()].filter((edge) => edge.reason.includes('unity-'));
+  const runtimeRoot = [...graph.iterNodes()].find((node) => node.id.includes('unity-runtime-root'));
+
+  assert.equal(result.syntheticEdgeCount, 0);
+  assert.equal(syntheticEdges.length, 0);
+  assert.equal(runtimeRoot, undefined);
+});
