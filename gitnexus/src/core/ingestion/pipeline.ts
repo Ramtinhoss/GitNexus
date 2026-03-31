@@ -12,6 +12,8 @@ import { computeMRO } from './mro-processor.js';
 import { processCommunities } from './community-processor.js';
 import { processProcesses } from './process-processor.js';
 import { processUnityResources } from './unity-resource-processor.js';
+import { applyUnityLifecycleSyntheticCalls } from './unity-lifecycle-synthetic-calls.js';
+import { resolveUnityLifecycleConfig } from './unity-lifecycle-config.js';
 import { createResolutionContext } from './resolution-context.js';
 import { createASTCache } from './ast-cache.js';
 import { PipelineProgress, PipelineResult, type PipelineRunOptions } from '../../types/pipeline.js';
@@ -425,11 +427,23 @@ export const runPipelineFromRepo = async (
         });
       });
 
+      const unityLifecycleConfig = resolveUnityLifecycleConfig(process.env);
+      const unityLifecycleSyntheticResult = applyUnityLifecycleSyntheticCalls(graph, unityLifecycleConfig);
+      const syntheticEdgeDetail = unityLifecycleSyntheticResult.syntheticEdgeCount > 0
+        ? ` (Unity synthetic edges: ${unityLifecycleSyntheticResult.syntheticEdgeCount})`
+        : '';
+
+      if (isDev && unityLifecycleConfig.enabled) {
+        console.log(
+          `[UnityLifecycle] enabled=${unityLifecycleConfig.enabled} hosts=${unityLifecycleSyntheticResult.hostCount} syntheticEdges=${unityLifecycleSyntheticResult.syntheticEdgeCount} rejectedHosts=${unityLifecycleSyntheticResult.rejectedHostCount}`,
+        );
+      }
+
       // ── Phase 6: Processes ─────────────────────────────────────────────
       onProgress({
         phase: 'processes',
         percent: 94,
-        message: 'Detecting execution flows...',
+        message: `Detecting execution flows...${syntheticEdgeDetail}`,
         stats: { filesProcessed: totalFiles, totalFiles, nodesCreated: graph.nodeCount },
       });
 
