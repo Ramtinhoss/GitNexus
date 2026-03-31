@@ -6,6 +6,7 @@ export interface ProcessEvidenceRow {
   label: string;
   step: number;
   stepCount: number;
+  [key: string]: unknown;
 }
 
 export interface ProjectedProcessEvidenceRow extends ProcessEvidenceRow {
@@ -25,6 +26,7 @@ export function mergeProcessEvidence(input: {
 
   for (const row of input.projectedRows) {
     byPid.set(row.pid, {
+      ...row,
       pid: row.pid,
       label: row.label,
       step: row.step,
@@ -36,6 +38,7 @@ export function mergeProcessEvidence(input: {
 
   for (const row of input.directRows) {
     byPid.set(row.pid, {
+      ...row,
       pid: row.pid,
       label: row.label,
       step: row.step,

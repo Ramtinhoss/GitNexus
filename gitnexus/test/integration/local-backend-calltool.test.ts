@@ -148,6 +148,22 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(totalResults).toBeGreaterThanOrEqual(1);
     });
 
+    it('query tool projects class hits into processes via method STEP_IN_PROCESS', async () => {
+      const result = await backend.callTool('query', { query: 'AuthService' });
+
+      expect(result.processes?.length).toBeGreaterThan(0);
+      expect(result.process_symbols.some((s: any) => s.name === 'AuthService')).toBe(true);
+      expect(result.processes.some((p: any) => p.evidence_mode === 'method_projected')).toBe(true);
+    });
+
+    it('query keeps direct evidence as high confidence when available', async () => {
+      const result = await backend.callTool('query', { query: 'login' });
+      const loginSymbol = result.process_symbols.find((s: any) => s.name === 'login');
+
+      expect(loginSymbol.process_evidence_mode).toBe('direct_step');
+      expect(loginSymbol.process_confidence).toBe('high');
+    });
+
     it('unknown tool throws', async () => {
       await expect(
         backend.callTool('nonexistent_tool', {}),

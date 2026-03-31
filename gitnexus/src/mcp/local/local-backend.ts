@@ -698,14 +698,36 @@ export class LocalBackend {
         continue;
       }
       
-      // Find processes this symbol participates in
-      let processRows: any[] = [];
+      // Find processes this symbol participates in (direct + method projection for class-like symbols).
+      let directProcessRows: any[] = [];
+      let projectedProcessRows: any[] = [];
       try {
-        processRows = await executeParameterized(repo.id, `
+        directProcessRows = await executeParameterized(repo.id, `
           MATCH (n {id: $nodeId})-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
           RETURN p.id AS pid, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount, r.step AS step
         `, { nodeId: sym.nodeId });
       } catch (e) { logQueryError('query:process-lookup', e); }
+      const symIdLower = String(sym.nodeId).toLowerCase();
+      const isClassLike = ['Class', 'Interface', 'Struct', 'Trait', 'Impl', 'Record'].includes(String(sym.type || ''))
+        || symIdLower.startsWith('class:')
+        || symIdLower.startsWith('interface:')
+        || symIdLower.startsWith('struct:')
+        || symIdLower.startsWith('trait:')
+        || symIdLower.startsWith('impl:')
+        || symIdLower.startsWith('record:');
+      if (isClassLike) {
+        try {
+          projectedProcessRows = await executeParameterized(repo.id, `
+            MATCH (n {id: $nodeId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
+            MATCH (m)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process)
+            RETURN p.id AS pid, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount, MIN(r.step) AS step
+          `, { nodeId: sym.nodeId });
+        } catch (e) { logQueryError('query:method-process-projection', e); }
+      }
+      const processRows = mergeProcessEvidence({
+        directRows: directProcessRows,
+        projectedRows: isClassLike ? projectedProcessRows : [],
+      });
 
       // Get cluster membership + cohesion (cohesion used as internal ranking signal)
       let cohesion = 0;
@@ -804,6 +826,8 @@ export class LocalBackend {
             ...symbolEntry,
             process_id: pid,
             step_index: step,
+            process_evidence_mode: row.evidence_mode,
+            process_confidence: row.confidence,
           });
         }
       }
@@ -826,6 +850,12 @@ export class LocalBackend {
       symbol_count: p.symbols.length,
       process_type: p.processType,
       step_count: p.stepCount,
+      evidence_mode: p.symbols.some((s: any) => s.process_evidence_mode === 'direct_step')
+        ? 'direct_step'
+        : 'method_projected',
+      confidence: p.symbols.some((s: any) => s.process_confidence === 'high')
+        ? 'high'
+        : 'medium',
     }));
     
     const processSymbols = rankedProcesses.flatMap(p =>
