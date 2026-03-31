@@ -799,12 +799,12 @@ export class LocalBackend {
       } else {
         // Add to each process it belongs to
         for (const row of processRows) {
-          const pid = row.pid ?? row[0];
-          const label = row.label ?? row[1];
-          const hLabel = row.heuristicLabel ?? row[2];
-          const pType = row.processType ?? row[3];
-          const stepCount = row.stepCount ?? row[4];
-          const step = row.step ?? row[5];
+          const pid = String(row.pid || '');
+          const label = String((row as any).label || '');
+          const hLabel = String((row as any).heuristicLabel || label);
+          const pType = String((row as any).processType || '');
+          const stepCount = Number((row as any).stepCount || 0);
+          const step = Number((row as any).step || 0);
           
           if (!processMap.has(pid)) {
             processMap.set(pid, {
