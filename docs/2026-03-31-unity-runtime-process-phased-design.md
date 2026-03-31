@@ -186,6 +186,43 @@ Rollback:
 
 - Toggle off method-projected process attribution and return to direct-step only.
 
+#### Phase 2 Execution Record (2026-03-31)
+
+Status:
+
+- Implemented; awaiting human verification gate closure.
+
+Artifacts:
+
+1. `docs/reports/2026-03-31-phase2-unity-runtime-process-projection-summary.json`
+2. `docs/reports/2026-03-31-phase2-unity-runtime-process-projection-report.md`
+3. `docs/reports/2026-03-31-phase2-context-weaponpowerup.json`
+4. `docs/reports/2026-03-31-phase2-query-pickup-equipwithevent.json`
+5. `docs/reports/2026-03-31-phase2-neonspark-metrics-scan.json`
+6. `docs/reports/2026-03-31-phase2-context-gun.json`
+
+Verification snapshot:
+
+1. `npm --prefix gitnexus run build`: pass.
+2. `npm --prefix gitnexus exec vitest run test/integration/local-backend-calltool.test.ts`: pass (`24/24`).
+3. `npm --prefix gitnexus run test:u3:gates`: pass (`49/49`).
+4. Required sample checks remained empty on this index snapshot:
+   - `context` sample (`WeaponPowerUp`, neonspark, parity): `processes.length = 0`
+   - `query` sample (`Pickup PickItUp EquipWithEvent`, neonspark, parity): `processes.length = 0`, `process_symbols.length = 0`
+5. Phase0 queryset sweep (neonspark, 10 symbol contexts + 8 queries):
+   - context non-empty ratio: `20.0%` (`2/10`)
+   - query process-symbol non-empty ratio: `25.0%` (`2/8`)
+
+Delta summary versus Phase 0 baseline (neonspark):
+
+1. `contextProcessNonEmptyRatioDeltaPctPoint = +20.0`
+2. `queryProcessSymbolsNonEmptyRatioDeltaPctPoint = +12.5`
+3. `confirmed_chain.steps.length = 1` (sample: `Gun` -> `GetValue → SetVariable`, `method_projected`, `medium`)
+
+Next gate:
+
+- Human verification required before entering finishing flow.
+
 ---
 
 ### Phase 3 - Lifecycle + Runtime Loader Modeling via Synthetic CALLS
