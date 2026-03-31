@@ -621,6 +621,8 @@ export class LocalBackend {
     max_symbols?: number;
     include_content?: boolean;
     scope_preset?: string;
+    unity_resources?: string;
+    unity_hydration_mode?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
       return { error: 'query parameter is required and cannot be empty.' };
@@ -631,6 +633,14 @@ export class LocalBackend {
     const processLimit = params.limit || 5;
     const maxSymbolsPerProcess = params.max_symbols || 10;
     const includeContent = params.include_content ?? false;
+    let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
+    let unityHydrationMode: 'compact' | 'parity' = 'compact';
+    try {
+      unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
+      unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error) };
+    }
     const searchQuery = params.query.trim();
     
     // Step 1: Run hybrid search to get matching symbols
@@ -734,6 +744,28 @@ export class LocalBackend {
         endLine: sym.endLine,
         ...(module ? { module } : {}),
         ...(includeContent && content ? { content } : {}),
+        ...((unityResourcesMode !== 'off' && sym.nodeId && sym.type === 'Class')
+          ? await hydrateUnityForSymbol({
+            mode: unityHydrationMode,
+            basePayload: await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query)),
+            deps: {
+              executeQuery: (query, queryParams) => {
+                if (queryParams && Object.keys(queryParams).length > 0) {
+                  return executeParameterized(repo.id, query, queryParams);
+                }
+                return executeQuery(repo.id, query);
+              },
+              repoPath: repo.repoPath,
+              storagePath: repo.storagePath,
+              indexedCommit: repo.lastCommit,
+            },
+            symbol: {
+              uid: sym.nodeId,
+              name: sym.name || '',
+              filePath: sym.filePath || '',
+            },
+          })
+          : {}),
       };
       
       if (processRows.length === 0) {

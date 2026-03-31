@@ -81,10 +81,26 @@ function hasDeepDiveEvidence(output: any): boolean {
   return processSymbols + definitions + candidates + rows + byDepth + impacted + incomingRefs + outgoingRefs > 0;
 }
 
+function hasQueryUnityEvidence(output: any): boolean {
+  const symbols = Array.isArray(output?.process_symbols) ? output.process_symbols : [];
+  return symbols.some((symbol: any) => {
+    const bindings = Array.isArray(symbol?.resourceBindings) ? symbol.resourceBindings.length : 0;
+    const scalarFields = Array.isArray(symbol?.serializedFields?.scalarFields) ? symbol.serializedFields.scalarFields.length : 0;
+    const referenceFields = Array.isArray(symbol?.serializedFields?.referenceFields) ? symbol.serializedFields.referenceFields.length : 0;
+    return bindings + scalarFields + referenceFields > 0;
+  });
+}
+
+interface DeepDiveExecution {
+  tool: SymbolScenario['deepDivePlan'][number]['tool'];
+  input: Record<string, unknown>;
+  output: any;
+}
+
 function assertScenario(
   scenario: SymbolScenario,
   contextOnOutput: any,
-  deepDiveOutputs: any[],
+  deepDiveExecutions: DeepDiveExecution[],
   contextUnityHydration: 'compact' | 'parity',
 ): { pass: boolean; failures: string[] } {
   const failures: string[] = [];
@@ -125,9 +141,19 @@ function assertScenario(
     if (!hasBindings) {
       failures.push('AssetRef: context(on) must include resourceBindings');
     }
-    const deepDiveEvidence = deepDiveOutputs.some((output) => hasDeepDiveEvidence(output));
+    const deepDiveEvidence = deepDiveExecutions.some((step) => hasDeepDiveEvidence(step.output));
     if (!deepDiveEvidence) {
       failures.push('AssetRef: deep-dive must provide usage/dependency evidence');
+    }
+  }
+
+  const queryOnRuns = deepDiveExecutions.filter(
+    (step) => step.tool === 'query' && String(step.input?.unity_resources || '').toLowerCase() === 'on',
+  );
+  if (queryOnRuns.length > 0) {
+    const hasUnityEvidenceFromQueryOn = queryOnRuns.some((step) => hasQueryUnityEvidence(step.output));
+    if (!hasUnityEvidenceFromQueryOn) {
+      failures.push(`${scenario.symbol}: query(on) must include unity serialized/resource evidence`);
     }
   }
 
@@ -218,7 +244,7 @@ export async function runSymbolScenario(
   const contextOn = await runContextWithDisambiguation(runner, scenario, contextOnInput);
   steps.push(buildMetric('context-on', 'context', performance.now() - t1, contextOnInput, contextOn));
 
-  const deepDiveOutputs: any[] = [];
+  const deepDiveExecutions: DeepDiveExecution[] = [];
   for (let i = 0; i < scenario.deepDivePlan.length; i += 1) {
     const step = scenario.deepDivePlan[i];
     const input: Record<string, unknown> = { ...(step.input || {}) };
@@ -227,13 +253,13 @@ export async function runSymbolScenario(
     }
     const ts = performance.now();
     const output = await invokeTool(runner, step.tool, input);
-    deepDiveOutputs.push(output);
+    deepDiveExecutions.push({ tool: step.tool, input, output });
     steps.push(buildMetric(`deep-dive-${i + 1}`, step.tool, performance.now() - ts, input, output));
   }
 
   return {
     symbol: scenario.symbol,
     steps,
-    assertions: assertScenario(scenario, contextOn, deepDiveOutputs, contextUnityHydration),
+    assertions: assertScenario(scenario, contextOn, deepDiveExecutions, contextUnityHydration),
   };
 }
