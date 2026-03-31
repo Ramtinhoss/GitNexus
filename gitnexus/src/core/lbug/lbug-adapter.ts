@@ -12,6 +12,7 @@ import {
   NodeTableName,
 } from './schema.js';
 import { streamAllCSVsToDisk } from './csv-generator.js';
+import { replayFallbackRelationships } from './fallback-relationship-replay.js';
 
 let db: lbug.Database | null = null;
 let conn: lbug.Connection | null = null;
@@ -211,6 +212,11 @@ export const loadGraphToLbug = async (
 
   const insertedRels = totalValidRels;
   const warnings: string[] = [];
+  let fallbackInsertStats = {
+    attempted: 0,
+    succeeded: 0,
+    failed: 0,
+  };
   if (insertedRels > 0) {
 
     log(`Loading edges: ${insertedRels.toLocaleString()} across ${relsByPair.size} types`);
@@ -249,7 +255,7 @@ export const loadGraphToLbug = async (
 
     if (failedPairLines.length > 0) {
       log(`Inserting ${failedPairEdges} edges individually (missing schema pairs)`);
-      await fallbackRelationshipInserts([relHeader, ...failedPairLines], validTables, getNodeLabel);
+      fallbackInsertStats = await fallbackRelationshipInserts([relHeader, ...failedPairLines], validTables, getNodeLabel);
     }
   }
 
@@ -266,7 +272,7 @@ export const loadGraphToLbug = async (
   } catch {}
   try { await fs.rmdir(csvDir); } catch {}
 
-  return { success: true, insertedRels, skippedRels, warnings };
+  return { success: true, insertedRels, skippedRels, warnings, fallbackInsertStats };
 };
 
 // LadybugDB default ESCAPE is '\' (backslash), but our CSV uses RFC 4180 escaping ("" for literal quotes).
@@ -293,34 +299,29 @@ const fallbackRelationshipInserts = async (
   validTables: Set<string>,
   getNodeLabel: (id: string) => string
 ) => {
-  if (!conn) return;
+  if (!conn) {
+    return {
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+  }
   const escapeLabel = (label: string): string => {
     return BACKTICK_TABLES.has(label) ? `\`${label}\`` : label;
   };
 
-  for (let i = 1; i < validRelLines.length; i++) {
-    const line = validRelLines[i];
-    try {
-      const match = line.match(/"([^"]*)","([^"]*)","([^"]*)",([0-9.]+),"([^"]*)",([0-9-]+)/);
-      if (!match) continue;
-      const [, fromId, toId, relType, confidenceStr, reason, stepStr] = match;
-      const fromLabel = getNodeLabel(fromId);
-      const toLabel = getNodeLabel(toId);
-      if (!validTables.has(fromLabel) || !validTables.has(toLabel)) continue;
-
-      const confidence = parseFloat(confidenceStr) || 1.0;
-      const step = parseInt(stepStr) || 0;
-
+  return replayFallbackRelationships(validRelLines, {
+    validTables,
+    getNodeLabel,
+    insertRelationship: async ({ fromId, toId, fromLabel, toLabel, relType, confidence, reason, step }) => {
       const esc = (s: string) => s.replace(/'/g, "''").replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
       await conn.query(`
         MATCH (a:${escapeLabel(fromLabel)} {id: '${esc(fromId)}' }),
               (b:${escapeLabel(toLabel)} {id: '${esc(toId)}' })
         CREATE (a)-[:${REL_TABLE_NAME} {type: '${esc(relType)}', confidence: ${confidence}, reason: '${esc(reason)}', step: ${step}}]->(b)
       `);
-    } catch {
-      // skip
-    }
-  }
+    },
+  });
 };
 
 /** Tables with isExported column (TypeScript/JS-native types) */

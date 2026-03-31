@@ -58,3 +58,31 @@ export function formatFallbackSummary(
 
   return lines;
 }
+
+export function resolveFallbackStats(
+  warnings: string[] | undefined,
+  stats: FallbackInsertStats | undefined,
+): FallbackInsertStats {
+  if (stats) {
+    return stats;
+  }
+
+  if (!warnings || warnings.length === 0) {
+    return {
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+  }
+
+  const attempted = warnings.reduce((sum, warning) => {
+    const match = warning.match(/\((\d+)\s+edges\)/);
+    return sum + (match ? Number.parseInt(match[1] || '0', 10) : 0);
+  }, 0);
+
+  return {
+    attempted,
+    succeeded: 0,
+    failed: attempted,
+  };
+}

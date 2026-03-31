@@ -20,7 +20,7 @@ import { generateAIContextFiles } from './ai-context.js';
 import { generateSkillFiles, type GeneratedSkillInfo } from './skill-gen.js';
 import fs from 'fs/promises';
 import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
-import { formatFallbackSummary, formatUnityDiagnosticsSummary } from './analyze-summary.js';
+import { formatFallbackSummary, formatUnityDiagnosticsSummary, resolveFallbackStats } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
 import { resolveCliSpec } from '../config/cli-spec.js';
@@ -506,17 +506,10 @@ export const analyzeCommand = async (
   }
 
   if (lbugWarnings.length > 0) {
-    const totalFallback = lbugWarnings.reduce((sum, warning) => {
-      const match = warning.match(/\((\d+) edges\)/);
-      return sum + (match ? Number.parseInt(match[1], 10) : 0);
-    }, 0);
+    const fallbackStats = resolveFallbackStats(lbugWarnings, lbugResult.fallbackInsertStats);
     const fallbackLines = formatFallbackSummary(
       lbugWarnings,
-      {
-        attempted: totalFallback,
-        succeeded: totalFallback,
-        failed: 0,
-      },
+      fallbackStats,
     );
     for (const line of fallbackLines) {
       console.log(`  ${line}`);
