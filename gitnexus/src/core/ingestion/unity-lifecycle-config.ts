@@ -16,10 +16,13 @@ const parseBool = (raw: string | undefined): boolean => {
   return TRUE_VALUES.has(normalized);
 };
 
-export interface UnityLifecycleConfig extends UnityLifecycleSyntheticConfig {}
+export interface UnityLifecycleConfig extends UnityLifecycleSyntheticConfig {
+  persistLifecycleProcessMetadata: boolean;
+}
 
 export const resolveUnityLifecycleConfig = (env: NodeJS.ProcessEnv): UnityLifecycleConfig => {
   const enabled = parseBool(env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS);
+  const persistLifecycleProcessMetadata = parseBool(env.GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST);
   const maxSyntheticEdgesPerClass = parsePositiveInt(
     env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_MAX_PER_CLASS,
     DEFAULT_UNITY_LIFECYCLE_SYNTHETIC_CONFIG.maxSyntheticEdgesPerClass,
@@ -32,6 +35,7 @@ export const resolveUnityLifecycleConfig = (env: NodeJS.ProcessEnv): UnityLifecy
   return {
     ...DEFAULT_UNITY_LIFECYCLE_SYNTHETIC_CONFIG,
     enabled,
+    persistLifecycleProcessMetadata,
     maxSyntheticEdgesPerClass,
     maxSyntheticEdgesTotal,
   };

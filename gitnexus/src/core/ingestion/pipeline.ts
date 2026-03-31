@@ -428,6 +428,7 @@ export const runPipelineFromRepo = async (
       });
 
       const unityLifecycleConfig = resolveUnityLifecycleConfig(process.env);
+      const persistLifecycleProcessMetadata = unityLifecycleConfig.persistLifecycleProcessMetadata;
       const unityLifecycleSyntheticResult = applyUnityLifecycleSyntheticCalls(graph, unityLifecycleConfig);
       const syntheticEdgeDetail = unityLifecycleSyntheticResult.syntheticEdgeCount > 0
         ? ` (Unity synthetic edges: ${unityLifecycleSyntheticResult.syntheticEdgeCount})`
@@ -483,18 +484,28 @@ export const runPipelineFromRepo = async (
             communities: proc.communities,
             entryPointId: proc.entryPointId,
             terminalId: proc.terminalId,
+            ...(persistLifecycleProcessMetadata
+              ? {
+                processSubtype: proc.processSubtype,
+                runtimeChainConfidence: proc.runtimeChainConfidence,
+                sourceReasons: proc.sourceReasons,
+                sourceConfidences: proc.sourceConfidences,
+              }
+              : {}),
           }
         });
       });
 
       processResult.steps.forEach(step => {
+        const persistedReason = persistLifecycleProcessMetadata ? (step.reason || 'trace-detection') : 'trace-detection';
+        const persistedConfidence = persistLifecycleProcessMetadata ? (step.confidence ?? 1.0) : 1.0;
         graph.addRelationship({
           id: `${step.nodeId}_step_${step.step}_${step.processId}`,
           type: 'STEP_IN_PROCESS',
           sourceId: step.nodeId,
           targetId: step.processId,
-          confidence: 1.0,
-          reason: 'trace-detection',
+          confidence: persistedConfidence,
+          reason: persistedReason,
           step: step.step,
         });
       });
