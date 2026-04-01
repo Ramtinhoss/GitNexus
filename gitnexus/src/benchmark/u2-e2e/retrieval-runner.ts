@@ -24,6 +24,38 @@ export interface SymbolScenarioResult {
   };
 }
 
+export interface Phase5ConfidenceCalibrationCounts {
+  totalEvaluated: number;
+  falseNegativeCount: number;
+  falseConfidenceCount: number;
+  lowConfidenceHintCovered: number;
+  lowConfidenceCount: number;
+  fallbackCovered: number;
+}
+
+export interface Phase5BaselineSnapshot extends Partial<Phase5ConfidenceCalibrationCounts> {
+  artifactPath: string;
+  gitCommit: string;
+  sha256: string;
+}
+
+export interface Phase5ConfidenceCalibrationSummary {
+  lowConfidenceHintCoverage: number;
+  falseConfidenceFailures: number;
+  falseNegativeFallbackCoverage: number;
+  falseNegativeRateBaselinePct: number;
+  falseNegativeRateCurrentPct: number;
+  falseNegativeRateDeltaPct: number;
+  falseConfidenceRateBaselinePct: number;
+  falseConfidenceRateCurrentPct: number;
+  falseConfidenceRateDeltaPct: number;
+  baseline: {
+    artifactPath: string;
+    gitCommit: string;
+    sha256: string;
+  };
+}
+
 function stringify(value: unknown): string {
   try {
     return JSON.stringify(value ?? null);
@@ -94,6 +126,51 @@ function hasQueryUnityEvidence(output: any): boolean {
   });
 }
 
+function normalizeRate(count: number, total: number): number {
+  if (!Number.isFinite(total) || total <= 0) return 0;
+  const pct = (count / total) * 100;
+  return Number(pct.toFixed(3));
+}
+
+export function summarizePhase5ConfidenceCalibration(input: {
+  current: Phase5ConfidenceCalibrationCounts;
+  baseline: Phase5BaselineSnapshot;
+}): Phase5ConfidenceCalibrationSummary {
+  const artifactPath = String(input.baseline?.artifactPath || '').trim();
+  const gitCommit = String(input.baseline?.gitCommit || '').trim();
+  const sha256 = String(input.baseline?.sha256 || '').trim();
+  if (!artifactPath || !gitCommit || !sha256) {
+    throw new Error('baseline provenance missing: artifactPath/gitCommit/sha256 are required');
+  }
+
+  const baselineTotal = Number(input.baseline.totalEvaluated || input.current.totalEvaluated || 0);
+  const baselineFalseNegative = Number(input.baseline.falseNegativeCount || 0);
+  const baselineFalseConfidence = Number(input.baseline.falseConfidenceCount || 0);
+  const current = input.current;
+
+  const falseNegativeRateBaselinePct = normalizeRate(baselineFalseNegative, baselineTotal);
+  const falseNegativeRateCurrentPct = normalizeRate(current.falseNegativeCount, current.totalEvaluated);
+  const falseConfidenceRateBaselinePct = normalizeRate(baselineFalseConfidence, baselineTotal);
+  const falseConfidenceRateCurrentPct = normalizeRate(current.falseConfidenceCount, current.totalEvaluated);
+
+  return {
+    lowConfidenceHintCoverage: normalizeRate(current.lowConfidenceHintCovered, current.lowConfidenceCount),
+    falseConfidenceFailures: current.falseConfidenceCount,
+    falseNegativeFallbackCoverage: current.fallbackCovered,
+    falseNegativeRateBaselinePct,
+    falseNegativeRateCurrentPct,
+    falseNegativeRateDeltaPct: Number((falseNegativeRateCurrentPct - falseNegativeRateBaselinePct).toFixed(3)),
+    falseConfidenceRateBaselinePct,
+    falseConfidenceRateCurrentPct,
+    falseConfidenceRateDeltaPct: Number((falseConfidenceRateCurrentPct - falseConfidenceRateBaselinePct).toFixed(3)),
+    baseline: {
+      artifactPath,
+      gitCommit,
+      sha256,
+    },
+  };
+}
+
 interface DeepDiveExecution {
   tool: SymbolScenario['deepDivePlan'][number]['tool'];
   input: Record<string, unknown>;
@@ -157,6 +234,36 @@ function assertScenario(
     const hasUnityEvidenceFromQueryOn = queryOnRuns.some((step) => hasQueryUnityEvidence(step.output));
     if (!hasUnityEvidenceFromQueryOn) {
       failures.push(`${scenario.symbol}: query(on) must include unity serialized/resource evidence`);
+    }
+
+    for (const step of queryOnRuns) {
+      const processes = Array.isArray(step.output?.processes) ? step.output.processes : [];
+      const hasUnityEvidence = hasQueryUnityEvidence(step.output);
+      if (hasUnityEvidence && processes.length === 0) {
+        failures.push(`${scenario.symbol}: empty process query(on) with unity evidence must emit confidence-guided fallback clue`);
+      }
+
+      for (const processRow of processes) {
+        const confidence = String(processRow?.confidence || '').toLowerCase();
+        const evidenceMode = String(processRow?.evidence_mode || '').toLowerCase();
+        const processSubtype = String(processRow?.process_subtype || '').toLowerCase();
+
+        if (confidence === 'low') {
+          const hint = processRow?.verification_hint;
+          const action = String(hint?.action || '').trim();
+          const target = String(hint?.target || '').trim();
+          const nextCommand = String(hint?.next_command || '').trim();
+          if (!action || !target || !nextCommand) {
+            failures.push(`${scenario.symbol}: low confidence query(on) row missing verification_hint action/target/next_command`);
+          } else if (!/parity|asset|meta/i.test(nextCommand)) {
+            failures.push(`${scenario.symbol}: low confidence verification_hint must include parity/manual asset-meta guidance`);
+          }
+        }
+
+        if (evidenceMode === 'direct_step' && processSubtype === 'static_calls' && confidence !== 'high') {
+          failures.push(`${scenario.symbol}: direct static chain rows must remain high confidence`);
+        }
+      }
     }
   }
 

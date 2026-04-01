@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runSymbolScenario } from './retrieval-runner.js';
+import { runSymbolScenario, summarizePhase5ConfidenceCalibration } from './retrieval-runner.js';
 import { loadE2EConfig } from './config.js';
 
 test('runSymbolScenario executes context off/on + deepDive and records metrics', async () => {
@@ -240,4 +240,135 @@ test('runSymbolScenario fails when query(on) has no unity serialized/resource ev
   assert.ok(
     out.assertions.failures.some((f) => f.includes('query(on) must include unity serialized/resource evidence')),
   );
+});
+
+test('phase5 confidence calibration fails when low confidence process is missing verification_hint', async () => {
+  const runner = {
+    context: async (input: Record<string, unknown>) => {
+      if (input.unity_resources === 'on') {
+        return {
+          status: 'found',
+          hydrationMeta: {
+            requestedMode: 'compact',
+            effectiveMode: 'compact',
+            isComplete: false,
+            needsParityRetry: true,
+          },
+          resourceBindings: [{ resourcePath: 'Assets/Prefabs/A.prefab', resourceType: 'prefab' }],
+        };
+      }
+      return { status: 'found' };
+    },
+    query: async () => ({
+      processes: [{ confidence: 'low', evidence_mode: 'resource_heuristic' }],
+      process_symbols: [{ id: 'Class:A', resourceBindings: [{ resourcePath: 'Assets/Prefabs/A.prefab' }] }],
+    }),
+    impact: async () => ({ impactedCount: 0 }),
+    cypher: async () => ({ rows: [] }),
+  };
+
+  const out = await runSymbolScenario(runner as any, {
+    symbol: 'MainUIManager',
+    kind: 'component',
+    objectives: ['phase5 low confidence hint gate'],
+    deepDivePlan: [{ tool: 'query', input: { query: 'MainUIManager', unity_resources: 'on' } }],
+  });
+
+  assert.equal(out.assertions.pass, false);
+  assert.ok(out.assertions.failures.some((f) => /verification_hint/i.test(f)));
+});
+
+test('phase5 confidence calibration fails when empty process result with unity evidence has no fallback clue', async () => {
+  const runner = {
+    context: async (input: Record<string, unknown>) => {
+      if (input.unity_resources === 'on') {
+        return {
+          status: 'found',
+          hydrationMeta: {
+            requestedMode: 'compact',
+            effectiveMode: 'compact',
+            isComplete: false,
+            needsParityRetry: true,
+          },
+          resourceBindings: [{ resourcePath: 'Assets/Prefabs/A.prefab', resourceType: 'prefab' }],
+        };
+      }
+      return { status: 'found' };
+    },
+    query: async () => ({
+      processes: [],
+      process_symbols: [{ id: 'Class:A', resourceBindings: [{ resourcePath: 'Assets/Prefabs/A.prefab' }] }],
+    }),
+    impact: async () => ({ impactedCount: 0 }),
+    cypher: async () => ({ rows: [] }),
+  };
+
+  const out = await runSymbolScenario(runner as any, {
+    symbol: 'MainUIManager',
+    kind: 'component',
+    objectives: ['phase5 empty process fallback gate'],
+    deepDivePlan: [{ tool: 'query', input: { query: 'MainUIManager', unity_resources: 'on' } }],
+  });
+
+  assert.equal(out.assertions.pass, false);
+  assert.ok(out.assertions.failures.some((f) => /fallback|empty process/i.test(f)));
+});
+
+test('phase5 confidence calibration fails when direct static chain is not high confidence', async () => {
+  const runner = {
+    context: async (input: Record<string, unknown>) => {
+      if (input.unity_resources === 'on') {
+        return {
+          status: 'found',
+          hydrationMeta: {
+            requestedMode: 'compact',
+            effectiveMode: 'compact',
+            isComplete: false,
+            needsParityRetry: true,
+          },
+          resourceBindings: [{ resourcePath: 'Assets/Prefabs/A.prefab', resourceType: 'prefab' }],
+        };
+      }
+      return { status: 'found' };
+    },
+    query: async () => ({
+      processes: [{
+        confidence: 'medium',
+        evidence_mode: 'direct_step',
+        process_subtype: 'static_calls',
+        verification_hint: { action: 'none', target: 'none', next_command: 'none' },
+      }],
+      process_symbols: [{ id: 'Class:A', resourceBindings: [{ resourcePath: 'Assets/Prefabs/A.prefab' }] }],
+    }),
+    impact: async () => ({ impactedCount: 0 }),
+    cypher: async () => ({ rows: [] }),
+  };
+
+  const out = await runSymbolScenario(runner as any, {
+    symbol: 'MainUIManager',
+    kind: 'component',
+    objectives: ['phase5 direct static confidence gate'],
+    deepDivePlan: [{ tool: 'query', input: { query: 'MainUIManager', unity_resources: 'on' } }],
+  });
+
+  assert.equal(out.assertions.pass, false);
+  assert.ok(out.assertions.failures.some((f) => /direct.*static.*high/i.test(f)));
+});
+
+test('phase5 confidence calibration summary requires baseline provenance fields', async () => {
+  assert.throws(() => summarizePhase5ConfidenceCalibration({
+    current: {
+      totalEvaluated: 4,
+      falseNegativeCount: 1,
+      falseConfidenceCount: 1,
+      lowConfidenceHintCovered: 1,
+      lowConfidenceCount: 2,
+      fallbackCovered: 2,
+    },
+    baseline: {
+      totalEvaluated: 4,
+      falseNegativeCount: 2,
+      falseConfidenceCount: 2,
+    } as any,
+  }), /baseline provenance/i);
 });
