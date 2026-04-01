@@ -11,6 +11,8 @@ export const LOCAL_BACKEND_SEED_DATA = [
   // Class
   `CREATE (c:Class {id: 'class:AuthService', name: 'AuthService', filePath: 'src/auth.ts', startLine: 30, endLine: 60, isExported: true, content: 'class AuthService {}', description: 'Authentication service'})`,
   `CREATE (c:Class {id: 'class:BaseService', name: 'BaseService', filePath: 'src/base.ts', startLine: 1, endLine: 20, isExported: true, content: 'class BaseService {}', description: 'Base service class'})`,
+  `CREATE (c:Class {id: 'class:ReloadBase', name: 'ReloadBase', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs', startLine: 1, endLine: 80, isExported: true, content: 'class ReloadBase : MonoBehaviour {}', description: 'Reload graph node'})`,
+  `CREATE (f:File {id: 'file:reload-orb.prefab', name: '1_weapon_orb_key.prefab', filePath: 'Assets/NEON/Prefabs/Weapons/1_weapon_orb_key.prefab', content: 'prefab'})`,
   // Methods
   `CREATE (m:Method {id: 'method:AuthService.authenticate', name: 'authenticate', filePath: 'src/auth.ts', startLine: 35, endLine: 45, isExported: false, content: 'authenticate() {}', description: 'Authenticate user'})`,
   `CREATE (m:Method {id: 'method:BaseService.authenticate', name: 'authenticate', filePath: 'src/base.ts', startLine: 5, endLine: 10, isExported: false, content: 'authenticate() {}', description: 'Base authenticate'})`,
@@ -47,6 +49,8 @@ export const LOCAL_BACKEND_SEED_DATA = [
   // HAS_METHOD: BaseService -> authenticate
   `MATCH (c:Class), (m:Method) WHERE c.id = 'class:BaseService' AND m.id = 'method:BaseService.authenticate'
    CREATE (c)-[:CodeRelation {type: 'HAS_METHOD', confidence: 1.0, reason: 'class-method', step: 0}]->(m)`,
+  `MATCH (c:Class), (f:File) WHERE c.id = 'class:ReloadBase' AND f.id = 'file:reload-orb.prefab'
+   CREATE (c)-[:CodeRelation {type: 'UNITY_RESOURCE_SUMMARY', confidence: 0.61, reason: '{"resourceType":"prefab","bindingKinds":["direct"],"lightweight":true}', step: 0}]->(f)`,
 ];
 
 export const LOCAL_BACKEND_FTS_INDEXES: FTSIndexDef[] = [

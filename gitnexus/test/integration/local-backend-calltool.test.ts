@@ -206,6 +206,30 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       }
     });
 
+    it('phase5 emits low confidence heuristic runtime clues', async () => {
+      const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+      process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';
+      try {
+        const result = await backend.callTool('query', {
+          query: 'Reload',
+          unity_resources: 'on',
+          unity_hydration_mode: 'compact',
+        });
+
+        expect(result.processes.some((p: any) => p.confidence === 'low')).toBe(true);
+        expect(result.processes.some((p: any) => p.evidence_mode === 'resource_heuristic')).toBe(true);
+        expect(
+          result.processes.some((p: any) => /asset|meta|parity/i.test(JSON.stringify(p.verification_hint || ''))),
+        ).toBe(true);
+      } finally {
+        if (original === undefined) {
+          delete process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+        } else {
+          process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = original;
+        }
+      }
+    });
+
     it('returns lifecycle process metadata without breaking legacy fields', async () => {
       const queryResult = await backend.callTool('query', { query: 'login' });
       expect(queryResult.processes.some((p: any) => p.process_subtype === 'unity_lifecycle')).toBe(true);

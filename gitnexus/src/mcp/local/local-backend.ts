@@ -126,6 +126,18 @@ function selectVerificationHint(rows: Array<{ verification_hint?: VerificationHi
   return rows.find((row) => row.verification_hint)?.verification_hint;
 }
 
+function confidenceRank(confidence: unknown): number {
+  if (confidence === 'high') return 3;
+  if (confidence === 'medium') return 2;
+  return 1;
+}
+
+function evidenceModeRank(mode: unknown): number {
+  if (mode === 'direct_step') return 3;
+  if (mode === 'method_projected') return 2;
+  return 1;
+}
+
 export function filterBm25ResultsByScopePreset<T extends { filePath?: string }>(
   rows: T[],
   scopePreset?: string,
@@ -756,7 +768,7 @@ export class LocalBackend {
           `, { nodeId: sym.nodeId });
         } catch (e) { logQueryError('query:method-process-projection', e); }
       }
-      const processRows = mergeProcessEvidence({
+      let processRows = mergeProcessEvidence({
         directRows: directProcessRows,
         projectedRows: isClassLike ? projectedProcessRows : [],
       });
@@ -824,6 +836,34 @@ export class LocalBackend {
           })
           : {}),
       };
+
+      if (processRows.length === 0 && unityResourcesMode !== 'off') {
+        const resourceBindings = Array.isArray((symbolEntry as any).resourceBindings)
+          ? (symbolEntry as any).resourceBindings
+          : [];
+        const needsParityRetry = Boolean((symbolEntry as any).hydrationMeta?.needsParityRetry);
+        const hasPartialUnityEvidence = resourceBindings.length > 0 || needsParityRetry;
+
+        if (hasPartialUnityEvidence) {
+          const firstBindingPath = String(resourceBindings[0]?.resourcePath || '').trim();
+          const verificationTarget = firstBindingPath || sym.filePath || sym.name || sym.nodeId;
+          processRows = mergeProcessEvidence({
+            directRows: [],
+            projectedRows: [],
+            heuristicRows: [{
+              pid: `proc:heuristic:${String(sym.nodeId || '').replace(/\s+/g, '_')}`,
+              label: `${String(sym.name || 'Symbol')} runtime heuristic clue`,
+              processType: 'unity_resource_heuristic',
+              processSubtype: 'unity_lifecycle',
+              runtimeChainConfidence: 'low',
+              step: 1,
+              stepCount: 1,
+              needsParityRetry,
+              verificationTarget,
+            }],
+          });
+        }
+      }
       
       if (processRows.length === 0) {
         // Symbol not in any process — goes to definitions
@@ -905,13 +945,26 @@ export class LocalBackend {
       }))
     );
     
-    // Deduplicate process_symbols by id
-    const seen = new Set<string>();
-    const dedupedSymbols = processSymbols.filter(s => {
-      if (seen.has(s.id)) return false;
-      seen.add(s.id);
-      return true;
-    });
+    // Deduplicate process_symbols by id, keeping the highest-confidence/evidence variant.
+    const dedupedById = new Map<string, any>();
+    for (const symbol of processSymbols) {
+      const existing = dedupedById.get(symbol.id);
+      if (!existing) {
+        dedupedById.set(symbol.id, symbol);
+        continue;
+      }
+
+      const existingScore =
+        (confidenceRank(existing.process_confidence) * 10)
+        + evidenceModeRank(existing.process_evidence_mode);
+      const nextScore =
+        (confidenceRank(symbol.process_confidence) * 10)
+        + evidenceModeRank(symbol.process_evidence_mode);
+      if (nextScore > existingScore) {
+        dedupedById.set(symbol.id, symbol);
+      }
+    }
+    const dedupedSymbols = [...dedupedById.values()];
     
     return {
       processes,
