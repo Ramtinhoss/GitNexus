@@ -81,6 +81,12 @@ function generateGitNexusContent(
 | Tools, resources, schema reference | \`${skillRoot}/gitnexus-guide/SKILL.md\` |
 | Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |${generatedRows}
 
+## Unity Runtime Process 真理源
+
+- 统一设计与实现对照文档：\`docs/unity-runtime-process-source-of-truth.md\`
+- 涉及 Unity runtime process 的任务，先阅读该文档，再执行检索/实现/验收。
+- 若历史设计文档与当前实现不一致，以该真理源文档和对应代码为准，并在变更后同步更新。
+
 ${GITNEXUS_END_MARKER}`;
 }
 
