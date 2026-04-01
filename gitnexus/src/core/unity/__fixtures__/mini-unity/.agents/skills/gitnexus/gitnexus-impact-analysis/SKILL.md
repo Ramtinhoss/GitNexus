@@ -23,7 +23,7 @@ description: "Use when the user wants to know what will break if they change som
 4. Assess risk and report to user
 ```
 
-> If "Index is stale" → run `npx -y @veewo/gitnexus@latest analyze` in terminal.
+> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
 
 ## Checklist
 
@@ -31,6 +31,8 @@ description: "Use when the user wants to know what will break if they change som
 - [ ] gitnexus_impact({target, direction: "upstream"}) to find dependents
 - [ ] Review d=1 items first (these WILL BREAK)
 - [ ] Check high-confidence (>0.8) dependencies
+- [ ] For Unity symbols, verify `context(..., unity_resources: "on")` hydration completeness
+- [ ] If compact response has `hydrationMeta.needsParityRetry === true`, rerun in parity before final risk call
 - [ ] READ processes to check affected execution flows
 - [ ] gitnexus_detect_changes() for pre-commit check
 - [ ] Assess risk level and report to user

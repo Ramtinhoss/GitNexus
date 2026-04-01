@@ -81,3 +81,4 @@ docs/reports/*-gitnexus-list.txt
 docs/reports/*-test-u3-gates.log
 docs/reports/*-nonunity-context-*.json
 docs/reports/*-nonunity-query-*.json
+docs/reports/neonspark-u2-full-e2e-*/
