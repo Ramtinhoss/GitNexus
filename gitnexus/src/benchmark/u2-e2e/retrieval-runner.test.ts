@@ -1,7 +1,11 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runSymbolScenario, summarizePhase5ConfidenceCalibration } from './retrieval-runner.js';
+import { containsPlaceholderLeak, runSymbolScenario, summarizePhase5ConfidenceCalibration } from './retrieval-runner.js';
 import { loadE2EConfig } from './config.js';
+
+const { test: rawTest } = process.env.VITEST
+  ? await import('vitest')
+  : await import('node:test');
+const test: any = rawTest;
 
 test('runSymbolScenario executes context off/on + deepDive and records metrics', async () => {
   const mockToolRunner = {
@@ -371,4 +375,9 @@ test('phase5 confidence calibration summary requires baseline provenance fields'
       falseConfidenceCount: 2,
     } as any,
   }), /baseline provenance/i);
+});
+
+test('phase5 confidence calibration detects placeholder leakage in next_command', async () => {
+  assert.equal(containsPlaceholderLeak('Inspect <symbol-or-query> later'), true);
+  assert.equal(containsPlaceholderLeak('gitnexus query --unity-resources on'), false);
 });

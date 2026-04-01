@@ -18,6 +18,11 @@ import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
 import { mergeProcessEvidence } from './process-evidence.js';
 import { resolveUnityProcessConfidenceFieldsEnabled } from './unity-process-confidence-config.js';
 import type { ProcessConfidence, ProcessEvidenceMode, VerificationHint } from './process-confidence.js';
+import type { RuntimeChainEvidenceLevel } from './runtime-chain-evidence.js';
+import {
+  verifyRuntimeChainOnDemand,
+  type RuntimeChainVerifyMode,
+} from './runtime-chain-verify.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
@@ -124,6 +129,15 @@ function aggregateProcessEvidenceMode(
 
 function selectVerificationHint(rows: Array<{ verification_hint?: VerificationHint }>): VerificationHint | undefined {
   return rows.find((row) => row.verification_hint)?.verification_hint;
+}
+
+function aggregateRuntimeChainEvidenceLevel(
+  rows: Array<{ runtime_chain_evidence_level?: RuntimeChainEvidenceLevel }>,
+): RuntimeChainEvidenceLevel {
+  if (rows.some((row) => row.runtime_chain_evidence_level === 'verified_chain')) return 'verified_chain';
+  if (rows.some((row) => row.runtime_chain_evidence_level === 'verified_segment')) return 'verified_segment';
+  if (rows.some((row) => row.runtime_chain_evidence_level === 'clue')) return 'clue';
+  return 'none';
 }
 
 function confidenceRank(confidence: unknown): number {
@@ -656,6 +670,7 @@ export class LocalBackend {
     scope_preset?: string;
     unity_resources?: string;
     unity_hydration_mode?: string;
+    runtime_chain_verify?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
       return { error: 'query parameter is required and cannot be empty.' };
@@ -676,6 +691,7 @@ export class LocalBackend {
       return { error: error instanceof Error ? error.message : String(error) };
     }
     const searchQuery = params.query.trim();
+    const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
     
     // Step 1: Run hybrid search to get matching symbols
     const searchLimit = processLimit * maxSymbolsPerProcess; // fetch enough raw results
@@ -905,6 +921,7 @@ export class LocalBackend {
             process_confidence: row.confidence,
             ...(confidenceFieldsEnabled ? {
               runtime_chain_confidence: row.confidence,
+              runtime_chain_evidence_level: row.runtime_chain_evidence_level,
               verification_hint: (row as any).verification_hint,
             } : {}),
           });
@@ -934,6 +951,7 @@ export class LocalBackend {
       confidence: aggregateProcessConfidence(p.symbols),
       ...(confidenceFieldsEnabled ? {
         runtime_chain_confidence: aggregateProcessConfidence(p.symbols),
+        runtime_chain_evidence_level: aggregateRuntimeChainEvidenceLevel(p.symbols),
         verification_hint: selectVerificationHint(p.symbols),
       } : {}),
     }));
@@ -966,11 +984,24 @@ export class LocalBackend {
     }
     const dedupedSymbols = [...dedupedById.values()];
     
-    return {
+    const result: any = {
       processes,
       process_symbols: dedupedSymbols,
       definitions: definitions.slice(0, 20), // cap standalone definitions
     };
+    if (runtimeChainVerifyMode === 'on-demand') {
+      const resourceBindings = dedupedSymbols
+        .flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : []))
+        .concat(definitions.flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : [])));
+      result.runtime_chain = await verifyRuntimeChainOnDemand({
+        repoPath: repo.repoPath,
+        executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
+        queryText: searchQuery,
+        resourceBindings,
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -1282,10 +1313,12 @@ export class LocalBackend {
     include_content?: boolean;
     unity_resources?: string;
     unity_hydration_mode?: string;
+    runtime_chain_verify?: string;
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
     
     const { name, uid, file_path, include_content } = params;
+    const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
     const confidenceFieldsEnabled = resolveUnityProcessConfidenceFieldsEnabled(process.env);
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
@@ -1441,7 +1474,7 @@ export class LocalBackend {
       } catch (e) { logQueryError('context:method-process-projection', e); }
     }
 
-    const processRows = mergeProcessEvidence({
+    let processRows = mergeProcessEvidence({
       directRows: directProcessRows,
       projectedRows: projectedProcessRows,
     });
@@ -1463,7 +1496,7 @@ export class LocalBackend {
       return cats;
     };
     
-    const result = {
+    const result: any = {
       status: 'found',
       symbol: {
         uid: sym.id || sym[0],
@@ -1478,19 +1511,7 @@ export class LocalBackend {
       outgoing: categorize(outgoingRows),
       directIncoming: categorize(directIncomingRows),
       directOutgoing: categorize(directOutgoingRows),
-      processes: processRows.map((r: any) => ({
-        id: r.pid || r[0],
-        name: r.label || r[1],
-        process_subtype: r.processSubtype || r[2],
-        step_index: r.step || r[4],
-        step_count: r.stepCount || r[5],
-        evidence_mode: r.evidence_mode,
-        confidence: r.confidence,
-        ...(confidenceFieldsEnabled ? {
-          runtime_chain_confidence: r.confidence,
-          verification_hint: r.verification_hint,
-        } : {}),
-      })),
+      processes: [] as any[],
     };
 
     if (unityResourcesMode !== 'off' && symNodeId && (kind === 'Class' || symNodeId.toLowerCase().startsWith('class:'))) {
@@ -1516,6 +1537,57 @@ export class LocalBackend {
         },
       });
       Object.assign(result, hydratedUnityContext);
+
+      if (processRows.length === 0) {
+        const resourceBindings = Array.isArray((result as any).resourceBindings)
+          ? (result as any).resourceBindings
+          : [];
+        const needsParityRetry = Boolean((result as any).hydrationMeta?.needsParityRetry);
+        if (resourceBindings.length > 0 || needsParityRetry) {
+          const firstBindingPath = String(resourceBindings[0]?.resourcePath || '').trim();
+          const verificationTarget = firstBindingPath || symFilePath || symName || symNodeId;
+          processRows = mergeProcessEvidence({
+            directRows: [],
+            projectedRows: [],
+            heuristicRows: [{
+              pid: `proc:heuristic:${String(symNodeId || '').replace(/\s+/g, '_')}`,
+              label: `${String(symName || 'Symbol')} runtime heuristic clue`,
+              processType: 'unity_resource_heuristic',
+              processSubtype: 'unity_lifecycle',
+              runtimeChainConfidence: 'low',
+              step: 1,
+              stepCount: 1,
+              needsParityRetry,
+              verificationTarget,
+            }],
+          });
+        }
+      }
+    }
+
+    result.processes = processRows.map((r: any) => ({
+      id: r.pid || r[0],
+      name: r.label || r[1],
+      process_subtype: r.processSubtype || r[2],
+      step_index: r.step || r[4],
+      step_count: r.stepCount || r[5],
+      evidence_mode: r.evidence_mode,
+      confidence: r.confidence,
+      ...(confidenceFieldsEnabled ? {
+        runtime_chain_confidence: r.confidence,
+        runtime_chain_evidence_level: r.runtime_chain_evidence_level,
+        verification_hint: r.verification_hint,
+      } : {}),
+    }));
+
+    if (runtimeChainVerifyMode === 'on-demand') {
+      result.runtime_chain = await verifyRuntimeChainOnDemand({
+        repoPath: repo.repoPath,
+        executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
+        symbolName: symName,
+        symbolFilePath: symFilePath,
+        resourceBindings: Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [],
+      });
     }
 
     return result;

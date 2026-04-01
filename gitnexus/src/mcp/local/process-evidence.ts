@@ -5,6 +5,10 @@ import {
   type ProcessEvidenceMode,
   type VerificationHint,
 } from './process-confidence.js';
+import {
+  deriveRuntimeChainEvidenceLevel,
+  type RuntimeChainEvidenceLevel,
+} from './runtime-chain-evidence.js';
 
 export interface ProcessEvidenceRow {
   pid: string;
@@ -27,6 +31,7 @@ export interface HeuristicProcessEvidenceRow extends ProcessEvidenceRow {
 export interface MergedProcessEvidenceRow extends ProcessEvidenceRow {
   evidence_mode: ProcessEvidenceMode;
   confidence: ProcessConfidence;
+  runtime_chain_evidence_level: RuntimeChainEvidenceLevel;
   verification_hint?: VerificationHint;
 }
 
@@ -59,6 +64,7 @@ export function mergeProcessEvidence(input: {
       stepCount: row.stepCount,
       evidence_mode: 'resource_heuristic',
       confidence,
+      runtime_chain_evidence_level: deriveRuntimeChainEvidenceLevel({ mode: 'heuristic_clue' }),
       verification_hint: buildVerificationHint({
         confidence,
         needsParityRetry: Boolean(row.needsParityRetry),
@@ -79,6 +85,7 @@ export function mergeProcessEvidence(input: {
         evidenceMode: 'method_projected',
         processSubtype: String((row as any).processSubtype || ''),
       }),
+      runtime_chain_evidence_level: deriveRuntimeChainEvidenceLevel({ mode: 'none' }),
     });
   }
 
@@ -99,6 +106,7 @@ export function mergeProcessEvidence(input: {
       stepCount: row.stepCount,
       evidence_mode: 'direct_step',
       confidence: persistedConfidence,
+      runtime_chain_evidence_level: deriveRuntimeChainEvidenceLevel({ mode: 'none' }),
     });
   }
 

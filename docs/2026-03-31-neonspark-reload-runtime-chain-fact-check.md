@@ -128,3 +128,16 @@ This confirms the same `PowerUp asset -> gungraph -> Reload node -> runtime` pat
 ## 6. Implication for Design
 
 To make agent behavior reliable for runtime questions, the system needs process-level integration of Unity resource/lifecycle evidence so that chain clues appear in `process` (single-shot or multi-hop stitched).
+
+## 7. 2026-04-01 Follow-up
+
+Follow-up acceptance now exists at:
+
+- `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json`
+- `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.md`
+
+Observed delta:
+
+1. `query/context` still expose low-confidence runtime clues instead of overstating certainty.
+2. Explicit `--runtime-chain-verify on-demand` now closes the Reload chain to `verified_full`.
+3. The stitched chain is no longer only a prose fact-check; it is stored with filesystem-verified hop anchors.

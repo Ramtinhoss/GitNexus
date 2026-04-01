@@ -149,6 +149,28 @@ describe('LocalBackend.callTool', () => {
     expect(result).toHaveProperty('definitions');
   });
 
+  it('runtime_chain_verify enables on-demand runtime chain output', async () => {
+    (executeParameterized as any).mockImplementation(async (repoId: string, query: string) => {
+      if (String(query).includes('MATCH (n:Method)')) {
+        if (String(query).includes('WeaponPowerUp.cs')) {
+          return [{ filePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs', startLine: 42 }];
+        }
+        if (String(query).includes('GunGraph')) {
+          return [{ filePath: 'Assets/NEON/Code/Game/Core/GunGraph.cs', startLine: 120 }];
+        }
+        if (String(query).includes('ReloadBase.cs')) {
+          return [{ filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs', startLine: 60 }];
+        }
+      }
+      return [];
+    });
+    const result = await backend.callTool('query', {
+      query: 'Reload',
+      runtime_chain_verify: 'on-demand',
+    });
+    expect(result.runtime_chain?.status).toBeDefined();
+  });
+
   it('query tool returns error for empty query', async () => {
     const result = await backend.callTool('query', { query: '' });
     expect(result.error).toContain('query parameter is required');

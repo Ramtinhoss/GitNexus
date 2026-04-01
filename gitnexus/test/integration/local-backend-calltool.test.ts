@@ -230,6 +230,99 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       }
     });
 
+    it('v1 context fallback clue parity', async () => {
+      const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+      process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';
+      try {
+        const out = await backend.callTool('context', {
+          name: 'ReloadBase',
+          file_path: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+          unity_resources: 'on',
+          unity_hydration_mode: 'parity',
+        });
+
+        expect(out.resourceBindings.length).toBeGreaterThan(0);
+        expect(out.processes.some((p: any) => p.evidence_mode === 'resource_heuristic')).toBe(true);
+        expect(out.processes.some((p: any) => p.runtime_chain_confidence === 'low')).toBe(true);
+      } finally {
+        if (original === undefined) {
+          delete process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+        } else {
+          process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = original;
+        }
+      }
+    });
+
+    it('v1 dual layer confidence fields', async () => {
+      const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+      process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';
+      try {
+        const q = await backend.callTool('query', {
+          query: 'Reload',
+          unity_resources: 'on',
+          unity_hydration_mode: 'parity',
+        });
+        expect(q.processes.some((p: any) => p.runtime_chain_evidence_level)).toBe(true);
+
+        const c = await backend.callTool('context', {
+          name: 'ReloadBase',
+          file_path: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+          unity_resources: 'on',
+          unity_hydration_mode: 'parity',
+        });
+        expect(c.processes.some((p: any) => p.runtime_chain_evidence_level)).toBe(true);
+      } finally {
+        if (original === undefined) {
+          delete process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+        } else {
+          process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = original;
+        }
+      }
+    });
+
+    it('v1 low confidence hints remain actionable', async () => {
+      const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+      process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';
+      try {
+        const result = await backend.callTool('query', {
+          query: 'Reload',
+          unity_resources: 'on',
+          unity_hydration_mode: 'parity',
+        });
+        const low = result.processes.find((p: any) => p.confidence === 'low');
+        expect(low).toBeDefined();
+        expect(low.verification_hint?.action).toBeTruthy();
+        expect(low.verification_hint?.target).toBeTruthy();
+        expect(low.verification_hint?.next_command).toBeTruthy();
+      } finally {
+        if (original === undefined) {
+          delete process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+        } else {
+          process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = original;
+        }
+      }
+    });
+
+    it('v1 runtime chain verify on demand', async () => {
+      const out = await backend.callTool('query', {
+        query: 'Reload NEON.Game.Graph.Nodes.Reloads',
+        unity_resources: 'on',
+        unity_hydration_mode: 'parity',
+        runtime_chain_verify: 'on-demand',
+      });
+      expect(out.runtime_chain).toBeDefined();
+      expect(out.runtime_chain.hops.length).toBeGreaterThan(0);
+      expect(out.runtime_chain.hops.every((h: any) => !!h.anchor)).toBe(true);
+      expect(out.runtime_chain.hops.some((h: any) => h.hop_type === 'guid_map')).toBe(true);
+      expect(out.runtime_chain.hops.some((h: any) => /bd387039cacb475381a86f156b54bac2/i.test(String(h.note || '')))).toBe(true);
+      expect(out.runtime_chain.hops.some((h: any) => /ResultRPM.*GunOutput\.RPM/i.test(String(h.note || '')))).toBe(true);
+      expect(out.runtime_chain.hops.some((h: any) => /PickItUp.*EquipWithEvent.*Equip/i.test(String(h.note || '')))).toBe(true);
+      expect(out.runtime_chain.hops.some((h: any) => /CurGunGraph/i.test(String(h.note || '')))).toBe(true);
+      expect(out.runtime_chain.hops.some((h: any) => /RegisterEvents/i.test(String(h.note || '')))).toBe(true);
+      expect(out.runtime_chain.hops.some((h: any) => /StartRoutineWithEvents/i.test(String(h.note || '')))).toBe(true);
+      expect(out.runtime_chain.hops.some((h: any) => /ReloadBase\.(GetValue|CheckReload|ReloadRoutine)/i.test(String(h.note || '')))).toBe(true);
+    });
+
     it('returns lifecycle process metadata without breaking legacy fields', async () => {
       const queryResult = await backend.callTool('query', { query: 'login' });
       expect(queryResult.processes.some((p: any) => p.process_subtype === 'unity_lifecycle')).toBe(true);

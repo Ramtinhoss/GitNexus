@@ -55,11 +55,13 @@ Returns results grouped by process (execution flow):
 - processes[].confidence: high | medium | low
 - processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
 - processes[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
+- processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
 - processes[].verification_hint: { action, target, next_command } (required when confidence=low and confidence fields flag is on)
 - process_symbols[].process_evidence_mode: direct_step | method_projected | resource_heuristic
 - process_symbols[].process_confidence: high | medium | low
 - process_symbols[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
 - process_symbols[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
+- process_symbols[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
 - process_symbols[].verification_hint: { action, target, next_command } (when confidence fields flag is on)
 
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
@@ -96,6 +98,12 @@ Includes optional Unity retrieval contract:
           enum: ['parity', 'compact'],
           description: 'Unity hydration mode when unity_resources is enabled (default: compact)',
           default: 'compact',
+        },
+        runtime_chain_verify: {
+          type: 'string',
+          enum: ['off', 'on-demand'],
+          description: 'Explicit runtime chain verification mode (default: off)',
+          default: 'off',
         },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
       },
@@ -166,6 +174,7 @@ Process participation metadata:
 - processes[].confidence: high | medium | low
 - processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
 - processes[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
+- processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
 - processes[].verification_hint: { action, target, next_command } (required when confidence=low and confidence fields flag is on)
 
 Unity retrieval contract:
@@ -190,6 +199,12 @@ Unity retrieval contract:
           enum: ['parity', 'compact'],
           description: 'Unity hydration mode when unity_resources is enabled (default: compact)',
           default: 'compact',
+        },
+        runtime_chain_verify: {
+          type: 'string',
+          enum: ['off', 'on-demand'],
+          description: 'Explicit runtime chain verification mode (default: off)',
+          default: 'off',
         },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
       },

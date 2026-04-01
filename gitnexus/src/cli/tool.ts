@@ -95,6 +95,7 @@ export async function queryCommand(queryText: string, options?: {
   scopePreset?: 'unity-gameplay' | 'unity-all';
   unityResources?: UnityResourcesMode;
   unityHydration?: UnityHydrationMode;
+  runtimeChainVerify?: 'off' | 'on-demand';
 }): Promise<void> {
   if (!queryText?.trim()) {
     console.error('Usage: gitnexus query <search_query>');
@@ -112,6 +113,7 @@ export async function queryCommand(queryText: string, options?: {
     scope_preset: options?.scopePreset,
     unity_resources: options?.unityResources,
     unity_hydration_mode: options?.unityHydration,
+    runtime_chain_verify: options?.runtimeChainVerify,
     repo,
   });
   output(result);
@@ -124,6 +126,7 @@ export async function contextCommand(name: string, options?: {
   content?: boolean;
   unityResources?: UnityResourcesMode;
   unityHydration?: UnityHydrationMode;
+  runtimeChainVerify?: 'off' | 'on-demand';
 }): Promise<void> {
   if (!name?.trim() && !options?.uid) {
     console.error('Usage: gitnexus context <symbol_name> [--uid <uid>] [--file <path>]');
@@ -139,6 +142,7 @@ export async function contextCommand(name: string, options?: {
     include_content: options?.content ?? false,
     unity_resources: options?.unityResources,
     unity_hydration_mode: options?.unityHydration,
+    runtime_chain_verify: options?.runtimeChainVerify,
     repo,
   });
   output(result);

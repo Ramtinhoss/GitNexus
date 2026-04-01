@@ -56,6 +56,10 @@ export interface Phase5ConfidenceCalibrationSummary {
   };
 }
 
+export function containsPlaceholderLeak(value: unknown): boolean {
+  return /TODO|TBD|placeholder|<symbol-or-query>/i.test(String(value || ''));
+}
+
 function stringify(value: unknown): string {
   try {
     return JSON.stringify(value ?? null);
@@ -257,6 +261,8 @@ function assertScenario(
             failures.push(`${scenario.symbol}: low confidence query(on) row missing verification_hint action/target/next_command`);
           } else if (!/parity|asset|meta/i.test(nextCommand)) {
             failures.push(`${scenario.symbol}: low confidence verification_hint must include parity/manual asset-meta guidance`);
+          } else if (containsPlaceholderLeak(nextCommand)) {
+            failures.push(`${scenario.symbol}: low confidence verification_hint leaks placeholder command text`);
           }
         }
 
