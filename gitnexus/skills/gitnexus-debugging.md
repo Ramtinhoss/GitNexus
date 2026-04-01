@@ -39,6 +39,13 @@ description: "Use when the user is debugging a bug, tracing an error, or asking 
 - [ ] Read source files to confirm root cause
 ```
 
+## Phase 5 Confidence Guardrails
+
+- An empty process result is not a stop condition when Unity resource evidence exists.
+- Continue through `resourceBindings` and asset/meta mapping to test runtime linkage.
+- For low confidence findings, require `verification_hint` (`action`, `target`, `next_command`) before root-cause claims.
+- Require hop anchors/evidence anchors for each step before declaring the chain semantically closed.
+
 ## Debugging Patterns
 
 | Symptom              | GitNexus Approach                                          |

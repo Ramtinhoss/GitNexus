@@ -21,6 +21,34 @@ Task 2 | completed | Added env-gated confidence fields + hints in `query/context
 Task 3 | completed | Added heuristic `resource_heuristic` low-confidence fallback for Unity partial evidence; `npm --prefix gitnexus exec vitest run test/integration/local-backend-calltool.test.ts -- -t "phase5 emits low confidence heuristic runtime clues"` + `-t "query keeps direct evidence as high confidence when available"` + `npm --prefix gitnexus exec vitest run test/integration/unity-lifecycle-process-persist.test.ts` PASS; commit `158859c`
 Task 4 | completed | Added `skill-contracts-phase5` semantic tests and updated shared + skill docs for empty-process continuation, low-confidence hints, and hop-anchor closure; `npm --prefix gitnexus exec vitest run test/integration/skill-contracts-phase5.test.ts` PASS; commit `4072074`
 Task 5 | completed | Added calibration assertions + live evidence validator + Phase 5 artifacts (`docs/reports/2026-04-01-phase5-live-evidence.jsonl`, `docs/reports/2026-04-01-phase5-unity-confidence-agent-safe-ux-summary.json`, `docs/reports/2026-04-01-phase5-unity-confidence-agent-safe-ux-report.md`); `npm --prefix gitnexus run test:u3:gates` PASS; `node --test gitnexus/dist/benchmark/u2-e2e/retrieval-runner.test.js gitnexus/dist/benchmark/u2-e2e/live-evidence-validator.test.js` PASS; `node gitnexus/dist/benchmark/u2-e2e/live-evidence-validator.js --input docs/reports/2026-04-01-phase5-live-evidence.jsonl` PASS; full `benchmark:u2:e2e` wrapper remained environment-unstable (SIGABRT/strict gates), so acceptance evidence is sourced from successful live query/context runs against indexed alias `neonspark-u2-e2e-neonspark-u2-full-e2e-20260401-031542`
+Task 6 | completed | Root-cause remediation for setup source-of-truth drift (2026-04-01): restored Phase 5 guardrails in `gitnexus/skills/{gitnexus-exploring,gitnexus-debugging,gitnexus-impact-analysis,gitnexus-guide}.md` and restored PR-review conditional trigger block in `gitnexus/skills/gitnexus-pr-review.md`; rebuilt and re-ran setup with source dist (`npm --prefix gitnexus run build`, `node gitnexus/dist/cli/index.js setup --scope project --agent codex`), then verified `npm --prefix gitnexus exec vitest run test/integration/skill-contracts-phase5.test.ts` PASS (`3/3`) and `npm --prefix gitnexus run test:u3:gates` PASS (`55/55`)
+
+## Post-Execution Remediation (2026-04-01)
+
+Issue observed after Phase 5 completion:
+
+- `setup`-installed project skills under `.agents/skills/gitnexus` no longer satisfied `skill-contracts-phase5` checks, even though backend confidence gates were green.
+
+Root cause:
+
+- `setup` copies skill content from `gitnexus/skills/*` (source templates), not from `.agents/skills/*`.
+- The source templates had drifted and no longer contained required Phase 5 guardrail clauses (`empty process` continuation, `resourceBindings` hop, `verification_hint`, `hop anchor`/semantic closure), so each setup run reintroduced contract regressions.
+
+Remediation applied:
+
+- Restored Phase 5 guardrails in source templates:
+  - `gitnexus/skills/gitnexus-exploring.md`
+  - `gitnexus/skills/gitnexus-debugging.md`
+  - `gitnexus/skills/gitnexus-impact-analysis.md`
+  - `gitnexus/skills/gitnexus-guide.md`
+- Restored PR-review setup parity trigger block:
+  - `gitnexus/skills/gitnexus-pr-review.md`
+- Rebuilt + redistributed via source CLI setup to refresh `.agents/skills/gitnexus`.
+
+Evidence:
+
+- `npm --prefix gitnexus exec vitest run test/integration/skill-contracts-phase5.test.ts` → PASS (`3/3`)
+- `npm --prefix gitnexus run test:u3:gates` → PASS (`55/55`)
 
 ## Design Traceability Matrix
 
@@ -32,6 +60,7 @@ DC-03: rollback safety — disabling `GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS` 
 DC-04: skill/docs workflow must encode confidence-aware multi-hop stitching order and enforce “empty process must continue via resource evidence” behavior | critical | Task 4 | `npm --prefix gitnexus exec vitest run test/integration/skill-contracts-phase5.test.ts` | `gitnexus/test/integration/skill-contracts-phase5.test.ts:emptyProcessFallbackContract` | `workflow contract allows terminating on empty process without resource hop`
 DC-05: benchmark gate must prove reduced false-negative and false-confidence rates versus frozen baseline with provenance | critical | Task 5 | `npm --prefix gitnexus run test:u3:gates && npm --prefix gitnexus exec vitest run src/benchmark/u2-e2e/retrieval-runner.test.ts -t "phase5 confidence calibration"` | `docs/reports/2026-04-01-phase5-unity-confidence-agent-safe-ux-summary.json:confidenceCalibration` | `falseNegativeRateDeltaPct >= 0 or falseConfidenceRateDeltaPct >= 0 or baseline provenance missing`
 DC-06: Neonspark Reload acceptance must be semantically closed across resource->loader->runtime segments with per-hop anchors | critical | Task 5 | `node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity \"WeaponPowerUp gungraph 1_weapon_orb_key\" && node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity \"PickItUp EquipWithEvent WeaponPowerUp Equip\" && node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity \"Reload NEON.Game.Graph.Nodes.Reloads\"` | `docs/reports/2026-04-01-phase5-unity-confidence-agent-safe-ux-summary.json:reloadAcceptance` | `any required segment missing or hop anchor missing`
+DC-07: setup source templates must stay Phase 5 contract-compatible so rerunning setup cannot regress skill semantics | critical | Task 4, Task 6 | `node gitnexus/dist/cli/index.js setup --scope project --agent codex && npm --prefix gitnexus exec vitest run test/integration/skill-contracts-phase5.test.ts` | `.agents/skills/gitnexus/*/SKILL.md + gitnexus/test/integration/skill-contracts-phase5.test.ts` | `setup succeeds but contract test fails due to source-template drift`
 
 ## Authenticity Assertions
 
