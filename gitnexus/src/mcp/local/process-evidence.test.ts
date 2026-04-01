@@ -37,3 +37,26 @@ test('direct rows dominate projected rows for same process id', () => {
   assert.equal(out[0].evidence_mode, 'direct_step');
   assert.equal(out[0].confidence, 'high');
 });
+
+test('heuristic-only rows emit low confidence with verification hint', () => {
+  const out = mergeProcessEvidence({
+    directRows: [],
+    projectedRows: [],
+    heuristicRows: [
+      {
+        pid: 'proc:reload-clue',
+        label: 'Reload runtime clue',
+        step: 0,
+        stepCount: 0,
+        processSubtype: 'unity_lifecycle',
+        needsParityRetry: true,
+        verificationTarget: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+      },
+    ],
+  });
+
+  assert.equal(out[0].evidence_mode, 'resource_heuristic');
+  assert.equal(out[0].confidence, 'low');
+  assert.equal(out[0].verification_hint?.action, 'rerun_parity_hydration');
+  assert.match(out[0].verification_hint?.next_command || '', /parity/i);
+});
