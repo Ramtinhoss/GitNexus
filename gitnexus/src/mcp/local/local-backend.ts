@@ -1983,13 +1983,12 @@ export class LocalBackend {
       // Bridge class-like symbols through HAS_METHOD so class-level impact includes method-level dependencies.
       if (shouldBridgeClassMethods) {
         if (frontier.length > 0) {
-          const bridgeIdList = frontier.map(id => `'${id.replace(/'/g, "''")}'`).join(', ');
           try {
-            const bridgeRows = await executeQuery(repo.id, `
+            const bridgeRows = await executeParameterized(repo.id, `
               MATCH (container)-[r:CodeRelation {type: 'HAS_METHOD'}]->(method)
-              WHERE container.id IN [${bridgeIdList}]${confidenceFilter}
+              WHERE container.id IN $frontierIds${confidenceFilter}
               RETURN container.id AS containerId, method.id AS methodId, method.name AS methodName, labels(method)[0] AS methodType, method.filePath AS methodFilePath
-            `);
+            `, { frontierIds: frontier });
 
             for (const bridge of bridgeRows) {
               const methodId = bridge.methodId || bridge[1];
@@ -2031,13 +2030,12 @@ export class LocalBackend {
       traversalFrontier = [...new Set(traversalFrontier)];
 
       // Batch frontier nodes into a single Cypher query per depth level
-      const idList = traversalFrontier.map(id => `'${id.replace(/'/g, "''")}'`).join(', ');
       const query = direction === 'upstream'
-        ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, labels(caller)[0] AS type, caller.filePath AS filePath, r.type AS relType, r.confidence AS confidence`
-        : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN [${idList}] AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, labels(callee)[0] AS type, callee.filePath AS filePath, r.type AS relType, r.confidence AS confidence`;
+        ? `MATCH (caller)-[r:CodeRelation]->(n) WHERE n.id IN $frontierIds AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, caller.id AS id, caller.name AS name, labels(caller)[0] AS type, caller.filePath AS filePath, r.type AS relType, r.confidence AS confidence`
+        : `MATCH (n)-[r:CodeRelation]->(callee) WHERE n.id IN $frontierIds AND r.type IN [${relTypeFilter}]${confidenceFilter} RETURN n.id AS sourceId, callee.id AS id, callee.name AS name, labels(callee)[0] AS type, callee.filePath AS filePath, r.type AS relType, r.confidence AS confidence`;
       
       try {
-        const related = await executeQuery(repo.id, query);
+        const related = await executeParameterized(repo.id, query, { frontierIds: traversalFrontier });
         
         for (const rel of related) {
           const relId = rel.id || rel[1];
