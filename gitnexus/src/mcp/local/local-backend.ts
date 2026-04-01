@@ -17,6 +17,7 @@ import { loadUnityContext, type UnityContextPayload, type UnityHydrationMeta } f
 import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
 import { mergeProcessEvidence } from './process-evidence.js';
 import { resolveUnityProcessConfidenceFieldsEnabled } from './unity-process-confidence-config.js';
+import { resolveUnityRuntimeChainVerifyEnabled } from './unity-runtime-chain-verify-config.js';
 import type { ProcessConfidence, ProcessEvidenceMode, VerificationHint } from './process-confidence.js';
 import type { RuntimeChainEvidenceLevel } from './runtime-chain-evidence.js';
 import {
@@ -692,6 +693,7 @@ export class LocalBackend {
     }
     const searchQuery = params.query.trim();
     const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
+    const runtimeChainVerifyEnabled = resolveUnityRuntimeChainVerifyEnabled(process.env);
     
     // Step 1: Run hybrid search to get matching symbols
     const searchLimit = processLimit * maxSymbolsPerProcess; // fetch enough raw results
@@ -989,7 +991,7 @@ export class LocalBackend {
       process_symbols: dedupedSymbols,
       definitions: definitions.slice(0, 20), // cap standalone definitions
     };
-    if (runtimeChainVerifyMode === 'on-demand') {
+    if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
       const resourceBindings = dedupedSymbols
         .flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : []))
         .concat(definitions.flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : [])));
@@ -1319,6 +1321,7 @@ export class LocalBackend {
     
     const { name, uid, file_path, include_content } = params;
     const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
+    const runtimeChainVerifyEnabled = resolveUnityRuntimeChainVerifyEnabled(process.env);
     const confidenceFieldsEnabled = resolveUnityProcessConfidenceFieldsEnabled(process.env);
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
@@ -1580,7 +1583,7 @@ export class LocalBackend {
       } : {}),
     }));
 
-    if (runtimeChainVerifyMode === 'on-demand') {
+    if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
       result.runtime_chain = await verifyRuntimeChainOnDemand({
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),

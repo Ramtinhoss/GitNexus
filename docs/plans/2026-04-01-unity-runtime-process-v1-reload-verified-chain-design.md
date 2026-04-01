@@ -240,6 +240,10 @@ Status: Draft (for implementation planning)
 - artifact: `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json`
 - report: `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.md`
 - result: `verified_full` + `verified_chain`
+4. 2026-04-01 hardening 补丁已完成：
+- `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY` 回滚开关已落地（关闭后禁用 `runtime_chain_verify=on-demand` 强验证，仅保留快路径）。
+- Reload verifier 已强化为语义锚点闭环：`code_loader` 必须命中 `CurGunGraph` 赋值行锚点；`code_runtime` 需同时覆盖 `StartRoutineWithEvents` 与 `GetValue/CheckReload/ReloadRoutine` 片段才视为链路闭合。
+- acceptance validator 新增弱语义拒绝规则：缺失上述语义锚点即使字段齐全也判失败。
 
 Residual risks:
 

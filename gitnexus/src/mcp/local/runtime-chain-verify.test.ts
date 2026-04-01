@@ -14,7 +14,10 @@ async function makeTempRepo(): Promise<string> {
   await fs.writeFile(path.join(repoPath, 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs.meta'), 'guid: bd387039cacb475381a86f156b54bac2\n');
   await fs.mkdir(path.join(repoPath, 'Assets/NEON/Code/Game/PowerUps'), { recursive: true });
   await fs.mkdir(path.join(repoPath, 'Assets/NEON/Code/Game/Core'), { recursive: true });
-  await fs.writeFile(path.join(repoPath, 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs'), 'void Equip() {}\n');
+  await fs.writeFile(
+    path.join(repoPath, 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs'),
+    'void Equip() {\n  CurGunGraph = graph;\n}\n',
+  );
   await fs.writeFile(path.join(repoPath, 'Assets/NEON/Code/Game/Core/GunGraph.cs'), 'void StartRoutineWithEvents() {}\n');
   await fs.writeFile(path.join(repoPath, 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs'), 'void GetValue() {}\n');
   return repoPath;
@@ -42,6 +45,8 @@ describe('runtime chain verify', () => {
     });
     expect(out?.evidence_level).toBe('verified_chain');
     expect(out?.hops.some((hop) => hop.hop_type === 'guid_map')).toBe(true);
+    const loader = out?.hops.find((hop) => hop.hop_type === 'code_loader');
+    expect(loader?.snippet || '').toMatch(/CurGunGraph\s*=/i);
   });
 
   it('v1 runtime chain gaps are actionable', async () => {

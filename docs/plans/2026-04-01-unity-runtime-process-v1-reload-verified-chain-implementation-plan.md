@@ -24,6 +24,7 @@ Task 5: Implement Reload-Focused On-Demand Runtime Chain Verifier | completed | 
 Task 6: Add Anti-Fake Assertions and Acceptance Artifact Writer | completed | Added reload acceptance runner, anchor authenticity checks, placeholder rejection, and retrieval-runner placeholder guard; `npm --prefix gitnexus exec -- vitest run gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.test.ts gitnexus/src/benchmark/u2-e2e/retrieval-runner.test.ts -t "v1 reload acceptance|phase5 confidence calibration|v1 anchor authenticity"` passes.
 Task 7: Run Live Reload Acceptance Pack and Persist Evidence | completed | Live artifact/report written and user-reviewed; runtime chain PASS (`verified_full`, `verified_chain`, `5` hops, `0` gaps), status parity PASS (`indexedCommit=currentCommit=9d105b2988e0a9711e6ef64cb4a8e458516f6c9c`), verify-only PASS (`node gitnexus/dist/benchmark/u2-e2e/reload-v1-acceptance-runner.js --verify-only ...`).
 Task 8: Final Regression, Gates, and Handoff Package | completed | Final regression PASS: `npm --prefix gitnexus run build`; `npm --prefix gitnexus exec -- vitest run test/integration/local-backend-calltool.test.ts test/unit/calltool-dispatch.test.ts` (`85 passed`); `npm --prefix gitnexus run test:u3:gates` (`59 passed`); authenticity recheck PASS. Design/plan notes backfilled; accepted P1 residual risk is limited scope of deterministic verifier beyond Reload V1.
+Task 9: Post-Acceptance Hardening (Rollback Gate + Strict Loader/Runtime Anchors) | completed | Added env gate parser + backend gate (`GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY`); hardened verifier to require `CurGunGraph` assignment anchor for loader and dual runtime anchors for closure; strengthened acceptance validator with semantic anchor checks. Verification PASS: `vitest -t "v1 runtime chain verify env gate|v1 runtime chain verify on demand builds reload chain hops|v1 reload acceptance enforces loader/runtime semantic anchors"` (`3 passed`) and `npm --prefix gitnexus run test:u3:gates` (`60 passed`); live recheck PASS (`docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.recheck.json`).
 
 ## Design Traceability Matrix
 
@@ -37,6 +38,8 @@ DC-05: low-confidence outputs must keep anti-fake verification guidance | critic
 DC-06: CLI/MCP contract must expose explicit verify switch without breaking legacy callers | critical | Task 4, Task 5 | `npm --prefix gitnexus exec -- vitest run test/unit/calltool-dispatch.test.ts -t "runtime_chain_verify" && node gitnexus/dist/cli/index.js query --help` | `gitnexus/test/unit/calltool-dispatch.test.ts:v1RuntimeChainVerifyDispatch` | `legacy calls fail or verify flag unavailable`
 DC-07: UC-5 continuation semantics must be enforced (`empty process` at one hop cannot terminate chain) | critical | Task 5, Task 6 | `npm --prefix gitnexus exec -- vitest run test/integration/local-backend-calltool.test.ts -t "v1 verifier continues when one hop has empty process"` | `gitnexus/test/integration/local-backend-calltool.test.ts:v1ContinuationWhenHopProcessEmpty` | `verifier terminates at empty-process hop despite resource evidence`
 DC-08: Anchor authenticity must be filesystem-verified (path exists, line in range, snippet match) | critical | Task 6, Task 7 | `npm --prefix gitnexus exec -- vitest run gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.test.ts -t "v1 anchor authenticity"` | `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json:anchor_validation` | `anchor points to missing file, invalid line, or non-matching snippet`
+DC-09: Runtime verify rollback switch must disable strong verification globally when off | critical | Task 9 | `npm --prefix gitnexus exec -- vitest run test/integration/local-backend-calltool.test.ts -t "v1 runtime chain verify env gate"` | `gitnexus/test/integration/local-backend-calltool.test.ts:v1RuntimeChainVerifyEnvGate` | `runtime_chain still emitted when GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY=off`
+DC-10: UC-3/UC-4 semantic closure must include deterministic loader/runtime code anchors | critical | Task 9 | `npm --prefix gitnexus exec -- vitest run gitnexus/src/mcp/local/runtime-chain-verify.test.ts gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.test.ts -t "v1 runtime chain verify on demand builds reload chain hops|v1 reload acceptance enforces loader/runtime semantic anchors"` | `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json:runtime_chain.hops` | `loader hop not anchored at CurGunGraph assignment, or runtime closure accepted without required runtime hop evidence`
 
 ## Authenticity Assertions
 
@@ -454,6 +457,65 @@ git add docs/plans/2026-04-01-unity-runtime-process-v1-reload-verified-chain-des
 git commit -m "chore(v1): finalize reload verified chain implementation handoff"
 ```
 
+### Task 9: Post-Acceptance Hardening (Rollback Gate + Strict Loader/Runtime Anchors)
+
+**User Verification: not-required**
+
+**Files:**
+- Create: `gitnexus/src/mcp/local/unity-runtime-chain-verify-config.ts`
+- Modify: `gitnexus/src/mcp/local/local-backend.ts`
+- Modify: `gitnexus/src/mcp/local/runtime-chain-verify.ts`
+- Modify: `gitnexus/src/mcp/local/runtime-chain-verify.test.ts`
+- Modify: `gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts`
+- Modify: `gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.test.ts`
+- Modify: `gitnexus/test/integration/local-backend-calltool.test.ts`
+- Modify: `docs/plans/2026-04-01-unity-runtime-process-v1-reload-verified-chain-design.md`
+
+**Step 1: Add failing tests for rollback gate + strict semantic anchors**
+
+- Add integration test: when `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY=off`, `runtime_chain_verify=on-demand` must not emit `runtime_chain`.
+- Tighten runtime verifier unit test to assert `code_loader` hop snippet includes `CurGunGraph`.
+- Add acceptance-runner negative test: reject artifacts when loader/runtime semantic anchors are missing or weak.
+
+**Step 2: Run test to verify it fails**
+
+Run:
+- `npm --prefix gitnexus exec -- vitest run test/integration/local-backend-calltool.test.ts -t "v1 runtime chain verify env gate"`
+- `npm --prefix gitnexus exec -- vitest run gitnexus/src/mcp/local/runtime-chain-verify.test.ts gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.test.ts -t "v1 reload acceptance enforces loader/runtime semantic anchors"`
+
+Expected: FAIL before hardening.
+
+**Step 3: Implement rollback gate + semantic anchor strengthening**
+
+- Add env parser for `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY` with default enabled.
+- In `query/context`, only run `verifyRuntimeChainOnDemand` when request mode is `on-demand` **and** env gate enabled.
+- In verifier, resolve `code_loader` anchor to concrete `CurGunGraph` assignment line; if absent, emit actionable `loader` gap instead of silently accepting weak anchor.
+- In acceptance validator, require semantic anchor checks for:
+  - loader hop: `CurGunGraph` assignment evidence
+  - runtime hop: `RegisterEvents|StartRoutineWithEvents|GetValue|CheckReload|ReloadRoutine` closure evidence
+
+**Step 4: Run tests to verify it passes**
+
+Run:
+- `npm --prefix gitnexus exec -- vitest run gitnexus/src/mcp/local/runtime-chain-verify.test.ts gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.test.ts test/integration/local-backend-calltool.test.ts -t "v1 runtime chain verify env gate|v1 runtime chain verify on demand builds reload chain hops|v1 reload acceptance enforces loader/runtime semantic anchors"`
+- `npm --prefix gitnexus run test:u3:gates`
+
+Expected: PASS.
+
+**Step 5: Refresh docs execution notes**
+
+- Backfill design doc execution notes with this hardening batch:
+  - rollback env gate status
+  - strict semantic anchor checks status
+  - residual risks update
+
+**Step 6: Commit**
+
+```bash
+git add gitnexus/src/mcp/local/unity-runtime-chain-verify-config.ts gitnexus/src/mcp/local/local-backend.ts gitnexus/src/mcp/local/runtime-chain-verify.ts gitnexus/src/mcp/local/runtime-chain-verify.test.ts gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.test.ts gitnexus/test/integration/local-backend-calltool.test.ts docs/plans/2026-04-01-unity-runtime-process-v1-reload-verified-chain-design.md
+git commit -m "hardening(v1): add runtime verify rollback gate and strict loader/runtime anchor checks"
+```
+
 ## Plan Audit Verdict
 
 audit_scope: docs/plans/2026-04-01-unity-runtime-process-v1-reload-verified-chain-design.md sections 2-5; UC-1..UC-5 acceptance; anti-fake/authenticity clauses
@@ -466,6 +528,8 @@ major_risks:
 - Fixed: continuation semantics (`empty process` hop must continue) are explicit and test-gated.
 - Fixed: anchor authenticity now requires filesystem existence + line-range + snippet consistency checks.
 - Fixed: live-mode provenance now requires status/commit parity capture in acceptance artifact.
+- Fixed: global rollback gate now supports `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY=off` to disable on-demand verifier.
+- Fixed: UC-3/UC-4 closure now enforces semantic loader/runtime anchors (`CurGunGraph` assignment + runtime dual anchors).
 anti_placeholder_checks:
 - Pass: plan enforces placeholder rejection and includes failing-test patterns for leakage.
 authenticity_checks:

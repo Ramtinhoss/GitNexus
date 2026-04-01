@@ -109,6 +109,13 @@ async function findLineAnchor(
   };
 }
 
+async function findCurGunGraphAssignmentAnchor(
+  repoPath: string,
+  relativePath: string,
+): Promise<{ anchor: string; snippet: string } | null> {
+  return findLineAnchor(repoPath, relativePath, /\bCurGunGraph\b\s*=/i);
+}
+
 async function findMethodAnchor(
   executeParameterized: QueryExecutor,
   filePathPattern: string,
@@ -165,14 +172,19 @@ export async function verifyRuntimeChainOnDemand(
   const resourceAnchor = await findLineAnchor(input.repoPath, resourceAssetPath, /gungraph|m_Script|guid/i)
     || await findLineAnchor(input.repoPath, resourceAssetPath, /.*/)
     || { anchor: `${resourceAssetPath}:1`, snippet: 'resource binding anchor unavailable in test fixture' };
+  const hasResourceAnchor = !/unavailable in test fixture/i.test(resourceAnchor.snippet);
   hops.push({
     hop_type: 'resource',
     anchor: resourceAnchor.anchor,
-    confidence: 'high',
+    confidence: hasResourceAnchor ? 'high' : 'medium',
     note: `PowerUp asset references WeaponPowerUp and gungraph guid ${GRAPH_GUID}.`,
     snippet: resourceAnchor.snippet,
   });
-  foundSegments.add('resource');
+  if (hasResourceAnchor) {
+    foundSegments.add('resource');
+  } else {
+    gaps.push(buildGap('resource', 'missing PowerUp asset anchor'));
+  }
 
   const graphAnchor = await findLineAnchor(input.repoPath, GRAPH_ASSET_PATH, /ResultRPM|GunOutput\.RPM/i);
   const reloadMetaAnchor = await findLineAnchor(input.repoPath, RELOAD_META_PATH, new RegExp(RELOAD_GUID, 'i'));
@@ -193,11 +205,10 @@ export async function verifyRuntimeChainOnDemand(
       note: `Graph asset guid ${GRAPH_GUID} maps to Reload.cs.meta guid ${RELOAD_GUID}; wiring includes ResultRPM -> GunOutput.RPM.`,
       snippet: 'guid_map anchor unavailable in test fixture',
     });
-    foundSegments.add('guid_map');
     gaps.push(buildGap('guid_map', 'missing Reload guid_map or graph wiring anchor'));
   }
 
-  const loaderHop = await buildMethodHop(
+  const loaderMethodHop = await buildMethodHop(
     input.repoPath,
     input.executeParameterized,
     'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
@@ -205,9 +216,26 @@ export async function verifyRuntimeChainOnDemand(
     'code_loader',
     'PickItUp -> EquipWithEvent -> Equip; CurGunGraph assignment happens in WeaponPowerUp.Equip.',
   );
-  if (loaderHop) {
-    hops.push(loaderHop);
+  const loaderAssignmentAnchor = await findCurGunGraphAssignmentAnchor(
+    input.repoPath,
+    'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+  );
+  if (loaderAssignmentAnchor) {
+    hops.push({
+      hop_type: 'code_loader',
+      anchor: loaderAssignmentAnchor.anchor,
+      confidence: 'high',
+      note: 'PickItUp -> EquipWithEvent -> Equip; CurGunGraph assignment happens in WeaponPowerUp.Equip.',
+      snippet: loaderAssignmentAnchor.snippet,
+    });
     foundSegments.add('code_loader');
+  } else if (loaderMethodHop) {
+    hops.push({
+      ...loaderMethodHop,
+      confidence: 'medium',
+      note: 'PickItUp -> EquipWithEvent -> Equip path found, but CurGunGraph assignment anchor is missing.',
+    });
+    gaps.push(buildGap('loader', 'missing CurGunGraph assignment anchor in Equip path'));
   } else {
     hops.push({
       hop_type: 'code_loader',
@@ -216,8 +244,7 @@ export async function verifyRuntimeChainOnDemand(
       note: 'PickItUp -> EquipWithEvent -> Equip; CurGunGraph assignment happens in WeaponPowerUp.Equip.',
       snippet: 'loader anchor unavailable in test fixture',
     });
-    foundSegments.add('code_loader');
-    gaps.push(buildGap('loader', 'missing PickItUp/EquipWithEvent/Equip anchor'));
+    gaps.push(buildGap('loader', 'missing PickItUp/EquipWithEvent/Equip anchor and CurGunGraph assignment anchor'));
   }
 
   const runtimeGraphHop = await buildMethodHop(
@@ -235,9 +262,10 @@ export async function verifyRuntimeChainOnDemand(
     'code_runtime',
     'GunGraphMB.RegisterGraphEvents -> GunGraph.RegisterEvents -> StartRoutineWithEvents.',
   );
+  let hasRuntimeGraphAnchor = false;
   if (runtimeGraphHop) {
     hops.push(runtimeGraphHop);
-    foundSegments.add('code_runtime');
+    hasRuntimeGraphAnchor = true;
   }
 
   const reloadRuntimeHop = await buildMethodHop(
@@ -248,19 +276,28 @@ export async function verifyRuntimeChainOnDemand(
     'code_runtime',
     'ReloadBase.GetValue -> CheckReload -> ReloadRoutine closes the runtime reload chain.',
   );
+  let hasReloadRuntimeAnchor = false;
   if (reloadRuntimeHop) {
     hops.push(reloadRuntimeHop);
+    hasReloadRuntimeAnchor = true;
+  }
+
+  if (hasRuntimeGraphAnchor && hasReloadRuntimeAnchor) {
     foundSegments.add('code_runtime');
-  } else if (!runtimeGraphHop) {
-    hops.push({
-      hop_type: 'code_runtime',
-      anchor: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:1',
-      confidence: 'medium',
-      note: 'RegisterEvents -> StartRoutineWithEvents -> ReloadBase.GetValue -> CheckReload -> ReloadRoutine.',
-      snippet: 'runtime anchor unavailable in test fixture',
-    });
-    foundSegments.add('code_runtime');
-    gaps.push(buildGap('runtime', 'missing RegisterEvents/StartRoutineWithEvents/GetValue runtime anchors'));
+  } else {
+    const missingRuntimeAnchors: string[] = [];
+    if (!hasRuntimeGraphAnchor) missingRuntimeAnchors.push('RegisterEvents/StartRoutineWithEvents');
+    if (!hasReloadRuntimeAnchor) missingRuntimeAnchors.push('ReloadBase.GetValue/CheckReload/ReloadRoutine');
+    if (!hasRuntimeGraphAnchor && !hasReloadRuntimeAnchor) {
+      hops.push({
+        hop_type: 'code_runtime',
+        anchor: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:1',
+        confidence: 'medium',
+        note: 'RegisterEvents -> StartRoutineWithEvents -> ReloadBase.GetValue -> CheckReload -> ReloadRoutine.',
+        snippet: 'runtime anchor unavailable in test fixture',
+      });
+    }
+    gaps.push(buildGap('runtime', `missing runtime closure anchors: ${missingRuntimeAnchors.join(' + ')}`));
   }
 
   const requiredSegments = ['resource', 'guid_map', 'code_loader', 'code_runtime'];

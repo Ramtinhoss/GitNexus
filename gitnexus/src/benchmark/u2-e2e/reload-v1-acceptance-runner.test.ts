@@ -60,3 +60,27 @@ test('containsPlaceholderText detects placeholder leakage', () => {
   assert.equal(containsPlaceholderText('TODO later'), true);
   assert.equal(containsPlaceholderText('real anchor'), false);
 });
+
+test('v1 reload acceptance enforces loader/runtime semantic anchors', async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'reload-v1-semantic-'));
+  const filePath = path.join(tempDir, 'Chain.cs');
+  await fs.writeFile(filePath, 'resource line\nguid line\nloader line\nruntime line\n');
+
+  const artifact: any = {
+    repoPath: tempDir,
+    runtime_chain: {
+      status: 'verified_full',
+      hops: [
+        { hop_type: 'resource', anchor: `${filePath}:1`, snippet: 'resource line', note: 'resource ok' },
+        { hop_type: 'guid_map', anchor: `${filePath}:2`, snippet: 'guid line', note: 'guid ok' },
+        { hop_type: 'code_loader', anchor: `${filePath}:3`, snippet: 'loader line', note: 'loader ok' },
+        { hop_type: 'code_runtime', anchor: `${filePath}:4`, snippet: 'runtime line', note: 'runtime ok' },
+      ],
+    },
+  };
+
+  const validation = await validateReloadAcceptanceArtifact(artifact);
+  assert.equal(validation.ok, false);
+  assert.equal(validation.failures.some((failure) => /loader.*curgungraph/i.test(failure)), true);
+  assert.equal(validation.failures.some((failure) => /runtime.*closure/i.test(failure)), true);
+});

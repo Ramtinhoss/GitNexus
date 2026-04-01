@@ -81,23 +81,41 @@ export async function validateReloadAcceptanceArtifact(
 ): Promise<{ ok: boolean; failures: string[]; anchorValidation: AnchorValidationRow[] }> {
   const failures: string[] = [];
   const chain = artifact.runtime_chain;
+  const hops = Array.isArray(chain?.hops) ? chain.hops : [];
 
   if (containsPlaceholderText(JSON.stringify(chain))) {
     failures.push('placeholder text leaked into runtime_chain');
   }
 
-  const hopTypes = new Set((chain?.hops || []).map((hop) => hop.hop_type));
+  const hopTypes = new Set(hops.map((hop) => hop.hop_type));
   for (const required of ['resource', 'guid_map', 'code_loader', 'code_runtime']) {
     if (!hopTypes.has(required as any)) {
       failures.push(`missing required ${required} hop`);
     }
   }
 
-  if (chain?.status === 'verified_full' && (!Array.isArray(chain.hops) || chain.hops.length === 0)) {
+  if (chain?.status === 'verified_full' && hops.length === 0) {
     failures.push('verified_full requires non-empty hops');
   }
 
-  const anchorValidation = await Promise.all((chain?.hops || []).map((hop) => validateAnchorAuthenticity(artifact.repoPath, hop)));
+  const loaderHops = hops.filter((hop) => hop.hop_type === 'code_loader');
+  if (loaderHops.length > 0) {
+    const hasCurGunGraphAssignmentAnchor = loaderHops.some((hop) => /\bCurGunGraph\b\s*=/i.test(String(hop.snippet || '')));
+    if (!hasCurGunGraphAssignmentAnchor) {
+      failures.push('loader semantic closure missing CurGunGraph assignment anchor');
+    }
+  }
+
+  const runtimeHops = hops.filter((hop) => hop.hop_type === 'code_runtime');
+  if (runtimeHops.length > 0) {
+    const hasRuntimeGraphAnchor = runtimeHops.some((hop) => /RegisterEvents|StartRoutineWithEvents/i.test(String(hop.snippet || '')));
+    const hasRuntimeReloadAnchor = runtimeHops.some((hop) => /GetValue|CheckReload|ReloadRoutine/i.test(String(hop.snippet || '')));
+    if (!hasRuntimeGraphAnchor || !hasRuntimeReloadAnchor) {
+      failures.push('runtime semantic closure missing RegisterEvents/StartRoutineWithEvents and GetValue|CheckReload|ReloadRoutine anchors');
+    }
+  }
+
+  const anchorValidation = await Promise.all(hops.map((hop) => validateAnchorAuthenticity(artifact.repoPath, hop)));
   anchorValidation
     .filter((row) => !row.valid)
     .forEach((row) => failures.push(row.reason || 'invalid anchor'));

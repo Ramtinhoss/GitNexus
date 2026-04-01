@@ -323,6 +323,26 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(out.runtime_chain.hops.some((h: any) => /ReloadBase\.(GetValue|CheckReload|ReloadRoutine)/i.test(String(h.note || '')))).toBe(true);
     });
 
+    it('v1 runtime chain verify env gate', async () => {
+      const original = process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
+      process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = 'off';
+      try {
+        const out = await backend.callTool('query', {
+          query: 'Reload NEON.Game.Graph.Nodes.Reloads',
+          unity_resources: 'on',
+          unity_hydration_mode: 'parity',
+          runtime_chain_verify: 'on-demand',
+        });
+        expect(out.runtime_chain).toBeUndefined();
+      } finally {
+        if (original === undefined) {
+          delete process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
+        } else {
+          process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = original;
+        }
+      }
+    });
+
     it('returns lifecycle process metadata without breaking legacy fields', async () => {
       const queryResult = await backend.callTool('query', { query: 'login' });
       expect(queryResult.processes.some((p: any) => p.process_subtype === 'unity_lifecycle')).toBe(true);
