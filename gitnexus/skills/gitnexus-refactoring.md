@@ -25,6 +25,10 @@ description: "Use when the user wants to rename, extract, split, move, or restru
 
 > If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
 
+When refactoring scope includes Unity runtime process semantics (runtime chain linkage/confidence or process closure), load and follow:
+
+- `_shared/unity-runtime-process-contract.md`
+
 ## Checklists
 
 ### Rename Symbol

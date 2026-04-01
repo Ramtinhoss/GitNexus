@@ -38,12 +38,11 @@ description: "Use when the user wants to know what will break if they change som
 - [ ] Assess risk level and report to user
 ```
 
-## Phase 5 Confidence Guardrails
+## Unity Runtime Process Trigger
 
-- Do not finalize blast-radius closure from an empty process list alone.
-- If Unity evidence exists, continue via `resourceBindings` and asset/meta mapping hops.
-- Low confidence rows must include and honor `verification_hint` (`action`, `target`, `next_command`).
-- Report risk as provisional until hop anchors/evidence anchors are collected and semantically closed.
+When impact analysis depends on Unity runtime process closure or confidence interpretation, load and follow:
+
+- `_shared/unity-runtime-process-contract.md`
 
 ## Understanding Output
 

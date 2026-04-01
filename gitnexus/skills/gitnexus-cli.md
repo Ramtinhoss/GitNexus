@@ -113,6 +113,22 @@ Rules:
 - If response `hydrationMeta.needsParityRetry=true`, rerun with `--unity-hydration parity`.
 - `--unity-hydration parity` is completeness-first mode for advanced verification.
 
+### Unity runtime process contract trigger
+
+When CLI analysis targets Unity runtime process semantics (runtime chain closure/confidence), load:
+
+- `_shared/unity-runtime-process-contract.md`
+
+Runtime-process verification examples:
+
+```bash
+$GN query "Reload NEON.Game.Graph.Nodes.Reloads" --repo neonspark --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand
+```
+
+```bash
+$GN context ReloadNode --repo neonspark --unity-resources on --unity-hydration compact --runtime-chain-verify on-demand
+```
+
 ### unity-ui-trace — Unity UI evidence tracing workflow
 
 ```bash
