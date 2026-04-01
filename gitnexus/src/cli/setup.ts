@@ -520,6 +520,15 @@ async function installSkillsTo(targetDir: string): Promise<string[]> {
     }
   }
 
+  // Shared workflow contracts distributed alongside skills.
+  const sharedSource = path.join(skillsRoot, '_shared');
+  try {
+    await fs.access(sharedSource);
+    await copyDirRecursive(sharedSource, path.join(targetDir, '_shared'));
+  } catch {
+    // Optional shared contracts directory may be absent in older packages.
+  }
+
   return installed;
 }
 

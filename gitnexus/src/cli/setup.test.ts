@@ -111,9 +111,18 @@ test('setup installs global skills under ~/.agents/skills/gitnexus', async () =>
       'gitnexus-exploring',
       'SKILL.md',
     );
+    const sharedRuntimeContractPath = path.join(
+      fakeHome,
+      '.agents',
+      'skills',
+      'gitnexus',
+      '_shared',
+      'unity-runtime-process-contract.md',
+    );
     const configPath = path.join(fakeHome, '.gitnexus', 'config.json');
 
     await fs.access(skillPath);
+    await fs.access(sharedRuntimeContractPath);
     const configRaw = await fs.readFile(configPath, 'utf-8');
     const config = JSON.parse(configRaw) as { setupScope?: string };
     assert.equal(config.setupScope, 'global');
