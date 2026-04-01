@@ -16,13 +16,13 @@ Track execution state here. `executing-plans` updates this section in place.
 
 Task | Status | Facts
 --- | --- | ---
-Task 1 | pending | Add shared runtime process contract file.
-Task 2 | pending | Add AGENTS/CLAUDE Unity runtime process source-of-truth section in ai-context generator.
-Task 3 | pending | Route skills to shared runtime process contract with trigger-based loading.
-Task 4 | pending | Extend setup installer to distribute `_shared` safely.
-Task 5 | pending | Add/adjust setup and ai-context tests for `_shared` + AGENTS entry.
-Task 6 | pending | Run verification commands and capture evidence.
-Task 7 | pending | Commit in small, reviewable slices.
+Task 1 | completed | Red check `test -f ...` returned `1`; created `gitnexus/skills/_shared/unity-runtime-process-contract.md`; presence check returned `0`; commit `2af9a4f`.
+Task 2 | completed | Added AGENTS/CLAUDE assertions in `ai-context.test.ts`; red confirmed on old output; updated `ai-context.ts` with Unity truth-source section; green via `npm run build && node --test dist/cli/ai-context.test.js`; commit `0d3eb49`.
+Task 3 | completed | Red coverage check reported 7 missing skill references; updated 7 distributed skills to load `_shared/unity-runtime-process-contract.md`; coverage check clean; commit `3e74cb8`.
+Task 4 | completed | Added `_shared` copy in `setup.ts` installer; red setup test observed ENOENT for shared contract before fix; green via `npm run build && node --test dist/cli/setup.test.js`; commit `84af4e6`.
+Task 5 | completed | Added project-scope `_shared` install in `ai-context.ts` and assertions in `ai-context.test.ts`; focused suite green via `npm run build && node --test dist/cli/ai-context.test.js dist/cli/setup.test.js`; commit `bc6a11f`.
+Task 6 | completed | Integrity grep hit AGENTS template + all 7 targeted skills + shared contract (`verification_hint` and `runtime_chain_verify` present); full focused suite passed (`16/16`) via `npm run build && node --test dist/cli/ai-context.test.js dist/cli/setup.test.js`; user verification gate passed ("通过").
+Task 7 | completed | Final diff review performed; excluded unrelated pre-existing local edits (`.agents/skills/*`, root `AGENTS.md`); committed only execution-ledger update for traceability.
 
 ## Design Traceability Matrix
 
@@ -266,4 +266,3 @@ authenticity_checks:
 - Critical clauses map to executable commands + artifact fields + failure signals: pass
 - Runtime chain closure guard requires evidence anchors and disallows empty-process shortcut: pass
 approval_decision: pass
-
