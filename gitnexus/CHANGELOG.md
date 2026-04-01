@@ -2,6 +2,22 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.11-rc] - 2026-04-01
+
+> Release candidate notes comparing `v1.4.10-rc` -> `v1.4.11-rc`.
+
+### Added
+- Added runtime process evidence stitching for Unity retrieval flows, including confidence-aware clues for partial evidence and class-hit projection into process results.
+- Added regression coverage for Unity lifecycle/runtime-process projection, schema persistence fallbacks, and setup guidance distribution across workflow-facing skill paths.
+
+### Changed
+- Expanded query/context runtime hydration orchestration so Unity class/process evidence is surfaced consistently in tool outputs and shared workflow contracts.
+- Standardized runtime-process guidance into a shared source-of-truth contract and distributed it across AGENTS-aligned skill docs and setup-generated guidance.
+
+### Fixed
+- Fixed Ladybug impact traversal to avoid read-only DB traversal failures in runtime analysis paths.
+- Fixed process resource lifecycle metadata persistence and fallback insert reporting so `repo/processes` output reflects stored state accurately.
+
 ## [1.4.10-rc] - 2026-03-30
 
 > Release candidate notes comparing `v1.4.9` -> `v1.4.10-rc`.
