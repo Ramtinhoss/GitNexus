@@ -39,6 +39,13 @@ description: "Use when the user asks how code works, wants to understand archite
 - [ ] Read source files for implementation details
 ```
 
+## Phase 5 Confidence Guardrails
+
+- If `processes` is an empty process list, do not conclude "no runtime chain" yet.
+- Continue with Unity `resourceBindings` and asset/meta mapping before concluding.
+- Treat low confidence (`confidence=low`) as unresolved until `verification_hint` (`action`, `target`, `next_command`) is followed.
+- Only mark the chain semantically closed when each hop has a concrete hop anchor/evidence anchor.
+
 ## Resources
 
 | Resource                                | What you get                                            |

@@ -55,6 +55,9 @@ Recommended default workflow:
    - `needsParityRetry: true` → rerun same call with `unity_hydration_mode: "parity"`
    - `isComplete: true` → keep compact result
 3. Treat parity as the completeness path for advanced verification.
+4. If `processes` is an empty process list but Unity evidence exists, continue with `resourceBindings` and asset/meta mapping.
+5. For low confidence (`confidence=low`), require `verification_hint` (`action`, `target`, `next_command`) before conclusions.
+6. Mark runtime chains semantically closed only after hop anchors/evidence anchors are present across hops.
 
 ### Unity UI Trace Contract (`unity_ui_trace` / `gitnexus unity-ui-trace`)
 
