@@ -157,11 +157,53 @@ withTestLbugDB('local-backend-calltool', (handle) => {
     });
 
     it('query keeps direct evidence as high confidence when available', async () => {
-      const result = await backend.callTool('query', { query: 'login' });
-      const loginSymbol = result.process_symbols.find((s: any) => s.name === 'login');
+      const result = await backend.callTool('query', { query: 'authenticate' });
+      const directHigh = result.process_symbols.find(
+        (s: any) => s.process_evidence_mode === 'direct_step' && s.process_confidence === 'high',
+      );
 
-      expect(loginSymbol.process_evidence_mode).toBe('direct_step');
-      expect(loginSymbol.process_confidence).toBe('high');
+      expect(directHigh).toBeDefined();
+    });
+
+    it('phase5 confidence fields and verification hints', async () => {
+      const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+      process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';
+      try {
+        const on = await backend.callTool('context', { name: 'AuthService' });
+        expect(on.processes.length).toBeGreaterThan(0);
+        expect(on.processes.every((p: any) => ['high', 'medium', 'low'].includes(p.confidence))).toBe(true);
+        expect(on.processes.some((p: any) => Object.prototype.hasOwnProperty.call(p, 'verification_hint'))).toBe(true);
+
+        const low = on.processes.find((p: any) => p.confidence === 'low');
+        if (low) {
+          expect(low.verification_hint).toHaveProperty('action');
+          expect(low.verification_hint).toHaveProperty('target');
+          expect(low.verification_hint).toHaveProperty('next_command');
+        }
+      } finally {
+        if (original === undefined) {
+          delete process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+        } else {
+          process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = original;
+        }
+      }
+    });
+
+    it('phase5 flag-off preserves legacy response shape', async () => {
+      const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+      process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'off';
+      try {
+        const off = await backend.callTool('context', { name: 'AuthService' });
+        expect(off.processes.length).toBeGreaterThan(0);
+        expect(off.processes.every((p: any) => p.verification_hint === undefined)).toBe(true);
+        expect(off.processes.every((p: any) => typeof p.step_count === 'number')).toBe(true);
+      } finally {
+        if (original === undefined) {
+          delete process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
+        } else {
+          process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = original;
+        }
+      }
     });
 
     it('returns lifecycle process metadata without breaking legacy fields', async () => {

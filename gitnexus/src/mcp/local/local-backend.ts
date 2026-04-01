@@ -16,6 +16,8 @@ import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
 import { loadUnityContext, type UnityContextPayload, type UnityHydrationMeta } from './unity-enrichment.js';
 import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
 import { mergeProcessEvidence } from './process-evidence.js';
+import { resolveUnityProcessConfidenceFieldsEnabled } from './unity-process-confidence-config.js';
+import type { ProcessConfidence, ProcessEvidenceMode, VerificationHint } from './process-confidence.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
@@ -104,6 +106,24 @@ function resolveQueryScopePreset(scopePreset?: string): QueryScopePreset | undef
     return normalized as QueryScopePreset;
   }
   return undefined;
+}
+
+function aggregateProcessConfidence(rows: Array<{ process_confidence?: ProcessConfidence }>): ProcessConfidence {
+  if (rows.some((row) => row.process_confidence === 'high')) return 'high';
+  if (rows.some((row) => row.process_confidence === 'medium')) return 'medium';
+  return 'low';
+}
+
+function aggregateProcessEvidenceMode(
+  rows: Array<{ process_evidence_mode?: ProcessEvidenceMode }>,
+): ProcessEvidenceMode {
+  if (rows.some((row) => row.process_evidence_mode === 'direct_step')) return 'direct_step';
+  if (rows.some((row) => row.process_evidence_mode === 'method_projected')) return 'method_projected';
+  return 'resource_heuristic';
+}
+
+function selectVerificationHint(rows: Array<{ verification_hint?: VerificationHint }>): VerificationHint | undefined {
+  return rows.find((row) => row.verification_hint)?.verification_hint;
 }
 
 export function filterBm25ResultsByScopePreset<T extends { filePath?: string }>(
@@ -634,6 +654,7 @@ export class LocalBackend {
     const processLimit = params.limit || 5;
     const maxSymbolsPerProcess = params.max_symbols || 10;
     const includeContent = params.include_content ?? false;
+    const confidenceFieldsEnabled = resolveUnityProcessConfidenceFieldsEnabled(process.env);
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
     try {
@@ -840,9 +861,12 @@ export class LocalBackend {
             process_id: pid,
             step_index: step,
             process_subtype: String((row as any).processSubtype || ''),
-            runtime_chain_confidence: String((row as any).runtimeChainConfidence || ''),
             process_evidence_mode: row.evidence_mode,
             process_confidence: row.confidence,
+            ...(confidenceFieldsEnabled ? {
+              runtime_chain_confidence: row.confidence,
+              verification_hint: (row as any).verification_hint,
+            } : {}),
           });
         }
       }
@@ -866,13 +890,12 @@ export class LocalBackend {
       process_type: p.processType,
       process_subtype: (p as any).processSubtype || undefined,
       step_count: p.stepCount,
-      runtime_chain_confidence: (p as any).runtimeChainConfidence || undefined,
-      evidence_mode: p.symbols.some((s: any) => s.process_evidence_mode === 'direct_step')
-        ? 'direct_step'
-        : 'method_projected',
-      confidence: p.symbols.some((s: any) => s.process_confidence === 'high')
-        ? 'high'
-        : 'medium',
+      evidence_mode: aggregateProcessEvidenceMode(p.symbols),
+      confidence: aggregateProcessConfidence(p.symbols),
+      ...(confidenceFieldsEnabled ? {
+        runtime_chain_confidence: aggregateProcessConfidence(p.symbols),
+        verification_hint: selectVerificationHint(p.symbols),
+      } : {}),
     }));
     
     const processSymbols = rankedProcesses.flatMap(p =>
@@ -1210,6 +1233,7 @@ export class LocalBackend {
     await this.ensureInitialized(repo.id);
     
     const { name, uid, file_path, include_content } = params;
+    const confidenceFieldsEnabled = resolveUnityProcessConfidenceFieldsEnabled(process.env);
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
     try {
@@ -1405,11 +1429,14 @@ export class LocalBackend {
         id: r.pid || r[0],
         name: r.label || r[1],
         process_subtype: r.processSubtype || r[2],
-        runtime_chain_confidence: r.runtimeChainConfidence || r[3],
         step_index: r.step || r[4],
         step_count: r.stepCount || r[5],
         evidence_mode: r.evidence_mode,
         confidence: r.confidence,
+        ...(confidenceFieldsEnabled ? {
+          runtime_chain_confidence: r.confidence,
+          verification_hint: r.verification_hint,
+        } : {}),
       })),
     };
 
@@ -2126,7 +2153,7 @@ export class LocalBackend {
     try {
       const processes = await executeQuery(repo.id, `
         MATCH (p:Process)
-        RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.stepCount AS stepCount
+        RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, p.stepCount AS stepCount
         ORDER BY p.stepCount DESC
         LIMIT ${limit}
       `);
@@ -2136,7 +2163,9 @@ export class LocalBackend {
           label: p.label || p[1],
           heuristicLabel: p.heuristicLabel || p[2],
           processType: p.processType || p[3],
-          stepCount: p.stepCount || p[4],
+          processSubtype: p.processSubtype || p[4],
+          runtimeChainConfidence: p.runtimeChainConfidence || p[5],
+          stepCount: p.stepCount || p[6],
         })),
       };
     } catch {

@@ -51,14 +51,16 @@ Returns results grouped by process (execution flow):
 - processes: ranked execution flows with relevance priority
 - process_symbols: all symbols in those flows with file locations and module (functional area)
 - definitions: standalone types/interfaces not in any process
-- processes[].evidence_mode: direct_step | method_projected
-- processes[].confidence: high | medium
+- processes[].evidence_mode: direct_step | method_projected | resource_heuristic
+- processes[].confidence: high | medium | low
 - processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
-- processes[].runtime_chain_confidence: high | medium (when persisted metadata exists)
-- process_symbols[].process_evidence_mode: direct_step | method_projected
-- process_symbols[].process_confidence: high | medium
+- processes[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
+- processes[].verification_hint: { action, target, next_command } (required when confidence=low and confidence fields flag is on)
+- process_symbols[].process_evidence_mode: direct_step | method_projected | resource_heuristic
+- process_symbols[].process_confidence: high | medium | low
 - process_symbols[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
-- process_symbols[].runtime_chain_confidence: high | medium (when persisted metadata exists)
+- process_symbols[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
+- process_symbols[].verification_hint: { action, target, next_command } (when confidence fields flag is on)
 
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
 Supports optional scope controls for noisy codebases:
@@ -160,10 +162,11 @@ AFTER THIS: Use impact() if planning changes, or READ gitnexus://repo/{name}/pro
 Handles disambiguation: if multiple symbols share the same name, returns candidates for you to pick from. Use uid param for zero-ambiguity lookup from prior results.
 
 Process participation metadata:
-- processes[].evidence_mode: direct_step | method_projected
-- processes[].confidence: high | medium
+- processes[].evidence_mode: direct_step | method_projected | resource_heuristic
+- processes[].confidence: high | medium | low
 - processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
-- processes[].runtime_chain_confidence: high | medium (when persisted metadata exists)
+- processes[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
+- processes[].verification_hint: { action, target, next_command } (required when confidence=low and confidence fields flag is on)
 
 Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
