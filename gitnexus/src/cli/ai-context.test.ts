@@ -19,11 +19,20 @@ test('generateAIContextFiles installs repo skills under .agents/skills/gitnexus'
     const agentsPath = path.join(repoPath, 'AGENTS.md');
     const claudePath = path.join(repoPath, 'CLAUDE.md');
     const skillPath = path.join(repoPath, '.agents', 'skills', 'gitnexus', 'gitnexus-exploring', 'SKILL.md');
+    const sharedRuntimeContractPath = path.join(
+      repoPath,
+      '.agents',
+      'skills',
+      'gitnexus',
+      '_shared',
+      'unity-runtime-process-contract.md',
+    );
     const legacyClaudeSkillsDir = path.join(repoPath, '.claude', 'skills');
 
     const agentsContent = await fs.readFile(agentsPath, 'utf-8');
     const claudeContent = await fs.readFile(claudePath, 'utf-8');
     await fs.access(skillPath);
+    await fs.access(sharedRuntimeContractPath);
 
     assert.match(agentsContent, /\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
     assert.match(claudeContent, /\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);

@@ -148,6 +148,7 @@ async function upsertGitNexusSection(
 async function installSkills(repoPath: string): Promise<string[]> {
   const skillsDir = path.join(repoPath, '.agents', 'skills', 'gitnexus');
   const installedSkills: string[] = [];
+  const packageSkillsRoot = path.join(__dirname, '..', '..', 'skills');
 
   // Skill definitions bundled with the package
   const skills = [
@@ -186,7 +187,7 @@ async function installSkills(repoPath: string): Promise<string[]> {
       await fs.mkdir(skillDir, { recursive: true });
 
       // Try to read from package skills directory
-      const packageSkillPath = path.join(__dirname, '..', '..', 'skills', `${skill.name}.md`);
+      const packageSkillPath = path.join(packageSkillsRoot, `${skill.name}.md`);
       let skillContent: string;
 
       try {
@@ -214,7 +215,30 @@ Use GitNexus tools to accomplish this task.
     }
   }
 
+  // Shared workflow contracts (if bundled).
+  const packageSharedDir = path.join(packageSkillsRoot, '_shared');
+  try {
+    await fs.access(packageSharedDir);
+    await copyDirRecursive(packageSharedDir, path.join(skillsDir, '_shared'));
+  } catch {
+    // Optional: older bundles may not include shared docs.
+  }
+
   return installedSkills;
+}
+
+async function copyDirRecursive(src: string, dest: string): Promise<void> {
+  await fs.mkdir(dest, { recursive: true });
+  const entries = await fs.readdir(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      await copyDirRecursive(srcPath, destPath);
+    } else {
+      await fs.copyFile(srcPath, destPath);
+    }
+  }
 }
 
 /**
