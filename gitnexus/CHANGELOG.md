@@ -2,6 +2,18 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.4.11-rc.2] - 2026-04-01
+
+> Release candidate notes comparing `v1.4.11-rc` -> `v1.4.11-rc.2`.
+
+### Changed
+- Moved the repository-local Unity runtime process source-of-truth guidance outside the GitNexus-managed marker block in root `AGENTS.md` / `CLAUDE.md`, so `analyze` no longer rewrites that project-specific section.
+- Synced tracked project skill copies under `.agents/skills/gitnexus/` with bundled skill docs, including runtime-process contract references.
+
+### Fixed
+- Fixed AI context generation to keep runtime-process source-of-truth text out of generated marker content, preventing accidental overwrite of user-maintained repository guidance.
+- Added regression assertions for AI context output so generated `AGENTS.md` / `CLAUDE.md` do not include the runtime-process source-of-truth section.
+
 ## [1.4.11-rc] - 2026-04-01
 
 > Release candidate notes comparing `v1.4.10-rc` -> `v1.4.11-rc`.

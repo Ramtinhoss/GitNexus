@@ -31,6 +31,7 @@ description: "Use when the user wants to review a pull request, understand what 
 Conditional triggers:
 - If analysis touches Unity serialized/binding-state interpretation, apply `_shared/unity-resource-binding-contract.md`.
 - If analysis touches UIToolkit visual semantics, apply `_shared/unity-ui-trace-contract.md`.
+- If analysis touches Unity runtime process semantics (runtime chain closure/confidence), apply `_shared/unity-runtime-process-contract.md`.
 
 ## Checklist
 

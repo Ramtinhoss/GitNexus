@@ -36,10 +36,9 @@ test('generateAIContextFiles installs repo skills under .agents/skills/gitnexus'
 
     assert.match(agentsContent, /\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
     assert.match(claudeContent, /\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
-    assert.match(agentsContent, /## Unity Runtime Process 真理源/);
-    assert.match(agentsContent, /docs\/unity-runtime-process-source-of-truth\.md/);
-    assert.match(claudeContent, /## Unity Runtime Process 真理源/);
-    assert.match(claudeContent, /docs\/unity-runtime-process-source-of-truth\.md/);
+    assert.doesNotMatch(agentsContent, /## Unity Runtime Process 真理源/);
+    assert.doesNotMatch(claudeContent, /## Unity Runtime Process 真理源/);
+    assert.equal(agentsContent, claudeContent, 'AGENTS.md and CLAUDE.md should stay content-identical');
     assert.ok(
       result.files.some((entry) => entry.includes('.agents/skills/gitnexus/')),
       'expected generated file summary to include .agents/skills/gitnexus/',
@@ -70,10 +69,9 @@ test('generateAIContextFiles with global scope skips repo skill install', async 
 
     assert.match(agentsContent, /~\/\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
     assert.match(claudeContent, /~\/\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
-    assert.match(agentsContent, /## Unity Runtime Process 真理源/);
-    assert.match(agentsContent, /docs\/unity-runtime-process-source-of-truth\.md/);
-    assert.match(claudeContent, /## Unity Runtime Process 真理源/);
-    assert.match(claudeContent, /docs\/unity-runtime-process-source-of-truth\.md/);
+    assert.doesNotMatch(agentsContent, /## Unity Runtime Process 真理源/);
+    assert.doesNotMatch(claudeContent, /## Unity Runtime Process 真理源/);
+    assert.equal(agentsContent, claudeContent, 'AGENTS.md and CLAUDE.md should stay content-identical');
     assert.ok(
       !result.files.some((entry) => entry.includes('.agents/skills/gitnexus/')),
       'did not expect repo-local skills in generated file summary',

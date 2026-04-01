@@ -39,12 +39,11 @@ description: "Use when the user is debugging a bug, tracing an error, or asking 
 - [ ] Read source files to confirm root cause
 ```
 
-## Phase 5 Confidence Guardrails
+## Unity Runtime Process Trigger
 
-- An empty process result is not a stop condition when Unity resource evidence exists.
-- Continue through `resourceBindings` and asset/meta mapping to test runtime linkage.
-- For low confidence findings, require `verification_hint` (`action`, `target`, `next_command`) before root-cause claims.
-- Require hop anchors/evidence anchors for each step before declaring the chain semantically closed.
+When debugging involves Unity runtime process semantics (runtime chain confidence, process closure certainty, lifecycle/loader stitching), load and follow:
+
+- `_shared/unity-runtime-process-contract.md`
 
 ## Debugging Patterns
 
