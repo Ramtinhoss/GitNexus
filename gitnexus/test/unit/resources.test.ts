@@ -198,6 +198,28 @@ describe('readResource', () => {
     expect(result).toContain('LoginFlow');
   });
 
+  it('processes resource includes lifecycle subtype and runtime chain confidence', async () => {
+    const backend = createMockBackend({
+      processes: {
+        processes: [
+          {
+            heuristicLabel: 'Unity Runtime Root -> ReloadRoutine',
+            processType: 'cross_community',
+            processSubtype: 'unity_lifecycle',
+            runtimeChainConfidence: 'medium',
+            stepCount: 5,
+          },
+        ],
+      },
+    });
+    const result = await readResource('gitnexus://repo/test/processes', backend);
+    expect(result).toContain('Unity Runtime Root -> ReloadRoutine');
+    expect(result).toContain('type: cross_community');
+    expect(result).toContain('steps: 5');
+    expect(result).toContain('subtype: unity_lifecycle');
+    expect(result).toContain('runtime_chain_confidence: medium');
+  });
+
   it('handles process query error gracefully', async () => {
     const backend = createMockBackend();
     backend.queryProcesses = vi.fn().mockRejectedValue(new Error('timeout'));

@@ -299,6 +299,12 @@ async function getProcessesResource(backend: LocalBackend, repoName?: string): P
       lines.push(`  - name: "${label}"`);
       lines.push(`    type: ${proc.processType || 'unknown'}`);
       lines.push(`    steps: ${proc.stepCount || 0}`);
+      if (proc.processSubtype) {
+        lines.push(`    subtype: ${proc.processSubtype}`);
+      }
+      if (proc.runtimeChainConfidence) {
+        lines.push(`    runtime_chain_confidence: ${proc.runtimeChainConfidence}`);
+      }
     }
 
     if (result.processes.length > displayLimit) {

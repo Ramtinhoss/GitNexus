@@ -20,6 +20,7 @@ Task 1 | completed | red check failed as expected (`AssertionError: expected und
 Task 2 | completed | red check failed as expected (`processSubtype` absent when persist flag on); green checks passed (`npm --prefix gitnexus exec vitest run test/integration/unity-lifecycle-process-persist.test.ts`: 2 passed, 0 failed; focused `-t "persists lifecycle process evidence attributes"` also passed)
 Task 3 | completed | red checks failed as expected (`process_subtype` missing in query/context output; `queryProcessDetail` missing subtype/evidence); green checks passed (`npm --prefix gitnexus exec vitest run test/integration/local-backend-calltool.test.ts -- -t "returns lifecycle process metadata without breaking legacy fields"` and `npm --prefix gitnexus exec vitest run test/integration/local-backend.test.ts -- -t "query process detail includes persisted lifecycle evidence"`)
 Task 4 | completed | acceptance pack executed with fresh `neonspark-core` analyze; persisted lifecycle process count verified (`cnt=8`), runtime-root step evidence verified, report artifacts written, sanity check passed (`persistedLifecycleProcessCount=8`, `confirmed_chain_steps=5`, `backwardCompat.regressionDetected=false`); committed docs artifacts after user verification gate approval
+Task 5 | completed | added `processes` resource lifecycle metadata output (`subtype`, `runtime_chain_confidence`), extended `queryProcesses()` projection, and passed focused checks (`npm --prefix gitnexus exec vitest run test/unit/resources.test.ts -t "processes resource includes lifecycle subtype and runtime chain confidence"`, plus Task 1/2/3 regression tests)
 
 ## Design Traceability Matrix
 
@@ -30,6 +31,7 @@ DC-02: process persistence must preserve source reason path and aggregate confid
 DC-03: `context/query/process detail` must expose subtype/confidence/evidence attributes while remaining backward compatible | critical | Task 3 | `npm --prefix gitnexus exec vitest run test/integration/local-backend-calltool.test.ts -t "returns lifecycle process metadata without breaking legacy fields"` | `gitnexus/test/integration/local-backend-calltool.test.ts:lifecycleMetadataCompatibility` | `legacy fields disappear, or new lifecycle metadata is absent from query/context/process detail`
 DC-04: Phase 4 must make persisted lifecycle artifacts discoverable through repo process listings and process detail resources | critical | Task 3, Task 4 | `node gitnexus/dist/cli/index.js cypher -r neonspark-core "MATCH (p:Process) WHERE p.processSubtype = 'unity_lifecycle' RETURN count(p) AS cnt" && GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST=on node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity "GunGraph RegisterEvents StartRoutineWithEvents"` | `docs/reports/2026-03-31-phase4-unity-lifecycle-process-persist-summary.json:persistedLifecycleProcessCount` | `persisted lifecycle processes cannot be enumerated or remain invisible to process-facing endpoints`
 DC-05: feature flag rollback must preserve current Phase 3 behavior when persisted lifecycle artifacts are disabled | critical | Task 2, Task 4 | `npm --prefix gitnexus exec vitest run test/integration/unity-lifecycle-process-persist.test.ts -t "does not persist lifecycle subtype when flag is off" && GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST=off node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity "Reload NEON.Game.Graph.Nodes.Reloads"` | `gitnexus/test/integration/unity-lifecycle-process-persist.test.ts:flagOffNoPersist` | `flag-off mode writes lifecycle subtype metadata or changes query/context shape beyond Phase 3 baseline`
+DC-06: `gitnexus://repo/{name}/processes` resource must surface lifecycle subtype/confidence for persisted artifacts | critical | Task 5 | `npm --prefix gitnexus exec vitest run test/unit/resources.test.ts -t "processes resource includes lifecycle subtype and runtime chain confidence"` | `gitnexus/test/unit/resources.test.ts:processesResourceLifecycleMetadata` | `processes resource omits subtype/confidence despite persisted lifecycle process nodes`
 
 ## Authenticity Assertions
 
@@ -293,6 +295,65 @@ Expected:
 ```bash
 git add docs/reports/2026-03-31-phase4-unity-lifecycle-process-persist-summary.json docs/reports/2026-03-31-phase4-unity-lifecycle-process-persist-report.md
 git commit -m "docs(phase4): record persisted lifecycle process acceptance"
+```
+
+### Task 5: Patch `repo/{name}/processes` Resource to Surface Lifecycle Metadata
+
+**User Verification: not-required**
+
+**Files:**
+- Modify: `gitnexus/src/mcp/local/local-backend.ts`
+- Modify: `gitnexus/src/mcp/resources.ts`
+- Modify: `gitnexus/test/unit/resources.test.ts`
+
+**Step 1: Write the failing resource test**
+
+Add a focused unit test that reads `gitnexus://repo/{name}/processes` and asserts each process entry can include:
+- `subtype: unity_lifecycle | static_calls`
+- `runtime_chain_confidence: medium | high`
+
+And still preserves existing fields:
+- `name`
+- `type`
+- `steps`
+
+Example assertion shape:
+
+```ts
+expect(text).toContain('subtype: unity_lifecycle');
+expect(text).toContain('runtime_chain_confidence: medium');
+expect(text).toContain('type: intra_community');
+expect(text).toContain('steps: 2');
+```
+
+**Step 2: Run the test to verify it fails**
+
+Run: `npm --prefix gitnexus exec vitest run test/unit/resources.test.ts -t "processes resource includes lifecycle subtype and runtime chain confidence"`
+
+Expected: FAIL because `queryProcesses()` / `getProcessesResource()` currently omit subtype and confidence fields.
+
+**Step 3: Write the minimal implementation**
+
+Implement additive exposure only:
+- in `queryProcesses()` select `p.processSubtype` and `p.runtimeChainConfidence`;
+- map them into returned process objects;
+- in `getProcessesResource()` print `subtype` and `runtime_chain_confidence` when present;
+- do not remove/rename existing resource fields.
+
+**Step 4: Run verification**
+
+Run:
+- `npm --prefix gitnexus exec vitest run test/unit/resources.test.ts -t "processes resource includes lifecycle subtype and runtime chain confidence"`
+- `npm --prefix gitnexus exec vitest run test/integration/local-backend-calltool.test.ts -- -t "returns lifecycle process metadata without breaking legacy fields"`
+- `npm --prefix gitnexus exec vitest run test/integration/local-backend.test.ts -- -t "query process detail includes persisted lifecycle evidence"`
+
+Expected: PASS.
+
+**Step 5: Commit**
+
+```bash
+git add gitnexus/src/mcp/local/local-backend.ts gitnexus/src/mcp/resources.ts gitnexus/test/unit/resources.test.ts docs/plans/2026-03-31-unity-runtime-process-phase4-persisted-lifecycle-process-artifacts-implementation-plan.md
+git commit -m "fix(phase4): expose lifecycle metadata in repo processes resource"
 ```
 
 ## Plan Audit Verdict
