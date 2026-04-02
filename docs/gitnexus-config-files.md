@@ -53,6 +53,14 @@ Notes:
 
 `sync-manifest.txt` and `rules/overrides.yaml` are user-provided inputs, not system-owned state.
 
+### Runtime Claim Bootstrap (current)
+
+- `rules/catalog.json` ships with an active bootstrap rule entry:
+  - `id`: `unity.gungraph.reload.output-getvalue.v1`
+  - `version`: `1.0.0`
+  - `file`: `approved/unity.gungraph.reload.output-getvalue.v1.yaml`
+- The approved YAML defines Reload-scoped runtime-claim semantics (`trigger_family`, `required_hops`, guarantees/non-guarantees, and `next_action`).
+
 ## Global (`~/.gitnexus/`)
 
 | File | Purpose |
@@ -84,4 +92,3 @@ Notes:
 - Default `clean` does **not** remove `.gitnexus/rules/**`.
 - `clean --include-rules-lab` may remove `.gitnexus/rules/lab/runs/**` and `.gitnexus/rules/reports/*.md` only.
 - `clean --include-rules-all` may remove all `.gitnexus/rules/**` artifacts (explicit opt-in only).
-

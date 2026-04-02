@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "unity.gungraph.reload.output-getvalue.v1",
+      "version": "1.0.0",
+      "enabled": true,
+      "file": "approved/unity.gungraph.reload.output-getvalue.v1.yaml"
+    }
+  ]
+}
