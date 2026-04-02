@@ -67,12 +67,12 @@ describe('getResourceDefinitions', () => {
 });
 
 describe('getResourceTemplates', () => {
-  it('returns 6 dynamic templates', () => {
+  it('returns 7 dynamic templates', () => {
     const templates = getResourceTemplates();
-    expect(templates).toHaveLength(6);
+    expect(templates).toHaveLength(7);
   });
 
-  it('includes context, clusters, processes, schema, cluster detail, process detail', () => {
+  it('includes context, clusters, processes, schema, cluster detail, process detail, derived-process detail', () => {
     const templates = getResourceTemplates();
     const uris = templates.map(t => t.uriTemplate);
     expect(uris).toContain('gitnexus://repo/{name}/context');
@@ -81,6 +81,7 @@ describe('getResourceTemplates', () => {
     expect(uris).toContain('gitnexus://repo/{name}/schema');
     expect(uris).toContain('gitnexus://repo/{name}/cluster/{clusterName}');
     expect(uris).toContain('gitnexus://repo/{name}/process/{processName}');
+    expect(uris).toContain('gitnexus://repo/{name}/derived-process/{id}');
   });
 
   it('each template has uriTemplate, name, description, mimeType', () => {
@@ -265,6 +266,16 @@ describe('readResource', () => {
     expect(result).toContain('LoginFlow');
     expect(result).toContain('login');
     expect(result).toContain('validate');
+  });
+
+  it('derived-process resource', async () => {
+    const backend = createMockBackend();
+    const templates = getResourceTemplates();
+    expect(templates.map(t => t.uriTemplate)).toContain('gitnexus://repo/{name}/derived-process/{id}');
+
+    const out = await readResource('gitnexus://repo/test/derived-process/derived%3Aabcd', backend);
+    expect(out).toContain('id: "derived:abcd"');
+    expect(out).toContain('origin:');
   });
 
   it('handles process detail error', async () => {

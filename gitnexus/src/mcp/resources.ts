@@ -6,6 +6,7 @@
  */
 
 import type { LocalBackend } from './local/local-backend.js';
+import { getDerivedProcessDetailResource } from './local/derived-process-reader.js';
 import { checkStaleness } from './staleness.js';
 import { loadCLIConfig } from '../storage/repo-manager.js';
 import { buildNpxCommand, resolveCliSpec } from '../config/cli-spec.js';
@@ -79,10 +80,16 @@ export function getResourceTemplates(): ResourceTemplate[] {
       description: 'Deep dive into a specific functional area',
       mimeType: 'text/yaml',
     },
-  {
+    {
       uriTemplate: 'gitnexus://repo/{name}/process/{processName}',
       name: 'Process Trace',
       description: 'Step-by-step execution trace with lifecycle subtype and step evidence when available',
+      mimeType: 'text/yaml',
+    },
+    {
+      uriTemplate: 'gitnexus://repo/{name}/derived-process/{id}',
+      name: 'Derived Process Trace',
+      description: 'Readable trace metadata for derived process references',
       mimeType: 'text/yaml',
     },
   ];
@@ -106,6 +113,9 @@ function parseUri(uri: string): { repoName?: string; resourceType: string; param
     }
     if (rest.startsWith('process/')) {
       return { repoName, resourceType: 'process', param: decodeURIComponent(rest.replace('process/', '')) };
+    }
+    if (rest.startsWith('derived-process/')) {
+      return { repoName, resourceType: 'derived-process', param: decodeURIComponent(rest.replace('derived-process/', '')) };
     }
 
     return { repoName, resourceType: rest };
@@ -145,6 +155,8 @@ export async function readResource(uri: string, backend: LocalBackend): Promise<
       return getClusterDetailResource(parsed.param!, backend, repoName);
     case 'process':
       return getProcessDetailResource(parsed.param!, backend, repoName);
+    case 'derived-process':
+      return getDerivedProcessDetailResource(parsed.param!, backend, repoName);
     default:
       throw new Error(`Unknown resource: ${uri}`);
   }
@@ -241,6 +253,7 @@ async function getContextResource(backend: LocalBackend, repoName?: string): Pro
   lines.push(`  - gitnexus://repo/${context.projectName}/processes: All execution flows`);
   lines.push(`  - gitnexus://repo/${context.projectName}/cluster/{name}: Module details`);
   lines.push(`  - gitnexus://repo/${context.projectName}/process/{name}: Process trace`);
+  lines.push(`  - gitnexus://repo/${context.projectName}/derived-process/{id}: Derived process trace metadata`);
   
   return lines.join('\n');
 }
