@@ -28,6 +28,23 @@ export interface RuntimeClaimRuleRegistry {
   activeRules: RuntimeClaimRule[];
 }
 
+async function findAncestorRulesCatalog(startPath: string): Promise<string | null> {
+  let current = path.resolve(startPath);
+  const root = path.parse(current).root;
+  while (true) {
+    const candidate = path.join(current, '.gitnexus', 'rules', 'catalog.json');
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // continue searching parent directories
+    }
+    if (current === root) break;
+    current = path.dirname(current);
+  }
+  return null;
+}
+
 function readScalar(raw: string, key: string): string | undefined {
   const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = raw.match(new RegExp(`^${escaped}:\\s*(.+)$`, 'm'));
@@ -82,9 +99,9 @@ export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Pr
     catalogRaw = await fs.readFile(catalogPath, 'utf-8');
   } catch (error: any) {
     if (error?.code !== 'ENOENT') throw error;
-    const fallbackRoot = path.resolve('.gitnexus', 'rules');
-    const fallbackCatalogPath = path.join(fallbackRoot, 'catalog.json');
-    if (fallbackCatalogPath === requestedCatalogPath) throw error;
+    const fallbackCatalogPath = await findAncestorRulesCatalog(process.cwd());
+    if (!fallbackCatalogPath || fallbackCatalogPath === requestedCatalogPath) throw error;
+    const fallbackRoot = path.dirname(fallbackCatalogPath);
     catalogRaw = await fs.readFile(fallbackCatalogPath, 'utf-8');
     root = fallbackRoot;
     catalogPath = fallbackCatalogPath;
