@@ -1,8 +1,8 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { test } from 'vitest';
 import { RuleRegistryLoadError, loadRuleRegistry } from './runtime-claim-rule-registry.js';
 
 test('loads active runtime claim rules from project catalog', async () => {
@@ -161,6 +161,54 @@ test('parses scalar/list values with spaces, quotes, and escapes without truncat
     assert.equal(
       rule.next_action,
       'node gitnexus/dist/cli/index.js query --runtime-chain-verify on-demand "Reload NEON.Game.Graph.Nodes.Reloads"',
+    );
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('rejects rule yaml when topology/closure/claims are missing', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-runtime-claim-rules-'));
+  const repoPath = path.join(tempRoot, 'repo');
+  const rulesRoot = path.join(repoPath, '.gitnexus', 'rules');
+  await fs.mkdir(path.join(rulesRoot, 'approved'), { recursive: true });
+  await fs.writeFile(
+    path.join(rulesRoot, 'catalog.json'),
+    JSON.stringify({
+      rules: [
+        {
+          id: 'demo.reload.rule.v2',
+          version: '2.0.0',
+          file: 'approved/demo.reload.rule.v2.yaml',
+        },
+      ],
+    }),
+    'utf-8',
+  );
+  await fs.writeFile(
+    path.join(rulesRoot, 'approved', 'demo.reload.rule.v2.yaml'),
+    [
+      'id: demo.reload.rule.v2',
+      'version: 2.0.0',
+      'trigger_family: reload',
+      'resource_types:',
+      '  - asset',
+      'host_base_type:',
+      '  - ReloadBase',
+      'required_hops:',
+      '  - resource',
+      'guarantees:',
+      '  - reload_chain_closed',
+      'non_guarantees:',
+      '  - no_runtime_execution_guarantee',
+    ].join('\n'),
+    'utf-8',
+  );
+
+  try {
+    await assert.rejects(
+      () => loadRuleRegistry(repoPath),
+      /topology|closure|claims/i,
     );
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
