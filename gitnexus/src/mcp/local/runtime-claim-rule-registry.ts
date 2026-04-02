@@ -71,12 +71,25 @@ function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
 
 export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Promise<RuntimeClaimRuleRegistry> {
   const normalizedRepoPath = path.resolve(repoPath);
-  const root = rulesRoot
+  const requestedRoot = rulesRoot
     ? path.resolve(rulesRoot)
     : path.join(normalizedRepoPath, '.gitnexus', 'rules');
-  const catalogPath = path.join(root, 'catalog.json');
+  const requestedCatalogPath = path.join(requestedRoot, 'catalog.json');
+  let root = requestedRoot;
+  let catalogPath = requestedCatalogPath;
+  let catalogRaw: string;
+  try {
+    catalogRaw = await fs.readFile(catalogPath, 'utf-8');
+  } catch (error: any) {
+    if (error?.code !== 'ENOENT') throw error;
+    const fallbackRoot = path.resolve('.gitnexus', 'rules');
+    const fallbackCatalogPath = path.join(fallbackRoot, 'catalog.json');
+    if (fallbackCatalogPath === requestedCatalogPath) throw error;
+    catalogRaw = await fs.readFile(fallbackCatalogPath, 'utf-8');
+    root = fallbackRoot;
+    catalogPath = fallbackCatalogPath;
+  }
 
-  const catalogRaw = await fs.readFile(catalogPath, 'utf-8');
   const catalog = JSON.parse(catalogRaw) as { rules?: RuntimeClaimRuleCatalogEntry[] };
   const catalogRules = Array.isArray(catalog.rules) ? catalog.rules : [];
 
