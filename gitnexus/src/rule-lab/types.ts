@@ -62,6 +62,8 @@ export interface RuleDslMatch {
   trigger_tokens: string[];
   symbol_kind?: string[];
   module_scope?: string[];
+  resource_types?: string[];
+  host_base_type?: string[];
 }
 
 export interface RuleDslTopologyHop {

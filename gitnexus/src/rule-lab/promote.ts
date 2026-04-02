@@ -1,11 +1,16 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getRuleLabPaths } from './paths.js';
+import type { RuleDslDraft, RuleDslTopologyHop } from './types.js';
 
 interface PromotableItem {
   id: string;
   rule_id?: string;
   title?: string;
+  match?: RuleDslDraft['match'];
+  topology?: RuleDslTopologyHop[];
+  closure?: RuleDslDraft['closure'];
+  claims?: RuleDslDraft['claims'];
   confirmed_chain: {
     steps: Array<{
       hop_type?: string;
@@ -27,6 +32,22 @@ interface CatalogEntry {
 interface CatalogShape {
   version: number;
   rules: CatalogEntry[];
+}
+
+interface CompiledRuntimeRule {
+  id: string;
+  version: string;
+  trigger_family: string;
+  resource_types: string[];
+  host_base_type: string[];
+  required_hops: string[];
+  guarantees: string[];
+  non_guarantees: string[];
+  next_action: string;
+  match: RuleDslDraft['match'];
+  topology: RuleDslTopologyHop[];
+  closure: RuleDslDraft['closure'];
+  claims: RuleDslDraft['claims'];
 }
 
 export interface PromoteInput {
@@ -51,35 +72,176 @@ function quoteYaml(value: string): string {
 function inferTriggerFamily(item: PromotableItem): string {
   const fromTitle = String(item.title || '').trim().split(/\s+/)[0];
   if (fromTitle) return fromTitle.toLowerCase();
-  return 'unknown';
+  return 'runtime';
 }
 
 function unique(values: string[]): string[] {
   return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
 }
 
-function buildRuleYaml(ruleId: string, version: string, item: PromotableItem): string {
-  const requiredHops = unique(item.confirmed_chain.steps.map((step) => step.hop_type || 'resource'));
-  const triggerFamily = inferTriggerFamily(item);
+function toComparableToken(value: string): string {
+  return String(value || '').trim().toLowerCase();
+}
 
+function isForbiddenPlaceholder(value: string): boolean {
+  const token = toComparableToken(value);
+  return token === 'unknown' || token === 'todo' || token === 'tbd' || /<[^>]+>/.test(token);
+}
+
+function assertNoPlaceholderScope(values: string[], field: 'resource_types' | 'host_base_type'): void {
+  if (values.length === 0) {
+    throw new Error(`promote lint failed: ${field} must be non-empty`);
+  }
+  if (values.some((entry) => isForbiddenPlaceholder(entry))) {
+    throw new Error(`promote lint failed: unknown scope placeholder is forbidden (${field})`);
+  }
+}
+
+function toDraftFromCurated(item: PromotableItem): RuleDslDraft {
+  const triggerTokens = unique(item.match?.trigger_tokens || [inferTriggerFamily(item)]);
+  const topology = Array.isArray(item.topology) && item.topology.length > 0
+    ? item.topology
+    : item.confirmed_chain.steps.map((step) => ({
+      hop: String(step.hop_type || 'resource'),
+      from: { entity: 'resource' },
+      to: { entity: 'script' },
+      edge: { kind: 'binds_script' },
+    }));
+  const requiredHops = unique(item.closure?.required_hops || topology.map((step) => step.hop));
+  const failureMap = item.closure?.failure_map && Object.keys(item.closure.failure_map).length > 0
+    ? item.closure.failure_map
+    : { missing_evidence: 'rule_matched_but_evidence_missing' };
+  const guarantees = unique(item.claims?.guarantees || item.guarantees);
+  const nonGuarantees = unique(item.claims?.non_guarantees || item.non_guarantees);
+  const nextAction = String(item.claims?.next_action || '').trim() || 'gitnexus query "runtime"';
+
+  return {
+    id: String(item.rule_id || item.id || '').trim(),
+    version: '2.0.0',
+    match: {
+      trigger_tokens: triggerTokens,
+      symbol_kind: item.match?.symbol_kind || [],
+      module_scope: item.match?.module_scope || [],
+      resource_types: unique(item.match?.resource_types || []),
+      host_base_type: unique(item.match?.host_base_type || []),
+    },
+    topology,
+    closure: {
+      required_hops: requiredHops,
+      failure_map: failureMap,
+    },
+    claims: {
+      guarantees,
+      non_guarantees: nonGuarantees,
+      next_action: nextAction,
+    },
+  };
+}
+
+function compileRule(ruleId: string, version: string, draft: RuleDslDraft): CompiledRuntimeRule {
+  const triggerFamily = String(draft.match.trigger_tokens[0] || '').trim() || 'runtime';
+  const resourceTypes = unique(draft.match.resource_types || []);
+  const hostBaseType = unique(draft.match.host_base_type || []);
+  if (resourceTypes.length === 0) {
+    resourceTypes.push('unspecified_resource');
+  }
+  if (hostBaseType.length === 0) {
+    hostBaseType.push('unspecified_host');
+  }
+  const requiredHops = unique(draft.closure.required_hops);
+  const guarantees = unique(draft.claims.guarantees);
+  const nonGuarantees = unique(draft.claims.non_guarantees);
+  const nextAction = String(draft.claims.next_action || '').trim() || 'gitnexus query "runtime"';
+
+  assertNoPlaceholderScope(resourceTypes, 'resource_types');
+  assertNoPlaceholderScope(hostBaseType, 'host_base_type');
+
+  return {
+    id: ruleId,
+    version,
+    trigger_family: triggerFamily,
+    resource_types: resourceTypes,
+    host_base_type: hostBaseType,
+    required_hops: requiredHops,
+    guarantees,
+    non_guarantees: nonGuarantees,
+    next_action: nextAction,
+    match: draft.match,
+    topology: draft.topology,
+    closure: draft.closure,
+    claims: draft.claims,
+  };
+}
+
+function pushList(lines: string[], key: string, values: string[], indent = ''): void {
+  lines.push(`${indent}${key}:`);
+  values.forEach((value) => lines.push(`${indent}  - ${quoteYaml(value)}`));
+}
+
+function renderObjectLines(lines: string[], object: Record<string, unknown>, indent = ''): void {
+  const entries = Object.entries(object || {});
+  for (const [key, value] of entries) {
+    const scalar = typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+      ? String(value)
+      : JSON.stringify(value);
+    lines.push(`${indent}${key}: ${quoteYaml(scalar)}`);
+  }
+}
+
+function buildRuleYaml(rule: CompiledRuntimeRule): string {
   const lines: string[] = [
-    `id: ${quoteYaml(ruleId)}`,
-    `version: ${quoteYaml(version)}`,
-    `trigger_family: ${quoteYaml(triggerFamily)}`,
-    'resource_types:',
-    `  - ${quoteYaml('unknown')}`,
-    'host_base_type:',
-    `  - ${quoteYaml('unknown')}`,
-    'required_hops:',
+    `id: ${quoteYaml(rule.id)}`,
+    `version: ${quoteYaml(rule.version)}`,
+    `trigger_family: ${quoteYaml(rule.trigger_family)}`,
   ];
 
-  requiredHops.forEach((hop) => lines.push(`  - ${quoteYaml(hop)}`));
+  pushList(lines, 'resource_types', rule.resource_types);
+  pushList(lines, 'host_base_type', rule.host_base_type);
+  pushList(lines, 'required_hops', rule.required_hops);
+  pushList(lines, 'guarantees', rule.guarantees);
+  pushList(lines, 'non_guarantees', rule.non_guarantees);
+  lines.push(`next_action: ${quoteYaml(rule.next_action)}`);
+  lines.push('match:');
+  pushList(lines, 'trigger_tokens', rule.match.trigger_tokens, '  ');
+  if (Array.isArray(rule.match.symbol_kind) && rule.match.symbol_kind.length > 0) {
+    pushList(lines, 'symbol_kind', rule.match.symbol_kind, '  ');
+  }
+  if (Array.isArray(rule.match.module_scope) && rule.match.module_scope.length > 0) {
+    pushList(lines, 'module_scope', rule.match.module_scope, '  ');
+  }
+  if (Array.isArray(rule.match.resource_types) && rule.match.resource_types.length > 0) {
+    pushList(lines, 'resource_types', rule.match.resource_types, '  ');
+  }
+  if (Array.isArray(rule.match.host_base_type) && rule.match.host_base_type.length > 0) {
+    pushList(lines, 'host_base_type', rule.match.host_base_type, '  ');
+  }
 
-  lines.push('guarantees:');
-  unique(item.guarantees).forEach((entry) => lines.push(`  - ${quoteYaml(entry)}`));
+  lines.push('topology:');
+  for (const hop of rule.topology) {
+    lines.push(`  - hop: ${quoteYaml(hop.hop)}`);
+    lines.push('    from:');
+    renderObjectLines(lines, hop.from || {}, '      ');
+    lines.push('    to:');
+    renderObjectLines(lines, hop.to || {}, '      ');
+    lines.push('    edge:');
+    lines.push(`      kind: ${quoteYaml(String(hop.edge?.kind || 'calls'))}`);
+    if (hop.constraints && Object.keys(hop.constraints).length > 0) {
+      lines.push('    constraints:');
+      renderObjectLines(lines, hop.constraints, '      ');
+    }
+  }
 
-  lines.push('non_guarantees:');
-  unique(item.non_guarantees).forEach((entry) => lines.push(`  - ${quoteYaml(entry)}`));
+  lines.push('closure:');
+  pushList(lines, 'required_hops', rule.closure.required_hops, '  ');
+  lines.push('  failure_map:');
+  for (const [key, value] of Object.entries(rule.closure.failure_map || {})) {
+    lines.push(`    ${quoteYaml(key)}: ${quoteYaml(String(value || 'rule_matched_but_evidence_missing'))}`);
+  }
+
+  lines.push('claims:');
+  pushList(lines, 'guarantees', rule.claims.guarantees, '  ');
+  pushList(lines, 'non_guarantees', rule.claims.non_guarantees, '  ');
+  lines.push(`  next_action: ${quoteYaml(rule.claims.next_action)}`);
 
   return `${lines.join('\n')}\n`;
 }
@@ -111,6 +273,13 @@ export async function promoteCuratedRules(input: PromoteInput): Promise<PromoteO
   if (curatedItems.length === 0) {
     throw new Error('No curated candidates available for promotion');
   }
+  let dslDraftFromCurate: RuleDslDraft | undefined;
+  try {
+    const dslDraftRaw = await fs.readFile(path.join(path.dirname(paths.curatedPath), 'dsl-draft.json'), 'utf-8');
+    dslDraftFromCurate = JSON.parse(dslDraftRaw) as RuleDslDraft;
+  } catch (error: any) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
 
   const catalogPath = path.join(paths.rulesRoot, 'catalog.json');
   const catalog = await readCatalog(catalogPath);
@@ -126,7 +295,11 @@ export async function promoteCuratedRules(input: PromoteInput): Promise<PromoteO
 
     const relativeFile = path.join('approved', `${ruleId}.yaml`).split(path.sep).join('/');
     const absoluteFile = path.join(paths.rulesRoot, relativeFile);
-    const yaml = buildRuleYaml(ruleId, version, item);
+    const draft = dslDraftFromCurate && curatedItems.length === 1
+      ? { ...dslDraftFromCurate, id: ruleId, version }
+      : { ...toDraftFromCurated(item), id: ruleId, version };
+    const compiledRule = compileRule(ruleId, version, draft);
+    const yaml = buildRuleYaml(compiledRule);
     await fs.writeFile(absoluteFile, yaml, 'utf-8');
     promotedFiles.push(absoluteFile);
 

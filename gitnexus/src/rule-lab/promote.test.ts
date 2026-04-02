@@ -23,6 +23,19 @@ describe('rule-lab promote', () => {
             id: 'candidate-1',
             rule_id: 'demo.rule.v1',
             title: 'demo rule',
+            match: { trigger_tokens: ['reload'] },
+            topology: [
+              { hop: 'resource', from: { entity: 'resource' }, to: { entity: 'script' }, edge: { kind: 'binds_script' } },
+            ],
+            closure: {
+              required_hops: ['resource'],
+              failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' },
+            },
+            claims: {
+              guarantees: ['can verify startup graph trigger'],
+              non_guarantees: ['does not prove all runtime states'],
+              next_action: 'gitnexus query "reload"',
+            },
             confirmed_chain: {
               steps: [{ hop_type: 'resource', anchor: 'Assets/Demo.prefab:12', snippet: 'Reload' }],
             },
@@ -37,6 +50,78 @@ describe('rule-lab promote', () => {
     const out = await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a' });
     expect(out.catalog.rules.some((r) => r.id === 'demo.rule.v1')).toBe(true);
     expect(out.promotedFiles[0]).toMatch(/rules\/approved\/.*\.yaml$/);
+
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+
+  it('rejects promote when resource_types or host_base_type are unknown', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-promote-'));
+    const rulesRoot = path.join(repoRoot, '.gitnexus', 'rules');
+    const sliceDir = path.join(rulesRoot, 'lab', 'runs', 'run-x', 'slices', 'slice-a');
+    await fs.mkdir(path.join(rulesRoot, 'approved'), { recursive: true });
+    await fs.mkdir(sliceDir, { recursive: true });
+    await fs.writeFile(path.join(rulesRoot, 'catalog.json'), JSON.stringify({ version: 1, rules: [] }, null, 2), 'utf-8');
+    await fs.writeFile(
+      path.join(sliceDir, 'curated.json'),
+      JSON.stringify({
+        run_id: 'run-x',
+        slice_id: 'slice-a',
+        curated: [
+          {
+            id: 'candidate-unknown',
+            rule_id: 'demo.rule.v2',
+            match: { trigger_tokens: ['reload'] },
+            topology: [
+              { hop: 'resource', from: { entity: 'resource' }, to: { entity: 'script' }, edge: { kind: 'binds_script' } },
+            ],
+            closure: {
+              required_hops: ['resource'],
+              failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' },
+            },
+            claims: {
+              guarantees: ['reload_chain_closed'],
+              non_guarantees: ['no_runtime_execution'],
+              next_action: 'gitnexus query "reload"',
+            },
+            confirmed_chain: {
+              steps: [{ hop_type: 'resource', anchor: 'Assets/Demo.prefab:9', snippet: 'Reload' }],
+            },
+            guarantees: ['reload_chain_closed'],
+            non_guarantees: ['no_runtime_execution'],
+          },
+        ],
+      }, null, 2),
+      'utf-8',
+    );
+    await fs.writeFile(
+      path.join(sliceDir, 'dsl-draft.json'),
+      JSON.stringify({
+        id: 'demo.rule.v2',
+        version: '2.0.0',
+        match: {
+          trigger_tokens: ['reload'],
+          resource_types: ['unknown'],
+          host_base_type: ['unknown'],
+        },
+        topology: [
+          { hop: 'resource', from: { entity: 'resource' }, to: { entity: 'script' }, edge: { kind: 'binds_script' } },
+        ],
+        closure: {
+          required_hops: ['resource'],
+          failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' },
+        },
+        claims: {
+          guarantees: ['reload_chain_closed'],
+          non_guarantees: ['no_runtime_execution'],
+          next_action: 'gitnexus query "reload"',
+        },
+      }, null, 2),
+      'utf-8',
+    );
+
+    await expect(
+      promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a' }),
+    ).rejects.toThrow(/unknown/i);
 
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
