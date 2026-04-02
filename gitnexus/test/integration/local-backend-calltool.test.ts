@@ -400,6 +400,32 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(out.runtime_claim?.rule_version).toBe('1.0.0');
     });
 
+    it('phase3 evidence mode', async () => {
+      const out = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        unity_evidence_mode: 'summary',
+        max_bindings: 1,
+        max_reference_fields: 1,
+      });
+      expect(out.evidence_meta?.truncated).toBe(true);
+      expect(out.evidence_meta?.omitted_count).toBeGreaterThan(0);
+      expect(out.evidence_meta?.next_fetch_hint).toMatch(/unity_evidence_mode=full/i);
+    });
+
+    it('phase3 minimum evidence contract', async () => {
+      const out = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        unity_evidence_mode: 'summary',
+        max_bindings: 1,
+        max_reference_fields: 1,
+        runtime_chain_verify: 'on-demand',
+      });
+      expect(out.runtime_claim?.status).toBe('failed');
+      expect(out.runtime_claim?.reason).toBe('rule_matched_but_evidence_missing');
+    });
+
     it('v1 runtime chain verify env gate', async () => {
       const original = process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
       process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = 'off';

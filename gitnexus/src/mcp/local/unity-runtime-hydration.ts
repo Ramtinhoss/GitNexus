@@ -448,7 +448,7 @@ function toUnityContextPayload(
       scalarFields: resourceBindings.flatMap((binding) => binding.serializedFields.scalarFields),
       referenceFields: resourceBindings.flatMap((binding) => binding.serializedFields.referenceFields),
     },
-    unityDiagnostics,
+    unityDiagnostics: [...new Set(unityDiagnostics)],
   };
 }
 

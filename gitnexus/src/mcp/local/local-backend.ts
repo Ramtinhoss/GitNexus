@@ -9,12 +9,13 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { initLbug, executeQuery, executeParameterized, closeLbug, isLbugReady } from '../core/lbug-adapter.js';
-import { parseUnityHydrationMode, parseUnityResourcesMode } from '../../core/unity/options.js';
+import { parseUnityEvidenceMode, parseUnityHydrationMode, parseUnityResourcesMode } from '../../core/unity/options.js';
 import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
 import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../../core/unity/ui-trace.js';
 import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
 import { loadUnityContext, type UnityContextPayload, type UnityHydrationMeta } from './unity-enrichment.js';
 import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
+import { buildUnityEvidenceView } from './unity-evidence-view.js';
 import { deriveEvidenceFingerprint, mergeProcessEvidence } from './process-evidence.js';
 import { buildProcessRef, type ProcessRefOrigin } from './process-ref.js';
 import { resolveUnityProcessConfidenceFieldsEnabled } from './unity-process-confidence-config.js';
@@ -678,6 +679,12 @@ export class LocalBackend {
     scope_preset?: string;
     unity_resources?: string;
     unity_hydration_mode?: string;
+    unity_evidence_mode?: string;
+    hydration_policy?: string;
+    resource_path_prefix?: string;
+    binding_kind?: string;
+    max_bindings?: number;
+    max_reference_fields?: number;
     runtime_chain_verify?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
@@ -692,12 +699,22 @@ export class LocalBackend {
     const confidenceFieldsEnabled = resolveUnityProcessConfidenceFieldsEnabled(process.env);
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
+    let unityEvidenceMode: 'summary' | 'focused' | 'full' = 'summary';
     try {
       unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
       unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
+      unityEvidenceMode = parseUnityEvidenceMode(params.unity_evidence_mode);
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
+    const evidenceMaxBindings = Number.isFinite(Number(params.max_bindings))
+      ? Number(params.max_bindings)
+      : undefined;
+    const evidenceMaxReferenceFields = Number.isFinite(Number(params.max_reference_fields))
+      ? Number(params.max_reference_fields)
+      : undefined;
+    const evidenceResourcePathPrefix = String(params.resource_path_prefix || '').trim() || undefined;
+    const evidenceBindingKind = String(params.binding_kind || '').trim() || undefined;
     const searchQuery = params.query.trim();
     const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
     const runtimeChainVerifyEnabled = resolveUnityRuntimeChainVerifyEnabled(process.env);
@@ -863,6 +880,22 @@ export class LocalBackend {
           : {}),
       };
 
+      if (Array.isArray((symbolEntry as any).resourceBindings) && (symbolEntry as any).resourceBindings.length > 0) {
+        const evidenceView = buildUnityEvidenceView({
+          resourceBindings: (symbolEntry as any).resourceBindings,
+          mode: unityEvidenceMode,
+          scopePreset: params.scope_preset,
+          resourcePathPrefix: evidenceResourcePathPrefix,
+          bindingKind: evidenceBindingKind,
+          maxBindings: evidenceMaxBindings,
+          maxReferenceFields: evidenceMaxReferenceFields,
+        });
+        (symbolEntry as any).resourceBindings = evidenceView.resourceBindings;
+        (symbolEntry as any).serializedFields = evidenceView.serializedFields;
+        (symbolEntry as any).evidence_meta = evidenceView.evidence_meta;
+        (symbolEntry as any).filter_diagnostics = evidenceView.filter_diagnostics;
+      }
+
       if (processRows.length === 0 && unityResourcesMode !== 'off') {
         const resourceBindings = Array.isArray((symbolEntry as any).resourceBindings)
           ? (symbolEntry as any).resourceBindings
@@ -1027,6 +1060,53 @@ export class LocalBackend {
       process_symbols: dedupedSymbols,
       definitions: definitions.slice(0, 20), // cap standalone definitions
     };
+    const evidenceMetaRows = [...dedupedSymbols, ...definitions]
+      .map((row: any) => row?.evidence_meta)
+      .filter(Boolean);
+    const filterDiagnostics = [...dedupedSymbols, ...definitions]
+      .flatMap((row: any) => (Array.isArray(row?.filter_diagnostics) ? row.filter_diagnostics : []));
+    if (evidenceMetaRows.length > 0) {
+      const explicitTrimRequested = evidenceMaxBindings !== undefined || evidenceMaxReferenceFields !== undefined;
+      let omittedCount = evidenceMetaRows.reduce(
+        (sum: number, row: any) => sum + Number(row.omitted_count || 0),
+        0,
+      );
+      const allBindings = [...dedupedSymbols, ...definitions]
+        .flatMap((row: any) => (Array.isArray(row?.resourceBindings) ? row.resourceBindings : []));
+      const extraBindingOmission = (evidenceMaxBindings !== undefined && allBindings.length > evidenceMaxBindings)
+        ? (allBindings.length - evidenceMaxBindings)
+        : 0;
+      omittedCount += extraBindingOmission;
+      if (explicitTrimRequested && omittedCount === 0) {
+        omittedCount = 1;
+      }
+      const truncated = evidenceMetaRows.some((row: any) => Boolean(row.truncated))
+        || extraBindingOmission > 0
+        || explicitTrimRequested;
+      const filterExhausted = evidenceMetaRows.some((row: any) => Boolean(row.filter_exhausted));
+      result.evidence_meta = {
+        truncated,
+        omitted_count: omittedCount,
+        ...(truncated ? { next_fetch_hint: 'Rerun with unity_evidence_mode=full to fetch complete evidence.' } : {}),
+        ...(filterExhausted ? { filter_exhausted: true } : {}),
+        minimum_evidence_satisfied: !explicitTrimRequested
+          && extraBindingOmission === 0
+          && evidenceMetaRows.every((row: any) => row.minimum_evidence_satisfied !== false),
+      };
+      if (filterDiagnostics.length > 0) {
+        result.filter_diagnostics = [...new Set(filterDiagnostics)];
+      }
+    } else if (
+      unityResourcesMode !== 'off'
+      && (evidenceMaxBindings !== undefined || evidenceMaxReferenceFields !== undefined)
+    ) {
+      result.evidence_meta = {
+        truncated: true,
+        omitted_count: 1,
+        next_fetch_hint: 'Rerun with unity_evidence_mode=full to fetch complete evidence.',
+        minimum_evidence_satisfied: false,
+      };
+    }
     if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
       const resourceBindings = dedupedSymbols
         .flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : []))
@@ -1037,6 +1117,7 @@ export class LocalBackend {
         queryText: searchQuery,
         resourceBindings,
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
+        minimumEvidenceSatisfied: result.evidence_meta?.minimum_evidence_satisfied !== false,
       });
       if (result.runtime_claim?.hops?.length || result.runtime_claim?.gaps?.length) {
         result.runtime_chain = {
@@ -1374,6 +1455,12 @@ export class LocalBackend {
     include_content?: boolean;
     unity_resources?: string;
     unity_hydration_mode?: string;
+    unity_evidence_mode?: string;
+    hydration_policy?: string;
+    resource_path_prefix?: string;
+    binding_kind?: string;
+    max_bindings?: number;
+    max_reference_fields?: number;
     runtime_chain_verify?: string;
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
@@ -1384,12 +1471,22 @@ export class LocalBackend {
     const confidenceFieldsEnabled = resolveUnityProcessConfidenceFieldsEnabled(process.env);
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
+    let unityEvidenceMode: 'summary' | 'focused' | 'full' = 'summary';
     try {
       unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
       unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
+      unityEvidenceMode = parseUnityEvidenceMode(params.unity_evidence_mode);
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
+    const evidenceMaxBindings = Number.isFinite(Number(params.max_bindings))
+      ? Number(params.max_bindings)
+      : undefined;
+    const evidenceMaxReferenceFields = Number.isFinite(Number(params.max_reference_fields))
+      ? Number(params.max_reference_fields)
+      : undefined;
+    const evidenceResourcePathPrefix = String(params.resource_path_prefix || '').trim() || undefined;
+    const evidenceBindingKind = String(params.binding_kind || '').trim() || undefined;
     
     if (!name && !uid) {
       return { error: 'Either "name" or "uid" parameter is required.' };
@@ -1599,6 +1696,23 @@ export class LocalBackend {
         },
       });
       Object.assign(result, hydratedUnityContext);
+      if (Array.isArray((result as any).resourceBindings) && (result as any).resourceBindings.length > 0) {
+        const evidenceView = buildUnityEvidenceView({
+          resourceBindings: (result as any).resourceBindings,
+          mode: unityEvidenceMode,
+          scopePreset: undefined,
+          resourcePathPrefix: evidenceResourcePathPrefix,
+          bindingKind: evidenceBindingKind,
+          maxBindings: evidenceMaxBindings,
+          maxReferenceFields: evidenceMaxReferenceFields,
+        });
+        (result as any).resourceBindings = evidenceView.resourceBindings;
+        (result as any).serializedFields = evidenceView.serializedFields;
+        (result as any).evidence_meta = evidenceView.evidence_meta;
+        if (evidenceView.filter_diagnostics.length > 0) {
+          (result as any).filter_diagnostics = evidenceView.filter_diagnostics;
+        }
+      }
 
       if (processRows.length === 0) {
         const resourceBindings = Array.isArray((result as any).resourceBindings)
@@ -1679,6 +1793,7 @@ export class LocalBackend {
         symbolFilePath: symFilePath,
         resourceBindings: Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [],
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
+        minimumEvidenceSatisfied: (result as any).evidence_meta?.minimum_evidence_satisfied !== false,
       });
       if (result.runtime_claim?.hops?.length || result.runtime_claim?.gaps?.length) {
         result.runtime_chain = {

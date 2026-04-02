@@ -47,6 +47,7 @@ interface VerifyRuntimeChainInput {
 
 interface VerifyRuntimeClaimInput extends VerifyRuntimeChainInput {
   rulesRoot?: string;
+  minimumEvidenceSatisfied?: boolean;
 }
 
 const RELOAD_QUERY_TOKENS = [
@@ -425,6 +426,18 @@ export async function verifyRuntimeClaimOnDemand(
       }
       : {}),
   };
+
+  if (input.minimumEvidenceSatisfied === false && (resolved.status === 'verified_full' || resolved.status === 'verified_partial')) {
+    return {
+      ...resolved,
+      status: 'failed',
+      evidence_level: 'clue',
+      guarantees: [],
+      non_guarantees: [...resolved.non_guarantees, 'minimum_evidence_contract_not_satisfied'],
+      reason: 'rule_matched_but_evidence_missing',
+      next_action: matchedRule.next_action || VERIFY_NEXT_COMMAND,
+    };
+  }
 
   return resolved;
 }
