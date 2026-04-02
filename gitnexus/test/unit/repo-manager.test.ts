@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import os from 'os';
 import fs from 'fs/promises';
+import { fileURLToPath } from 'node:url';
 import {
   getStoragePath,
   getStoragePaths,
@@ -16,6 +17,9 @@ import {
   loadCLIConfig,
 } from '../../src/storage/repo-manager.js';
 import { createTempDir } from '../helpers/test-db.js';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const packageRoot = path.resolve(here, '..', '..');
 
 // ─── getStoragePath ──────────────────────────────────────────────────
 
@@ -127,7 +131,7 @@ describe('API key file permissions', () => {
     // by reading the source and checking statically.
     // The actual chmod behavior is platform-dependent.
     const source = await fs.readFile(
-      path.join(process.cwd(), 'src', 'storage', 'repo-manager.ts'),
+      path.join(packageRoot, 'src', 'storage', 'repo-manager.ts'),
       'utf-8',
     );
     expect(source).toContain('chmod(configPath, 0o600)');
