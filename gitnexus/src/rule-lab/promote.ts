@@ -110,7 +110,7 @@ function toDraftFromCurated(item: PromotableItem): RuleDslDraft {
   const requiredHops = unique(item.closure?.required_hops || topology.map((step) => step.hop));
   const failureMap = item.closure?.failure_map && Object.keys(item.closure.failure_map).length > 0
     ? item.closure.failure_map
-    : { missing_evidence: 'rule_matched_but_evidence_missing' };
+    : { missing_evidence: 'rule_matched_but_evidence_missing' as const };
   const guarantees = unique(item.claims?.guarantees || item.guarantees);
   const nonGuarantees = unique(item.claims?.non_guarantees || item.non_guarantees);
   const nextAction = String(item.claims?.next_action || '').trim() || 'gitnexus query "runtime"';
