@@ -14,6 +14,12 @@ export interface ReviewPackCard {
   card_id: string;
   title: string;
   candidate_ids: string[];
+  decision_inputs: {
+    required_hops: string[];
+    failure_map: Record<string, string>;
+    guarantees: string[];
+    non_guarantees: string[];
+  };
 }
 
 export interface ReviewPackMeta {
@@ -42,16 +48,68 @@ function parseCandidates(raw: string): RuleLabCandidate[] {
     .map((line) => JSON.parse(line) as RuleLabCandidate);
 }
 
+function unique(values: string[]): string[] {
+  return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function mergeFailureMaps(candidates: RuleLabCandidate[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const candidate of candidates as Array<RuleLabCandidate & { closure?: { failure_map?: Record<string, string> } }>) {
+    const failureMap = candidate.closure?.failure_map || {};
+    for (const [key, value] of Object.entries(failureMap)) {
+      if (String(key || '').trim() && String(value || '').trim()) {
+        out[key] = value;
+      }
+    }
+  }
+  return out;
+}
+
+function collectRequiredHops(candidates: RuleLabCandidate[]): string[] {
+  const fromClosure = candidates.flatMap((candidate) => {
+    const closure = (candidate as RuleLabCandidate & { closure?: { required_hops?: string[] } }).closure;
+    return Array.isArray(closure?.required_hops) ? closure.required_hops : [];
+  });
+  if (fromClosure.length > 0) return unique(fromClosure);
+  return unique(
+    candidates.flatMap((candidate) => (candidate.topology || []).map((hop) => hop.hop)),
+  );
+}
+
+function collectClaims(
+  candidates: RuleLabCandidate[],
+): { guarantees: string[]; non_guarantees: string[] } {
+  const guarantees = unique(candidates.flatMap((candidate) => {
+    const claims = (candidate as RuleLabCandidate & { claims?: { guarantees?: string[] } }).claims;
+    return Array.isArray(claims?.guarantees) ? claims.guarantees : [];
+  }));
+  const nonGuarantees = unique(candidates.flatMap((candidate) => {
+    const claims = (candidate as RuleLabCandidate & { claims?: { non_guarantees?: string[] } }).claims;
+    return Array.isArray(claims?.non_guarantees) ? claims.non_guarantees : [];
+  }));
+  return {
+    guarantees,
+    non_guarantees: nonGuarantees,
+  };
+}
+
 function buildCards(candidates: RuleLabCandidate[]): ReviewPackCard[] {
   const cards: ReviewPackCard[] = [];
   const chunkSize = 4;
 
   for (let i = 0; i < candidates.length; i += chunkSize) {
     const chunk = candidates.slice(i, i + chunkSize);
+    const claims = collectClaims(chunk);
     cards.push({
       card_id: `card-${Math.floor(i / chunkSize) + 1}`,
       title: `Rule Lab Card ${Math.floor(i / chunkSize) + 1}`,
       candidate_ids: chunk.map((item) => item.id),
+      decision_inputs: {
+        required_hops: collectRequiredHops(chunk),
+        failure_map: mergeFailureMaps(chunk),
+        guarantees: claims.guarantees,
+        non_guarantees: claims.non_guarantees,
+      },
     });
   }
 
@@ -74,6 +132,10 @@ function renderReviewPack(meta: ReviewPackMeta, cards: ReviewPackCard[]): string
     lines.push(`## ${card.title}`);
     lines.push(`- card_id: ${card.card_id}`);
     lines.push(`- candidate_ids: ${card.candidate_ids.join(', ')}`);
+    lines.push(`- required_hops: ${card.decision_inputs.required_hops.join(', ')}`);
+    lines.push(`- guarantees: ${card.decision_inputs.guarantees.join(', ')}`);
+    lines.push(`- non_guarantees: ${card.decision_inputs.non_guarantees.join(', ')}`);
+    lines.push(`- failure_map: ${JSON.stringify(card.decision_inputs.failure_map)}`);
     lines.push('');
   }
 

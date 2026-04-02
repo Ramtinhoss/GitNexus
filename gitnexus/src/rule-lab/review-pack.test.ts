@@ -13,6 +13,22 @@ describe('rule-lab review-pack', () => {
     const candidate = {
       id: 'cand-1',
       title: 'reload candidate',
+      topology: [
+        {
+          hop: 'resource',
+          from: { entity: 'resource' },
+          to: { entity: 'script' },
+          edge: { kind: 'binds_script' },
+        },
+      ],
+      closure: {
+        required_hops: ['resource'],
+        failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' },
+      },
+      claims: {
+        guarantees: ['reload_chain_closed'],
+        non_guarantees: ['no_runtime_execution'],
+      },
       evidence: {
         hops: [
           { hop_type: 'resource', anchor: 'Assets/Example.prefab:42', snippet: 'ReloadGraph' },
@@ -25,6 +41,10 @@ describe('rule-lab review-pack', () => {
     const out = await buildReviewPack({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a', maxTokens: 6000 });
     expect(out.meta.token_budget_estimate).toBeLessThanOrEqual(6000);
     expect(out.meta.truncated || out.cards.length > 0).toBe(true);
+    expect(out.cards[0]).toHaveProperty('decision_inputs.required_hops');
+    expect(out.cards[0]).toHaveProperty('decision_inputs.failure_map');
+    expect(out.cards[0]).toHaveProperty('decision_inputs.guarantees');
+    expect(out.cards[0]).toHaveProperty('decision_inputs.non_guarantees');
 
     const persisted = await fs.readFile(out.paths.reviewCardsPath, 'utf-8');
     expect(persisted).toContain('token_budget_estimate');
