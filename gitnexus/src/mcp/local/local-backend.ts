@@ -1429,6 +1429,18 @@ export class LocalBackend {
           result.runtime_claim.evidence_level = 'verified_segment';
         }
       }
+      if (
+        result.runtime_claim?.reason === 'rule_matched_but_evidence_missing'
+        && (!Array.isArray(result.runtime_claim.gaps) || result.runtime_claim.gaps.length === 0)
+      ) {
+        result.runtime_claim.gaps = [
+          {
+            segment: 'runtime',
+            reason: 'missing verifier evidence',
+            next_command: result.runtime_claim.next_action || 'gitnexus query --runtime-chain-verify on-demand',
+          },
+        ];
+      }
       if (result.runtime_claim) {
         result.runtime_chain = {
           status: result.runtime_claim.status,
@@ -2155,6 +2167,18 @@ export class LocalBackend {
         if (result.runtime_claim.evidence_level === 'verified_chain' || result.runtime_claim.status === 'verified_partial') {
           result.runtime_claim.evidence_level = 'verified_segment';
         }
+      }
+      if (
+        result.runtime_claim?.reason === 'rule_matched_but_evidence_missing'
+        && (!Array.isArray(result.runtime_claim.gaps) || result.runtime_claim.gaps.length === 0)
+      ) {
+        result.runtime_claim.gaps = [
+          {
+            segment: 'runtime',
+            reason: 'missing verifier evidence',
+            next_command: result.runtime_claim.next_action || 'gitnexus context --runtime-chain-verify on-demand',
+          },
+        ];
       }
       if (result.runtime_claim) {
         result.runtime_chain = {

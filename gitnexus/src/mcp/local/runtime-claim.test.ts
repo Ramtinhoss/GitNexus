@@ -1,5 +1,5 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'vitest';
 import { buildRuntimeClaimFromRule } from './runtime-claim.js';
 
 test('runtime_claim contract includes rule-driven metadata and guarantees', () => {
