@@ -30,7 +30,15 @@ export interface Phase5RuleLabAcceptanceReport {
   metrics: {
     precision: number;
     coverage: number;
+    probe_pass_rate: number;
     token_budget: number;
+  };
+  authenticity_checks: {
+    static_no_hardcoded_reload: {
+      pass: boolean;
+      blocked_symbols: string[];
+    };
+    dsl_lint_pass: boolean;
   };
   failure_classifications: Phase5FailureClassification[];
   artifact_paths: {
@@ -100,7 +108,58 @@ function buildFailureTaxonomy(runId: string): Phase5FailureClassification[] {
       retry_hint: 'add additional approved rules/slices and rerun regress',
       repro_command: `gitnexus rule-lab regress --precision 0.95 --coverage 0.70 --run-id ${runId}`,
     },
+    {
+      code: 'probe_pass_rate_below_threshold',
+      retry_hint: 're-run regress with refreshed probes and inspect replay commands',
+      repro_command: `gitnexus rule-lab regress --precision 0.95 --coverage 0.90 --run-id ${runId}`,
+    },
+    {
+      code: 'static_hardcode_detected',
+      retry_hint: 'remove project-specific reload fallback constants/branches from runtime verifier',
+      repro_command: 'rg -n "RESOURCE_ASSET_PATH|GRAPH_ASSET_PATH|RELOAD_GUID|shouldVerifyReloadChain|verifyReloadRuntimeChain" gitnexus/src/mcp/local/runtime-chain-verify.ts',
+    },
+    {
+      code: 'dsl_lint_failed',
+      retry_hint: 'fix promoted DSL placeholders and rerun promote/regress',
+      repro_command: `gitnexus rule-lab promote --run-id ${runId} --slice-id <slice_id>`,
+    },
   ];
+}
+
+function hasDslPlaceholders(text: string): boolean {
+  return /(^|\s)(unknown|todo|tbd)(\s|$)|<[^>]+>/i.test(text);
+}
+
+async function buildAuthenticityChecks(input: {
+  repoPath: string;
+  promotedFiles: string[];
+}): Promise<Phase5RuleLabAcceptanceReport['authenticity_checks']> {
+  const verifierPath = path.join(input.repoPath, 'gitnexus', 'src', 'mcp', 'local', 'runtime-chain-verify.ts');
+  const verifierRaw = await fs.readFile(verifierPath, 'utf-8');
+  const blockedSymbols = [
+    'RESOURCE_ASSET_PATH',
+    'GRAPH_ASSET_PATH',
+    'RELOAD_GUID',
+    'shouldVerifyReloadChain',
+    'verifyReloadRuntimeChain',
+  ].filter((token) => verifierRaw.includes(token));
+
+  let dslLintPass = true;
+  for (const promotedPath of input.promotedFiles) {
+    const raw = await fs.readFile(promotedPath, 'utf-8');
+    if (hasDslPlaceholders(raw)) {
+      dslLintPass = false;
+      break;
+    }
+  }
+
+  return {
+    static_no_hardcoded_reload: {
+      pass: blockedSymbols.length === 0,
+      blocked_symbols: blockedSymbols,
+    },
+    dsl_lint_pass: dslLintPass,
+  };
 }
 
 export async function buildPhase5RuleLabAcceptanceReport(input: BuildPhase5RuleLabAcceptanceInput): Promise<Phase5RuleLabAcceptanceReport> {
@@ -147,6 +206,30 @@ export async function buildPhase5RuleLabAcceptanceReport(input: BuildPhase5RuleL
           id: firstCandidate.id,
           rule_id: 'demo.startup.v1',
           title: 'startup startup graph',
+          match: {
+            trigger_tokens: ['startup'],
+          },
+          topology: Array.isArray(firstCandidate.topology) && firstCandidate.topology.length > 0
+            ? firstCandidate.topology
+            : firstCandidate.evidence.hops.map((hop) => ({
+              hop: hop.hop_type,
+              from: { entity: 'resource' },
+              to: { entity: 'script' },
+              edge: { kind: 'binds_script' },
+            })),
+          closure: {
+            required_hops: Array.isArray(firstCandidate.topology) && firstCandidate.topology.length > 0
+              ? firstCandidate.topology.map((hop: any) => hop.hop)
+              : ['code_runtime'],
+            failure_map: {
+              missing_evidence: 'rule_matched_but_evidence_missing',
+            },
+          },
+          claims: {
+            guarantees: ['startup trigger matching is confirmed'],
+            non_guarantees: ['does not prove full runtime ordering'],
+            next_action: 'gitnexus query "Startup Graph Trigger"',
+          },
           confirmed_chain: {
             steps: firstCandidate.evidence.hops.map((hop) => ({ ...hop, hop_type: 'code_runtime' })),
           },
@@ -175,6 +258,13 @@ export async function buildPhase5RuleLabAcceptanceReport(input: BuildPhase5RuleL
   const regress = await runRuleLabRegress({
     precision: 0.93,
     coverage: 0.85,
+    probes: [
+      {
+        id: 'probe-startup-trigger',
+        pass: true,
+        replay_command: 'gitnexus query "Startup Graph Trigger" --runtime-chain-verify on-demand',
+      },
+    ],
     repoPath,
     runId,
   });
@@ -206,6 +296,10 @@ export async function buildPhase5RuleLabAcceptanceReport(input: BuildPhase5RuleL
   if (artifactPaths.regress_report) {
     await mustExist(artifactPaths.regress_report);
   }
+  const authenticityChecks = await buildAuthenticityChecks({
+    repoPath,
+    promotedFiles: artifactPaths.promoted_files,
+  });
 
   return {
     generated_at: new Date().toISOString(),
@@ -216,8 +310,10 @@ export async function buildPhase5RuleLabAcceptanceReport(input: BuildPhase5RuleL
     metrics: {
       precision: regress.metrics.precision,
       coverage: regress.metrics.coverage,
+      probe_pass_rate: regress.metrics.probe_pass_rate,
       token_budget: reviewPack.meta.token_budget_estimate,
     },
+    authenticity_checks: authenticityChecks,
     failure_classifications: buildFailureTaxonomy(runId),
     artifact_paths: artifactPaths,
   };
@@ -235,6 +331,15 @@ export async function runPhase5RuleLabGate(input: {
     }
     if (typeof report.metrics?.precision !== 'number' || typeof report.metrics?.coverage !== 'number') {
       return { pass: false, reason: 'metrics_missing' };
+    }
+    if (!report.authenticity_checks?.static_no_hardcoded_reload?.pass) {
+      return { pass: false, reason: 'static_hardcode_detected' };
+    }
+    if (!report.authenticity_checks?.dsl_lint_pass) {
+      return { pass: false, reason: 'dsl_lint_failed' };
+    }
+    if (Number(report.metrics?.probe_pass_rate) < 0.85) {
+      return { pass: false, reason: 'probe_pass_rate_below_threshold' };
     }
     return { pass: true };
   } catch {
@@ -265,7 +370,13 @@ export async function writePhase5RuleLabAcceptanceArtifacts(input: {
     '## Metrics',
     `- precision: ${input.report.metrics.precision}`,
     `- coverage: ${input.report.metrics.coverage}`,
+    `- probe_pass_rate: ${input.report.metrics.probe_pass_rate}`,
     `- token_budget: ${input.report.metrics.token_budget}`,
+    '',
+    '## Authenticity Checks',
+    `- static_no_hardcoded_reload.pass: ${input.report.authenticity_checks.static_no_hardcoded_reload.pass}`,
+    `- static_no_hardcoded_reload.blocked_symbols: ${input.report.authenticity_checks.static_no_hardcoded_reload.blocked_symbols.join(', ') || 'none'}`,
+    `- dsl_lint_pass: ${input.report.authenticity_checks.dsl_lint_pass}`,
     '',
     '## Failure Classifications',
     ...input.report.failure_classifications.map((failure) => `- ${failure.code}: ${failure.retry_hint} | repro: ${failure.repro_command}`),

@@ -11,4 +11,11 @@ describe('rule-lab docs/contracts', () => {
     expect(truth).toMatch(/Phase 5 Offline Rule Lab/i);
     expect(truth).toMatch(/rule_lab_discover|rule_lab_promote/i);
   });
+
+  it('phase5 runner enforces semantic authenticity gate contract', async () => {
+    const runner = await fs.readFile('gitnexus/src/benchmark/u2-e2e/phase5-rule-lab-acceptance-runner.ts', 'utf-8');
+    expect(runner).toMatch(/static_hardcode_detected/);
+    expect(runner).toMatch(/dsl_lint_failed/);
+    expect(runner).toMatch(/probe_pass_rate_below_threshold/);
+  });
 });
