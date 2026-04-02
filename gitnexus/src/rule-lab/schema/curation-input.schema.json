@@ -11,10 +11,84 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "confirmed_chain", "guarantees", "non_guarantees"],
+        "required": ["id", "match", "topology", "closure", "claims", "confirmed_chain", "guarantees", "non_guarantees"],
         "properties": {
           "id": { "type": "string", "minLength": 1 },
+          "rule_id": { "type": "string", "minLength": 1 },
           "title": { "type": "string" },
+          "match": {
+            "type": "object",
+            "required": ["trigger_tokens"],
+            "properties": {
+              "trigger_tokens": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "symbol_kind": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "module_scope": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "topology": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["hop", "from", "to", "edge"],
+              "properties": {
+                "hop": { "type": "string", "minLength": 1 },
+                "from": { "type": "object" },
+                "to": { "type": "object" },
+                "edge": {
+                  "type": "object",
+                  "required": ["kind"],
+                  "properties": {
+                    "kind": { "type": "string", "minLength": 1 }
+                  }
+                },
+                "constraints": { "type": "object" }
+              }
+            }
+          },
+          "closure": {
+            "type": "object",
+            "required": ["required_hops", "failure_map"],
+            "properties": {
+              "required_hops": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "failure_map": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "claims": {
+            "type": "object",
+            "required": ["guarantees", "non_guarantees", "next_action"],
+            "properties": {
+              "guarantees": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "non_guarantees": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "next_action": { "type": "string", "minLength": 1 }
+            }
+          },
           "confirmed_chain": {
             "type": "object",
             "required": ["steps"],

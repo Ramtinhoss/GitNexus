@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getRuleLabPaths } from './paths.js';
+import type { RuleDslDraft, RuleDslMatch, RuleDslTopologyHop, RuleDslClosure, RuleDslClaims } from './types.js';
 
 const PLACEHOLDER_RE = /TODO|TBD|placeholder|<[^>]+>/i;
 
@@ -21,6 +22,10 @@ export interface CuratedItem {
   id: string;
   rule_id?: string;
   title?: string;
+  match?: RuleDslMatch;
+  topology?: RuleDslTopologyHop[];
+  closure?: RuleDslClosure;
+  claims?: RuleDslClaims;
   confirmed_chain: {
     steps: CuratedStep[];
   };
@@ -39,6 +44,52 @@ function hasPlaceholderText(value: unknown): boolean {
 
 function normalizeForSet(values: string[]): Set<string> {
   return new Set(values.map((value) => value.trim().toLowerCase()));
+}
+
+function ensureStringArray(values: string[] | undefined, field: string): string[] {
+  if (!Array.isArray(values) || values.length === 0) {
+    throw new Error(`${field} must be non-empty`);
+  }
+  if (values.some((value) => !String(value || '').trim())) {
+    throw new Error(`${field} entries must be non-empty strings`);
+  }
+  return values.map((value) => String(value).trim());
+}
+
+function validateDslFields(item: CuratedItem): void {
+  if (!item.match || !Array.isArray(item.match.trigger_tokens) || item.match.trigger_tokens.length === 0) {
+    throw new Error('match.trigger_tokens must be non-empty');
+  }
+  ensureStringArray(item.match.trigger_tokens, 'match.trigger_tokens');
+
+  if (!Array.isArray(item.topology) || item.topology.length === 0) {
+    throw new Error('topology must be non-empty');
+  }
+  item.topology.forEach((hop, index) => {
+    if (!String(hop.hop || '').trim()) {
+      throw new Error(`topology[${index}].hop must be non-empty`);
+    }
+    if (!String(hop.edge?.kind || '').trim()) {
+      throw new Error(`topology[${index}].edge.kind must be non-empty`);
+    }
+  });
+
+  if (!item.closure || !Array.isArray(item.closure.required_hops) || item.closure.required_hops.length === 0) {
+    throw new Error('closure.required_hops must be non-empty');
+  }
+  if (!item.closure.failure_map || Object.keys(item.closure.failure_map).length === 0) {
+    throw new Error('closure.failure_map must be non-empty');
+  }
+  ensureStringArray(item.closure.required_hops, 'closure.required_hops');
+
+  if (!item.claims) {
+    throw new Error('claims must be present');
+  }
+  ensureStringArray(item.claims.guarantees, 'claims.guarantees');
+  ensureStringArray(item.claims.non_guarantees, 'claims.non_guarantees');
+  if (!String(item.claims.next_action || '').trim()) {
+    throw new Error('claims.next_action must be non-empty');
+  }
 }
 
 function validateCuratedItem(item: CuratedItem): void {
@@ -79,6 +130,38 @@ function validateCuratedItem(item: CuratedItem): void {
   if (overlap.length === guaranteeSet.size && overlap.length === nonGuaranteeSet.size) {
     throw new Error('guarantees and non_guarantees must have semantic distinction');
   }
+
+  validateDslFields(item);
+}
+
+function toDslDraft(item: CuratedItem): RuleDslDraft {
+  return {
+    id: String(item.rule_id || item.id || '').trim(),
+    version: '2.0.0',
+    match: item.match as RuleDslMatch,
+    topology: item.topology as RuleDslTopologyHop[],
+    closure: item.closure as RuleDslClosure,
+    claims: item.claims as RuleDslClaims,
+  };
+}
+
+function validateDslDraft(draft: RuleDslDraft): void {
+  if (!String(draft.id || '').trim()) {
+    throw new Error('dsl draft id must be non-empty');
+  }
+  ensureStringArray(draft.match.trigger_tokens, 'match.trigger_tokens');
+  if (!Array.isArray(draft.topology) || draft.topology.length === 0) {
+    throw new Error('topology must be non-empty');
+  }
+  ensureStringArray(draft.closure.required_hops, 'closure.required_hops');
+  if (!draft.closure.failure_map || Object.keys(draft.closure.failure_map).length === 0) {
+    throw new Error('closure.failure_map must be non-empty');
+  }
+  ensureStringArray(draft.claims.guarantees, 'claims.guarantees');
+  ensureStringArray(draft.claims.non_guarantees, 'claims.non_guarantees');
+  if (!String(draft.claims.next_action || '').trim()) {
+    throw new Error('claims.next_action must be non-empty');
+  }
 }
 
 export async function curateRuleLabSlice(input: CurateInput): Promise<CurateOutput> {
@@ -93,11 +176,18 @@ export async function curateRuleLabSlice(input: CurateInput): Promise<CurateOutp
   }
 
   curated.forEach(validateCuratedItem);
+  const firstDraft = toDslDraft(curated[0]);
+  validateDslDraft(firstDraft);
 
   await fs.mkdir(path.dirname(paths.curatedPath), { recursive: true });
   await fs.writeFile(
     paths.curatedPath,
     `${JSON.stringify({ run_id: input.runId, slice_id: input.sliceId, curated }, null, 2)}\n`,
+    'utf-8',
+  );
+  await fs.writeFile(
+    path.join(path.dirname(paths.curatedPath), 'dsl-draft.json'),
+    `${JSON.stringify(firstDraft, null, 2)}\n`,
     'utf-8',
   );
 
