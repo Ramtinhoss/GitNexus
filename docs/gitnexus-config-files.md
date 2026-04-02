@@ -11,7 +11,7 @@ This document defines the current configuration and state file rules used by Git
 | `unity-parity-seed.json` | `analyze` | Unity parity seed cache payload | Saved during `analyze` finalize | Unity lazy/parity loaders |
 | `rules/catalog.json` | `rule-lab-promote` | Project rule catalog, activation order, rule versions | Written when promoting approved rules | Runtime verifier rule loader |
 | `rules/approved/*.yaml` | `rule-lab-curate` / `rule-lab-promote` | Approved project runtime verification rules | Written during curation/promotion | Runtime verifier rule loader |
-| `rules/lab/runs/**` | `rule-lab-discover` / `rule-lab-analyze` / `rule-lab-review-pack` | Rule Lab intermediate artifacts (`manifest.json`, `slices/*/slice.json`, `candidates.jsonl`, review packs) | Written by Rule Lab execution | Rule Lab follow-up commands |
+| `rules/lab/runs/**` | `rule-lab-discover` / `rule-lab-analyze` / `rule-lab-review-pack` / `rule-lab-curate` | Rule Lab intermediate artifacts (`manifest.json`, `slice-plan.json`, `slices/*/slice.json`, `candidates.jsonl`, `review-cards.md`, `curated.json`, `dsl-draft.json`) | Written by Rule Lab execution | Rule Lab follow-up commands and promote compiler input |
 | `rules/reports/*.md` | `rule-lab-regress` | Rule quality and regression reports | Written by regression pass | Human review and CI reports |
 
 ### `meta.json` schema (current)
@@ -59,7 +59,7 @@ Notes:
   - `id`: `unity.gungraph.reload.output-getvalue.v1`
   - `version`: `1.0.0`
   - `file`: `approved/unity.gungraph.reload.output-getvalue.v1.yaml`
-- The approved YAML defines Reload-scoped runtime-claim semantics (`trigger_family`, `required_hops`, guarantees/non-guarantees, and `next_action`).
+- The approved YAML now follows DSL v2 sections (`match/topology/closure/claims`) and preserves runtime-claim compatibility fields (`trigger_family`, `required_hops`, guarantees/non-guarantees, `next_action`).
 
 ## Global (`~/.gitnexus/`)
 

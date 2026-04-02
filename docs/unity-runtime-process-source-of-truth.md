@@ -63,10 +63,8 @@ Status: Active (source of truth)
    - `query/context` 接入：`gitnexus/src/mcp/local/local-backend.ts`
 3. claim + verifier 调度：
    - `verifyRuntimeClaimOnDemand` 先加载规则目录、匹配 `trigger_family` token，再把 matched rule 注入 verifier。
-   - verifier 按 rule 分发：
-     - Reload family -> 使用 Reload 深度锚点提取（resource/guid_map/code_loader/code_runtime）
-     - 非 Reload family -> 使用通用 rule-driven heuristic（resource/guid/code hints）
-   - 兼容路径：若无 matched rule 上下文，`verifyRuntimeChainOnDemand` 仍保留 legacy Reload token 触发路径（主要用于直接调用/测试）。
+   - `verifyRuntimeChainOnDemand` 仅在 matched rule 存在时执行；无 rule 时直接返回 `undefined`（不再存在 legacy Reload token fallback）。
+   - verifier 统一走 rule-driven DSL 拓扑执行（`required_hops` + evidence/gap 归并），无项目特化硬编码常量分支。
    - 代码：`gitnexus/src/mcp/local/runtime-chain-verify.ts`
 4. Verifier 实现：
    - `verifyRuntimeClaimOnDemand` + `verifyRuntimeChainOnDemand`
@@ -188,16 +186,18 @@ Status: Active (source of truth)
    - `rule_lab_regress`
 2. 阶段输入输出（As-Built）：
    - `discover`：输入 repo/scope/seed，输出 `run_id + manifest + slices + next_actions`
-   - `analyze`：输入 `run_id + slice_id`，输出 `candidates.jsonl`（每条 candidate 至少 1 个 hop anchor）
-   - `review-pack`：输入 `max_tokens`，输出 `review-cards.md` 与 `token_budget_estimate/truncated`
-   - `curate`：输入人工确认 JSON，强制校验 `confirmed_chain.steps`、`guarantees/non_guarantees` 非空且可区分、无 placeholder
-   - `promote`：输入 curated artifacts，输出 `approved/*.yaml` 并 upsert `catalog.json`
-   - `regress`：输入 `precision/coverage`，阈值 gate：`precision >= 0.90 && coverage >= 0.80`
+   - `analyze`：输入 `run_id + slice_id`，输出 `candidates.jsonl`（多候选 topology + `stats.coverage_rate/conflict_rate` + `counter_examples`）
+   - `review-pack`：输入 `max_tokens`，输出 `review-cards.md`（含 `decision_inputs.required_hops/failure_map/guarantees/non_guarantees`）与 `token_budget_estimate/truncated`
+   - `curate`：输入人工确认 JSON，强制校验 `match/topology/closure/claims`、`confirmed_chain.steps` 与 placeholder 约束，输出 `curated.json` + `dsl-draft.json`
+   - `promote`：输入 curated/dsl draft artifacts，输出 DSL+runtime 兼容 YAML（含 `match/topology/closure/claims`），并 lint 拦截 `unknown|TODO|TBD|<...>` scope 占位
+   - `regress`：输入 `precision/coverage/probes`，阈值 gate：`precision >= 0.90 && coverage >= 0.80 && probe_pass_rate >= 0.85`
 3. Artifact 所有权与路径：
    - `.gitnexus/rules/lab/runs/<run_id>/manifest.json`
+   - `.gitnexus/rules/lab/runs/<run_id>/slice-plan.json`
    - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/candidates.jsonl`
    - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/review-cards.md`
    - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/curated.json`
+   - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/dsl-draft.json`
    - `.gitnexus/rules/catalog.json` 与 `.gitnexus/rules/approved/*.yaml`（promote 后即时供 runtime claim verifier 读取）
 4. MCP 对外返回契约：
    - `rule_lab_discover/analyze/review_pack/curate/promote/regress` 均返回阶段结果 + `artifact_paths`
@@ -206,7 +206,10 @@ Status: Active (source of truth)
    - promote 成功后，`verifyRuntimeClaimOnDemand` 直接从 repo-local `.gitnexus/rules/**` 装载，不依赖跨仓库 fallback。
 6. 验收报告最小合约：
    - `stage_coverage.length === 6`
-   - `metrics.precision|coverage|token_budget` 均为 numeric
+   - `metrics.precision|coverage|probe_pass_rate|token_budget` 均为 numeric
+   - `authenticity_checks.static_no_hardcoded_reload.pass === true`
+   - `authenticity_checks.dsl_lint_pass === true`
+   - `metrics.probe_pass_rate >= 0.85`
    - `failure_classifications[]` 每项包含 `code + retry_hint + repro_command`
    - `artifact_paths` 全部可访问
 
@@ -246,8 +249,8 @@ Status: Active (source of truth)
 
 ## 8. Rule Lab 当前边界（2026-04-02 As-Built）
 
-1. `promote.ts` 当前对 `trigger_family` 的推断来自 curated `title` 首 token；`resource_types/host_base_type` 在 YAML 中以 `unknown` 写入（需后续由 analyze/curate 提供结构化字段）。
-2. `analyze.ts` 目前每 slice 输出最小可用候选（单候选 + 资源锚点），重点保障 artifact 契约与 verifier 装载闭环，非最终召回/精排策略。
+1. `promote.ts` 仍允许从 curated 内容推断 `trigger_family`，但 scope/topology/claims 必须通过 DSL lint；`unknown|TODO|TBD|<...>` 占位会被拒绝。
+2. `analyze.ts` 已升级为多候选 topology 输出（含 coverage/conflict/counter-example 统计）；当前仍为启发式候选空间，后续可继续增强召回/排序策略。
 3. `review-pack.ts` token 估算采用 `JSON.length/4` 启发式，适配离线包控与截断诊断；后续若引入模型 tokenizer，可替换估算函数但保持 `token_budget_estimate` 字段稳定。
 4. Rule Lab 产物写入 `.gitnexus/rules/**`，受仓库 `.gitignore` 影响（默认忽略 `.gitnexus`）；如需提交样例规则需显式跟踪。
 
