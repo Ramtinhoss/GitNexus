@@ -9,15 +9,28 @@
       "type": "array",
       "items": {
         "type": "string",
-        "enum": ["precision_below_threshold", "coverage_below_threshold"]
+        "enum": ["precision_below_threshold", "coverage_below_threshold", "probe_pass_rate_below_threshold"]
       }
     },
     "metrics": {
       "type": "object",
-      "required": ["precision", "coverage"],
+      "required": ["precision", "coverage", "probe_pass_rate"],
       "properties": {
         "precision": { "type": "number" },
-        "coverage": { "type": "number" }
+        "coverage": { "type": "number" },
+        "probe_pass_rate": { "type": "number" }
+      }
+    },
+    "probe_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "pass", "replay_command"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "pass": { "type": "boolean" },
+          "replay_command": { "type": "string", "minLength": 1 }
+        }
       }
     },
     "reportPath": { "type": "string" }
