@@ -15,31 +15,83 @@ export interface AnalyzeOutput {
   candidates: RuleLabCandidate[];
 }
 
-function buildCandidateId(slice: RuleLabSlice): string {
+function buildCandidateId(slice: RuleLabSlice, variant: string): string {
   return createHash('sha1')
-    .update(`${slice.id}:${slice.trigger_family}:${slice.resource_types.join('|')}:${slice.host_base_type.join('|')}`)
+    .update(`${slice.id}:${slice.trigger_family}:${slice.resource_types.join('|')}:${slice.host_base_type.join('|')}:${variant}`)
     .digest('hex')
     .slice(0, 12);
 }
 
-function buildCandidate(slice: RuleLabSlice, anchorFile: string): RuleLabCandidate {
-  const id = buildCandidateId(slice);
-  const title = `${slice.trigger_family} ${slice.host_base_type.join(', ') || 'runtime'}`.trim();
+function toRate(numerator: number, denominator: number): number {
+  return numerator / Math.max(denominator, 1);
+}
 
-  return {
-    id,
-    title,
-    rule_hint: `${slice.trigger_family}.${slice.id}`,
+function buildTopologyCandidateSet(slice: RuleLabSlice, anchorFile: string): RuleLabCandidate[] {
+  const title = `${slice.trigger_family} ${slice.host_base_type.join(', ') || 'runtime'}`.trim();
+  const requiredHops = slice.required_hops && slice.required_hops.length > 0
+    ? [...slice.required_hops]
+    : ['resource', 'code_runtime'];
+
+  const primaryTopology = requiredHops.map((hop) => ({
+    hop,
+    from: { entity: hop === 'resource' ? 'resource' : 'script' },
+    to: { entity: hop === 'code_runtime' ? 'runtime' : 'script' },
+    edge: { kind: hop === 'resource' ? 'binds_script' : 'calls' },
+  }));
+  const fallbackTopology = primaryTopology.slice(0, Math.max(primaryTopology.length - 1, 1));
+
+  const primaryCovered = primaryTopology.length;
+  const total = requiredHops.length;
+  const fallbackCovered = Math.min(fallbackTopology.length, total);
+  const fallbackMissingHop = requiredHops.find((hop) => !fallbackTopology.some((node) => node.hop === hop));
+
+  const primary: RuleLabCandidate = {
+    id: buildCandidateId(slice, 'primary'),
+    title: `${title} candidate-a`,
+    rule_hint: `${slice.trigger_family}.${slice.id}.primary`,
+    topology: primaryTopology,
+    stats: {
+      covered: primaryCovered,
+      total,
+      conflicts: 0,
+      coverage_rate: toRate(primaryCovered, total),
+      conflict_rate: 0,
+    },
+    counter_examples: [],
     evidence: {
-      hops: [
-        {
-          hop_type: 'resource',
-          anchor: `${anchorFile}:1`,
-          snippet: slice.trigger_family,
-        },
-      ],
+      hops: primaryTopology.map((hop, index) => ({
+        hop_type: hop.hop,
+        anchor: `${anchorFile}:${index + 1}`,
+        snippet: `${slice.trigger_family}:${hop.edge.kind}`,
+      })),
     },
   };
+
+  const fallback: RuleLabCandidate = {
+    id: buildCandidateId(slice, 'fallback'),
+    title: `${title} candidate-b`,
+    rule_hint: `${slice.trigger_family}.${slice.id}.fallback`,
+    topology: fallbackTopology,
+    stats: {
+      covered: fallbackCovered,
+      total,
+      conflicts: 1,
+      coverage_rate: toRate(fallbackCovered, total),
+      conflict_rate: toRate(1, total),
+    },
+    counter_examples: fallbackMissingHop
+      ? [{ reason: 'required hop missing in topology candidate', missing_hop: fallbackMissingHop, evidence_anchor: `${anchorFile}:1` }]
+      : [],
+    evidence: {
+      hops: fallbackTopology.map((hop, index) => ({
+        hop_type: hop.hop,
+        anchor: `${anchorFile}:${index + 1}`,
+        snippet: `${slice.trigger_family}:${hop.edge.kind}`,
+      })),
+    },
+  };
+
+  return [primary, fallback];
 }
 
 export async function analyzeRuleLabSlice(input: AnalyzeInput): Promise<AnalyzeOutput> {
@@ -50,13 +102,13 @@ export async function analyzeRuleLabSlice(input: AnalyzeInput): Promise<AnalyzeO
   const slice = JSON.parse(raw) as RuleLabSlice;
 
   const anchorFile = path.relative(normalizedRepoPath, slicePath).split(path.sep).join('/');
-  const candidate = buildCandidate(slice, anchorFile);
+  const candidates = buildTopologyCandidateSet(slice, anchorFile);
 
   await fs.mkdir(path.dirname(paths.candidatesPath), { recursive: true });
-  await fs.writeFile(paths.candidatesPath, `${JSON.stringify(candidate)}\n`, 'utf-8');
+  await fs.writeFile(paths.candidatesPath, `${candidates.map((candidate) => JSON.stringify(candidate)).join('\n')}\n`, 'utf-8');
 
   return {
     paths,
-    candidates: [candidate],
+    candidates,
   };
 }

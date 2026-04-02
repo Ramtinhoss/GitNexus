@@ -11,6 +11,7 @@ export interface RuleLabSlice {
   trigger_family: string;
   resource_types: string[];
   host_base_type: string[];
+  required_hops?: string[];
 }
 
 export interface RuleLabManifest {
@@ -33,6 +34,25 @@ export interface RuleLabCandidate {
   id: string;
   title: string;
   rule_hint?: string;
+  topology?: Array<{
+    hop: string;
+    from: Record<string, unknown>;
+    to: Record<string, unknown>;
+    edge: { kind: string };
+    constraints?: Record<string, unknown>;
+  }>;
+  stats?: {
+    covered: number;
+    total: number;
+    conflicts: number;
+    coverage_rate: number;
+    conflict_rate: number;
+  };
+  counter_examples?: Array<{
+    reason: string;
+    missing_hop?: string;
+    evidence_anchor?: string;
+  }>;
   evidence: {
     hops: RuleLabCandidateHop[];
   };

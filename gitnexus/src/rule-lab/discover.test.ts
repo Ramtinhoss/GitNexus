@@ -43,6 +43,11 @@ describe('rule-lab discover', () => {
     const manifestOnDisk = JSON.parse(await fs.readFile(out.paths.manifestPath, 'utf-8'));
     expect(manifestOnDisk.run_id).toBe(out.manifest.run_id);
     expect(Array.isArray(manifestOnDisk.slices)).toBe(true);
+    const slicePlanPath = path.join(out.paths.runRoot, 'slice-plan.json');
+    const slicePlan = JSON.parse(await fs.readFile(slicePlanPath, 'utf-8'));
+    expect(slicePlan.run_id).toBe(out.manifest.run_id);
+    expect(Array.isArray(slicePlan.slices)).toBe(true);
+    expect(slicePlan.slices[0]).toHaveProperty('candidate_count_target');
 
     await fs.rm(repoRoot, { recursive: true, force: true });
   });

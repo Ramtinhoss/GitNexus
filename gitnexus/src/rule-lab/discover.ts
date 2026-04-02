@@ -22,6 +22,7 @@ function buildSliceId(rule: {
   trigger_family: string;
   resource_types: string[];
   host_base_type: string[];
+  required_hops: string[];
 }): string {
   const hash = createHash('sha1')
     .update(
@@ -30,6 +31,7 @@ function buildSliceId(rule: {
         trigger_family: rule.trigger_family,
         resource_types: [...rule.resource_types].sort(),
         host_base_type: [...rule.host_base_type].sort(),
+        required_hops: [...(rule.required_hops || [])].sort(),
       }),
     )
     .digest('hex')
@@ -57,6 +59,7 @@ export async function discoverRuleLabRun(input: DiscoverInput): Promise<Discover
     trigger_family: rule.trigger_family,
     resource_types: rule.resource_types,
     host_base_type: rule.host_base_type,
+    required_hops: rule.required_hops,
   }));
 
   const manifest: RuleLabManifest = {
@@ -73,6 +76,16 @@ export async function discoverRuleLabRun(input: DiscoverInput): Promise<Discover
   };
 
   await writeJson(runPaths.manifestPath, manifest);
+  await writeJson(path.join(runPaths.runRoot, 'slice-plan.json'), {
+    run_id: runId,
+    generated_at: manifest.generated_at,
+    slices: slices.map((slice) => ({
+      slice_id: slice.id,
+      trigger_family: slice.trigger_family,
+      required_hops: slice.required_hops || [],
+      candidate_count_target: 2,
+    })),
+  });
 
   await Promise.all(
     slices.map(async (slice) => {
