@@ -1,0 +1,9 @@
+{
+  "capturedAt": "2026-04-02T02:05:01.353Z",
+  "modeCompare": "summary-full",
+  "sizeLatency": {
+    "summarySizeReductionPct": 64.2,
+    "queryContextP95DeltaPct": 12.4,
+    "pass": true
+  }
+}

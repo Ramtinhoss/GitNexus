@@ -30,6 +30,10 @@ test('sampler emits cold/warm latency and rss metrics with threshold verdict', a
   assert.ok(report.metrics.coldMs > 0);
   assert.equal(typeof report.hydrationMetaSummary.compactNeedsRetryRate, 'number');
   assert.equal(typeof report.hydrationMetaSummary.parityCompleteRate, 'number');
+  assert.equal(typeof report.sizeLatency.summarySizeReductionPct, 'number');
+  assert.equal(typeof report.sizeLatency.queryContextP95DeltaPct, 'number');
+  assert.equal(report.sizeLatency.summarySizeReductionPct >= 60, true);
+  assert.equal(report.sizeLatency.queryContextP95DeltaPct <= 15, true);
   assert.ok(typeof report.thresholdVerdict.pass === 'boolean');
   assert.equal(report.thresholdVerdict.pass, true);
 });
