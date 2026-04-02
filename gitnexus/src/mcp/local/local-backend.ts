@@ -9,12 +9,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { initLbug, executeQuery, executeParameterized, closeLbug, isLbugReady } from '../core/lbug-adapter.js';
-import { parseUnityEvidenceMode, parseUnityHydrationMode, parseUnityResourcesMode } from '../../core/unity/options.js';
+import { parseHydrationPolicy, parseUnityEvidenceMode, parseUnityHydrationMode, parseUnityResourcesMode } from '../../core/unity/options.js';
 import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
 import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../../core/unity/ui-trace.js';
 import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
 import { loadUnityContext, type UnityContextPayload, type UnityHydrationMeta } from './unity-enrichment.js';
-import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
+import { buildMissingEvidenceFromHydrationMeta, hydrateUnityForSymbol } from './unity-runtime-hydration.js';
 import { buildUnityEvidenceView } from './unity-evidence-view.js';
 import { deriveEvidenceFingerprint, mergeProcessEvidence } from './process-evidence.js';
 import { buildProcessRef, type ProcessRefOrigin } from './process-ref.js';
@@ -700,10 +700,12 @@ export class LocalBackend {
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
     let unityEvidenceMode: 'summary' | 'focused' | 'full' = 'summary';
+    let hydrationPolicy: 'fast' | 'balanced' | 'strict' = 'balanced';
     try {
       unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
       unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
       unityEvidenceMode = parseUnityEvidenceMode(params.unity_evidence_mode);
+      hydrationPolicy = parseHydrationPolicy(params.hydration_policy);
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
@@ -845,21 +847,39 @@ export class LocalBackend {
         } catch (e) { logQueryError('query:content-fetch', e); }
       }
 
-      const symbolEntry = {
-        id: sym.nodeId,
-        name: sym.name,
-        type: sym.type,
-        filePath: sym.filePath,
-        startLine: sym.startLine,
-        endLine: sym.endLine,
-        ...(module ? { module } : {}),
-        ...(includeContent && content ? { content } : {}),
-        ...((unityResourcesMode !== 'off'
-          && sym.nodeId
-          && (sym.type === 'Class' || String(sym.nodeId).toLowerCase().startsWith('class:')))
-          ? await hydrateUnityForSymbol({
-            mode: unityHydrationMode,
-            basePayload: await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query)),
+      let unityPayload: Record<string, unknown> = {};
+      if (
+        unityResourcesMode !== 'off'
+        && sym.nodeId
+        && (sym.type === 'Class' || String(sym.nodeId).toLowerCase().startsWith('class:'))
+      ) {
+        const basePayload = await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query));
+        const requestedMode = hydrationPolicy === 'strict' ? 'parity' : 'compact';
+        let hydrated = await hydrateUnityForSymbol({
+          mode: requestedMode,
+          basePayload,
+          deps: {
+            executeQuery: (query, queryParams) => {
+              if (queryParams && Object.keys(queryParams).length > 0) {
+                return executeParameterized(repo.id, query, queryParams);
+              }
+              return executeQuery(repo.id, query);
+            },
+            repoPath: repo.repoPath,
+            storagePath: repo.storagePath,
+            indexedCommit: repo.lastCommit,
+          },
+          symbol: {
+            uid: sym.nodeId,
+            name: sym.name || '',
+            filePath: sym.filePath || '',
+          },
+        });
+        const firstMissingEvidence = buildMissingEvidenceFromHydrationMeta(hydrated.hydrationMeta);
+        if (hydrationPolicy === 'balanced' && firstMissingEvidence.length > 0 && hydrated.hydrationMeta?.needsParityRetry) {
+          hydrated = await hydrateUnityForSymbol({
+            mode: 'parity',
+            basePayload,
             deps: {
               executeQuery: (query, queryParams) => {
                 if (queryParams && Object.keys(queryParams).length > 0) {
@@ -876,8 +896,27 @@ export class LocalBackend {
               name: sym.name || '',
               filePath: sym.filePath || '',
             },
-          })
-          : {}),
+          });
+        }
+        const finalMissingEvidence = buildMissingEvidenceFromHydrationMeta(hydrated.hydrationMeta);
+        unityPayload = {
+          ...hydrated,
+          missing_evidence: hydrationPolicy === 'balanced'
+            ? [...new Set([...firstMissingEvidence, ...finalMissingEvidence])]
+            : finalMissingEvidence,
+        };
+      }
+
+      const symbolEntry = {
+        id: sym.nodeId,
+        name: sym.name,
+        type: sym.type,
+        filePath: sym.filePath,
+        startLine: sym.startLine,
+        endLine: sym.endLine,
+        ...(module ? { module } : {}),
+        ...(includeContent && content ? { content } : {}),
+        ...unityPayload,
       };
 
       if (Array.isArray((symbolEntry as any).resourceBindings) && (symbolEntry as any).resourceBindings.length > 0) {
@@ -1060,6 +1099,15 @@ export class LocalBackend {
       process_symbols: dedupedSymbols,
       definitions: definitions.slice(0, 20), // cap standalone definitions
     };
+    const hydrationMetas = [...dedupedSymbols, ...definitions]
+      .map((row: any) => row?.hydrationMeta)
+      .filter(Boolean);
+    if (hydrationMetas.length > 0) {
+      result.hydrationMeta = hydrationMetas[0];
+    }
+    const missingEvidenceRows = [...dedupedSymbols, ...definitions]
+      .flatMap((row: any) => (Array.isArray(row?.missing_evidence) ? row.missing_evidence : []));
+    result.missing_evidence = [...new Set(missingEvidenceRows)];
     const evidenceMetaRows = [...dedupedSymbols, ...definitions]
       .map((row: any) => row?.evidence_meta)
       .filter(Boolean);
@@ -1119,6 +1167,14 @@ export class LocalBackend {
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
         minimumEvidenceSatisfied: result.evidence_meta?.minimum_evidence_satisfied !== false,
       });
+      if (hydrationPolicy === 'strict' && result.hydrationMeta?.fallbackToCompact && result.runtime_claim) {
+        if (result.runtime_claim.status === 'verified_full') {
+          result.runtime_claim.status = 'verified_partial';
+        }
+        if (result.runtime_claim.evidence_level === 'verified_chain' || result.runtime_claim.status === 'verified_partial') {
+          result.runtime_claim.evidence_level = 'verified_segment';
+        }
+      }
       if (result.runtime_claim?.hops?.length || result.runtime_claim?.gaps?.length) {
         result.runtime_chain = {
           status: result.runtime_claim.status,
@@ -1472,10 +1528,12 @@ export class LocalBackend {
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
     let unityEvidenceMode: 'summary' | 'focused' | 'full' = 'summary';
+    let hydrationPolicy: 'fast' | 'balanced' | 'strict' = 'balanced';
     try {
       unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
       unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
       unityEvidenceMode = parseUnityEvidenceMode(params.unity_evidence_mode);
+      hydrationPolicy = parseHydrationPolicy(params.hydration_policy);
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
@@ -1675,8 +1733,9 @@ export class LocalBackend {
 
     if (unityResourcesMode !== 'off' && symNodeId && (kind === 'Class' || symNodeId.toLowerCase().startsWith('class:'))) {
       const unityContext = await loadUnityContext(repo.id, symNodeId, (query) => executeQuery(repo.id, query));
-      const hydratedUnityContext = await hydrateUnityForSymbol({
-        mode: unityHydrationMode,
+      const requestedMode = hydrationPolicy === 'strict' ? 'parity' : 'compact';
+      let hydratedUnityContext = await hydrateUnityForSymbol({
+        mode: requestedMode,
         basePayload: unityContext,
         deps: {
           executeQuery: (query, queryParams) => {
@@ -1695,7 +1754,34 @@ export class LocalBackend {
           filePath: symFilePath,
         },
       });
+      const firstMissingEvidence = buildMissingEvidenceFromHydrationMeta(hydratedUnityContext.hydrationMeta);
+      if (hydrationPolicy === 'balanced' && firstMissingEvidence.length > 0 && hydratedUnityContext.hydrationMeta?.needsParityRetry) {
+        hydratedUnityContext = await hydrateUnityForSymbol({
+          mode: 'parity',
+          basePayload: unityContext,
+          deps: {
+            executeQuery: (query, queryParams) => {
+              if (queryParams && Object.keys(queryParams).length > 0) {
+                return executeParameterized(repo.id, query, queryParams);
+              }
+              return executeQuery(repo.id, query);
+            },
+            repoPath: repo.repoPath,
+            storagePath: repo.storagePath,
+            indexedCommit: repo.lastCommit,
+          },
+          symbol: {
+            uid: symNodeId,
+            name: symName,
+            filePath: symFilePath,
+          },
+        });
+      }
+      const finalMissingEvidence = buildMissingEvidenceFromHydrationMeta(hydratedUnityContext.hydrationMeta);
       Object.assign(result, hydratedUnityContext);
+      (result as any).missing_evidence = hydrationPolicy === 'balanced'
+        ? [...new Set([...firstMissingEvidence, ...finalMissingEvidence])]
+        : finalMissingEvidence;
       if (Array.isArray((result as any).resourceBindings) && (result as any).resourceBindings.length > 0) {
         const evidenceView = buildUnityEvidenceView({
           resourceBindings: (result as any).resourceBindings,
@@ -1795,6 +1881,14 @@ export class LocalBackend {
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
         minimumEvidenceSatisfied: (result as any).evidence_meta?.minimum_evidence_satisfied !== false,
       });
+      if (hydrationPolicy === 'strict' && result.hydrationMeta?.fallbackToCompact && result.runtime_claim) {
+        if (result.runtime_claim.status === 'verified_full') {
+          result.runtime_claim.status = 'verified_partial';
+        }
+        if (result.runtime_claim.evidence_level === 'verified_chain' || result.runtime_claim.status === 'verified_partial') {
+          result.runtime_claim.evidence_level = 'verified_segment';
+        }
+      }
       if (result.runtime_claim?.hops?.length || result.runtime_claim?.gaps?.length) {
         result.runtime_chain = {
           status: result.runtime_claim.status,

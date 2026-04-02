@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
+import { buildMissingEvidenceFromHydrationMeta, hydrateUnityForSymbol } from './unity-runtime-hydration.js';
 
 test('hydrateUnityForSymbol(compact) marks needsParityRetry when lightweight bindings remain', async () => {
   const out = await hydrateUnityForSymbol({
@@ -109,4 +109,19 @@ test('hydrateUnityForSymbol(parity) sets isComplete=true on parity success', asy
 
   assert.equal(out.hydrationMeta?.effectiveMode, 'parity');
   assert.equal(out.hydrationMeta?.isComplete, true);
+});
+
+test('buildMissingEvidenceFromHydrationMeta maps incomplete reasons', () => {
+  const missing = buildMissingEvidenceFromHydrationMeta({
+    requestedMode: 'compact',
+    effectiveMode: 'compact',
+    elapsedMs: 1,
+    fallbackToCompact: false,
+    resourceBindingCount: 1,
+    unityDiagnosticsCount: 0,
+    isComplete: false,
+    completenessReason: ['lightweight_bindings_remaining', 'budget_exceeded'],
+    needsParityRetry: true,
+  });
+  assert.deepEqual(missing, ['lightweight_bindings_remaining', 'budget_exceeded']);
 });

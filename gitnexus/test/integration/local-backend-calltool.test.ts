@@ -426,6 +426,32 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(out.runtime_claim?.reason).toBe('rule_matched_but_evidence_missing');
     });
 
+    it('phase4 hydration policy', async () => {
+      const strict = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        hydration_policy: 'strict',
+        runtime_chain_verify: 'on-demand',
+      });
+      if (strict.hydrationMeta?.fallbackToCompact) {
+        expect(strict.runtime_claim?.status).toBe('verified_partial');
+        expect(strict.runtime_claim?.evidence_level).toBe('verified_segment');
+      }
+      expect(Array.isArray(strict.missing_evidence)).toBe(true);
+    });
+
+    it('phase4 missing_evidence and needsParityRetry', async () => {
+      const fast = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        hydration_policy: 'fast',
+      });
+      expect(Array.isArray(fast.missing_evidence)).toBe(true);
+      if (fast.hydrationMeta?.isComplete === false) {
+        expect(typeof fast.hydrationMeta.needsParityRetry).toBe('boolean');
+      }
+    });
+
     it('v1 runtime chain verify env gate', async () => {
       const original = process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
       process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = 'off';

@@ -155,6 +155,13 @@ export function attachUnityHydrationMeta(
   };
 }
 
+export function buildMissingEvidenceFromHydrationMeta(meta?: UnityHydrationMeta): string[] {
+  if (!meta || meta.isComplete) {
+    return [];
+  }
+  return [...new Set((meta.completenessReason || []).map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
 export async function hydrateUnityForSymbol(input: HydrateUnityInput): Promise<UnityContextPayload> {
   const runtime = resolveRuntime(input.runtime);
   const startedAt = runtime.now();
