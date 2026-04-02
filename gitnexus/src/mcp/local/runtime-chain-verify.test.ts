@@ -101,7 +101,7 @@ async function writeRules(
 }
 
 describe('runtime chain verify', () => {
-  it('v1 runtime chain verify on demand builds reload chain hops', async () => {
+  it('does not run reload fallback when no rule is matched', async () => {
     const repoPath = await makeTempRepo();
     const out = await verifyRuntimeChainOnDemand({
       repoPath,
@@ -109,18 +109,29 @@ describe('runtime chain verify', () => {
       executeParameterized: makeExecuteParameterized(repoPath),
       resourceBindings: [{ resourcePath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
     });
-    expect(out?.evidence_level).toBe('verified_chain');
-    expect(out?.hops.some((hop) => hop.hop_type === 'guid_map')).toBe(true);
-    const loader = out?.hops.find((hop) => hop.hop_type === 'code_loader');
-    expect(loader?.snippet || '').toMatch(/CurGunGraph\s*=/i);
+    expect(out).toBeUndefined();
+    await fs.rm(repoPath, { recursive: true, force: true });
   });
 
-  it('v1 runtime chain gaps are actionable', async () => {
+  it('runtime chain gaps are actionable under matched rule execution', async () => {
     const out = await verifyRuntimeChainOnDemand({
       repoPath: await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-gaps-')),
       queryText: 'Reload',
       executeParameterized: async () => [],
       resourceBindings: [],
+      rule: {
+        id: 'demo.reload.strict.v2',
+        version: '2.0.0',
+        trigger_family: 'reload',
+        resource_types: ['asset'],
+        host_base_type: ['ReloadBase'],
+        required_hops: ['resource', 'guid_map', 'code_loader', 'code_runtime'],
+        guarantees: ['strict_chain_closed'],
+        non_guarantees: ['strict_no_runtime_execution'],
+        next_action: 'node strict',
+        file_path: '.gitnexus/rules/approved/demo.reload.strict.v2.yaml',
+      },
+      requiredHops: ['resource', 'guid_map', 'code_loader', 'code_runtime'],
     });
     expect(out?.gaps.length).toBeGreaterThan(0);
     expect(out?.gaps.every((gap) => !!gap.next_command)).toBe(true);
@@ -290,11 +301,36 @@ describe('runtime chain verify', () => {
         'non_guarantees:',
         '  - custom_non_guarantee_from_rule',
         'next_action: node claim-semantics',
+        'match:',
+        '  trigger_tokens:',
+        '    - reload',
+        'topology:',
+        '  - hop: resource',
+        '    from:',
+        '      entity: resource',
+        '    to:',
+        '      entity: script',
+        '    edge:',
+        '      kind: binds_script',
+        'closure:',
+        '  required_hops:',
+        '    - resource',
+        '    - guid_map',
+        '    - code_loader',
+        '    - code_runtime',
+        '  failure_map:',
+        '    missing_evidence: rule_matched_but_evidence_missing',
+        'claims:',
+        '  guarantees:',
+        '    - custom_guarantee_from_rule',
+        '  non_guarantees:',
+        '    - custom_non_guarantee_from_rule',
+        '  next_action: node claim-semantics',
       ].join('\n'),
     });
     const out = await verifyRuntimeClaimOnDemand({
       repoPath,
-      queryText: 'Reload NEON.Game.Graph.Nodes.Reloads',
+      queryText: 'Reload runtime start sequence',
       executeParameterized: makeExecuteParameterized(repoPath),
       resourceBindings: [{ resourcePath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
       rulesRoot,
