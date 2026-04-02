@@ -99,6 +99,34 @@ Includes optional Unity retrieval contract:
           description: 'Unity hydration mode when unity_resources is enabled (default: compact)',
           default: 'compact',
         },
+        unity_evidence_mode: {
+          type: 'string',
+          enum: ['summary', 'focused', 'full'],
+          description: 'Unity evidence payload mode (default: summary)',
+          default: 'summary',
+        },
+        hydration_policy: {
+          type: 'string',
+          enum: ['fast', 'balanced', 'strict'],
+          description: 'Hydration strategy policy for Unity evidence retrieval (default: balanced)',
+          default: 'balanced',
+        },
+        resource_path_prefix: {
+          type: 'string',
+          description: 'Optional resource-path prefix filter applied to Unity evidence bindings',
+        },
+        binding_kind: {
+          type: 'string',
+          description: 'Optional Unity binding kind filter (for example: direct, component, scriptable_object)',
+        },
+        max_bindings: {
+          type: 'number',
+          description: 'Optional cap for number of returned evidence bindings',
+        },
+        max_reference_fields: {
+          type: 'number',
+          description: 'Optional cap for number of reference fields returned per binding',
+        },
         runtime_chain_verify: {
           type: 'string',
           enum: ['off', 'on-demand'],
@@ -199,6 +227,34 @@ Unity retrieval contract:
           enum: ['parity', 'compact'],
           description: 'Unity hydration mode when unity_resources is enabled (default: compact)',
           default: 'compact',
+        },
+        unity_evidence_mode: {
+          type: 'string',
+          enum: ['summary', 'focused', 'full'],
+          description: 'Unity evidence payload mode (default: summary)',
+          default: 'summary',
+        },
+        hydration_policy: {
+          type: 'string',
+          enum: ['fast', 'balanced', 'strict'],
+          description: 'Hydration strategy policy for Unity evidence retrieval (default: balanced)',
+          default: 'balanced',
+        },
+        resource_path_prefix: {
+          type: 'string',
+          description: 'Optional resource-path prefix filter applied to Unity evidence bindings',
+        },
+        binding_kind: {
+          type: 'string',
+          description: 'Optional Unity binding kind filter (for example: direct, component, scriptable_object)',
+        },
+        max_bindings: {
+          type: 'number',
+          description: 'Optional cap for number of returned evidence bindings',
+        },
+        max_reference_fields: {
+          type: 'number',
+          description: 'Optional cap for number of reference fields returned per binding',
         },
         runtime_chain_verify: {
           type: 'string',

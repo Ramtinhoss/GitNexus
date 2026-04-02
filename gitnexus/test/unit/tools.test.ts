@@ -105,4 +105,12 @@ describe('GITNEXUS_TOOLS', () => {
     expect(traceTool.inputSchema.required).toContain('target');
     expect(traceTool.inputSchema.required).toContain('goal');
   });
+
+  it('query tool exposes phase3 evidence and hydration controls', () => {
+    const query = GITNEXUS_TOOLS.find(t => t.name === 'query')!;
+    expect(query.inputSchema.properties.unity_evidence_mode).toBeDefined();
+    expect(query.inputSchema.properties.hydration_policy).toBeDefined();
+    expect(query.inputSchema.properties.resource_path_prefix).toBeDefined();
+    expect(query.inputSchema.properties.binding_kind).toBeDefined();
+  });
 });
