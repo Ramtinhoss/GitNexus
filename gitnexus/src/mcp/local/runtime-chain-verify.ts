@@ -5,6 +5,7 @@ import {
   type RuntimeChainEvidenceLevel,
 } from './runtime-chain-evidence.js';
 import { buildReloadRuntimeClaim, type RuntimeClaim } from './runtime-claim.js';
+import { loadRuleRegistry, type RuntimeClaimRule } from './runtime-claim-rule-registry.js';
 
 export type RuntimeChainVerifyMode = 'off' | 'on-demand';
 export type RuntimeChainStatus = 'pending' | 'verified_partial' | 'verified_full' | 'failed';
@@ -42,6 +43,10 @@ interface VerifyRuntimeChainInput {
   symbolName?: string;
   symbolFilePath?: string;
   resourceBindings?: Array<{ resourcePath?: string }>;
+}
+
+interface VerifyRuntimeClaimInput extends VerifyRuntimeChainInput {
+  rulesRoot?: string;
 }
 
 const RELOAD_QUERY_TOKENS = [
@@ -335,4 +340,91 @@ export function buildRuntimeClaimFromRuntimeChain(
       }
       : {}),
   });
+}
+
+function buildFailureRuntimeClaim(input: {
+  reason: RuntimeClaim['reason'];
+  next_action: string;
+  rule?: RuntimeClaimRule;
+}): RuntimeClaim {
+  return {
+    rule_id: input.rule?.id || 'none',
+    rule_version: input.rule?.version || '0.0.0',
+    scope: {
+      resource_types: input.rule?.resource_types || [],
+      host_base_type: input.rule?.host_base_type || [],
+      trigger_family: input.rule?.trigger_family || 'none',
+    },
+    status: 'failed',
+    evidence_level: 'none',
+    guarantees: [],
+    non_guarantees: ['runtime_chain_verification_not_executed'],
+    hops: [],
+    gaps: [],
+    reason: input.reason,
+    next_action: input.next_action,
+  };
+}
+
+function matchesRuntimeClaimRule(
+  rule: RuntimeClaimRule,
+  input: VerifyRuntimeClaimInput,
+): boolean {
+  if (String(rule.trigger_family || '').toLowerCase() === 'reload') {
+    return shouldVerifyReloadChain(input);
+  }
+  return false;
+}
+
+export async function verifyRuntimeClaimOnDemand(
+  input: VerifyRuntimeClaimInput,
+): Promise<RuntimeClaim> {
+  const registry = await loadRuleRegistry(input.repoPath, input.rulesRoot);
+  const activeRules = registry.activeRules || [];
+  const firstRule = activeRules[0];
+  const fallbackNextAction = firstRule?.next_action || VERIFY_NEXT_COMMAND;
+
+  if (activeRules.length === 0) {
+    return buildFailureRuntimeClaim({
+      reason: 'rule_not_matched',
+      next_action: fallbackNextAction,
+    });
+  }
+
+  const matchedRule = activeRules.find((rule) => matchesRuntimeClaimRule(rule, input));
+  if (!matchedRule) {
+    return buildFailureRuntimeClaim({
+      reason: 'rule_not_matched',
+      next_action: fallbackNextAction,
+    });
+  }
+
+  const runtimeChain = await verifyRuntimeChainOnDemand(input);
+  if (!runtimeChain) {
+    return buildFailureRuntimeClaim({
+      reason: 'rule_matched_but_evidence_missing',
+      next_action: matchedRule.next_action || VERIFY_NEXT_COMMAND,
+      rule: matchedRule,
+    });
+  }
+
+  const claim = buildRuntimeClaimFromRuntimeChain(runtimeChain);
+  const resolved: RuntimeClaim = {
+    ...claim,
+    rule_id: matchedRule.id,
+    rule_version: matchedRule.version,
+    scope: {
+      resource_types: matchedRule.resource_types,
+      host_base_type: matchedRule.host_base_type,
+      trigger_family: matchedRule.trigger_family,
+    },
+    ...(runtimeChain.status === 'failed'
+      ? {
+        reason: 'rule_matched_but_verification_failed' as const,
+        next_action: matchedRule.next_action || VERIFY_NEXT_COMMAND,
+      }
+      : {}),
+  };
+
+  return resolved;
 }

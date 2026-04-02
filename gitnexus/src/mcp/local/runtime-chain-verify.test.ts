@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { verifyRuntimeChainOnDemand } from './runtime-chain-verify.js';
+import { verifyRuntimeChainOnDemand, verifyRuntimeClaimOnDemand } from './runtime-chain-verify.js';
 
 async function makeTempRepo(): Promise<string> {
   const repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-verify-'));
@@ -58,5 +58,42 @@ describe('runtime chain verify', () => {
     });
     expect(out?.gaps.length).toBeGreaterThan(0);
     expect(out?.gaps.every((gap) => !!gap.next_command)).toBe(true);
+  });
+
+  it('phase2 runtime claim returns explicit rule_not_matched', async () => {
+    const out = await verifyRuntimeClaimOnDemand({
+      repoPath: path.resolve('.'),
+      queryText: 'CompletelyUnrelatedChain',
+      executeParameterized: async () => [],
+      resourceBindings: [],
+      rulesRoot: path.resolve('.gitnexus/rules'),
+    });
+    expect(out.status).toBe('failed');
+    expect(out.reason).toBe('rule_not_matched');
+    expect(out.next_action).toBeTruthy();
+  });
+
+  it('phase2 runtime claim uses bootstrap reload rule metadata', async () => {
+    const repoPath = await makeTempRepo();
+    const out = await verifyRuntimeClaimOnDemand({
+      repoPath,
+      queryText: 'Reload NEON.Game.Graph.Nodes.Reloads',
+      executeParameterized: async (query, params) => {
+        if (String(params?.filePathPattern || '').includes('WeaponPowerUp.cs')) {
+          return [{ filePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs', startLine: 1 }];
+        }
+        if (String(params?.filePathPattern || '').includes('GunGraph')) {
+          return [{ filePath: 'Assets/NEON/Code/Game/Core/GunGraph.cs', startLine: 1 }];
+        }
+        if (String(params?.filePathPattern || '').includes('ReloadBase.cs')) {
+          return [{ filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs', startLine: 1 }];
+        }
+        return [];
+      },
+      resourceBindings: [{ resourcePath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
+      rulesRoot: path.resolve('.gitnexus/rules'),
+    });
+    expect(out.rule_id).toBe('unity.gungraph.reload.output-getvalue.v1');
+    expect(out.rule_version).toBe('1.0.0');
   });
 });

@@ -22,7 +22,7 @@ import { resolveUnityRuntimeChainVerifyEnabled } from './unity-runtime-chain-ver
 import type { ProcessConfidence, ProcessEvidenceMode, VerificationHint } from './process-confidence.js';
 import type { RuntimeChainEvidenceLevel } from './runtime-chain-evidence.js';
 import {
-  verifyRuntimeChainOnDemand,
+  verifyRuntimeClaimOnDemand,
   type RuntimeChainVerifyMode,
 } from './runtime-chain-verify.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
@@ -1031,12 +1031,35 @@ export class LocalBackend {
       const resourceBindings = dedupedSymbols
         .flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : []))
         .concat(definitions.flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : [])));
-      result.runtime_chain = await verifyRuntimeChainOnDemand({
+      result.runtime_claim = await verifyRuntimeClaimOnDemand({
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
         queryText: searchQuery,
         resourceBindings,
+        rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
       });
+      if (result.runtime_claim?.hops?.length || result.runtime_claim?.gaps?.length) {
+        result.runtime_chain = {
+          status: result.runtime_claim.status,
+          evidence_level: result.runtime_claim.evidence_level,
+          hops: result.runtime_claim.hops,
+          gaps: result.runtime_claim.gaps,
+        };
+      }
+    } else if (runtimeChainVerifyMode === 'on-demand' && !runtimeChainVerifyEnabled) {
+      result.runtime_claim = {
+        rule_id: 'none',
+        rule_version: '0.0.0',
+        scope: { resource_types: [], host_base_type: [], trigger_family: 'none' },
+        status: 'failed',
+        evidence_level: 'none',
+        reason: 'gate_disabled',
+        next_action: 'Enable GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY and rerun with runtime_chain_verify=on-demand',
+        hops: [],
+        gaps: [],
+        guarantees: [],
+        non_guarantees: ['runtime_chain_verification_not_executed'],
+      };
     }
 
     return result;
@@ -1649,13 +1672,36 @@ export class LocalBackend {
     });
 
     if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
-      result.runtime_chain = await verifyRuntimeChainOnDemand({
+      result.runtime_claim = await verifyRuntimeClaimOnDemand({
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
         symbolName: symName,
         symbolFilePath: symFilePath,
         resourceBindings: Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [],
+        rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
       });
+      if (result.runtime_claim?.hops?.length || result.runtime_claim?.gaps?.length) {
+        result.runtime_chain = {
+          status: result.runtime_claim.status,
+          evidence_level: result.runtime_claim.evidence_level,
+          hops: result.runtime_claim.hops,
+          gaps: result.runtime_claim.gaps,
+        };
+      }
+    } else if (runtimeChainVerifyMode === 'on-demand' && !runtimeChainVerifyEnabled) {
+      result.runtime_claim = {
+        rule_id: 'none',
+        rule_version: '0.0.0',
+        scope: { resource_types: [], host_base_type: [], trigger_family: 'none' },
+        status: 'failed',
+        evidence_level: 'none',
+        reason: 'gate_disabled',
+        next_action: 'Enable GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY and rerun with runtime_chain_verify=on-demand',
+        hops: [],
+        gaps: [],
+        guarantees: [],
+        non_guarantees: ['runtime_chain_verification_not_executed'],
+      };
     }
 
     return result;

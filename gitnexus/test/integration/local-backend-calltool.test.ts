@@ -344,6 +344,62 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(out.runtime_chain.hops.some((h: any) => /ReloadBase\.(GetValue|CheckReload|ReloadRoutine)/i.test(String(h.note || '')))).toBe(true);
     });
 
+    it('phase2 runtime_claim contract', async () => {
+      const out = await backend.callTool('query', {
+        query: 'Reload NEON.Game.Graph.Nodes.Reloads',
+        unity_resources: 'on',
+        unity_hydration_mode: 'parity',
+        runtime_chain_verify: 'on-demand',
+      });
+
+      expect(out.runtime_claim).toBeDefined();
+      expect(out.runtime_claim.rule_id).toBe('unity.gungraph.reload.output-getvalue.v1');
+      expect(out.runtime_claim.rule_version).toBeTruthy();
+      expect(out.runtime_claim.scope).toBeDefined();
+      expect(Array.isArray(out.runtime_claim.guarantees)).toBe(true);
+      expect(Array.isArray(out.runtime_claim.non_guarantees)).toBe(true);
+      expect(out.runtime_claim.non_guarantees.length).toBeGreaterThan(0);
+    });
+
+    it('phase2 failure classifications', async () => {
+      const unmatched = await backend.callTool('query', {
+        query: 'UnrelatedUnityChain',
+        unity_resources: 'on',
+        runtime_chain_verify: 'on-demand',
+      });
+      expect(unmatched.runtime_claim?.status).toBe('failed');
+      expect(unmatched.runtime_claim?.reason).toBe('rule_not_matched');
+      expect(unmatched.runtime_claim?.next_action).toBeTruthy();
+
+      const original = process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
+      process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = 'off';
+      try {
+        const disabled = await backend.callTool('query', {
+          query: 'Reload',
+          unity_resources: 'on',
+          runtime_chain_verify: 'on-demand',
+        });
+        expect(disabled.runtime_claim?.status).toBe('failed');
+        expect(disabled.runtime_claim?.reason).toBe('gate_disabled');
+      } finally {
+        if (original === undefined) {
+          delete process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
+        } else {
+          process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = original;
+        }
+      }
+    });
+
+    it('phase2 reload bootstrap rule', async () => {
+      const out = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        runtime_chain_verify: 'on-demand',
+      });
+      expect(out.runtime_claim?.rule_id).toBe('unity.gungraph.reload.output-getvalue.v1');
+      expect(out.runtime_claim?.rule_version).toBe('1.0.0');
+    });
+
     it('v1 runtime chain verify env gate', async () => {
       const original = process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
       process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = 'off';
