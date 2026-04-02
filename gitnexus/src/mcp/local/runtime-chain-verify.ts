@@ -4,6 +4,7 @@ import {
   deriveRuntimeChainEvidenceLevel,
   type RuntimeChainEvidenceLevel,
 } from './runtime-chain-evidence.js';
+import { buildReloadRuntimeClaim, type RuntimeClaim } from './runtime-claim.js';
 
 export type RuntimeChainVerifyMode = 'off' | 'on-demand';
 export type RuntimeChainStatus = 'pending' | 'verified_partial' | 'verified_full' | 'failed';
@@ -317,4 +318,21 @@ export async function verifyRuntimeChainOnDemand(
     hops,
     gaps,
   };
+}
+
+export function buildRuntimeClaimFromRuntimeChain(
+  chain: RuntimeChainResult,
+): RuntimeClaim {
+  return buildReloadRuntimeClaim({
+    status: chain.status === 'pending' ? 'failed' : chain.status,
+    evidence_level: chain.evidence_level,
+    hops: chain.hops,
+    gaps: chain.gaps,
+    ...(chain.status === 'failed'
+      ? {
+        reason: 'rule_matched_but_verification_failed' as const,
+        next_action: VERIFY_NEXT_COMMAND,
+      }
+      : {}),
+  });
 }
