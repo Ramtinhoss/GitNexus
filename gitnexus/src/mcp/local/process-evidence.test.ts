@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeProcessEvidence } from './process-evidence.js';
+import { deriveEvidenceFingerprint, mergeProcessEvidence } from './process-evidence.js';
 
 test('projected-only rows are method_projected + medium', () => {
   const out = mergeProcessEvidence({
@@ -59,4 +59,24 @@ test('heuristic-only rows emit low confidence with verification hint', () => {
   assert.equal(out[0].confidence, 'low');
   assert.equal(out[0].verification_hint?.action, 'rerun_parity_hydration');
   assert.match(out[0].verification_hint?.next_command || '', /parity/i);
+});
+
+test('deriveEvidenceFingerprint is stable for same input ordering', () => {
+  const left = deriveEvidenceFingerprint(
+    { resourcePath: 'Assets/A.prefab', bindingKind: 'component', line: 10 },
+    { pid: 'proc:123', step: 1 },
+  );
+  const right = deriveEvidenceFingerprint(
+    { line: 10, bindingKind: 'component', resourcePath: 'Assets/A.prefab' },
+    { step: 1, pid: 'proc:123' },
+  );
+
+  assert.equal(left, right);
+});
+
+test('deriveEvidenceFingerprint changes when signal changes', () => {
+  const left = deriveEvidenceFingerprint({ resourcePath: 'Assets/A.prefab', line: 10 });
+  const right = deriveEvidenceFingerprint({ resourcePath: 'Assets/A.prefab', line: 11 });
+
+  assert.notEqual(left, right);
 });

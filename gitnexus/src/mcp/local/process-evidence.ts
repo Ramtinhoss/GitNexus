@@ -35,6 +35,29 @@ export interface MergedProcessEvidenceRow extends ProcessEvidenceRow {
   verification_hint?: VerificationHint;
 }
 
+function asFingerprintToken(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => asFingerprintToken(item)).join(',');
+  }
+  const obj = value as Record<string, unknown>;
+  const ordered: Record<string, unknown> = {};
+  for (const key of Object.keys(obj).sort()) {
+    ordered[key] = obj[key];
+  }
+  return JSON.stringify(ordered);
+}
+
+export function deriveEvidenceFingerprint(...parts: unknown[]): string {
+  return parts
+    .map((part) => asFingerprintToken(part))
+    .filter((token) => token.length > 0)
+    .join('::');
+}
+
 const normalizeProcessConfidence = (
   raw: unknown,
   fallback: ProcessConfidence,
