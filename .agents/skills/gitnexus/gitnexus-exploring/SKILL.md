@@ -45,6 +45,12 @@ When exploration touches Unity runtime process semantics (runtime chain closure,
 
 - `_shared/unity-runtime-process-contract.md`
 
+## Phase5 Confidence Contract
+
+- If query/context returns an **empty process** list, do not stop; continue using `resourceBindings` and Unity resource evidence.
+- Treat **low confidence** rows as unresolved until `verification_hint` (`action`, `target`, `next_command`) is provided and executed.
+- Require a concrete **hop anchor** or **evidence anchor** for each stitched step; only mark the chain **semantically closed** when anchors are complete.
+
 ## Resources
 
 | Resource                                | What you get                                            |

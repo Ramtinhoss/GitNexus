@@ -60,6 +60,12 @@ When task scope includes Unity runtime process semantics, load and follow:
 
 - `_shared/unity-runtime-process-contract.md`
 
+#### Phase5 Confidence Contract
+
+- Do not stop on an **empty process** list when Unity evidence exists; continue with `resourceBindings` and asset/meta checks.
+- Treat **low confidence** output as unresolved until `verification_hint` fields (`action`, `target`, `next_command`) are available.
+- Declare runtime closure only with per-step **hop anchor** or **evidence anchor** proof; otherwise it is not **semantically closed**.
+
 ### Unity UI Trace Contract (`unity_ui_trace` / `gitnexus unity-ui-trace`)
 
 Input:

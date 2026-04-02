@@ -45,6 +45,12 @@ When debugging involves Unity runtime process semantics (runtime chain confidenc
 
 - `_shared/unity-runtime-process-contract.md`
 
+## Phase5 Confidence Contract
+
+- An **empty process** result is not a terminal signal; continue with `resourceBindings` and Unity resource evidence stitching.
+- For **low confidence** process rows, require `verification_hint` with `action`, `target`, and `next_command` before final conclusions.
+- For closure, each step must include a **hop anchor** or **evidence anchor**; report the chain as **semantically closed** only when anchors are complete.
+
 ## Debugging Patterns
 
 | Symptom              | GitNexus Approach                                          |
