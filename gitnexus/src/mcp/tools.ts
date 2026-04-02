@@ -344,6 +344,88 @@ Output enforces unique-result policy and includes path+line evidence hops.`,
     },
   },
   {
+    name: 'rule_lab_discover',
+    description: `Start a Rule Lab run by discovering deterministic slices and persisting a manifest under .gitnexus/rules/lab/runs.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        scope: { type: 'string', enum: ['full', 'diff'], description: 'Discovery scope (default: full)' },
+        seed: { type: 'string', description: 'Optional deterministic seed' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'rule_lab_analyze',
+    description: `Analyze one discovered Rule Lab slice and emit anchor-backed candidates.jsonl.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        run_id: { type: 'string', description: 'Rule Lab run id' },
+        slice_id: { type: 'string', description: 'Slice id from discover manifest' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['run_id', 'slice_id'],
+    },
+  },
+  {
+    name: 'rule_lab_review_pack',
+    description: `Pack analyzed candidates into review cards with token budget enforcement.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        run_id: { type: 'string', description: 'Rule Lab run id' },
+        slice_id: { type: 'string', description: 'Slice id from discover manifest' },
+        max_tokens: { type: 'number', description: 'Token budget cap (default: 6000)', default: 6000 },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['run_id', 'slice_id'],
+    },
+  },
+  {
+    name: 'rule_lab_curate',
+    description: `Validate human-curated semantic closure input and persist curated artifacts for promotion.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        run_id: { type: 'string', description: 'Rule Lab run id' },
+        slice_id: { type: 'string', description: 'Slice id from discover manifest' },
+        input_path: { type: 'string', description: 'Absolute or repo-relative path to curation input JSON' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['run_id', 'slice_id', 'input_path'],
+    },
+  },
+  {
+    name: 'rule_lab_promote',
+    description: `Promote curated candidates into approved YAML rules and upsert catalog.json entries.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        run_id: { type: 'string', description: 'Rule Lab run id' },
+        slice_id: { type: 'string', description: 'Slice id from discover manifest' },
+        version: { type: 'string', description: 'Promoted rule version (default: 1.0.0)', default: '1.0.0' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['run_id', 'slice_id'],
+    },
+  },
+  {
+    name: 'rule_lab_regress',
+    description: `Evaluate Rule Lab precision/coverage gates and optionally persist a regression report.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        precision: { type: 'number', description: 'Observed precision metric' },
+        coverage: { type: 'number', description: 'Observed coverage metric' },
+        run_id: { type: 'string', description: 'Optional run id for report naming' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['precision', 'coverage'],
+    },
+  },
+  {
     name: 'impact',
     description: `Analyze the blast radius of changing a code symbol.
 Returns affected symbols grouped by depth, plus risk assessment, affected execution flows, and affected modules.

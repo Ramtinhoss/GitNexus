@@ -35,6 +35,12 @@ import {
   cleanupOldKuzuFiles,
   type RegistryEntry,
 } from '../../storage/repo-manager.js';
+import { discoverRuleLabRun } from '../../rule-lab/discover.js';
+import { analyzeRuleLabSlice } from '../../rule-lab/analyze.js';
+import { buildReviewPack } from '../../rule-lab/review-pack.js';
+import { curateRuleLabSlice } from '../../rule-lab/curate.js';
+import { promoteCuratedRules } from '../../rule-lab/promote.js';
+import { runRuleLabRegress } from '../../rule-lab/regress.js';
 // AI context generation is CLI-only (gitnexus analyze)
 // import { generateAIContextFiles } from '../../cli/ai-context.js';
 
@@ -666,6 +672,18 @@ export class LocalBackend {
         return this.detectChanges(repo, params);
       case 'rename':
         return this.rename(repo, params);
+      case 'rule_lab_discover':
+        return this.ruleLabDiscover(repo, params);
+      case 'rule_lab_analyze':
+        return this.ruleLabAnalyze(repo, params);
+      case 'rule_lab_review_pack':
+        return this.ruleLabReviewPack(repo, params);
+      case 'rule_lab_curate':
+        return this.ruleLabCurate(repo, params);
+      case 'rule_lab_promote':
+        return this.ruleLabPromote(repo, params);
+      case 'rule_lab_regress':
+        return this.ruleLabRegress(repo, params);
       // Legacy aliases for backwards compatibility
       case 'search':
         return this.query(repo, params);
@@ -705,6 +723,180 @@ export class LocalBackend {
       });
     } catch (err: any) {
       return { error: err?.message || 'unity_ui_trace failed' };
+    }
+  }
+
+  private async ruleLabDiscover(repo: RepoHandle, params: {
+    scope?: 'full' | 'diff';
+    seed?: string;
+  }): Promise<any> {
+    try {
+      const out = await discoverRuleLabRun({
+        repoPath: repo.repoPath,
+        scope: params?.scope === 'diff' ? 'diff' : 'full',
+        seed: typeof params?.seed === 'string' ? params.seed : undefined,
+      });
+      return {
+        ...out,
+        artifact_paths: {
+          manifest: out.paths.manifestPath,
+          run_root: out.paths.runRoot,
+        },
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'rule_lab_discover failed' };
+    }
+  }
+
+  private async ruleLabAnalyze(repo: RepoHandle, params: {
+    run_id?: string;
+    runId?: string;
+    slice_id?: string;
+    sliceId?: string;
+  }): Promise<any> {
+    const runId = String(params?.run_id || params?.runId || '').trim();
+    const sliceId = String(params?.slice_id || params?.sliceId || '').trim();
+    if (!runId || !sliceId) {
+      return { error: 'run_id and slice_id are required for rule_lab_analyze' };
+    }
+    try {
+      const out = await analyzeRuleLabSlice({
+        repoPath: repo.repoPath,
+        runId,
+        sliceId,
+      });
+      return {
+        ...out,
+        artifact_paths: {
+          candidates: out.paths.candidatesPath,
+        },
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'rule_lab_analyze failed' };
+    }
+  }
+
+  private async ruleLabReviewPack(repo: RepoHandle, params: {
+    run_id?: string;
+    runId?: string;
+    slice_id?: string;
+    sliceId?: string;
+    max_tokens?: number;
+    maxTokens?: number;
+  }): Promise<any> {
+    const runId = String(params?.run_id || params?.runId || '').trim();
+    const sliceId = String(params?.slice_id || params?.sliceId || '').trim();
+    if (!runId || !sliceId) {
+      return { error: 'run_id and slice_id are required for rule_lab_review_pack' };
+    }
+    const maxTokens = Number.isFinite(Number(params?.max_tokens ?? params?.maxTokens))
+      ? Number(params?.max_tokens ?? params?.maxTokens)
+      : 6000;
+    try {
+      const out = await buildReviewPack({
+        repoPath: repo.repoPath,
+        runId,
+        sliceId,
+        maxTokens,
+      });
+      return {
+        ...out,
+        artifact_paths: {
+          review_pack: out.paths.reviewCardsPath,
+        },
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'rule_lab_review_pack failed' };
+    }
+  }
+
+  private async ruleLabCurate(repo: RepoHandle, params: {
+    run_id?: string;
+    runId?: string;
+    slice_id?: string;
+    sliceId?: string;
+    input_path?: string;
+    inputPath?: string;
+  }): Promise<any> {
+    const runId = String(params?.run_id || params?.runId || '').trim();
+    const sliceId = String(params?.slice_id || params?.sliceId || '').trim();
+    const inputPath = String(params?.input_path || params?.inputPath || '').trim();
+    if (!runId || !sliceId || !inputPath) {
+      return { error: 'run_id, slice_id, and input_path are required for rule_lab_curate' };
+    }
+    try {
+      const out = await curateRuleLabSlice({
+        repoPath: repo.repoPath,
+        runId,
+        sliceId,
+        inputPath,
+      });
+      return {
+        ...out,
+        artifact_paths: {
+          curated: out.paths.curatedPath,
+        },
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'rule_lab_curate failed' };
+    }
+  }
+
+  private async ruleLabPromote(repo: RepoHandle, params: {
+    run_id?: string;
+    runId?: string;
+    slice_id?: string;
+    sliceId?: string;
+    version?: string;
+  }): Promise<any> {
+    const runId = String(params?.run_id || params?.runId || '').trim();
+    const sliceId = String(params?.slice_id || params?.sliceId || '').trim();
+    if (!runId || !sliceId) {
+      return { error: 'run_id and slice_id are required for rule_lab_promote' };
+    }
+    try {
+      const out = await promoteCuratedRules({
+        repoPath: repo.repoPath,
+        runId,
+        sliceId,
+        version: typeof params?.version === 'string' ? params.version : undefined,
+      });
+      return {
+        ...out,
+        artifact_paths: {
+          catalog: path.join(out.paths.rulesRoot, 'catalog.json'),
+          promoted_files: out.promotedFiles,
+        },
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'rule_lab_promote failed' };
+    }
+  }
+
+  private async ruleLabRegress(repo: RepoHandle, params: {
+    precision?: number;
+    coverage?: number;
+    run_id?: string;
+    runId?: string;
+  }): Promise<any> {
+    const precision = Number(params?.precision);
+    const coverage = Number(params?.coverage);
+    if (!Number.isFinite(precision) || !Number.isFinite(coverage)) {
+      return { error: 'precision and coverage are required numeric fields for rule_lab_regress' };
+    }
+    try {
+      const out = await runRuleLabRegress({
+        precision,
+        coverage,
+        repoPath: repo.repoPath,
+        runId: String(params?.run_id || params?.runId || '').trim() || undefined,
+      });
+      return {
+        ...out,
+        artifact_paths: out.reportPath ? { report: out.reportPath } : {},
+      };
+    } catch (err: any) {
+      return { error: err?.message || 'rule_lab_regress failed' };
     }
   }
 

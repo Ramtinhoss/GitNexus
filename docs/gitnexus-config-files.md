@@ -11,7 +11,7 @@ This document defines the current configuration and state file rules used by Git
 | `unity-parity-seed.json` | `analyze` | Unity parity seed cache payload | Saved during `analyze` finalize | Unity lazy/parity loaders |
 | `rules/catalog.json` | `rule-lab-promote` | Project rule catalog, activation order, rule versions | Written when promoting approved rules | Runtime verifier rule loader |
 | `rules/approved/*.yaml` | `rule-lab-curate` / `rule-lab-promote` | Approved project runtime verification rules | Written during curation/promotion | Runtime verifier rule loader |
-| `rules/lab/runs/**` | `rule-lab-discover` / `rule-lab-analyze` / `rule-lab-review-pack` | Rule Lab intermediate artifacts (manifest/slices/candidates) | Written by Rule Lab execution | Rule Lab follow-up commands |
+| `rules/lab/runs/**` | `rule-lab-discover` / `rule-lab-analyze` / `rule-lab-review-pack` | Rule Lab intermediate artifacts (`manifest.json`, `slices/*/slice.json`, `candidates.jsonl`, review packs) | Written by Rule Lab execution | Rule Lab follow-up commands |
 | `rules/reports/*.md` | `rule-lab-regress` | Rule quality and regression reports | Written by regression pass | Human review and CI reports |
 
 ### `meta.json` schema (current)

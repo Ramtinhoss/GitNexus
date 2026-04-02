@@ -18,7 +18,19 @@ Track execution state here. `executing-plans` updates this section in place.
 
 Task | Status | Facts
 --- | --- | ---
-<!-- executing-plans appends one row per task as execution advances -->
+Task 1 | completed | `paths.test.ts` observed expected fail (`Cannot find module './paths.js'`), then passed after adding `types.ts` + `paths.ts` deterministic path helpers
+Task 2 | completed | `discover.test.ts` observed expected fail (`Cannot find module './discover.js'`), then passed after implementing manifest + slice persistence under `.gitnexus/rules/lab/runs/<run_id>/` and doc sync in config rules table
+Task 3 | completed | `analyze.test.ts` observed expected fail (`Cannot find module './analyze.js'`), then passed after implementing slice-driven candidate extraction with anchor-backed `candidates.jsonl`
+Task 4 | completed | `review-pack.test.ts` observed expected fail (`Cannot find module './review-pack.js'`), then passed after implementing token-budget packer and persisted `review-cards.md` diagnostics
+Task 5 | completed | human gate passed (`通过`); curate semantic checks accepted with artifact evidence at run `619fc80b30a7` / slice `slice-f429348f30`
+Task 6 | completed | `promote.test.ts` observed expected fail (`Cannot find module './promote.js'`), then passed after implementing curated->approved yaml write + `catalog.json` upsert
+Task 7 | completed | `regress.test.ts` observed expected fail (`Cannot find module './regress.js'`), then passed after implementing precision/coverage threshold gate + markdown report emission
+Task 8 | completed | CLI `rule-lab` command group wired with six subcommands (`discover/analyze/review-pack/curate/promote/regress`) and `rule-lab.test.ts` passing
+Task 9 | completed | MCP schema now exposes `rule_lab_discover/analyze/review_pack/curate/promote/regress`; `rule-lab-tools.test.ts` verifies schema presence + backend dispatch returns `artifact_paths`
+Task 10 | completed | added `phase5 rule-lab promoted rule is loadable` coverage in runtime verifier unit + callTool integration tests; targeted vitest run passes
+Task 11 | completed | human gate passed (`通过`); acceptance report verified for 6-stage coverage, numeric metrics, failure taxonomy, and artifact path accessibility
+Task 12 | completed | docs/contracts synced (`gitnexus-config-files.md` + source-of-truth Phase 5 Rule Lab contract section) and `rule-lab-contracts.test.ts` passing
+Task 13 | completed | added gate-failure assertion (`acceptance_report_missing`), updated acceptance release notes + source-of-truth FC-07, and completed full verification sweep (build + tests all pass)
 
 ## Design Traceability Matrix
 

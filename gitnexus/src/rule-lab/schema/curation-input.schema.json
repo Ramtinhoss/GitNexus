@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gitnexus.dev/schema/rule-lab/curation-input.schema.json",
+  "type": "object",
+  "required": ["run_id", "slice_id", "curated"],
+  "properties": {
+    "run_id": { "type": "string", "minLength": 1 },
+    "slice_id": { "type": "string", "minLength": 1 },
+    "curated": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "confirmed_chain", "guarantees", "non_guarantees"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string" },
+          "confirmed_chain": {
+            "type": "object",
+            "required": ["steps"],
+            "properties": {
+              "steps": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["anchor", "snippet"],
+                  "properties": {
+                    "hop_type": { "type": "string" },
+                    "anchor": { "type": "string", "minLength": 1 },
+                    "snippet": { "type": "string", "minLength": 1 }
+                  }
+                }
+              }
+            }
+          },
+          "guarantees": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+          "non_guarantees": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+        }
+      }
+    }
+  }
+}

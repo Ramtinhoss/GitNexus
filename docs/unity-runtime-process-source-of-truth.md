@@ -76,6 +76,31 @@ Status: Active (source of truth)
    - `gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts:149-238`
    - 语义闭环校验（CurGunGraph + runtime anchors）：`101-116`
 
+### 2.4 Phase 5 Offline Rule Lab（Discover → Analyze → Review → Curate → Promote → Regress）
+
+1. Rule Lab 模块分层（`gitnexus/src/rule-lab/`）：
+   - 路径与 run/slice 约定：`paths.ts:32-56`
+   - discover（规则注册表 -> slice 枚举 + manifest）：`discover.ts:45-87`
+   - analyze（slice -> anchor-backed candidate）：`analyze.ts:45-63`
+   - review-pack（token budget 截断 + card 打包）：`review-pack.ts:83-116`
+   - curate（语义闭环校验 + placeholder 拒绝）：`curate.ts:5-103`
+   - promote（approved YAML + catalog upsert）：`promote.ts:103-156`
+   - regress（precision/coverage gate + 报告）：`regress.ts:21-64`
+2. CLI 接入：
+   - `gitnexus rule-lab` 六子命令统一入口：`gitnexus/src/cli/rule-lab.ts:11-171`
+   - 主 CLI 注册：`gitnexus/src/cli/index.ts:9,77`
+3. MCP 接入（Agent 可调用）：
+   - Tool schema 暴露 `rule_lab_*`：`gitnexus/src/mcp/tools.ts:347-429`
+   - `LocalBackend.callTool` 分发与参数校验：`gitnexus/src/mcp/local/local-backend.ts:675-899`
+4. Runtime verifier 装载闭环：
+   - promote 写入 `.gitnexus/rules/catalog.json` + `approved/*.yaml`
+   - `verifyRuntimeClaimOnDemand` 通过 `loadRuleRegistry` 直接读取 repo-local 规则：`gitnexus/src/mcp/local/runtime-chain-verify.ts:515-591`
+   - 集成验证用例：`runtime-chain-verify.test.ts:343`，`local-backend-calltool.test.ts:386`
+5. Phase 5 验收与证据沉淀：
+   - acceptance runner：`gitnexus/src/benchmark/u2-e2e/phase5-rule-lab-acceptance-runner.ts:106-306`
+   - gate 校验：`runPhase5RuleLabGate`（stage 覆盖/指标完整性）：`226-242`
+   - 报告产物：`docs/reports/2026-04-02-phase5-rule-lab-acceptance.{json,md}`
+
 ## 3. 设计与实现对照（阶段）
 
 | 阶段 | 设计目标 | As-Built 结论 | 代码/证据 |
@@ -152,6 +177,39 @@ Status: Active (source of truth)
    - 在不完整输出时必须返回解释条目
    - 保留兼容字段 `hydrationMeta.needsParityRetry`（compact incomplete 场景）
 
+## 4.5 Phase 5 Offline Rule Lab 合约（新增）
+
+1. Rule Lab 六阶段生命周期：
+   - `rule_lab_discover`
+   - `rule_lab_analyze`
+   - `rule_lab_review_pack`
+   - `rule_lab_curate`
+   - `rule_lab_promote`
+   - `rule_lab_regress`
+2. 阶段输入输出（As-Built）：
+   - `discover`：输入 repo/scope/seed，输出 `run_id + manifest + slices + next_actions`
+   - `analyze`：输入 `run_id + slice_id`，输出 `candidates.jsonl`（每条 candidate 至少 1 个 hop anchor）
+   - `review-pack`：输入 `max_tokens`，输出 `review-cards.md` 与 `token_budget_estimate/truncated`
+   - `curate`：输入人工确认 JSON，强制校验 `confirmed_chain.steps`、`guarantees/non_guarantees` 非空且可区分、无 placeholder
+   - `promote`：输入 curated artifacts，输出 `approved/*.yaml` 并 upsert `catalog.json`
+   - `regress`：输入 `precision/coverage`，阈值 gate：`precision >= 0.90 && coverage >= 0.80`
+3. Artifact 所有权与路径：
+   - `.gitnexus/rules/lab/runs/<run_id>/manifest.json`
+   - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/candidates.jsonl`
+   - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/review-cards.md`
+   - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/curated.json`
+   - `.gitnexus/rules/catalog.json` 与 `.gitnexus/rules/approved/*.yaml`（promote 后即时供 runtime claim verifier 读取）
+4. MCP 对外返回契约：
+   - `rule_lab_discover/analyze/review_pack/curate/promote/regress` 均返回阶段结果 + `artifact_paths`
+   - 参数缺失时返回显式 `error`（例如 `run_id/slice_id` 必填，或 `precision/coverage` 必须为数值）
+5. Runtime verifier 装载边界：
+   - promote 成功后，`verifyRuntimeClaimOnDemand` 直接从 repo-local `.gitnexus/rules/**` 装载，不依赖跨仓库 fallback。
+6. 验收报告最小合约：
+   - `stage_coverage.length === 6`
+   - `metrics.precision|coverage|token_budget` 均为 numeric
+   - `failure_classifications[]` 每项包含 `code + retry_hint + repro_command`
+   - `artifact_paths` 全部可访问
+
 ## 5. 运行时开关（当前真实默认值）
 
 | 开关 | 默认 | 作用 |
@@ -175,7 +233,7 @@ Status: Active (source of truth)
 3. V1 不回写 verified chain 到 Process 持久图（仅请求时计算并返回），与设计的 out-of-scope 一致。
 4. 强验证链路对仓库文件内容与索引状态一致性敏感；若索引 stale，应先 `gitnexus analyze`。
 
-## 7. 2026-04-02 修复回写（FC-01..FC-06）
+## 7. 2026-04-02 修复回写（FC-01..FC-08）
 
 1. FC-01: `queryProcessDetail` 支持 `id` 优先查找；`phase1 process_ref readable` 从字段检查升级为 `reader_uri` 实际回读。
 2. FC-02: 移除 rule registry ancestor fallback；缺 catalog/rule 文件会抛可诊断错误，并在 claim 层映射为 `rule_not_matched`。
@@ -183,8 +241,17 @@ Status: Active (source of truth)
 4. FC-04: hydration precedence 显式化并可观测（`requestedMode/effectiveMode/reason`）。
 5. FC-05: YAML scalar/list 解析改为 quote-safe 逻辑，`next_action` 保证可 shell 解析。
 6. FC-06: Phase2 acceptance runner 强制 4/4 失败分类覆盖，不足则直接失败并输出缺失分类及复现命令。
+7. FC-07: Phase 5 Offline Rule Lab 生命周期（CLI + MCP）与验收 runner 落地，报告产物：`docs/reports/2026-04-02-phase5-rule-lab-acceptance.{json,md}`。
+8. FC-08: Rule Lab 契约测试补齐（`rule-lab-contracts.test.ts`、`rule-lab-tools.test.ts`、`phase5 rule-lab promoted rule is loadable`）并纳入回归基线。
 
-## 8. 维护规则
+## 8. Rule Lab 当前边界（2026-04-02 As-Built）
+
+1. `promote.ts` 当前对 `trigger_family` 的推断来自 curated `title` 首 token；`resource_types/host_base_type` 在 YAML 中以 `unknown` 写入（需后续由 analyze/curate 提供结构化字段）。
+2. `analyze.ts` 目前每 slice 输出最小可用候选（单候选 + 资源锚点），重点保障 artifact 契约与 verifier 装载闭环，非最终召回/精排策略。
+3. `review-pack.ts` token 估算采用 `JSON.length/4` 启发式，适配离线包控与截断诊断；后续若引入模型 tokenizer，可替换估算函数但保持 `token_budget_estimate` 字段稳定。
+4. Rule Lab 产物写入 `.gitnexus/rules/**`，受仓库 `.gitignore` 影响（默认忽略 `.gitnexus`）；如需提交样例规则需显式跟踪。
+
+## 9. 维护规则
 
 1. 任何 Unity runtime process 行为变更（字段、flag、语义、默认值），必须同步更新本文。
 2. 扩展非 Reload 场景专用 verifier/extractor 时，需在本文补充：

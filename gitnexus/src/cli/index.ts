@@ -6,6 +6,7 @@
 import { Command } from 'commander';
 import { createRequire } from 'node:module';
 import { createLazyAction } from './lazy-action.js';
+import { attachRuleLabCommands } from './rule-lab.js';
 
 const _require = createRequire(import.meta.url);
 const pkg = _require('../../package.json');
@@ -72,6 +73,10 @@ program
   .option('-f, --force', 'Skip confirmation prompt')
   .option('--all', 'Clean all indexed repos')
   .action(createLazyAction(() => import('./clean.js'), 'cleanCommand'));
+
+attachRuleLabCommands(program, (handlerName) =>
+  createLazyAction(() => import('./rule-lab.js'), handlerName),
+);
 
 program
   .command('wiki [path]')

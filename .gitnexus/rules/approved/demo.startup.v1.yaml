@@ -1,0 +1,13 @@
+id: demo.startup.v1
+version: 1.0.0
+trigger_family: startup
+resource_types:
+  - unknown
+host_base_type:
+  - unknown
+required_hops:
+  - code_runtime
+guarantees:
+  - 'startup trigger matching is confirmed'
+non_guarantees:
+  - 'does not prove full runtime ordering'
