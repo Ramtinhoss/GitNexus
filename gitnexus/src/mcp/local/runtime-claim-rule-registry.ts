@@ -28,28 +28,45 @@ export interface RuntimeClaimRuleRegistry {
   activeRules: RuntimeClaimRule[];
 }
 
-async function findAncestorRulesCatalog(startPath: string): Promise<string | null> {
-  let current = path.resolve(startPath);
-  const root = path.parse(current).root;
-  while (true) {
-    const candidate = path.join(current, '.gitnexus', 'rules', 'catalog.json');
-    try {
-      await fs.access(candidate);
-      return candidate;
-    } catch {
-      // continue searching parent directories
-    }
-    if (current === root) break;
-    current = path.dirname(current);
+export type RuleRegistryLoadErrorCode = 'rule_catalog_missing' | 'rule_catalog_invalid' | 'rule_file_missing';
+
+export class RuleRegistryLoadError extends Error {
+  code: RuleRegistryLoadErrorCode;
+  details?: Record<string, string>;
+
+  constructor(code: RuleRegistryLoadErrorCode, message: string, details?: Record<string, string>) {
+    super(message);
+    this.name = 'RuleRegistryLoadError';
+    this.code = code;
+    this.details = details;
   }
-  return null;
+}
+
+function decodeYamlScalar(raw: string): string {
+  const trimmed = String(raw || '').trim();
+  if (trimmed.length < 2) return trimmed;
+
+  const first = trimmed[0];
+  const last = trimmed[trimmed.length - 1];
+  if (first === '"' && last === '"') {
+    return trimmed
+      .slice(1, -1)
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+  }
+  if (first === '\'' && last === '\'') {
+    return trimmed
+      .slice(1, -1)
+      .replace(/''/g, '\'');
+  }
+  return trimmed;
 }
 
 function readScalar(raw: string, key: string): string | undefined {
   const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = raw.match(new RegExp(`^${escaped}:\\s*(.+)$`, 'm'));
   if (!match) return undefined;
-  return match[1].trim().replace(/^['"]|['"]$/g, '');
+  return decodeYamlScalar(match[1]);
 }
 
 function readList(raw: string, key: string): string[] {
@@ -60,7 +77,7 @@ function readList(raw: string, key: string): string[] {
   for (let i = start + 1; i < lines.length; i++) {
     const line = lines[i];
     if (!/^\s+-\s+/.test(line)) break;
-    out.push(line.replace(/^\s+-\s+/, '').trim().replace(/^['"]|['"]$/g, ''));
+    out.push(decodeYamlScalar(line.replace(/^\s+-\s+/, '')));
   }
   return out;
 }
@@ -88,26 +105,34 @@ function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
 
 export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Promise<RuntimeClaimRuleRegistry> {
   const normalizedRepoPath = path.resolve(repoPath);
-  const requestedRoot = rulesRoot
+  const root = rulesRoot
     ? path.resolve(rulesRoot)
     : path.join(normalizedRepoPath, '.gitnexus', 'rules');
-  const requestedCatalogPath = path.join(requestedRoot, 'catalog.json');
-  let root = requestedRoot;
-  let catalogPath = requestedCatalogPath;
+  const catalogPath = path.join(root, 'catalog.json');
   let catalogRaw: string;
   try {
     catalogRaw = await fs.readFile(catalogPath, 'utf-8');
   } catch (error: any) {
-    if (error?.code !== 'ENOENT') throw error;
-    const fallbackCatalogPath = await findAncestorRulesCatalog(process.cwd());
-    if (!fallbackCatalogPath || fallbackCatalogPath === requestedCatalogPath) throw error;
-    const fallbackRoot = path.dirname(fallbackCatalogPath);
-    catalogRaw = await fs.readFile(fallbackCatalogPath, 'utf-8');
-    root = fallbackRoot;
-    catalogPath = fallbackCatalogPath;
+    if (error?.code === 'ENOENT') {
+      throw new RuleRegistryLoadError(
+        'rule_catalog_missing',
+        `Runtime claim rule catalog not found: ${catalogPath}`,
+        { repoPath: normalizedRepoPath, rulesRoot: root, catalogPath },
+      );
+    }
+    throw error;
   }
 
-  const catalog = JSON.parse(catalogRaw) as { rules?: RuntimeClaimRuleCatalogEntry[] };
+  let catalog: { rules?: RuntimeClaimRuleCatalogEntry[] };
+  try {
+    catalog = JSON.parse(catalogRaw) as { rules?: RuntimeClaimRuleCatalogEntry[] };
+  } catch {
+    throw new RuleRegistryLoadError(
+      'rule_catalog_invalid',
+      `Runtime claim rule catalog is invalid JSON: ${catalogPath}`,
+      { repoPath: normalizedRepoPath, rulesRoot: root, catalogPath },
+    );
+  }
   const catalogRules = Array.isArray(catalog.rules) ? catalog.rules : [];
 
   const activeRules: RuntimeClaimRule[] = [];
@@ -115,7 +140,19 @@ export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Pr
     if (entry.enabled === false) continue;
     const relativeRulePath = String(entry.file || path.join('approved', `${entry.id}.yaml`));
     const rulePath = path.join(root, relativeRulePath);
-    const raw = await fs.readFile(rulePath, 'utf-8');
+    let raw: string;
+    try {
+      raw = await fs.readFile(rulePath, 'utf-8');
+    } catch (error: any) {
+      if (error?.code === 'ENOENT') {
+        throw new RuleRegistryLoadError(
+          'rule_file_missing',
+          `Runtime claim rule file not found: ${rulePath}`,
+          { repoPath: normalizedRepoPath, rulesRoot: root, catalogPath, rulePath, ruleId: entry.id },
+        );
+      }
+      throw error;
+    }
     const parsed = parseRuleYaml(raw, rulePath);
     if (parsed.id !== entry.id) {
       throw new Error(`Rule id mismatch between catalog and yaml: ${entry.id} vs ${parsed.id}`);

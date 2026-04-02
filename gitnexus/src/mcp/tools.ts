@@ -96,7 +96,7 @@ Includes optional Unity retrieval contract:
         unity_hydration_mode: {
           type: 'string',
           enum: ['parity', 'compact'],
-          description: 'Unity hydration mode when unity_resources is enabled (default: compact)',
+          description: 'Execution-mode input for Unity hydration (default: compact). Can be overridden by hydration_policy; inspect hydrationMeta.requestedMode/effectiveMode/reason.',
           default: 'compact',
         },
         unity_evidence_mode: {
@@ -108,7 +108,7 @@ Includes optional Unity retrieval contract:
         hydration_policy: {
           type: 'string',
           enum: ['fast', 'balanced', 'strict'],
-          description: 'Hydration strategy policy for Unity evidence retrieval (default: balanced)',
+          description: 'Hydration strategy policy (high-priority). strict->parity, fast->compact, balanced->uses unity_hydration_mode and may escalate to parity on missing evidence.',
           default: 'balanced',
         },
         resource_path_prefix: {
@@ -225,7 +225,7 @@ Unity retrieval contract:
         unity_hydration_mode: {
           type: 'string',
           enum: ['parity', 'compact'],
-          description: 'Unity hydration mode when unity_resources is enabled (default: compact)',
+          description: 'Execution-mode input for Unity hydration (default: compact). Can be overridden by hydration_policy; inspect hydrationMeta.requestedMode/effectiveMode/reason.',
           default: 'compact',
         },
         unity_evidence_mode: {
@@ -237,7 +237,7 @@ Unity retrieval contract:
         hydration_policy: {
           type: 'string',
           enum: ['fast', 'balanced', 'strict'],
-          description: 'Hydration strategy policy for Unity evidence retrieval (default: balanced)',
+          description: 'Hydration strategy policy (high-priority). strict->parity, fast->compact, balanced->uses unity_hydration_mode and may escalate to parity on missing evidence.',
           default: 'balanced',
         },
         resource_path_prefix: {

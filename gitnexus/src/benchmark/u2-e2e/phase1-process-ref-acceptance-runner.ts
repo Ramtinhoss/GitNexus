@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listRegisteredRepos } from '../../storage/repo-manager.js';
 import { LocalBackend } from '../../mcp/local/local-backend.js';
+import { readResource } from '../../mcp/resources.js';
 
 export interface Phase1ProcessRefAcceptanceReport {
   generatedAt: string;
@@ -61,10 +62,20 @@ export async function buildPhase1ProcessRefAcceptanceReport(input: {
   const second = await backend.callTool('query', params);
 
   const processes = Array.isArray((first as any)?.processes) ? (first as any).processes : [];
-  const readableCount = processes.filter(
-    (p: any) => Boolean(p?.process_ref?.readable) && String(p?.process_ref?.reader_uri || '').length > 0,
-  ).length;
-  const unreadableCount = Math.max(0, processes.length - readableCount);
+  const persistentReaderUris = processes
+    .map((entry: any) => entry?.process_ref)
+    .filter((processRef: any) => processRef?.kind === 'persistent' && typeof processRef.reader_uri === 'string')
+    .map((processRef: any) => processRef.reader_uri as string);
+  let readableCount = 0;
+  for (const uri of persistentReaderUris) {
+    try {
+      await readResource(uri, backend);
+      readableCount += 1;
+    } catch {
+      // Count as unreadable in behavior-level metric.
+    }
+  }
+  const unreadableCount = Math.max(0, persistentReaderUris.length - readableCount);
 
   const firstDerived = extractDerivedIds(first);
   const secondDerived = extractDerivedIds(second);
@@ -76,9 +87,9 @@ export async function buildPhase1ProcessRefAcceptanceReport(input: {
     repoAlias: input.repoAlias,
     metrics: {
       process_ref: {
-        total: processes.length,
+        total: persistentReaderUris.length,
         readable_count: readableCount,
-        readable_rate: toRate(readableCount, processes.length),
+        readable_rate: toRate(readableCount, persistentReaderUris.length),
         unreadable_count: unreadableCount,
       },
       derived_id_stability_rate: derivedStable ? 1 : 0,

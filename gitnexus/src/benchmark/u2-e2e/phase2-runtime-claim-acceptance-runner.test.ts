@@ -11,6 +11,9 @@ test('phase2 runtime_claim acceptance report tracks contract + failure classific
 
   assert.equal(report.claim_fields_presence.rule_id, true);
   assert.equal(report.claim_fields_presence.rule_version, true);
+  assert.equal(report.coverage_pass, true);
   assert.equal(report.failure_classification_coverage.includes('rule_not_matched'), true);
+  assert.equal(report.failure_classification_coverage.includes('rule_matched_but_evidence_missing'), true);
+  assert.equal(report.failure_classification_coverage.includes('rule_matched_but_verification_failed'), true);
   assert.equal(report.failure_classification_coverage.includes('gate_disabled'), true);
 });

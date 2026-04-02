@@ -7,6 +7,7 @@
  */
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { LocalBackend } from '../../src/mcp/local/local-backend.js';
+import { readResource } from '../../src/mcp/resources.js';
 import { listRegisteredRepos } from '../../src/storage/repo-manager.js';
 import { withTestLbugDB } from '../helpers/test-indexed-db.js';
 import { LOCAL_BACKEND_SEED_DATA, LOCAL_BACKEND_FTS_INDEXES } from '../fixtures/local-backend-seed.js';
@@ -167,13 +168,28 @@ withTestLbugDB('local-backend-calltool', (handle) => {
 
     it('phase1 process_ref readable', async () => {
       const out = await backend.callTool('query', {
-        query: 'Reload',
-        unity_resources: 'on',
-        unity_hydration_mode: 'compact',
+        query: 'login',
       });
 
       expect(out.processes.length).toBeGreaterThan(0);
       expect(out.processes.every((p: any) => p.process_ref && p.process_ref.readable === true)).toBe(true);
+
+      const persistentReaderUris = out.processes
+        .map((p: any) => p?.process_ref)
+        .filter((ref: any) => ref?.kind === 'persistent' && typeof ref.reader_uri === 'string')
+        .map((ref: any) => ref.reader_uri);
+      expect(persistentReaderUris.length).toBeGreaterThan(0);
+
+      for (const uri of persistentReaderUris) {
+        const content = await readResource(uri, backend);
+        expect(content).toContain('trace:');
+      }
+    });
+
+    it('phase1 process detail supports direct id read', async () => {
+      const detail = await backend.queryProcessDetail('proc:login-flow', 'test-repo');
+      expect(detail.error).toBeUndefined();
+      expect(detail.process?.id).toBe('proc:login-flow');
     });
 
     it('phase1 no opaque heuristic id leak', async () => {
@@ -353,12 +369,14 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       });
 
       expect(out.runtime_claim).toBeDefined();
-      expect(out.runtime_claim.rule_id).toBe('unity.gungraph.reload.output-getvalue.v1');
+      expect(out.runtime_claim.rule_id).toBe('none');
       expect(out.runtime_claim.rule_version).toBeTruthy();
       expect(out.runtime_claim.scope).toBeDefined();
       expect(Array.isArray(out.runtime_claim.guarantees)).toBe(true);
       expect(Array.isArray(out.runtime_claim.non_guarantees)).toBe(true);
       expect(out.runtime_claim.non_guarantees.length).toBeGreaterThan(0);
+      expect(out.runtime_claim.reason).toBe('rule_not_matched');
+      expect(out.runtime_claim.next_action).toBeTruthy();
     });
 
     it('phase2 failure classifications', async () => {
@@ -390,14 +408,14 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       }
     });
 
-    it('phase2 reload bootstrap rule', async () => {
+    it('phase2 no cross-repo bootstrap fallback', async () => {
       const out = await backend.callTool('query', {
         query: 'Reload',
         unity_resources: 'on',
         runtime_chain_verify: 'on-demand',
       });
-      expect(out.runtime_claim?.rule_id).toBe('unity.gungraph.reload.output-getvalue.v1');
-      expect(out.runtime_claim?.rule_version).toBe('1.0.0');
+      expect(out.runtime_claim?.rule_id).toBe('none');
+      expect(out.runtime_claim?.reason).toBe('rule_not_matched');
     });
 
     it('phase3 evidence mode', async () => {
@@ -413,7 +431,7 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(out.evidence_meta?.next_fetch_hint).toMatch(/unity_evidence_mode=full/i);
     });
 
-    it('phase3 minimum evidence contract', async () => {
+    it('phase3 minimum evidence contract (no project rules => rule_not_matched)', async () => {
       const out = await backend.callTool('query', {
         query: 'Reload',
         unity_resources: 'on',
@@ -423,7 +441,7 @@ withTestLbugDB('local-backend-calltool', (handle) => {
         runtime_chain_verify: 'on-demand',
       });
       expect(out.runtime_claim?.status).toBe('failed');
-      expect(out.runtime_claim?.reason).toBe('rule_matched_but_evidence_missing');
+      expect(out.runtime_claim?.reason).toBe('rule_not_matched');
     });
 
     it('phase4 hydration policy', async () => {
@@ -431,13 +449,34 @@ withTestLbugDB('local-backend-calltool', (handle) => {
         query: 'Reload',
         unity_resources: 'on',
         hydration_policy: 'strict',
+        unity_hydration_mode: 'compact',
         runtime_chain_verify: 'on-demand',
       });
-      if (strict.hydrationMeta?.fallbackToCompact) {
+      expect(strict.hydrationMeta?.requestedMode).toBe('parity');
+      expect(typeof strict.hydrationMeta?.effectiveMode).toBe('string');
+      expect(String(strict.hydrationMeta?.reason || '')).toMatch(/strict/i);
+      if (strict.hydrationMeta?.fallbackToCompact && strict.runtime_claim?.status !== 'failed') {
         expect(strict.runtime_claim?.status).toBe('verified_partial');
         expect(strict.runtime_claim?.evidence_level).toBe('verified_segment');
       }
       expect(Array.isArray(strict.missing_evidence)).toBe(true);
+
+      const balancedParity = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        hydration_policy: 'balanced',
+        unity_hydration_mode: 'parity',
+      });
+      expect(balancedParity.hydrationMeta?.requestedMode).toBe('parity');
+
+      const fastParity = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        hydration_policy: 'fast',
+        unity_hydration_mode: 'parity',
+      });
+      expect(fastParity.hydrationMeta?.requestedMode).toBe('compact');
+      expect(String(fastParity.hydrationMeta?.reason || '')).toMatch(/fast/i);
     });
 
     it('phase4 missing_evidence and needsParityRetry', async () => {

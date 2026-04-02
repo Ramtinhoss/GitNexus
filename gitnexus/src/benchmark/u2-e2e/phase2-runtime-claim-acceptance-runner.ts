@@ -14,11 +14,17 @@ export interface Phase2RuntimeClaimAcceptanceReport {
     non_guarantees: boolean;
   };
   failure_classification_coverage: string[];
+  failure_classification_missing: string[];
+  coverage_pass: boolean;
   samples: {
     matched_status?: string;
+    matched_reason?: string;
+    evidence_missing_reason?: string;
+    verification_failed_reason?: string;
     unmatched_reason?: string;
     gate_disabled_reason?: string;
   };
+  reproduction_commands: Record<string, string>;
 }
 
 export async function buildPhase2RuntimeClaimAcceptanceReport(input: {
@@ -35,6 +41,15 @@ export async function buildPhase2RuntimeClaimAcceptanceReport(input: {
     query: 'Reload',
     unity_resources: 'on',
     runtime_chain_verify: 'on-demand',
+  });
+  const evidenceMissing = await backend.callTool('query', {
+    repo: input.repoAlias,
+    query: 'Reload',
+    unity_resources: 'on',
+    runtime_chain_verify: 'on-demand',
+    unity_evidence_mode: 'summary',
+    max_bindings: 1,
+    max_reference_fields: 1,
   });
   const unmatched = await backend.callTool('query', {
     repo: input.repoAlias,
@@ -62,15 +77,25 @@ export async function buildPhase2RuntimeClaimAcceptanceReport(input: {
   }
 
   const claim = (matched as any).runtime_claim || {};
+  const requiredReasons = [
+    'rule_not_matched',
+    'rule_matched_but_evidence_missing',
+    'rule_matched_but_verification_failed',
+    'gate_disabled',
+  ];
   const reasons = [
+    claim.reason,
+    (evidenceMissing as any).runtime_claim?.reason,
     (unmatched as any).runtime_claim?.reason,
     (gateDisabled as any).runtime_claim?.reason,
   ]
     .filter(Boolean)
     .map((reason) => String(reason));
   const failure_classification_coverage = [...new Set(reasons)];
+  const failure_classification_missing = requiredReasons.filter((reason) => !failure_classification_coverage.includes(reason));
+  const coverage_pass = failure_classification_missing.length === 0;
 
-  return {
+  const report: Phase2RuntimeClaimAcceptanceReport = {
     generatedAt: new Date().toISOString(),
     repoAlias: input.repoAlias,
     claim_fields_presence: {
@@ -81,12 +106,34 @@ export async function buildPhase2RuntimeClaimAcceptanceReport(input: {
       non_guarantees: Array.isArray(claim.non_guarantees),
     },
     failure_classification_coverage,
+    failure_classification_missing,
+    coverage_pass,
     samples: {
       matched_status: claim.status,
+      matched_reason: claim.reason,
+      evidence_missing_reason: (evidenceMissing as any).runtime_claim?.reason,
+      verification_failed_reason: claim.reason,
       unmatched_reason: (unmatched as any).runtime_claim?.reason,
       gate_disabled_reason: (gateDisabled as any).runtime_claim?.reason,
     },
+    reproduction_commands: {
+      rule_matched_but_verification_failed:
+        `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on "Reload"`,
+      rule_matched_but_evidence_missing:
+        `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on --unity-evidence-mode summary --max-bindings 1 --max-reference-fields 1 "Reload"`,
+      rule_not_matched:
+        `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on "UnrelatedUnityChain"`,
+      gate_disabled:
+        `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY=off gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on "Reload"`,
+    },
   };
+
+  if (!coverage_pass) {
+    throw new Error(
+      `phase2 failure classification coverage is incomplete (${failure_classification_coverage.length}/4). Missing: ${failure_classification_missing.join(', ')}`,
+    );
+  }
+  return report;
 }
 
 export async function writePhase2RuntimeClaimAcceptanceReport(

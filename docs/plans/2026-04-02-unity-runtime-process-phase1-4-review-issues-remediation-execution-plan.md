@@ -20,15 +20,15 @@
 
 Task | Status | Facts
 --- | --- | ---
-Task 0 | pending | Baseline freeze + issue reproduction snapshot
-Task 1 | pending | FC-01 / P1-READ-001 fix + verification
-Task 2 | pending | FC-02 / P2-RULE-001 fix + verification
-Task 3 | pending | FC-03 / P2-RULE-002 fix + verification
-Task 4 | pending | FC-04 / P4-HYDR-001 fix + verification
-Task 5 | pending | FC-05 / P2-CLAIM-001 fix + verification
-Task 6 | pending | FC-06 / P2-ACC-001 fix + verification
-Task 7 | pending | Truth-source/docs/skill contract sync
-Task 8 | pending | Final regression + release submission pack
+Task 0 | completed | Baseline captured with command evidence and FC mapping in docs/reports/2026-04-02-phase1-4-remediation-baseline.md
+Task 1 | completed | queryProcessDetail now resolves by id first; integration test validates reader_uri readResource; phase1 runner upgraded to behavior-level readback metric (docs/reports/2026-04-02-phase1-process-ref-acceptance.remediated.json shows readable_rate=1.0)
+Task 2 | completed | Removed ancestor fallback; registry missing catalog/rule mapped to diagnosable errors and then to rule_not_matched; registry + claim tests passing
+Task 3 | completed | Human gate passed (`通过`): rule-driven matcher/required_hops/claim semantics accepted with test evidence
+Task 4 | completed | Hydration precedence matrix implemented (policy high-priority, mode as input); hydrationMeta now exposes requestedMode/effectiveMode/reason; phase4 integration tests pass
+Task 5 | completed | YAML scalar/list parser hardened; quote-safe parsing tests added; next_action now shell-parseable with balanced quotes
+Task 6 | completed | Phase2 acceptance runner now enforces 4/4 failure reason coverage with hard assertion and reproduction commands; remediated artifact generated
+Task 7 | completed | Truth-source/fact-check/issue-report/skill-contract synced to remediated semantics and acceptance criteria
+Task 8 | completed | Human gate passed (`通过`); release gate commands green; validation + summary reports generated
 
 ## Context Baseline
 
@@ -326,7 +326,7 @@ DC-P2-FAILURE-COVERAGE | critical | Task 6, Task 8 | `node gitnexus/dist/benchma
 **Validation Commands (Release Gate):**
 1. `npm --prefix gitnexus run build`
 2. `npm --prefix gitnexus exec vitest run gitnexus/src/mcp/local/runtime-chain-verify.test.ts`
-3. `npm --prefix gitnexus exec vitest run gitnexus/test/integration/local-backend-calltool.test.ts -- -t "phase1 process_ref readable|phase2 runtime_claim contract|phase2 failure classifications|phase4 hydration policy|phase4 missing_evidence and needsParityRetry"`
+3. `npm --prefix gitnexus exec vitest run gitnexus/test/integration/local-backend-calltool.test.ts -- -t "phase1 process_ref readable|phase2 runtime_claim contract|phase2 failure classifications|phase2 no cross-repo bootstrap fallback|phase4 hydration policy|phase4 missing_evidence and needsParityRetry"`
 4. `node gitnexus/dist/benchmark/u2-e2e/phase1-process-ref-acceptance-runner.js --repo GitNexus --out docs/reports/2026-04-02-phase1-process-ref-acceptance.remediated.json`
 5. `node gitnexus/dist/benchmark/u2-e2e/phase2-runtime-claim-acceptance-runner.js --repo GitNexus --out docs/reports/2026-04-02-phase2-runtime-claim-acceptance.remediated.json`
 
@@ -363,4 +363,3 @@ authenticity_checks:
 - `rule-driven inputs consumed` included  
 - `acceptance must fail when coverage<4` included  
 approval_decision: pass
-

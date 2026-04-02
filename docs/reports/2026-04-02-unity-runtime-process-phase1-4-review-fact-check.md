@@ -190,3 +190,13 @@ npm --prefix gitnexus exec vitest run test/integration/local-backend-calltool.te
 3. **Phase2**：新增“规则 guarantees/non_guarantees/required_hops 真实驱动执行”的对照测试。
 4. **Phase4**：新增 `unity_hydration_mode` 与 `hydration_policy` 冲突矩阵测试，明确 requested/effective 行为。
 
+## 5. Follow-up Resolution (2026-04-02 Remediation)
+
+| FC | Resolution | Evidence |
+| --- | --- | --- |
+| FC-01 | 已修复（id 优先回读 + 行为级回读测试） | `gitnexus/src/mcp/local/local-backend.ts`, `gitnexus/test/integration/local-backend-calltool.test.ts`, `docs/reports/2026-04-02-phase1-process-ref-acceptance.remediated.json` |
+| FC-02 | 已修复（移除 ancestor fallback，缺失规则可诊断并映射 rule_not_matched） | `gitnexus/src/mcp/local/runtime-claim-rule-registry.ts`, `gitnexus/src/mcp/local/runtime-claim-rule-registry.test.ts` |
+| FC-03 | 已修复（rule-driven matcher + required_hops/status + rule semantic fields） | `gitnexus/src/mcp/local/runtime-chain-verify.ts`, `gitnexus/src/mcp/local/runtime-chain-verify.test.ts`, `gitnexus/src/mcp/local/runtime-claim.ts` |
+| FC-04 | 已修复（policy/mode 优先级落地 + hydrationMeta requested/effective/reason） | `gitnexus/src/mcp/local/local-backend.ts`, `gitnexus/test/integration/local-backend-calltool.test.ts` |
+| FC-05 | 已修复（quote-safe YAML scalar/list parsing） | `gitnexus/src/mcp/local/runtime-claim-rule-registry.ts`, `gitnexus/src/mcp/local/runtime-claim-rule-registry.test.ts` |
+| FC-06 | 已修复（runner 强制 4/4 failure coverage） | `gitnexus/src/benchmark/u2-e2e/phase2-runtime-claim-acceptance-runner.ts`, `docs/reports/2026-04-02-phase2-runtime-claim-acceptance.remediated.json` |

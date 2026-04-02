@@ -60,6 +60,8 @@ function normalizePath(filePath: string): string {
 }
 
 type QueryScopePreset = 'unity-gameplay' | 'unity-all';
+type UnityHydrationModeOption = 'compact' | 'parity';
+type HydrationPolicyOption = 'fast' | 'balanced' | 'strict';
 
 const UNITY_GAMEPLAY_INCLUDE_PREFIXES = ['assets/'];
 const UNITY_GAMEPLAY_EXCLUDE_PREFIXES = [
@@ -75,6 +77,53 @@ const QUERY_STOP_WORDS = new Set([
   'the', 'and', 'for', 'from', 'with', 'that', 'this', 'into',
   'using', 'use', 'in', 'on', 'of', 'to', 'a', 'an',
 ]);
+
+function resolveHydrationModeDecision(input: {
+  hydrationPolicy: HydrationPolicyOption;
+  unityHydrationMode: UnityHydrationModeOption;
+}): { requestedMode: UnityHydrationModeOption; reason: string } {
+  const { hydrationPolicy, unityHydrationMode } = input;
+  if (hydrationPolicy === 'strict') {
+    return {
+      requestedMode: 'parity',
+      reason: unityHydrationMode === 'parity'
+        ? 'hydration_policy_strict'
+        : 'hydration_policy_strict_overrides_unity_hydration_mode',
+    };
+  }
+  if (hydrationPolicy === 'fast') {
+    return {
+      requestedMode: 'compact',
+      reason: unityHydrationMode === 'compact'
+        ? 'hydration_policy_fast'
+        : 'hydration_policy_fast_overrides_unity_hydration_mode',
+    };
+  }
+  return {
+    requestedMode: unityHydrationMode,
+    reason: unityHydrationMode === 'parity'
+      ? 'hydration_policy_balanced_respects_unity_hydration_mode'
+      : 'hydration_policy_balanced_default_compact',
+  };
+}
+
+function withHydrationDecisionMeta(input: {
+  payload: UnityContextPayload;
+  requestedMode: UnityHydrationModeOption;
+  reason: string;
+}): UnityContextPayload {
+  if (!input.payload.hydrationMeta) {
+    return input.payload;
+  }
+  return {
+    ...input.payload,
+    hydrationMeta: {
+      ...input.payload.hydrationMeta,
+      requestedMode: input.requestedMode,
+      reason: input.reason,
+    } as UnityHydrationMeta,
+  };
+}
 
 export interface ExpandedSymbolCandidate {
   id: string;
@@ -854,9 +903,13 @@ export class LocalBackend {
         && (sym.type === 'Class' || String(sym.nodeId).toLowerCase().startsWith('class:'))
       ) {
         const basePayload = await loadUnityContext(repo.id, sym.nodeId, (query) => executeQuery(repo.id, query));
-        const requestedMode = hydrationPolicy === 'strict' ? 'parity' : 'compact';
+        const hydrationDecision = resolveHydrationModeDecision({
+          hydrationPolicy,
+          unityHydrationMode,
+        });
+        let hydrationReason = hydrationDecision.reason;
         let hydrated = await hydrateUnityForSymbol({
-          mode: requestedMode,
+          mode: hydrationDecision.requestedMode,
           basePayload,
           deps: {
             executeQuery: (query, queryParams) => {
@@ -897,7 +950,16 @@ export class LocalBackend {
               filePath: sym.filePath || '',
             },
           });
+          hydrationReason = 'hydration_policy_balanced_escalated_to_parity_on_missing_evidence';
         }
+        if (hydrated.hydrationMeta?.fallbackToCompact) {
+          hydrationReason = `${hydrationReason}+fallback_to_compact`;
+        }
+        hydrated = withHydrationDecisionMeta({
+          payload: hydrated,
+          requestedMode: hydrationDecision.requestedMode,
+          reason: hydrationReason,
+        });
         const finalMissingEvidence = buildMissingEvidenceFromHydrationMeta(hydrated.hydrationMeta);
         unityPayload = {
           ...hydrated,
@@ -1175,12 +1237,12 @@ export class LocalBackend {
           result.runtime_claim.evidence_level = 'verified_segment';
         }
       }
-      if (result.runtime_claim?.hops?.length || result.runtime_claim?.gaps?.length) {
+      if (result.runtime_claim) {
         result.runtime_chain = {
           status: result.runtime_claim.status,
           evidence_level: result.runtime_claim.evidence_level,
-          hops: result.runtime_claim.hops,
-          gaps: result.runtime_claim.gaps,
+          hops: Array.isArray(result.runtime_claim.hops) ? result.runtime_claim.hops : [],
+          gaps: Array.isArray(result.runtime_claim.gaps) ? result.runtime_claim.gaps : [],
         };
       }
     } else if (runtimeChainVerifyMode === 'on-demand' && !runtimeChainVerifyEnabled) {
@@ -1733,9 +1795,13 @@ export class LocalBackend {
 
     if (unityResourcesMode !== 'off' && symNodeId && (kind === 'Class' || symNodeId.toLowerCase().startsWith('class:'))) {
       const unityContext = await loadUnityContext(repo.id, symNodeId, (query) => executeQuery(repo.id, query));
-      const requestedMode = hydrationPolicy === 'strict' ? 'parity' : 'compact';
+      const hydrationDecision = resolveHydrationModeDecision({
+        hydrationPolicy,
+        unityHydrationMode,
+      });
+      let hydrationReason = hydrationDecision.reason;
       let hydratedUnityContext = await hydrateUnityForSymbol({
-        mode: requestedMode,
+        mode: hydrationDecision.requestedMode,
         basePayload: unityContext,
         deps: {
           executeQuery: (query, queryParams) => {
@@ -1776,7 +1842,16 @@ export class LocalBackend {
             filePath: symFilePath,
           },
         });
+        hydrationReason = 'hydration_policy_balanced_escalated_to_parity_on_missing_evidence';
       }
+      if (hydratedUnityContext.hydrationMeta?.fallbackToCompact) {
+        hydrationReason = `${hydrationReason}+fallback_to_compact`;
+      }
+      hydratedUnityContext = withHydrationDecisionMeta({
+        payload: hydratedUnityContext,
+        requestedMode: hydrationDecision.requestedMode,
+        reason: hydrationReason,
+      });
       const finalMissingEvidence = buildMissingEvidenceFromHydrationMeta(hydratedUnityContext.hydrationMeta);
       Object.assign(result, hydratedUnityContext);
       (result as any).missing_evidence = hydrationPolicy === 'balanced'
@@ -1889,12 +1964,12 @@ export class LocalBackend {
           result.runtime_claim.evidence_level = 'verified_segment';
         }
       }
-      if (result.runtime_claim?.hops?.length || result.runtime_claim?.gaps?.length) {
+      if (result.runtime_claim) {
         result.runtime_chain = {
           status: result.runtime_claim.status,
           evidence_level: result.runtime_claim.evidence_level,
-          hops: result.runtime_claim.hops,
-          gaps: result.runtime_claim.gaps,
+          hops: Array.isArray(result.runtime_claim.hops) ? result.runtime_claim.hops : [],
+          gaps: Array.isArray(result.runtime_claim.gaps) ? result.runtime_claim.gaps : [],
         };
       }
     } else if (runtimeChainVerifyMode === 'on-demand' && !runtimeChainVerifyEnabled) {
@@ -2676,7 +2751,14 @@ export class LocalBackend {
     const repo = await this.resolveRepo(repoName);
     await this.ensureInitialized(repo.id);
 
-    const processes = await executeParameterized(repo.id, `
+    const byId = await executeParameterized(repo.id, `
+      MATCH (p:Process)
+      WHERE p.id = $processName
+      RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, p.stepCount AS stepCount
+      LIMIT 1
+    `, { processName: name });
+
+    const processes = byId.length > 0 ? byId : await executeParameterized(repo.id, `
       MATCH (p:Process)
       WHERE p.label = $processName OR p.heuristicLabel = $processName
       RETURN p.id AS id, p.label AS label, p.heuristicLabel AS heuristicLabel, p.processType AS processType, p.processSubtype AS processSubtype, p.runtimeChainConfidence AS runtimeChainConfidence, p.stepCount AS stepCount

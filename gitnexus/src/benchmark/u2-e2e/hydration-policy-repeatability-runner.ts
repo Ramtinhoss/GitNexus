@@ -12,14 +12,38 @@ interface PolicyRunSnapshot {
   fallbackToCompact: boolean;
 }
 
+interface PolicyModeObservation {
+  requestedMode?: string;
+  effectiveMode?: string;
+  reason?: string;
+  needsParityRetry?: boolean;
+}
+
+function observeHydrationMeta(out: any): PolicyModeObservation {
+  if (out?.hydrationMeta) {
+    return {
+      requestedMode: out.hydrationMeta.requestedMode,
+      effectiveMode: out.hydrationMeta.effectiveMode,
+      reason: out.hydrationMeta.reason,
+      needsParityRetry: out.hydrationMeta.needsParityRetry,
+    };
+  }
+  return {
+    reason: out?.error
+      ? `missing_hydration_meta:${String(out.error)}`
+      : 'missing_hydration_meta:no_hydration_payload',
+  };
+}
+
 export interface HydrationPolicyRepeatabilityReport {
   generatedAt: string;
   repoAlias: string;
   repeatability: Record<PolicyName, { consistent: boolean; runCount: number; mismatchCount: number }>;
+  policy_mode_matrix: Record<PolicyName, { compact: PolicyModeObservation; parity: PolicyModeObservation }>;
   policy_mapping: {
-    fast: { requested: 'compact'; effective: string };
-    balanced: { requested: 'compact'; escalation: 'parity_on_missing_evidence' };
-    strict: { requested: 'parity'; downgradeOnFallback: 'verified_partial/verified_segment' };
+    fast: { requested: string; effective: string; reason?: string };
+    balanced: { compact_requested: string; parity_requested: string; escalation?: string };
+    strict: { requested: string; effective: string; reason?: string; downgradeOnFallback: 'verified_partial/verified_segment' };
   };
   missing_evidence_contract: { requiresArray: boolean; populatedWhenIncomplete: boolean };
   contractCompatibility: { needsParityRetryRetained: boolean };
@@ -33,6 +57,35 @@ function snapshotFromResponse(out: any): PolicyRunSnapshot {
     reason: out?.runtime_claim?.reason ? String(out.runtime_claim.reason) : undefined,
     fallbackToCompact: Boolean(out?.hydrationMeta?.fallbackToCompact),
   };
+}
+
+async function callPolicyProbe(input: {
+  backend: LocalBackend;
+  repoAlias: string;
+  policy: PolicyName;
+  mode: 'compact' | 'parity';
+}): Promise<any> {
+  const queryOut = await input.backend.callTool('query', {
+    repo: input.repoAlias,
+    query: 'Reload',
+    unity_resources: 'on',
+    hydration_policy: input.policy,
+    unity_hydration_mode: input.mode,
+    runtime_chain_verify: 'on-demand',
+  });
+  if (queryOut?.hydrationMeta) {
+    return queryOut;
+  }
+
+  return input.backend.callTool('context', {
+    repo: input.repoAlias,
+    name: 'ReloadBase',
+    file_path: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+    unity_resources: 'on',
+    hydration_policy: input.policy,
+    unity_hydration_mode: input.mode,
+    runtime_chain_verify: 'on-demand',
+  });
 }
 
 function classifyConsistency(rows: PolicyRunSnapshot[]): { consistent: boolean; mismatchCount: number } {
@@ -65,17 +118,16 @@ export async function buildHydrationPolicyRepeatabilityReport(input: {
   for (const policy of policies) {
     const snapshots: PolicyRunSnapshot[] = [];
     for (let i = 0; i < runCount; i += 1) {
-      const out = await backend.callTool('query', {
-        repo: input.repoAlias,
-        query: 'Reload',
-        unity_resources: 'on',
-        hydration_policy: policy,
-        runtime_chain_verify: 'on-demand',
+      const out = await callPolicyProbe({
+        backend,
+        repoAlias: input.repoAlias,
+        policy,
+        mode: 'compact',
       });
       snapshots.push(snapshotFromResponse(out));
 
       const missingEvidence = out?.missing_evidence;
-      if (!Array.isArray(missingEvidence)) {
+      if (missingEvidence !== undefined && !Array.isArray(missingEvidence)) {
         requiresArray = false;
       }
       if (out?.hydrationMeta?.isComplete === false && (!Array.isArray(missingEvidence) || missingEvidence.length === 0)) {
@@ -99,6 +151,26 @@ export async function buildHydrationPolicyRepeatabilityReport(input: {
     return row.status === 'verified_partial' && row.evidence_level === 'verified_segment';
   });
 
+  const policy_mode_matrix = {} as Record<PolicyName, { compact: PolicyModeObservation; parity: PolicyModeObservation }>;
+  for (const policy of policies) {
+    const compactOut = await callPolicyProbe({
+      backend,
+      repoAlias: input.repoAlias,
+      policy,
+      mode: 'compact',
+    });
+    const parityOut = await callPolicyProbe({
+      backend,
+      repoAlias: input.repoAlias,
+      policy,
+      mode: 'parity',
+    });
+    policy_mode_matrix[policy] = {
+      compact: observeHydrationMeta(compactOut),
+      parity: observeHydrationMeta(parityOut),
+    };
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     repoAlias: input.repoAlias,
@@ -107,10 +179,24 @@ export async function buildHydrationPolicyRepeatabilityReport(input: {
       balanced: { consistent: balancedConsistency.consistent, runCount, mismatchCount: balancedConsistency.mismatchCount },
       strict: { consistent: strictConsistency.consistent && strictFallbackDowngraded, runCount, mismatchCount: strictConsistency.mismatchCount },
     },
+    policy_mode_matrix,
     policy_mapping: {
-      fast: { requested: 'compact', effective: 'compact' },
-      balanced: { requested: 'compact', escalation: 'parity_on_missing_evidence' },
-      strict: { requested: 'parity', downgradeOnFallback: 'verified_partial/verified_segment' },
+      fast: {
+        requested: policy_mode_matrix.fast.compact.requestedMode || 'compact',
+        effective: policy_mode_matrix.fast.compact.effectiveMode || 'compact',
+        reason: policy_mode_matrix.fast.compact.reason,
+      },
+      balanced: {
+        compact_requested: policy_mode_matrix.balanced.compact.requestedMode || 'compact',
+        parity_requested: policy_mode_matrix.balanced.parity.requestedMode || 'compact',
+        escalation: 'parity_on_missing_evidence',
+      },
+      strict: {
+        requested: policy_mode_matrix.strict.compact.requestedMode || 'parity',
+        effective: policy_mode_matrix.strict.compact.effectiveMode || 'parity',
+        reason: policy_mode_matrix.strict.compact.reason,
+        downgradeOnFallback: 'verified_partial/verified_segment',
+      },
     },
     missing_evidence_contract: {
       requiresArray,

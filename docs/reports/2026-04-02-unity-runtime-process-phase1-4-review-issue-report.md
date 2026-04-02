@@ -145,3 +145,14 @@ Source Design: `docs/plans/2026-04-01-unity-runtime-process-structural-remediati
 1. 先修 `P1-READ-001` 与 `P2-RULE-001`（阻断级，影响契约真实性）。
 2. 再修 `P2-RULE-002` 与 `P4-HYDR-001`（语义一致性）。
 3. 最后补 `P2-CLAIM-001` 与 `P2-ACC-001`（可用性与验收完整性）。
+
+## 6. Resolution Status (2026-04-02 Remediation Complete)
+
+| ID | Resolution Status | Key Result | Evidence Artifact |
+|---|---|---|---|
+| P1-READ-001 | fixed | process reader 支持 id 直查；reader_uri 回读测试/runner 均行为级验证 | `docs/reports/2026-04-02-phase1-process-ref-acceptance.remediated.json` |
+| P2-RULE-001 | fixed | rule registry 不再跨仓 fallback，缺失规则映射 `rule_not_matched` | registry + runtime-chain tests |
+| P2-RULE-002 | fixed | verifier matcher/required_hops/claim semantics 改为 rule-driven | `gitnexus/src/mcp/local/runtime-chain-verify.test.ts` |
+| P4-HYDR-001 | fixed | policy/mode precedence 落地并回显 `requested/effective/reason` | phase4 integration tests |
+| P2-CLAIM-001 | fixed | `next_action` 引号解析修复，可 shell parse | parser tests + runtime claim next_action test |
+| P2-ACC-001 | fixed | acceptance runner 强制 4/4 失败分类覆盖，不足即失败 | `docs/reports/2026-04-02-phase2-runtime-claim-acceptance.remediated.json` |

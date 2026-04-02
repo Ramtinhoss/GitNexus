@@ -17,6 +17,7 @@ export interface UnityHydrationMeta {
   isComplete: boolean;
   completenessReason: string[];
   needsParityRetry: boolean;
+  reason?: string;
   retryHint?: string;
 }
 

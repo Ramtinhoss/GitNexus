@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-04-02T05:03:32.570Z",
+  "repoAlias": "unity-runtime-phase1-4-remediation",
+  "claim_fields_presence": {
+    "rule_id": true,
+    "rule_version": true,
+    "scope": true,
+    "guarantees": true,
+    "non_guarantees": true
+  },
+  "failure_classification_coverage": [
+    "rule_matched_but_verification_failed",
+    "rule_matched_but_evidence_missing",
+    "rule_not_matched",
+    "gate_disabled"
+  ],
+  "failure_classification_missing": [],
+  "coverage_pass": true,
+  "samples": {
+    "matched_status": "failed",
+    "matched_reason": "rule_matched_but_verification_failed",
+    "evidence_missing_reason": "rule_matched_but_evidence_missing",
+    "verification_failed_reason": "rule_matched_but_verification_failed",
+    "unmatched_reason": "rule_not_matched",
+    "gate_disabled_reason": "gate_disabled"
+  },
+  "reproduction_commands": {
+    "rule_matched_but_verification_failed": "gitnexus query --repo unity-runtime-phase1-4-remediation --runtime-chain-verify on-demand --unity-resources on \"Reload\"",
+    "rule_matched_but_evidence_missing": "gitnexus query --repo unity-runtime-phase1-4-remediation --runtime-chain-verify on-demand --unity-resources on --unity-evidence-mode summary --max-bindings 1 --max-reference-fields 1 \"Reload\"",
+    "rule_not_matched": "gitnexus query --repo unity-runtime-phase1-4-remediation --runtime-chain-verify on-demand --unity-resources on \"UnrelatedUnityChain\"",
+    "gate_disabled": "GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY=off gitnexus query --repo unity-runtime-phase1-4-remediation --runtime-chain-verify on-demand --unity-resources on \"Reload\""
+  }
+}
