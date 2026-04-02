@@ -113,6 +113,32 @@ Status: Active (source of truth)
 - `gitnexus/src/mcp/local/local-backend.ts:994-1004, 1586-1594`
 - `gitnexus/src/mcp/local/runtime-chain-verify.ts:46-77, 159-163`
 
+## 4.4 `process_ref / runtime_claim / evidence policy` 合约（Phase 1-4 补充）
+
+1. `query/context` 的 `processes[]` 现在同时返回：
+   - `id`（可读 process id；heuristic 情况下为 `derived:*`）
+   - `process_ref`：
+     - `id`
+     - `kind`: `persistent | derived`
+     - `readable`
+     - `reader_uri`
+     - `origin`: `step_in_process | method_projected | resource_heuristic`
+2. 请求 `runtime_chain_verify=on-demand` 时，返回 `runtime_claim`（rule-driven）：
+   - `rule_id`, `rule_version`, `scope`
+   - `status`, `evidence_level`, `hops`, `gaps`
+   - `guarantees`, `non_guarantees`
+   - 失败分类：`rule_not_matched | rule_matched_but_evidence_missing | rule_matched_but_verification_failed | gate_disabled`
+3. `unity_evidence_mode`:
+   - `summary | focused | full`
+   - 与 `resource_path_prefix / binding_kind / max_bindings / max_reference_fields` 共同决定证据裁剪与 `evidence_meta`
+4. `hydration_policy`:
+   - `fast => compact`
+   - `balanced => compact，必要时自动 parity 升级`
+   - `strict => parity；若 fallback_to_compact，runtime claim 降级到 verified_partial / verified_segment`
+5. `missing_evidence[]`:
+   - 在不完整输出时必须返回解释条目
+   - 保留兼容字段 `hydrationMeta.needsParityRetry`（compact incomplete 场景）
+
 ## 5. 运行时开关（当前真实默认值）
 
 | 开关 | 默认 | 作用 |
