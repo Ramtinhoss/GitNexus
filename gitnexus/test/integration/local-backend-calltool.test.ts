@@ -165,6 +165,27 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(directHigh).toBeDefined();
     });
 
+    it('phase1 process_ref readable', async () => {
+      const out = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        unity_hydration_mode: 'compact',
+      });
+
+      expect(out.processes.length).toBeGreaterThan(0);
+      expect(out.processes.every((p: any) => p.process_ref && p.process_ref.readable === true)).toBe(true);
+    });
+
+    it('phase1 no opaque heuristic id leak', async () => {
+      const out = await backend.callTool('query', {
+        query: 'Reload',
+        unity_resources: 'on',
+        unity_hydration_mode: 'compact',
+      });
+
+      expect(out.processes.some((p: any) => String(p.id || '').startsWith('proc:heuristic:'))).toBe(false);
+    });
+
     it('phase5 confidence fields and verification hints', async () => {
       const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
       process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';

@@ -15,7 +15,8 @@ import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../../core/unity/ui-
 import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
 import { loadUnityContext, type UnityContextPayload, type UnityHydrationMeta } from './unity-enrichment.js';
 import { hydrateUnityForSymbol } from './unity-runtime-hydration.js';
-import { mergeProcessEvidence } from './process-evidence.js';
+import { deriveEvidenceFingerprint, mergeProcessEvidence } from './process-evidence.js';
+import { buildProcessRef, type ProcessRefOrigin } from './process-ref.js';
 import { resolveUnityProcessConfidenceFieldsEnabled } from './unity-process-confidence-config.js';
 import { resolveUnityRuntimeChainVerifyEnabled } from './unity-runtime-chain-verify-config.js';
 import type { ProcessConfidence, ProcessEvidenceMode, VerificationHint } from './process-confidence.js';
@@ -139,6 +140,12 @@ function aggregateRuntimeChainEvidenceLevel(
   if (rows.some((row) => row.runtime_chain_evidence_level === 'verified_segment')) return 'verified_segment';
   if (rows.some((row) => row.runtime_chain_evidence_level === 'clue')) return 'clue';
   return 'none';
+}
+
+function toProcessRefOrigin(mode: unknown): ProcessRefOrigin {
+  if (mode === 'direct_step') return 'step_in_process';
+  if (mode === 'method_projected') return 'method_projected';
+  return 'resource_heuristic';
 }
 
 function confidenceRank(confidence: unknown): number {
@@ -736,6 +743,7 @@ export class LocalBackend {
     // Step 2: For each match with a nodeId, trace to process(es)
     const processMap = new Map<string, {
       id: string;
+      process_ref: ReturnType<typeof buildProcessRef>;
       label: string;
       heuristicLabel: string;
       processType: string;
@@ -889,16 +897,42 @@ export class LocalBackend {
       } else {
         // Add to each process it belongs to
         for (const row of processRows) {
-          const pid = String(row.pid || '');
+          const rawPid = String(row.pid || '');
           const label = String((row as any).label || '');
           const hLabel = String((row as any).heuristicLabel || label);
           const pType = String((row as any).processType || '');
           const stepCount = Number((row as any).stepCount || 0);
           const step = Number((row as any).step || 0);
+          const process_ref = buildProcessRef({
+            repoName: repo.name,
+            processId: rawPid,
+            origin: toProcessRefOrigin(row.evidence_mode),
+            indexedCommit: String(repo.lastCommit || 'unknown_commit'),
+            symbolUid: String(sym.nodeId || ''),
+            evidenceFingerprint: deriveEvidenceFingerprint(
+              { nodeId: sym.nodeId, filePath: sym.filePath, startLine: sym.startLine, endLine: sym.endLine },
+              {
+                pid: rawPid,
+                processSubtype: (row as any).processSubtype || '',
+                evidenceMode: row.evidence_mode,
+                step,
+                stepCount,
+              },
+              Array.isArray((symbolEntry as any).resourceBindings)
+                ? (symbolEntry as any).resourceBindings.map((binding: any) => ({
+                  resourcePath: binding.resourcePath,
+                  bindingKind: binding.bindingKind,
+                  componentObjectId: binding.componentObjectId,
+                }))
+                : [],
+            ),
+          });
+          const pid = process_ref.id;
           
           if (!processMap.has(pid)) {
             processMap.set(pid, {
               id: pid,
+              process_ref,
               label,
               heuristicLabel: hLabel,
               processType: pType,
@@ -917,6 +951,7 @@ export class LocalBackend {
           proc.symbols.push({
             ...symbolEntry,
             process_id: pid,
+            process_ref,
             step_index: step,
             process_subtype: String((row as any).processSubtype || ''),
             process_evidence_mode: row.evidence_mode,
@@ -943,6 +978,7 @@ export class LocalBackend {
     // Step 4: Build response
     const processes = rankedProcesses.map(p => ({
       id: p.id,
+      process_ref: p.process_ref,
       summary: p.heuristicLabel || p.label,
       priority: Math.round(p.priority * 1000) / 1000,
       symbol_count: p.symbols.length,
@@ -1568,20 +1604,49 @@ export class LocalBackend {
       }
     }
 
-    result.processes = processRows.map((r: any) => ({
-      id: r.pid || r[0],
-      name: r.label || r[1],
-      process_subtype: r.processSubtype || r[2],
-      step_index: r.step || r[4],
-      step_count: r.stepCount || r[5],
-      evidence_mode: r.evidence_mode,
-      confidence: r.confidence,
-      ...(confidenceFieldsEnabled ? {
-        runtime_chain_confidence: r.confidence,
-        runtime_chain_evidence_level: r.runtime_chain_evidence_level,
-        verification_hint: r.verification_hint,
-      } : {}),
-    }));
+    result.processes = processRows.map((r: any) => {
+      const rawPid = String(r.pid || r[0] || '');
+      const process_ref = buildProcessRef({
+        repoName: repo.name,
+        processId: rawPid,
+        origin: toProcessRefOrigin(r.evidence_mode),
+        indexedCommit: String(repo.lastCommit || 'unknown_commit'),
+        symbolUid: String(symNodeId || ''),
+        evidenceFingerprint: deriveEvidenceFingerprint(
+          { nodeId: symNodeId, filePath: symFilePath, startLine: sym.startLine || sym[4], endLine: sym.endLine || sym[5] },
+          {
+            pid: rawPid,
+            processSubtype: r.processSubtype || r[2] || '',
+            evidenceMode: r.evidence_mode,
+            step: r.step || r[4] || 0,
+            stepCount: r.stepCount || r[5] || 0,
+          },
+          Array.isArray((result as any).resourceBindings)
+            ? (result as any).resourceBindings.map((binding: any) => ({
+              resourcePath: binding.resourcePath,
+              bindingKind: binding.bindingKind,
+              componentObjectId: binding.componentObjectId,
+            }))
+            : [],
+        ),
+      });
+
+      return {
+        id: process_ref.id,
+        process_ref,
+        name: r.label || r[1],
+        process_subtype: r.processSubtype || r[2],
+        step_index: r.step || r[4],
+        step_count: r.stepCount || r[5],
+        evidence_mode: r.evidence_mode,
+        confidence: r.confidence,
+        ...(confidenceFieldsEnabled ? {
+          runtime_chain_confidence: r.confidence,
+          runtime_chain_evidence_level: r.runtime_chain_evidence_level,
+          verification_hint: r.verification_hint,
+        } : {}),
+      };
+    });
 
     if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
       result.runtime_chain = await verifyRuntimeChainOnDemand({
