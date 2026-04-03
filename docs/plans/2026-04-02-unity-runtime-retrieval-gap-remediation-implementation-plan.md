@@ -2,7 +2,7 @@
 
 Date: 2026-04-02  
 Owner: GitNexus  
-Status: In Progress (M0 mostly landed; residual runtime-chain closure gap)
+Status: In Progress (M0 accepted on 2026-04-03; remaining work shifted to post-M0 follow-up)
 
 ## 0. Scope and Decision
 
@@ -43,29 +43,60 @@ Decision:
    - `docs/reports/2026-04-02-m0-three-bucket-validation.json`
    - `docs/reports/2026-04-02-m0-three-bucket-validation.md`
    - gate summary: `anchor_pass=true`, `holdout_pass=true`, `negative_pass=true`, `command_contract_pass=true`, `cypher_edge_counts_pass=true`, `anchor_chain_closure_pass=true`, `anti_hardcode_pass=true`.
+5. Reload acceptance evidence refreshed on 2026-04-03:
+   - refreshed artifact at `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json` now re-validates under the current semantic-anchor validator
+   - live recheck artifact archived at `docs/reports/2026-04-03-v1-reload-runtime-chain-acceptance.recheck.json`
+   - recheck report: `docs/reports/2026-04-03-v1-reload-runtime-chain-acceptance-recheck.md`
+6. M0 milestone acceptance is now explicitly satisfied:
+   - edge-count gate: pass
+   - anchor-chain closure gate: pass
+   - strict-seed top next-hop gate: pass
+   - runtime false-mismatch regression gate: pass
+   - next-command contract gate: pass
+   - anti-hardcode gate: pass
+   - holdout/negative threshold gate: pass
 
-### Open issues (fact-checked)
+### Open issues (fact-checked, updated 2026-04-03)
 
-1. Reload acceptance path remains unstable for full closure verification on current dist run.
-2. Recheck command (2026-04-03) still fails:
+1. Live reload acceptance path is currently passing on dist for the indexed U2 E2E repo:
 
 ```bash
-node gitnexus/dist/benchmark/u2-e2e/reload-v1-acceptance-runner.js --repo neonspark-core --out /tmp/reload-recheck.json
+node gitnexus/dist/benchmark/u2-e2e/reload-v1-acceptance-runner.js \
+  --repo neonspark-u2-e2e-neonspark-u2-full-e2e-20260401-031542 \
+  --out /tmp/reload-recheck-wave3.json
 ```
 
-Failure output:
+Observed result:
 
-- `missing required code_runtime hop`
-- `loader semantic closure missing CurGunGraph assignment anchor`
-- `anchor snippet mismatch`
-- `anchor file does not exist`
+- command exited `0`
+- artifact written successfully
+- `--verify-only /tmp/reload-recheck-wave3.json` passes
+- live artifact contains required hops: `resource`, `guid_map`, `code_loader`, `code_runtime`
+- live loader anchor is normalized to the actual assignment line:
+  `Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:50`
+  snippet: `player.Gun.gungraph.CurGunGraph = gungraph;`
+
+2. Historical artifact compatibility issue has been remediated by refreshing the old artifact path with a validator-compatible acceptance artifact:
+
+```bash
+node gitnexus/dist/benchmark/u2-e2e/reload-v1-acceptance-runner.js \
+  --verify-only docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json
+```
+
+Observed result after refresh:
+
+- verification passes
+- loader anchor now points at
+  `Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:50`
+- loader snippet now matches
+  `player.Gun.gungraph.CurGunGraph = gungraph;`
 
 ### Remaining execution focus
 
-1. Align reload verifier required-hop semantics with current runtime evidence shape (code_runtime anchor matching + snippet/path normalization).
-2. Close `CurGunGraph` anchor gap without case hardcode (rule/anchor data and verifier normalization only).
-3. Re-run reload acceptance and update M0 artifact with pass/fail delta and root-cause traceability.
-4. Keep anti-hardcode and next-command contract gates mandatory for all fixes.
+1. Treat reload wave-3 as completed evidence-sync work, not as an active live verifier bug.
+2. Keep `docs/reports/2026-04-03-v1-reload-runtime-chain-acceptance-recheck.md` as the canonical record of the refresh and compatibility fix.
+3. Continue post-M0 work only for M1/M2 scope items (rule model migration and topology executor), not for M0 acceptance recovery.
+4. Keep anti-hardcode and next-command contract gates mandatory for any further verifier/reporting changes.
 
 ---
 
@@ -383,6 +414,8 @@ Acceptance:
 ## Milestone M0 (P0): Resource truth + next-hop reliability
 
 Includes: A1, A2, A3, B1 (strict seed), B2, B3.
+
+Status: Accepted on 2026-04-03.
 
 Done when:
 
