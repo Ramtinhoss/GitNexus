@@ -1810,6 +1810,9 @@ export class LocalBackend {
         minimum_evidence_satisfied: !explicitTrimRequested
           && extraBindingOmission === 0
           && evidenceMetaRows.every((row: any) => row.minimum_evidence_satisfied !== false),
+        verifier_minimum_evidence_satisfied: evidenceMetaRows.some(
+          (row: any) => row.verifier_minimum_evidence_satisfied !== false,
+        ),
       };
       if (filterDiagnostics.length > 0) {
         result.filter_diagnostics = [...new Set(filterDiagnostics)];
@@ -1823,6 +1826,7 @@ export class LocalBackend {
         omitted_count: 1,
         next_fetch_hint: 'Rerun with unity_evidence_mode=full to fetch complete evidence.',
         minimum_evidence_satisfied: false,
+        verifier_minimum_evidence_satisfied: false,
       };
     }
     if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
@@ -1837,7 +1841,7 @@ export class LocalBackend {
         mappedSeedTargets,
         resourceBindings,
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
-        minimumEvidenceSatisfied: result.evidence_meta?.minimum_evidence_satisfied !== false,
+        minimumEvidenceSatisfied: result.evidence_meta?.verifier_minimum_evidence_satisfied !== false,
       });
       if (hydrationPolicy === 'strict' && result.hydrationMeta?.fallbackToCompact && result.runtime_claim) {
         if (result.runtime_claim.status === 'verified_full') {

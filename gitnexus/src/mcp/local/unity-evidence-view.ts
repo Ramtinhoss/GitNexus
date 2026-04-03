@@ -7,6 +7,7 @@ export interface UnityEvidenceMeta {
   next_fetch_hint?: string;
   filter_exhausted?: boolean;
   minimum_evidence_satisfied: boolean;
+  verifier_minimum_evidence_satisfied?: boolean;
 }
 
 export interface UnityEvidenceViewResult {
@@ -124,6 +125,7 @@ export function buildUnityEvidenceView(input: UnityEvidenceViewInput): UnityEvid
     ...(truncated ? { next_fetch_hint: 'Rerun with unity_evidence_mode=full to fetch complete evidence.' } : {}),
     ...(filterExhausted ? { filter_exhausted: true } : {}),
     minimum_evidence_satisfied: !truncated && filtered.length > 0,
+    verifier_minimum_evidence_satisfied: filtered.length > 0,
   };
 
   return {

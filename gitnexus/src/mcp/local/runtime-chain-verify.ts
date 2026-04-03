@@ -902,7 +902,10 @@ export async function verifyRuntimeClaimOnDemand(
       : {}),
   });
 
-  if (input.minimumEvidenceSatisfied === false) {
+  const chainClosed = resolved.status === 'verified_full'
+    && resolved.evidence_level === 'verified_chain'
+    && resolved.gaps.length === 0;
+  if (input.minimumEvidenceSatisfied === false && !chainClosed) {
     return {
       ...resolved,
       status: 'failed',
