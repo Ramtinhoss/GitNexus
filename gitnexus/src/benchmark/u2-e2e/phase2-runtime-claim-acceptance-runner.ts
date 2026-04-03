@@ -58,22 +58,16 @@ export async function buildPhase2RuntimeClaimAcceptanceReport(input: {
     runtime_chain_verify: 'on-demand',
   });
 
-  const originalGate = process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
-  process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = 'off';
+  // gate_disabled reason is no longer produced (env var gate removed in config migration)
   let gateDisabled: any;
   try {
     gateDisabled = await backend.callTool('query', {
       repo: input.repoAlias,
       query: 'Reload',
       unity_resources: 'on',
-      runtime_chain_verify: 'on-demand',
+      runtime_chain_verify: 'off',
     });
   } finally {
-    if (originalGate === undefined) {
-      delete process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
-    } else {
-      process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = originalGate;
-    }
   }
 
   const claim = (matched as any).runtime_claim || {};
@@ -124,7 +118,7 @@ export async function buildPhase2RuntimeClaimAcceptanceReport(input: {
       rule_not_matched:
         `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on "UnrelatedUnityChain"`,
       gate_disabled:
-        `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY=off gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on "Reload"`,
+        `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify off --unity-resources on "Reload"`,
     },
   };
 

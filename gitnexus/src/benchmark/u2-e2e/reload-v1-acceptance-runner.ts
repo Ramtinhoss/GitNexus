@@ -157,7 +157,7 @@ export async function buildReloadAcceptanceArtifact(input: {
   }
 
   const distCli = path.resolve('gitnexus/dist/cli/index.js');
-  const env = { ...process.env, GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS: 'on' };
+  const env = { ...process.env };
   const status = buildStatus(repo.path, repo.lastCommit);
   if (input.requireStatusMatch && !status.upToDate) {
     throw new Error(`status mismatch for ${input.repoAlias}`);
@@ -172,7 +172,7 @@ export async function buildReloadAcceptanceArtifact(input: {
   const commands = await Promise.all([
     runBackendCommand(
       backend,
-      `GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on node ${distCli} query -r ${input.repoAlias} --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "Reload NEON.Game.Graph.Nodes.Reloads"`,
+      `node ${distCli} query -r ${input.repoAlias} --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "Reload NEON.Game.Graph.Nodes.Reloads"`,
       'query',
       {
         repo: input.repoAlias,
@@ -184,7 +184,7 @@ export async function buildReloadAcceptanceArtifact(input: {
     ),
     runBackendCommand(
       backend,
-      `GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on node ${distCli} query -r ${input.repoAlias} --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "PickItUp EquipWithEvent WeaponPowerUp Equip CurGunGraph"`,
+      `node ${distCli} query -r ${input.repoAlias} --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "PickItUp EquipWithEvent WeaponPowerUp Equip CurGunGraph"`,
       'query',
       {
         repo: input.repoAlias,
@@ -196,7 +196,7 @@ export async function buildReloadAcceptanceArtifact(input: {
     ),
     runBackendCommand(
       backend,
-      `GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on node ${distCli} context -r ${input.repoAlias} --file Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand Reload`,
+      `node ${distCli} context -r ${input.repoAlias} --file Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand Reload`,
       'context',
       {
         repo: input.repoAlias,

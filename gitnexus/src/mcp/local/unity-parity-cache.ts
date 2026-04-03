@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import type { UnityContextPayload } from './unity-enrichment.js';
+import { resolveUnityConfig } from '../../core/config/unity-config.js';
 
 interface UnityParityCacheEntry {
   symbolUid: string;
@@ -109,12 +110,7 @@ function resolveMaxEntries(options?: UnityParityCacheOptions): number {
   if (Number.isFinite(options?.maxEntries) && Number(options?.maxEntries) > 0) {
     return Math.floor(Number(options?.maxEntries));
   }
-  const raw = String(process.env.GITNEXUS_UNITY_PARITY_CACHE_MAX_ENTRIES || '').trim();
-  const parsed = Number.parseInt(raw, 10);
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
-  }
-  return DEFAULT_MAX_PARITY_CACHE_ENTRIES;
+  return resolveUnityConfig().config.parityCacheMaxEntries ?? DEFAULT_MAX_PARITY_CACHE_ENTRIES;
 }
 
 function pruneOldestEntries(

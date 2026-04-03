@@ -6,7 +6,7 @@ import {
   type UnityContextPayload,
   type UnityHydrationMeta,
 } from './unity-enrichment.js';
-import { resolveUnityLazyConfig } from './unity-lazy-config.js';
+import { resolveUnityConfig } from '../../core/config/unity-config.js';
 import { hydrateLazyBindings, type HydrateLazyBindingsInput } from './unity-lazy-hydrator.js';
 import { readUnityOverlayBindings, upsertUnityOverlayBindings } from './unity-lazy-overlay.js';
 import { readUnityParityCache, upsertUnityParityCache } from './unity-parity-cache.js';
@@ -35,7 +35,7 @@ export interface HydrateUnityInput {
 interface HydrationRuntime {
   now: () => number;
   queue: ParityWarmupQueue;
-  resolveLazyConfig: typeof resolveUnityLazyConfig;
+  resolveLazyConfig: () => Pick<ReturnType<typeof resolveUnityConfig>['config'], 'lazyMaxPaths' | 'lazyBatchSize' | 'lazyMaxMs'>;
   hydrateLazyBindings: (input: HydrateLazyBindingsInput) => ReturnType<typeof hydrateLazyBindings>;
   readOverlayBindings: typeof readUnityOverlayBindings;
   upsertOverlayBindings: typeof upsertUnityOverlayBindings;
@@ -50,17 +50,8 @@ interface HydrationRuntime {
 
 const inFlightParityHydration = new Map<string, Promise<UnityContextPayload>>();
 const parityWarmupQueue = createParityWarmupQueue({
-  maxParallel: resolveParityWarmupMaxParallel(process.env),
+  maxParallel: resolveUnityConfig().config.parityWarmupMaxParallel ?? 2,
 });
-
-function resolveParityWarmupMaxParallel(env: NodeJS.ProcessEnv): number {
-  const raw = String(env.GITNEXUS_UNITY_PARITY_WARMUP_MAX_PARALLEL || '').trim();
-  const parsed = Number.parseInt(raw, 10);
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
-  }
-  return 2;
-}
 
 function normalizePath(filePath: string): string {
   return String(filePath || '').replace(/\\/g, '/');
@@ -195,7 +186,7 @@ function resolveRuntime(overrides?: Partial<HydrationRuntime>): HydrationRuntime
   return {
     now: () => Date.now(),
     queue: parityWarmupQueue,
-    resolveLazyConfig: resolveUnityLazyConfig,
+    resolveLazyConfig: () => resolveUnityConfig().config,
     hydrateLazyBindings,
     readOverlayBindings: readUnityOverlayBindings,
     upsertOverlayBindings: upsertUnityOverlayBindings,
@@ -233,9 +224,8 @@ function scheduleParityWarmup(input: HydrateUnityInput, runtime: HydrationRuntim
     .catch(() => undefined);
 }
 
-function shouldEnableWarmup(env: NodeJS.ProcessEnv): boolean {
-  const raw = String(env.GITNEXUS_UNITY_PARITY_WARMUP || '').trim().toLowerCase();
-  return raw === '1' || raw === 'true' || raw === 'on';
+function shouldEnableWarmup(_env: NodeJS.ProcessEnv): boolean {
+  return resolveUnityConfig().config.parityWarmup ?? false;
 }
 
 async function getOrRunParityHydration(
@@ -380,7 +370,7 @@ async function runCompactHydration(
 
   if (pendingPaths.length > 0) {
     try {
-      const cfg = runtime.resolveLazyConfig(process.env);
+      const cfg = runtime.resolveLazyConfig();
       const hydration = await runtime.hydrateLazyBindings({
         pendingPaths,
         config: cfg,

@@ -19,8 +19,6 @@ import { buildMissingEvidenceFromHydrationMeta, hydrateUnityForSymbol } from './
 import { buildUnityEvidenceView } from './unity-evidence-view.js';
 import { deriveEvidenceFingerprint, mergeProcessEvidence } from './process-evidence.js';
 import { buildProcessRef, type ProcessRefOrigin } from './process-ref.js';
-import { resolveUnityProcessConfidenceFieldsEnabled } from './unity-process-confidence-config.js';
-import { resolveUnityRuntimeChainVerifyEnabled } from './unity-runtime-chain-verify-config.js';
 import type { ProcessConfidence, ProcessEvidenceMode, VerificationHint } from './process-confidence.js';
 import type { RuntimeChainEvidenceLevel } from './runtime-chain-evidence.js';
 import {
@@ -1304,7 +1302,7 @@ export class LocalBackend {
     const processLimit = params.limit || 5;
     const maxSymbolsPerProcess = params.max_symbols || 10;
     const includeContent = params.include_content ?? false;
-    const confidenceFieldsEnabled = resolveUnityProcessConfidenceFieldsEnabled(process.env);
+    const confidenceFieldsEnabled = true;
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
     let unityEvidenceMode: 'summary' | 'focused' | 'full' = 'summary';
@@ -1333,7 +1331,6 @@ export class LocalBackend {
     const evidenceBindingKind = String(params.binding_kind || '').trim() || undefined;
     const searchQuery = params.query.trim();
     const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
-    const runtimeChainVerifyEnabled = resolveUnityRuntimeChainVerifyEnabled(process.env);
     let mappedSeedTargets: string[] = [];
     if (seedPath) {
       try {
@@ -1847,7 +1844,7 @@ export class LocalBackend {
         verifier_minimum_evidence_satisfied: false,
       };
     }
-    if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
+    if (runtimeChainVerifyMode === 'on-demand') {
       const resourceBindings = dedupedSymbols
         .flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : []))
         .concat(definitions.flatMap((symbol: any) => (Array.isArray(symbol.resourceBindings) ? symbol.resourceBindings : [])));
@@ -1889,20 +1886,6 @@ export class LocalBackend {
           gaps: Array.isArray(result.runtime_claim.gaps) ? result.runtime_claim.gaps : [],
         };
       }
-    } else if (runtimeChainVerifyMode === 'on-demand' && !runtimeChainVerifyEnabled) {
-      result.runtime_claim = {
-        rule_id: 'none',
-        rule_version: '0.0.0',
-        scope: { resource_types: [], host_base_type: [], trigger_family: 'none' },
-        status: 'failed',
-        evidence_level: 'none',
-        reason: 'gate_disabled',
-        next_action: 'Enable GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY and rerun with runtime_chain_verify=on-demand',
-        hops: [],
-        gaps: [],
-        guarantees: [],
-        non_guarantees: ['runtime_chain_verification_not_executed'],
-      };
     }
 
     return result;
@@ -2230,8 +2213,7 @@ export class LocalBackend {
     
     const { name, uid, file_path, include_content } = params;
     const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
-    const runtimeChainVerifyEnabled = resolveUnityRuntimeChainVerifyEnabled(process.env);
-    const confidenceFieldsEnabled = resolveUnityProcessConfidenceFieldsEnabled(process.env);
+    const confidenceFieldsEnabled = true;
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
     let unityEvidenceMode: 'summary' | 'focused' | 'full' = 'summary';
@@ -2651,7 +2633,7 @@ export class LocalBackend {
       queryForSymbol: symName || String(name || uid || ''),
     });
 
-    if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
+    if (runtimeChainVerifyMode === 'on-demand') {
       result.runtime_claim = await verifyRuntimeClaimOnDemand({
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
@@ -2692,20 +2674,6 @@ export class LocalBackend {
           gaps: Array.isArray(result.runtime_claim.gaps) ? result.runtime_claim.gaps : [],
         };
       }
-    } else if (runtimeChainVerifyMode === 'on-demand' && !runtimeChainVerifyEnabled) {
-      result.runtime_claim = {
-        rule_id: 'none',
-        rule_version: '0.0.0',
-        scope: { resource_types: [], host_base_type: [], trigger_family: 'none' },
-        status: 'failed',
-        evidence_level: 'none',
-        reason: 'gate_disabled',
-        next_action: 'Enable GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY and rerun with runtime_chain_verify=on-demand',
-        hops: [],
-        gaps: [],
-        guarantees: [],
-        non_guarantees: ['runtime_chain_verification_not_executed'],
-      };
     }
 
     return result;

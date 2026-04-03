@@ -54,15 +54,15 @@ Returns results grouped by process (execution flow):
 - processes[].evidence_mode: direct_step | method_projected | resource_heuristic
 - processes[].confidence: high | medium | low
 - processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
-- processes[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
-- processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
-- processes[].verification_hint: { action, target, next_command } (required when confidence=low and confidence fields flag is on)
+- processes[].runtime_chain_confidence: high | medium | low
+- processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
+- processes[].verification_hint: { action, target, next_command } (required when confidence=low)
 - process_symbols[].process_evidence_mode: direct_step | method_projected | resource_heuristic
 - process_symbols[].process_confidence: high | medium | low
 - process_symbols[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
-- process_symbols[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
-- process_symbols[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
-- process_symbols[].verification_hint: { action, target, next_command } (when confidence fields flag is on)
+- process_symbols[].runtime_chain_confidence: high | medium | low
+- process_symbols[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
+- process_symbols[].verification_hint: { action, target, next_command }
 
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
 Supports optional scope controls for noisy codebases:
@@ -208,9 +208,9 @@ Process participation metadata:
 - processes[].evidence_mode: direct_step | method_projected | resource_heuristic
 - processes[].confidence: high | medium | low
 - processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
-- processes[].runtime_chain_confidence: high | medium | low (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
-- processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain (when GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on)
-- processes[].verification_hint: { action, target, next_command } (required when confidence=low and confidence fields flag is on)
+- processes[].runtime_chain_confidence: high | medium | low
+- processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
+- processes[].verification_hint: { action, target, next_command } (required when confidence=low)
 
 Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.

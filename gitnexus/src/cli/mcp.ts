@@ -10,9 +10,6 @@ import { startMCPServer } from '../mcp/server.js';
 import { LocalBackend } from '../mcp/local/local-backend.js';
 
 export const mcpCommand = async () => {
-  if (!process.env.GITNEXUS_UNITY_PARITY_WARMUP) {
-    process.env.GITNEXUS_UNITY_PARITY_WARMUP = '1';
-  }
 
   // Prevent unhandled errors from crashing the MCP server process.
   // LadybugDB lock conflicts and transient errors should degrade gracefully.

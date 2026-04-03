@@ -40,7 +40,7 @@ export function buildVerificationHint(input: BuildVerificationHintInput): Verifi
     return {
       action: 'rerun_parity_hydration',
       target,
-      next_command: 'GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on gitnexus query --unity-resources on --unity-hydration parity "<symbol-or-query>"',
+      next_command: 'gitnexus query --unity-resources on --unity-hydration parity "<symbol-or-query>"',
     };
   }
 

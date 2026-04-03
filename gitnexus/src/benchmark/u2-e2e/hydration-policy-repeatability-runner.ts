@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LocalBackend } from '../../mcp/local/local-backend.js';
+import { resolveUnityConfig } from '../../core/config/unity-config.js';
 
 type PolicyName = 'fast' | 'balanced' | 'strict';
 
@@ -47,7 +48,7 @@ export interface HydrationPolicyRepeatabilityReport {
   };
   missing_evidence_contract: { requiresArray: boolean; populatedWhenIncomplete: boolean };
   contractCompatibility: { needsParityRetryRetained: boolean };
-  warmup_cache_state: { parityWarmupEnv: string; note: string };
+  warmup_cache_state: { parityWarmupEnabled: boolean; note: string };
 }
 
 function snapshotFromResponse(out: any): PolicyRunSnapshot {
@@ -206,7 +207,7 @@ export async function buildHydrationPolicyRepeatabilityReport(input: {
       needsParityRetryRetained,
     },
     warmup_cache_state: {
-      parityWarmupEnv: String(process.env.GITNEXUS_UNITY_PARITY_WARMUP || ''),
+      parityWarmupEnabled: resolveUnityConfig().config.parityWarmup,
       note: 'repeatability sampled under current runtime/cache state',
     },
   };

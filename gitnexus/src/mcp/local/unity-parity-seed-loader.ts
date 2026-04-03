@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { UnityParitySeed } from '../../core/ingestion/unity-parity-seed.js';
+import { resolveUnityConfig } from '../../core/config/unity-config.js';
 
 const SEED_FILENAME = 'unity-parity-seed.json';
 const DEFAULT_IDLE_MS = 30_000;
@@ -8,12 +9,14 @@ const DEFAULT_MAX_ENTRIES = 2;
 
 interface LoadUnityParitySeedOptions {
   indexedCommit?: string;
+  idleMsOverride?: number;
 }
 
 interface SeedCacheEntry {
   value: UnityParitySeed | null;
   lastAccessMs: number;
   idleTimer?: NodeJS.Timeout;
+  idleMsOverride?: number;
 }
 
 const seedCache = new Map<string, SeedCacheEntry>();
@@ -53,7 +56,7 @@ export async function loadUnityParitySeed(
     }
 
     const parsed = parseSeed(raw);
-    setCacheEntry(cacheKey, parsed);
+    setCacheEntry(cacheKey, parsed, options?.idleMsOverride);
     return parsed;
   })().finally(() => {
     inFlightLoads.delete(cacheKey);
@@ -98,7 +101,7 @@ async function buildSeedCacheKey(
   }
 }
 
-function setCacheEntry(cacheKey: string, value: UnityParitySeed | null): void {
+function setCacheEntry(cacheKey: string, value: UnityParitySeed | null, idleMsOverride?: number): void {
   const now = Date.now();
   const existing = seedCache.get(cacheKey);
   if (existing?.idleTimer) {
@@ -107,9 +110,10 @@ function setCacheEntry(cacheKey: string, value: UnityParitySeed | null): void {
   const entry: SeedCacheEntry = {
     value,
     lastAccessMs: now,
+    idleMsOverride,
   };
   seedCache.set(cacheKey, entry);
-  scheduleEviction(cacheKey, entry);
+  scheduleEviction(cacheKey, entry, idleMsOverride);
   pruneOldestEntries(resolveMaxEntries());
 }
 
@@ -118,11 +122,11 @@ function touchCacheEntry(cacheKey: string, entry: SeedCacheEntry): void {
   if (entry.idleTimer) {
     clearTimeout(entry.idleTimer);
   }
-  scheduleEviction(cacheKey, entry);
+  scheduleEviction(cacheKey, entry, entry.idleMsOverride);
 }
 
-function scheduleEviction(cacheKey: string, entry: SeedCacheEntry): void {
-  const idleMs = resolveIdleMs();
+function scheduleEviction(cacheKey: string, entry: SeedCacheEntry, idleMsOverride?: number): void {
+  const idleMs = idleMsOverride ?? resolveIdleMs();
   entry.idleTimer = setTimeout(() => {
     const current = seedCache.get(cacheKey);
     if (!current || current !== entry) {
@@ -149,19 +153,11 @@ function pruneOldestEntries(maxEntries: number): void {
 }
 
 function resolveIdleMs(): number {
-  const parsed = Number.parseInt(String(process.env.GITNEXUS_UNITY_PARITY_SEED_CACHE_IDLE_MS || '').trim(), 10);
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
-  }
-  return DEFAULT_IDLE_MS;
+  return resolveUnityConfig().config.paritySeedCacheIdleMs ?? DEFAULT_IDLE_MS;
 }
 
 function resolveMaxEntries(): number {
-  const parsed = Number.parseInt(String(process.env.GITNEXUS_UNITY_PARITY_SEED_CACHE_MAX_ENTRIES || '').trim(), 10);
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
-  }
-  return DEFAULT_MAX_ENTRIES;
+  return resolveUnityConfig().config.paritySeedCacheMaxEntries ?? DEFAULT_MAX_ENTRIES;
 }
 
 export function __resetUnityParitySeedLoaderCacheForTest(): void {

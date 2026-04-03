@@ -66,9 +66,6 @@ test('loadUnityParitySeed deduplicates concurrent requests for same storage key'
 
 test('loadUnityParitySeed evicts idle cache entry after ttl', async (t) => {
   const storagePath = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-seed-loader-'));
-  const idleEnvKey = 'GITNEXUS_UNITY_PARITY_SEED_CACHE_IDLE_MS';
-  const previousIdle = process.env[idleEnvKey];
-  process.env[idleEnvKey] = '15';
 
   try {
     await writeSeed(storagePath, 'IdleSymbol');
@@ -79,20 +76,15 @@ test('loadUnityParitySeed evicts idle cache entry after ttl', async (t) => {
       return readFileOriginal(...args);
     });
 
-    await loadUnityParitySeed(storagePath);
-    await loadUnityParitySeed(storagePath);
+    await loadUnityParitySeed(storagePath, { idleMsOverride: 15 });
+    await loadUnityParitySeed(storagePath, { idleMsOverride: 15 });
     assert.equal(readFileCalls, 1);
 
     await new Promise((resolve) => setTimeout(resolve, 30));
-    await loadUnityParitySeed(storagePath);
+    await loadUnityParitySeed(storagePath, { idleMsOverride: 15 });
     assert.equal(readFileCalls, 2);
   } finally {
     __resetUnityParitySeedLoaderCacheForTest();
-    if (previousIdle === undefined) {
-      delete process.env[idleEnvKey];
-    } else {
-      process.env[idleEnvKey] = previousIdle;
-    }
     await fs.rm(storagePath, { recursive: true, force: true });
   }
 });

@@ -460,7 +460,6 @@ withTestLbugDB('local-backend-calltool', (handle) => {
         'rule_not_matched',
         'rule_matched_but_evidence_missing',
         'rule_matched_but_verification_failed',
-        'gate_disabled',
       ];
       expect(unmatched.runtime_claim?.status).toBe('failed');
       expect(allowedReasons).toContain(unmatched.runtime_claim?.reason);
@@ -469,25 +468,6 @@ withTestLbugDB('local-backend-calltool', (handle) => {
         expect(unmatched.runtime_claim?.gaps?.length || 0).toBeGreaterThan(0);
       }
       expect(unmatched.runtime_claim?.next_action).toBeTruthy();
-
-      const original = process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
-      process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = 'off';
-      try {
-        const disabled = await backend.callTool('query', {
-          query: 'Reload',
-          unity_resources: 'on',
-          runtime_chain_verify: 'on-demand',
-        });
-        expect(disabled.runtime_claim?.status).toBe('failed');
-        expect(disabled.runtime_claim?.reason).toBe('gate_disabled');
-        expect(allowedReasons).toContain(disabled.runtime_claim?.reason);
-      } finally {
-        if (original === undefined) {
-          delete process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
-        } else {
-          process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = original;
-        }
-      }
     });
 
     it('phase2 no cross-repo bootstrap fallback', async () => {
@@ -573,24 +553,15 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       }
     });
 
-    it('v1 runtime chain verify env gate', async () => {
-      const original = process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
-      process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = 'off';
-      try {
-        const out = await backend.callTool('query', {
-          query: 'Reload NEON.Game.Graph.Nodes.Reloads',
-          unity_resources: 'on',
-          unity_hydration_mode: 'parity',
-          runtime_chain_verify: 'on-demand',
-        });
-        expect(out.runtime_chain).toBeUndefined();
-      } finally {
-        if (original === undefined) {
-          delete process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY;
-        } else {
-          process.env.GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY = original;
-        }
-      }
+    it('v1 runtime chain verify always runs when requested', async () => {
+      const out = await backend.callTool('query', {
+        query: 'Reload NEON.Game.Graph.Nodes.Reloads',
+        unity_resources: 'on',
+        unity_hydration_mode: 'parity',
+        runtime_chain_verify: 'on-demand',
+      });
+      expect(out.runtime_chain).toBeDefined();
+      expect(out.runtime_claim).toBeDefined();
     });
 
     it('returns lifecycle process metadata without breaking legacy fields', async () => {

@@ -5,6 +5,7 @@ import type { UnityScanContext, UnitySymbolDeclaration } from '../unity/scan-con
 import { buildUnityScanContext } from '../unity/scan-context.js';
 import { resolveUnityBindings } from '../unity/resolver.js';
 import { buildUnityParitySeed, type UnityParitySeed } from './unity-parity-seed.js';
+import { resolveUnityConfig } from '../config/unity-config.js';
 
 export interface UnityResourceProcessingResult {
   processedSymbols: number;
@@ -336,9 +337,7 @@ function normalizePath(filePath: string): string {
 
 function resolveUnityPayloadMode(explicit?: UnityPayloadMode): UnityPayloadMode {
   if (explicit) return explicit;
-  const envMode = String(process.env.GITNEXUS_UNITY_PAYLOAD_MODE || '').trim().toLowerCase();
-  if (envMode === 'full') return 'full';
-  return 'compact';
+  return resolveUnityConfig().config.payloadMode ?? 'compact';
 }
 
 function buildUnityPayload(

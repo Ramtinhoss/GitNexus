@@ -44,7 +44,7 @@ test('summary-only rows hydrate and merge into full bindings with preserved fiel
 
   const hydration = await hydrateLazyBindings({
     pendingPaths,
-    config: { maxPendingPathsPerRequest: 10, batchSize: 10, maxHydrationMs: 5000 },
+    config: { lazyMaxPaths: 10, lazyBatchSize: 10, lazyMaxMs: 5000 },
     resolveBatch: async () => new Map([
       ['Assets/Doors/Door.prefab', [
         {

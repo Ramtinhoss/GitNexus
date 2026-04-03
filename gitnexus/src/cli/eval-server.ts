@@ -307,10 +307,6 @@ function getNextStepHint(toolName: string): string {
 // ─── Server ───────────────────────────────────────────────────────────
 
 export async function evalServerCommand(options?: EvalServerOptions): Promise<void> {
-  if (!process.env.GITNEXUS_UNITY_PARITY_WARMUP) {
-    process.env.GITNEXUS_UNITY_PARITY_WARMUP = '1';
-  }
-
   const port = parseInt(options?.port || '4848');
   const idleTimeoutSec = parseInt(options?.idleTimeout || '0');
 

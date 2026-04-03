@@ -1,9 +1,9 @@
 import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
-import type { UnityLazyConfig } from './unity-lazy-config.js';
+import type { UnityConfig } from '../../core/config/unity-config.js';
 
 export interface HydrateLazyBindingsInput {
   pendingPaths: string[];
-  config: UnityLazyConfig;
+  config: Pick<UnityConfig, 'lazyMaxPaths' | 'lazyBatchSize' | 'lazyMaxMs'>;
   resolveBatch: (paths: string[]) => Promise<Map<string, ResolvedUnityBinding[]>>;
   dedupeKey?: string;
 }
@@ -34,15 +34,15 @@ export async function hydrateLazyBindings(input: HydrateLazyBindingsInput): Prom
 }
 
 async function runHydration(input: HydrateLazyBindingsInput): Promise<HydrateLazyBindingsOutput> {
-  const pending = input.pendingPaths.slice(0, Math.max(0, input.config.maxPendingPathsPerRequest));
-  const batchSize = Math.max(1, input.config.batchSize);
+  const pending = input.pendingPaths.slice(0, Math.max(0, input.config.lazyMaxPaths));
+  const batchSize = Math.max(1, input.config.lazyBatchSize);
   const startedAt = Date.now();
   const resolvedByPath = new Map<string, ResolvedUnityBinding[]>();
   let timedOut = false;
   const diagnostics: string[] = [];
 
   for (let i = 0; i < pending.length; i += batchSize) {
-    if (Date.now() - startedAt > input.config.maxHydrationMs) {
+    if (Date.now() - startedAt > input.config.lazyMaxMs) {
       timedOut = true;
       break;
     }
