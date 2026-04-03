@@ -5,13 +5,15 @@
       "id": "unity.gungraph.reload.output-getvalue.v1",
       "version": "1.0.0",
       "enabled": true,
-      "file": "approved/unity.gungraph.reload.output-getvalue.v1.yaml"
+      "file": "approved/unity.gungraph.reload.output-getvalue.v1.yaml",
+      "family": "verification_rules"
     },
     {
       "id": "demo.startup.v1",
       "version": "1.0.0",
       "enabled": true,
-      "file": "approved/demo.startup.v1.yaml"
+      "file": "approved/demo.startup.v1.yaml",
+      "family": "verification_rules"
     }
   ]
 }

@@ -1,12 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { loadCompiledRuleBundle } from '../../rule-lab/compiled-bundles.js';
+import type { UnityResourceBinding, LifecycleOverrides } from '../../rule-lab/types.js';
 
 export interface RuntimeClaimRuleCatalogEntry {
   id: string;
   version: string;
   file?: string;
   enabled?: boolean;
+  family?: 'analyze_rules' | 'verification_rules';
 }
 
 export interface RuntimeClaimRule {
@@ -26,6 +28,9 @@ export interface RuntimeClaimRule {
   guarantees: string[];
   non_guarantees: string[];
   next_action?: string;
+  family?: 'analyze_rules' | 'verification_rules';
+  resource_bindings?: UnityResourceBinding[];
+  lifecycle_overrides?: LifecycleOverrides;
   file_path: string;
   topology?: Array<{
     hop: string;
@@ -215,6 +220,7 @@ function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
     guarantees: claimGuarantees.length > 0 ? claimGuarantees : legacyGuarantees,
     non_guarantees: claimNonGuarantees.length > 0 ? claimNonGuarantees : legacyNonGuarantees,
     next_action: claimNextAction || legacyNextAction,
+    family: (readScalar(raw, 'family') as RuntimeClaimRule['family']) || 'verification_rules',
     file_path: filePath,
   };
 }
@@ -300,6 +306,7 @@ export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Pr
     activeRules.push({
       ...parsed,
       version: entry.version || parsed.version,
+      family: entry.family || parsed.family || 'verification_rules',
     });
   }
 
@@ -309,4 +316,9 @@ export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Pr
     catalogPath,
     activeRules,
   };
+}
+
+export async function loadAnalyzeRules(repoPath: string, rulesRoot?: string): Promise<RuntimeClaimRule[]> {
+  const registry = await loadRuleRegistry(repoPath, rulesRoot);
+  return registry.activeRules.filter((r) => r.family === 'analyze_rules');
 }

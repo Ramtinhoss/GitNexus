@@ -93,6 +93,42 @@
         },
         "next_action": { "type": "string", "minLength": 1 }
       }
+    },
+    "resource_bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["asset_ref_loads_components", "method_triggers_field_load"]
+          },
+          "ref_field_pattern": { "type": "string" },
+          "target_entry_points": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "host_class_pattern": { "type": "string" },
+          "field_name": { "type": "string" },
+          "loader_methods": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "lifecycle_overrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "additional_entry_points": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "scope": { "type": "string" }
+      }
     }
   }
 }

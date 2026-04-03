@@ -87,6 +87,20 @@ export interface RuleDslClaims {
   next_action: string;
 }
 
+export interface UnityResourceBinding {
+  kind: 'asset_ref_loads_components' | 'method_triggers_field_load';
+  ref_field_pattern?: string;
+  target_entry_points?: string[];
+  host_class_pattern?: string;
+  field_name?: string;
+  loader_methods?: string[];
+}
+
+export interface LifecycleOverrides {
+  additional_entry_points?: string[];
+  scope?: string;
+}
+
 export interface RuleDslDraft {
   id: string;
   version: string;
@@ -94,4 +108,6 @@ export interface RuleDslDraft {
   topology: RuleDslTopologyHop[];
   closure: RuleDslClosure;
   claims: RuleDslClaims;
+  resource_bindings?: UnityResourceBinding[];
+  lifecycle_overrides?: LifecycleOverrides;
 }

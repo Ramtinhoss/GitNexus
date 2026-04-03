@@ -13,7 +13,9 @@ import { processCommunities } from './community-processor.js';
 import { processProcesses } from './process-processor.js';
 import { processUnityResources } from './unity-resource-processor.js';
 import { applyUnityLifecycleSyntheticCalls } from './unity-lifecycle-synthetic-calls.js';
-import { resolveUnityLifecycleConfig } from './unity-lifecycle-config.js';
+import { applyUnityRuntimeBindingRules } from './unity-runtime-binding-rules.js';
+import { resolveUnityConfig } from '../config/unity-config.js';
+import { loadAnalyzeRules } from '../../mcp/local/runtime-claim-rule-registry.js';
 import { createResolutionContext } from './resolution-context.js';
 import { createASTCache } from './ast-cache.js';
 import { PipelineProgress, PipelineResult, type PipelineRunOptions } from '../../types/pipeline.js';
@@ -365,6 +367,7 @@ export const runPipelineFromRepo = async (
 
     let communityResult: Awaited<ReturnType<typeof processCommunities>> | undefined;
     let processResult: Awaited<ReturnType<typeof processProcesses>> | undefined;
+    let unityResult: Awaited<ReturnType<typeof processUnityResources>> | undefined;
 
     if (!options?.skipGraphPhases) {
       // ── Phase 4.5: Method Resolution Order ──────────────────────────────
@@ -427,17 +430,49 @@ export const runPipelineFromRepo = async (
         });
       });
 
-      const unityLifecycleConfig = resolveUnityLifecycleConfig(process.env);
-      const persistLifecycleProcessMetadata = unityLifecycleConfig.persistLifecycleProcessMetadata;
-      const unityLifecycleSyntheticResult = applyUnityLifecycleSyntheticCalls(graph, unityLifecycleConfig);
+      // ── Phase 5.5: Unity resource bindings (before lifecycle injection) ─
+      onProgress({
+        phase: 'enriching',
+        percent: 93,
+        message: 'Extracting Unity resource bindings...',
+        stats: { filesProcessed: totalFiles, totalFiles, nodesCreated: graph.nodeCount },
+      });
+
+      unityResult = await processUnityResources(graph, { repoPath, scopedPaths: unityScopedPaths });
+
+      // ── Phase 5.6: Unity lifecycle synthetic calls (auto-detect) ────────
+      const isUnityProject = allPaths.some(p => p.startsWith('Assets/') && p.endsWith('.cs'));
+      const unityConfig = resolveUnityConfig();
+      const persistLifecycleProcessMetadata = unityConfig.config.persistLifecycleProcessMetadata ?? false;
+      const unityLifecycleSyntheticResult = isUnityProject
+        ? applyUnityLifecycleSyntheticCalls(graph, {
+            maxSyntheticEdgesPerClass: unityConfig.config.maxSyntheticEdgesPerClass,
+            maxSyntheticEdgesTotal: unityConfig.config.maxSyntheticEdgesTotal,
+          })
+        : { syntheticEdgeCount: 0, lifecycleEdgeCount: 0, loaderEdgeCount: 0, hostCount: 0, rejectedHostCount: 0 };
       const syntheticEdgeDetail = unityLifecycleSyntheticResult.syntheticEdgeCount > 0
         ? ` (Unity synthetic edges: ${unityLifecycleSyntheticResult.syntheticEdgeCount})`
         : '';
 
-      if (isDev && unityLifecycleConfig.enabled) {
+      if (isDev && isUnityProject) {
         console.log(
-          `[UnityLifecycle] enabled=${unityLifecycleConfig.enabled} hosts=${unityLifecycleSyntheticResult.hostCount} syntheticEdges=${unityLifecycleSyntheticResult.syntheticEdgeCount} rejectedHosts=${unityLifecycleSyntheticResult.rejectedHostCount}`,
+          `[UnityLifecycle] auto-detected hosts=${unityLifecycleSyntheticResult.hostCount} syntheticEdges=${unityLifecycleSyntheticResult.syntheticEdgeCount} rejectedHosts=${unityLifecycleSyntheticResult.rejectedHostCount}`,
         );
+      }
+
+      // Phase 5.7: rule-driven binding injection (Phase 3)
+      try {
+        const analyzeRules = await loadAnalyzeRules(repoPath);
+        if (analyzeRules.length > 0) {
+          const bindingResult = applyUnityRuntimeBindingRules(graph, analyzeRules, unityConfig.config);
+          if (isDev && bindingResult.edgesInjected > 0) {
+            console.log(
+              `[UnityRuleBinding] injected ${bindingResult.edgesInjected} edges from ${analyzeRules.length} rule(s)`,
+            );
+          }
+        }
+      } catch {
+        // rule catalog missing or invalid — skip silently
       }
 
       // ── Phase 6: Processes ─────────────────────────────────────────────
@@ -510,15 +545,6 @@ export const runPipelineFromRepo = async (
         });
       });
     }
-
-    onProgress({
-      phase: 'enriching',
-      percent: 99,
-      message: 'Extracting Unity resource bindings...',
-      stats: { filesProcessed: totalFiles, totalFiles, nodesCreated: graph.nodeCount },
-    });
-
-    const unityResult = await processUnityResources(graph, { repoPath, scopedPaths: unityScopedPaths });
 
     onProgress({
       phase: 'complete',
