@@ -187,6 +187,16 @@ function scoreResourcePath(pathText: string, hints: string[]): number {
   return score;
 }
 
+function hasAmbiguousResourceSelection(
+  rankedBindings: Array<{ resourcePath: string; score: number }>,
+): boolean {
+  if (rankedBindings.length < 2) return false;
+  const topScore = rankedBindings[0]?.score ?? Number.NEGATIVE_INFINITY;
+  if (!Number.isFinite(topScore)) return false;
+  const topCandidates = rankedBindings.filter((entry) => entry.score === topScore);
+  return topCandidates.length > 1;
+}
+
 function resolveRepoPath(repoPath: string, relativePath: string): string {
   const resolved = path.resolve(repoPath, relativePath);
   return resolved;
@@ -491,8 +501,10 @@ async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Pro
   } else if (bindingPaths.length > 0) {
     const scored = bindingPaths
       .map((resourcePath) => ({ resourcePath, score: scoreResourcePath(resourcePath, preferredResourceHints) }))
-      .sort((a, b) => b.score - a.score);
-    selectedResourcePath = scored[0]?.resourcePath || '';
+      .sort((a, b) => (b.score - a.score) || a.resourcePath.localeCompare(b.resourcePath));
+    if (!hasAmbiguousResourceSelection(scored)) {
+      selectedResourcePath = scored[0]?.resourcePath || '';
+    }
   }
 
   if (Array.isArray(input.rule?.topology) && input.rule.topology.length > 0) {

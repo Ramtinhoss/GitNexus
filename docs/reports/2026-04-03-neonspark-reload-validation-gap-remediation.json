@@ -1,0 +1,57 @@
+{
+  "date": "2026-04-03",
+  "repo": "neonspark-core",
+  "rule_id": "demo.neonspark.reload.v1",
+  "broad_query": {
+    "query": "Reload NEON.Game.Graph.Nodes.Reloads",
+    "next_hops": [
+      {
+        "kind": "verify",
+        "target": "Reload"
+      },
+      {
+        "kind": "symbol",
+        "target": "Reload"
+      }
+    ],
+    "runtime_claim": {
+      "status": "verified_partial",
+      "evidence_level": "verified_segment",
+      "hop_snippets": [
+        "RegisterGraphEvents -> RegisterEvents",
+        "RegisterEvents -> StartRoutineWithEvents"
+      ],
+      "gap_segments": [
+        "resource",
+        "guid_map"
+      ]
+    }
+  },
+  "seeded_query": {
+    "query": "reload GunGraph Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+    "runtime_claim": {
+      "status": "verified_full",
+      "evidence_level": "verified_chain",
+      "hop_snippets": [
+        "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+        "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset.meta",
+        "RegisterGraphEvents -> RegisterEvents",
+        "RegisterEvents -> StartRoutineWithEvents"
+      ]
+    },
+    "evidence_meta": {
+      "minimum_evidence_satisfied": false,
+      "verifier_behavior": "closed_chain_preserved"
+    }
+  },
+  "rule_artifacts": {
+    "approved_yaml": "/Volumes/Shuttle/unity-projects/neonspark/.gitnexus/rules/approved/demo.neonspark.reload.v1.yaml",
+    "approved_yaml_sha256": "8a05f2f2dc798fbfb4c2d8dd50572e5a2715c5e393882d2a98135aa933e224a6",
+    "compiled_verification_bundle_sha256": "d5a6a1036e538f769913712968cec900d2653014cca56da871745c75664dd53d"
+  },
+  "acceptance_parity": {
+    "artifact": "docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json",
+    "verify_only_passed": true
+  },
+  "remaining_gap": "Broad query without explicit seed remains partial by design; it no longer selects an unrelated resource hop."
+}

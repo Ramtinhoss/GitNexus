@@ -348,3 +348,17 @@ P2：
 3. 下一阶段应把规则重设计聚焦到“三阶段规则编排 + 资源关系入图 + 查询下一跳可用性”；
 4. 预期落差主要来自工程门禁不足（解析健壮性、契约一致性、验证语义一致性），不是用户目标不合理；
 5. 结论上应优先优化执行计划与验收门禁，再进入下一轮实现，而非推倒重来。
+
+## 12. 2026-04-03 Remediation Writeback
+
+1. `verification_rules` 现在会消费 stage-aware `match.*` 字段做加权选择，不再停留在 `trigger_family` 单 token 命中。
+2. verifier 已升级为 anchored multi-segment call-edge expansion：
+   - 可沿 topology 前一跳 target 继续扩展 CALLS 邻域；
+   - seeded reload query 已能稳定闭合 `resource -> guid_map -> code_loader -> code_runtime`。
+3. query 侧 evidence trimming 已与 verifier admissibility 脱钩：
+   - `minimum_evidence_satisfied=false` 不再擦除已闭合链；
+   - broad query 仅在资源证据不明确时保留 partial，而不是误报 unrelated resource full-chain。
+4. live `neonspark-core` 结果已收敛为：
+   - broad query：`verified_partial`，不再输出无关 resource hop；
+   - seeded orb-key query：`verified_full / verified_chain`；
+   - `reload-v1-acceptance-runner --verify-only docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json` 通过。

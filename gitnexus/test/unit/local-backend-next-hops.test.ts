@@ -67,6 +67,34 @@ describe('buildNextHops command templates', () => {
     expect(configuredHop?.next_command || '').toContain('--repo "neonspark-core"');
   });
 
+  it('suppresses raw resource hops when retrieval rule scope conflicts with the current symbol fallback', () => {
+    const hops = buildNextHops({
+      mappedSeedTargets: [],
+      resourceBindings: [
+        { resourcePath: 'Assets/NEON/Graphs/Monster/测试_标记.asset' } as any,
+        { resourcePath: 'Assets/NEON/Graphs/PlayerGun/1_weapon_gun_tata.asset' } as any,
+      ],
+      repoName: 'neonspark-core',
+      verificationHint: {
+        action: 'manual_asset_meta_verification',
+        target: 'Assets/NEON/Graphs/PlayerGun/1_weapon_gun_tata.asset',
+        next_command: 'Inspect asset + .meta linkage',
+      },
+      retrievalRule: {
+        id: 'demo.neonspark.reload.v1',
+        host_base_type: ['GunGraph'],
+        next_action: 'gitnexus query --unity-resources on --runtime-chain-verify on-demand "Reload GunGraph"',
+      },
+      symbolName: 'Reload',
+      queryForSymbol: 'Reload',
+    } as any);
+
+    expect(hops[0]?.kind).toBe('verify');
+    expect(hops[0]?.target).toBe('Reload');
+    expect(hops.some((hop) => hop.kind === 'resource')).toBe(false);
+    expect(hops.some((hop) => hop.target === 'Assets/NEON/Graphs/PlayerGun/1_weapon_gun_tata.asset')).toBe(false);
+  });
+
   it('prefers the highest-signal retrieval rule instead of first substring match', () => {
     const hint = pickRetrievalRuleHintFromBundle({
       queryText: 'Reload ReloadBase asset runtime chain',

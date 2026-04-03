@@ -183,4 +183,44 @@ describe('reload-v1 current-source regressions', () => {
       await fs.rm(repoRoot, { recursive: true, force: true });
     }
   });
+
+  it('does not close the resource hop on an arbitrary graph binding when the broad query has no seed corroboration', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'reload-v1-resource-ambiguity-'));
+    try {
+      await writeCuratedSlice(repoRoot, 'run-z', 'slice-reload', {
+        ruleId: 'demo.reload.gungraph.v2',
+        title: 'reload gungraph path',
+        triggerToken: 'reload',
+        hostBaseType: ['GunGraph'],
+      });
+      await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-z', sliceId: 'slice-reload', version: '2.0.0' });
+
+      const out = await verifyRuntimeClaimOnDemand({
+        repoPath: repoRoot,
+        queryText: 'Reload NEON.Game.Graph.Nodes.Reloads',
+        symbolName: 'GunGraph',
+        resourceBindings: [
+          { resourcePath: 'Assets/NEON/Graphs/PlayerGun/1_weapon_gun_tata.asset' },
+          { resourcePath: 'Assets/NEON/Graphs/Monster/测试_标记.asset' },
+        ],
+        executeParameterized: async (query: string) => {
+          if (query.includes('WHERE n.name IN $symbolNames')) {
+            return [{
+              id: 'Class:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:GunGraph',
+              name: 'GunGraph',
+              type: 'Class',
+              filePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+              startLine: 1,
+            }];
+          }
+          return [];
+        },
+      });
+
+      expect(out.status).not.toBe('verified_full');
+      expect(out.hops.filter((hop) => hop.hop_type === 'resource')).toHaveLength(0);
+    } finally {
+      await fs.rm(repoRoot, { recursive: true, force: true });
+    }
+  });
 });

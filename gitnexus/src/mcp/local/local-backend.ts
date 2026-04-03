@@ -67,6 +67,10 @@ function normalizePath(filePath: string): string {
   return String(filePath || '').replace(/\\/g, '/');
 }
 
+function isUnityResourcePathLike(value: string): boolean {
+  return /\.(asset|prefab|meta)$/i.test(String(value || '').trim());
+}
+
 type QueryScopePreset = 'unity-gameplay' | 'unity-all';
 type UnityHydrationModeOption = 'compact' | 'parity';
 type HydrationPolicyOption = 'fast' | 'balanced' | 'strict';
@@ -238,6 +242,7 @@ interface NextHopPayload {
 interface RetrievalRuleHint {
   id: string;
   next_action: string;
+  host_base_type?: string[];
 }
 
 interface SeedTargetCandidate {
@@ -381,7 +386,16 @@ export function buildNextHops(input: {
     .map((value) => normalizePath(value))
     .filter((value) => value && !bindingSet.has(value));
 
-  const candidateResources = [
+  const retrievalHostScope = (input.retrievalRule?.host_base_type || [])
+    .map((value) => String(value || '').trim().toLowerCase())
+    .filter(Boolean);
+  const currentSymbolMatchesRetrievalScope = retrievalHostScope.length === 0
+    || retrievalHostScope.includes(String(input.symbolName || '').trim().toLowerCase());
+  const shouldSuppressRawResourceHops = !input.seedPath
+    && mappedIntersectBindings.length === 0
+    && currentSymbolMatchesRetrievalScope === false;
+
+  const candidateResources = shouldSuppressRawResourceHops ? [] : [
     ...mappedIntersectBindings,
     ...mappedRemainder,
     ...(input.seedPath ? [normalizePath(input.seedPath)] : []),
@@ -405,21 +419,24 @@ export function buildNextHops(input: {
     });
   }
 
-  if (input.verificationHint?.target) {
-    addHop({
-      kind: 'verify',
-      target: String(input.verificationHint.target),
-      why: 'Low-confidence evidence requires a verification follow-up.',
-      next_command: withRepoInCommand(input.verificationHint.next_command),
-    });
-  }
-
   if (input.retrievalRule?.next_action) {
     addHop({
       kind: 'verify',
       target: input.seedPath || input.symbolName,
       why: `Retrieval rule ${input.retrievalRule.id} configured this follow-up action.`,
       next_command: withRepoInCommand(input.retrievalRule.next_action),
+    });
+  }
+
+  if (
+    input.verificationHint?.target
+    && !(shouldSuppressRawResourceHops && isUnityResourcePathLike(String(input.verificationHint.target)))
+  ) {
+    addHop({
+      kind: 'verify',
+      target: String(input.verificationHint.target),
+      why: 'Low-confidence evidence requires a verification follow-up.',
+      next_command: withRepoInCommand(input.verificationHint.next_command),
     });
   }
 
@@ -502,6 +519,7 @@ export function pickRetrievalRuleHintFromBundle(input: {
   return {
     id: matched.id,
     next_action: matched.next_action,
+    host_base_type: matched.host_base_type,
   };
 }
 
