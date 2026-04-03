@@ -21,6 +21,8 @@ describe('CLI help surface', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('--context <text>');
     expect(result.stdout).toContain('--goal <text>');
+    expect(result.stdout).toContain('--unity-evidence <mode>');
+    expect(result.stdout).toContain('--resource-path-prefix <path>');
     expect(result.stdout).toContain('--content');
     expect(result.stderr).not.toContain('tree-sitter-kotlin');
   });
@@ -30,6 +32,8 @@ describe('CLI help surface', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('context [options] [name]');
+    expect(result.stdout).toContain('--unity-evidence <mode>');
+    expect(result.stdout).toContain('--resource-path-prefix <path>');
     expect(result.stdout).toContain('--uid <uid>');
     expect(result.stdout).toContain('--file <path>');
   });

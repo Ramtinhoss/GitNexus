@@ -37,7 +37,7 @@ export async function loadUnityContext(
     MATCH (symbol {id: '${escapedSymbolId}'})-[r:CodeRelation]->(target)
     WHERE r.type IN ['UNITY_COMPONENT_INSTANCE', 'UNITY_SERIALIZED_TYPE_IN', 'UNITY_RESOURCE_SUMMARY']
     RETURN target.filePath AS resourcePath,
-      CASE WHEN r.type = 'UNITY_RESOURCE_SUMMARY' THEN '' ELSE target.description END AS payload,
+      CASE WHEN r.type = 'UNITY_RESOURCE_SUMMARY' THEN '' ELSE COALESCE(target.description, r.reason, '') END AS payload,
       r.type AS relationType,
       r.reason AS relationReason
     ORDER BY target.filePath, target.id

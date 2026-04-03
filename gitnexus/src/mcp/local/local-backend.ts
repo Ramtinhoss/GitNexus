@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { initLbug, executeQuery, executeParameterized, closeLbug, isLbugReady } from '../core/lbug-adapter.js';
 import { parseHydrationPolicy, parseUnityEvidenceMode, parseUnityHydrationMode, parseUnityResourcesMode } from '../../core/unity/options.js';
+import { buildAssetMetaIndex } from '../../core/unity/meta-index.js';
 import type { ResolvedUnityBinding } from '../../core/unity/resolver.js';
 import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../../core/unity/ui-trace.js';
 import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
@@ -68,6 +69,7 @@ function normalizePath(filePath: string): string {
 type QueryScopePreset = 'unity-gameplay' | 'unity-all';
 type UnityHydrationModeOption = 'compact' | 'parity';
 type HydrationPolicyOption = 'fast' | 'balanced' | 'strict';
+type ResourceSeedMode = 'strict' | 'balanced';
 
 const UNITY_GAMEPLAY_INCLUDE_PREFIXES = ['assets/'];
 const UNITY_GAMEPLAY_EXCLUDE_PREFIXES = [
@@ -187,6 +189,253 @@ function aggregateProcessEvidenceMode(
 
 function selectVerificationHint(rows: Array<{ verification_hint?: VerificationHint }>): VerificationHint | undefined {
   return rows.find((row) => row.verification_hint)?.verification_hint;
+}
+
+export function parseResourceSeedMode(raw: unknown): ResourceSeedMode {
+  const normalized = String(raw || '').trim().toLowerCase();
+  if (!normalized || normalized === 'balanced') return 'balanced';
+  if (normalized === 'strict') return 'strict';
+  throw new Error('resource_seed_mode must be one of: strict, balanced');
+}
+
+function isUnityResourcePath(value: string): boolean {
+  return /\.(asset|prefab|unity)$/i.test(value.trim());
+}
+
+export function extractUnityResourcePaths(text: string): string[] {
+  const out: string[] = [];
+  const re = /(Assets\/[^\s'"`]+?\.(?:asset|prefab|unity))/gi;
+  let match = re.exec(String(text || ''));
+  while (match) {
+    const path = normalizePath(match[1] || '').trim();
+    if (path && !out.includes(path)) out.push(path);
+    match = re.exec(String(text || ''));
+  }
+  return out;
+}
+
+export function resolveSeedPath(input: { queryText?: string; resourcePathPrefix?: string; filePath?: string }): string | undefined {
+  const explicit = normalizePath(String(input.resourcePathPrefix || '').trim());
+  if (explicit && isUnityResourcePath(explicit)) {
+    return explicit;
+  }
+  const fromFile = normalizePath(String(input.filePath || '').trim());
+  if (fromFile && isUnityResourcePath(fromFile)) {
+    return fromFile;
+  }
+  const fromQuery = extractUnityResourcePaths(String(input.queryText || ''));
+  return fromQuery[0];
+}
+
+interface NextHopPayload {
+  kind: 'resource' | 'symbol' | 'process' | 'verify';
+  target: string;
+  why: string;
+  next_command: string;
+}
+
+interface SeedTargetCandidate {
+  targetPath: string;
+  fieldName?: string;
+  sourceLayer?: string;
+}
+
+function pathTokens(value: string): string[] {
+  return String(value || '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+}
+
+function parseSeedRelationReason(rawReason: unknown): Pick<SeedTargetCandidate, 'fieldName' | 'sourceLayer'> {
+  const text = String(rawReason || '').trim();
+  if (!text) return {};
+  try {
+    const parsed = JSON.parse(text) as { fieldName?: string; sourceLayer?: string };
+    const fieldName = String(parsed.fieldName || '').trim();
+    const sourceLayer = String(parsed.sourceLayer || '').trim();
+    return {
+      ...(fieldName ? { fieldName } : {}),
+      ...(sourceLayer ? { sourceLayer } : {}),
+    };
+  } catch {
+    return {};
+  }
+}
+
+function scoreSeedTargetCandidate(seedPath: string, candidate: SeedTargetCandidate): number {
+  const targetPath = normalizePath(candidate.targetPath);
+  if (!targetPath) return Number.NEGATIVE_INFINITY;
+  const seedBase = path.basename(normalizePath(seedPath), path.extname(seedPath)).toLowerCase();
+  const targetBase = path.basename(targetPath, path.extname(targetPath)).toLowerCase();
+  const seedTokens = new Set(pathTokens(seedBase));
+  const targetTokens = new Set(pathTokens(targetBase));
+  let overlap = 0;
+  for (const token of seedTokens) {
+    if (targetTokens.has(token)) overlap += 1;
+  }
+
+  const p = targetPath.toLowerCase();
+  let score = 0;
+  if (/\.(asset)$/i.test(p)) score += 12;
+  if (/\.(prefab)$/i.test(p)) score -= 8;
+  if (p.includes('/graph')) score += 30;
+  if (targetBase && seedBase && (targetBase.includes(seedBase) || seedBase.includes(targetBase))) score += 18;
+  score += overlap * 8;
+
+  const fieldName = String(candidate.fieldName || '').toLowerCase();
+  const fieldTokens = new Set(pathTokens(fieldName));
+  for (const token of seedTokens) {
+    if (fieldTokens.has(token)) score += 10;
+  }
+  const graphSignals = ['graph', 'node', 'loader', 'runtime'];
+  for (const token of graphSignals) {
+    if (fieldTokens.has(token)) score += 12;
+  }
+  const visualSignals = ['sprite', 'icon', 'material', 'vfx', 'fx', 'audio'];
+  for (const token of visualSignals) {
+    if (fieldTokens.has(token)) score -= 8;
+  }
+
+  const sourceLayer = String(candidate.sourceLayer || '').toLowerCase();
+  if (sourceLayer.includes('asset')) score += 4;
+
+  return score;
+}
+
+function rankSeedTargetCandidates(seedPath: string, candidates: SeedTargetCandidate[]): string[] {
+  const deduped = new Map<string, SeedTargetCandidate>();
+  for (const candidate of candidates) {
+    const targetPath = normalizePath(String(candidate.targetPath || '').trim());
+    if (!targetPath) continue;
+    const existing = deduped.get(targetPath);
+    if (!existing) {
+      deduped.set(targetPath, { ...candidate, targetPath });
+      continue;
+    }
+    if (!existing.fieldName && candidate.fieldName) existing.fieldName = candidate.fieldName;
+    if (!existing.sourceLayer && candidate.sourceLayer) existing.sourceLayer = candidate.sourceLayer;
+  }
+  return [...deduped.values()]
+    .sort((a, b) => {
+      const scoreDiff = scoreSeedTargetCandidate(seedPath, b) - scoreSeedTargetCandidate(seedPath, a);
+      if (scoreDiff !== 0) return scoreDiff;
+      return String(a.targetPath).localeCompare(String(b.targetPath));
+    })
+    .map((candidate) => candidate.targetPath);
+}
+
+export function pickVerificationTarget(input: {
+  seedMode: ResourceSeedMode;
+  seedPath?: string;
+  mappedSeedTargets: string[];
+  resourceBindings: ResolvedUnityBinding[];
+  fallback: string;
+}): string {
+  const normalizedBindings = input.resourceBindings.map((binding) => normalizePath(String(binding.resourcePath || '').trim()));
+  const bindingSet = new Set(normalizedBindings);
+  const mappedInBindings = input.mappedSeedTargets.find((target) => bindingSet.has(normalizePath(target)));
+  if (mappedInBindings) return mappedInBindings;
+  if (input.seedMode === 'strict' && input.seedPath) {
+    return normalizePath(input.seedPath);
+  }
+  if (input.seedMode === 'strict') {
+    return input.fallback;
+  }
+  // Balanced mode fallback only; strict mode is handled above and never falls back to first binding.
+  return normalizedBindings[0] || input.fallback;
+}
+
+export function buildNextHops(input: {
+  seedPath?: string;
+  mappedSeedTargets: string[];
+  resourceBindings: ResolvedUnityBinding[];
+  verificationHint?: VerificationHint;
+  repoName?: string;
+  symbolName: string;
+  queryForSymbol: string;
+}): NextHopPayload[] {
+  const hops: NextHopPayload[] = [];
+  const seen = new Set<string>();
+  const addHop = (hop: NextHopPayload) => {
+    const key = `${hop.kind}:${hop.target}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    hops.push(hop);
+  };
+
+  const bindingPaths = input.resourceBindings.map((binding) => normalizePath(String(binding.resourcePath || '').trim())).filter(Boolean);
+  const bindingSet = new Set(bindingPaths);
+  const mappedIntersectBindings = input.mappedSeedTargets
+    .map((value) => normalizePath(value))
+    .filter((value) => value && bindingSet.has(value));
+  const mappedRemainder = input.mappedSeedTargets
+    .map((value) => normalizePath(value))
+    .filter((value) => value && !bindingSet.has(value));
+
+  const candidateResources = [
+    ...mappedIntersectBindings,
+    ...mappedRemainder,
+    ...(input.seedPath ? [normalizePath(input.seedPath)] : []),
+    ...bindingPaths,
+  ].filter(Boolean);
+  const repoArg = input.repoName ? ` --repo "${input.repoName}"` : '';
+  const withRepoInCommand = (command: string): string => {
+    const trimmed = String(command || '').trim();
+    if (!trimmed || !input.repoName) return trimmed;
+    if (!/^gitnexus\s+(query|context)\b/i.test(trimmed)) return trimmed;
+    if (/\s--repo(?:\s|=)/i.test(trimmed)) return trimmed;
+    return trimmed.replace(/^gitnexus\s+(query|context)\b/i, `gitnexus $1 --repo "${input.repoName}"`);
+  };
+
+  for (const target of candidateResources.slice(0, 3)) {
+    addHop({
+      kind: 'resource',
+      target,
+      why: 'Unity resource evidence suggests this is the next deterministic hop.',
+      next_command: `gitnexus query${repoArg} --unity-resources on --unity-hydration parity --resource-path-prefix "${target}" "${input.queryForSymbol}"`,
+    });
+  }
+
+  if (input.verificationHint?.target) {
+    addHop({
+      kind: 'verify',
+      target: String(input.verificationHint.target),
+      why: 'Low-confidence evidence requires a verification follow-up.',
+      next_command: withRepoInCommand(input.verificationHint.next_command),
+    });
+  }
+
+  addHop({
+    kind: 'symbol',
+    target: input.symbolName,
+    why: 'Inspect symbol-level context to continue tracing.',
+    next_command: `gitnexus context${repoArg} --unity-resources on --unity-hydration parity "${input.symbolName}"`,
+  });
+
+  return hops.slice(0, 5);
+}
+
+export async function resolveSeedTargetsFromResourceFile(repoPath: string, seedPath: string): Promise<string[]> {
+  if (!isUnityResourcePath(seedPath)) return [];
+  try {
+    const absPath = path.join(repoPath, seedPath);
+    const raw = await fs.readFile(absPath, 'utf-8');
+    const guidMatches = [...raw.matchAll(/\bguid:\s*([0-9a-f]{32})\b/ig)];
+    if (guidMatches.length === 0) return [];
+    const guidSet = new Set(guidMatches.map((m) => String(m[1] || '').toLowerCase()).filter(Boolean));
+    const metaIndex = await buildAssetMetaIndex(repoPath);
+    const out: string[] = [];
+    for (const guid of guidSet) {
+      const targetPath = normalizePath(String(metaIndex.get(guid) || '').trim());
+      if (!targetPath || targetPath === normalizePath(seedPath) || !isUnityResourcePath(targetPath)) continue;
+      if (!out.includes(targetPath)) out.push(targetPath);
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }
 
 function aggregateRuntimeChainEvidenceLevel(
@@ -926,6 +1175,7 @@ export class LocalBackend {
     binding_kind?: string;
     max_bindings?: number;
     max_reference_fields?: number;
+    resource_seed_mode?: string;
     runtime_chain_verify?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
@@ -942,11 +1192,13 @@ export class LocalBackend {
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
     let unityEvidenceMode: 'summary' | 'focused' | 'full' = 'summary';
     let hydrationPolicy: 'fast' | 'balanced' | 'strict' = 'balanced';
+    let resourceSeedMode: ResourceSeedMode = 'balanced';
     try {
       unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
       unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
       unityEvidenceMode = parseUnityEvidenceMode(params.unity_evidence_mode);
       hydrationPolicy = parseHydrationPolicy(params.hydration_policy);
+      resourceSeedMode = parseResourceSeedMode(params.resource_seed_mode);
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
@@ -957,10 +1209,44 @@ export class LocalBackend {
       ? Number(params.max_reference_fields)
       : undefined;
     const evidenceResourcePathPrefix = String(params.resource_path_prefix || '').trim() || undefined;
+    const seedPath = resolveSeedPath({
+      queryText: params.query,
+      resourcePathPrefix: evidenceResourcePathPrefix,
+    });
     const evidenceBindingKind = String(params.binding_kind || '').trim() || undefined;
     const searchQuery = params.query.trim();
     const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
     const runtimeChainVerifyEnabled = resolveUnityRuntimeChainVerifyEnabled(process.env);
+    let mappedSeedTargets: string[] = [];
+    if (seedPath) {
+      try {
+        const seedRows = await executeParameterized(repo.id, `
+          MATCH (:File {filePath: $seedPath})-[r:CodeRelation {type: 'UNITY_ASSET_GUID_REF'}]->(target:File)
+          RETURN DISTINCT target.filePath AS targetPath, r.reason AS relationReason
+          LIMIT 100
+        `, { seedPath });
+        const candidates: SeedTargetCandidate[] = seedRows
+          .map((row: any) => {
+            const targetPath = normalizePath(String(row?.targetPath || row?.[0] || '').trim());
+            const parsedReason = parseSeedRelationReason(row?.relationReason);
+            return {
+              targetPath,
+              fieldName: parsedReason.fieldName,
+              sourceLayer: parsedReason.sourceLayer,
+            };
+          })
+          .filter((row) => row.targetPath.length > 0);
+        mappedSeedTargets = rankSeedTargetCandidates(seedPath, candidates);
+      } catch (e) {
+        logQueryError('query:seed-mapped-targets', e);
+      }
+      if (mappedSeedTargets.length === 0) {
+        mappedSeedTargets = rankSeedTargetCandidates(
+          seedPath,
+          (await resolveSeedTargetsFromResourceFile(repo.repoPath, seedPath)).map((targetPath) => ({ targetPath })),
+        );
+      }
+    }
     
     // Step 1: Run hybrid search to get matching symbols
     const searchLimit = processLimit * maxSymbolsPerProcess; // fetch enough raw results
@@ -1197,8 +1483,13 @@ export class LocalBackend {
         const hasPartialUnityEvidence = resourceBindings.length > 0 || needsParityRetry;
 
         if (hasPartialUnityEvidence) {
-          const firstBindingPath = String(resourceBindings[0]?.resourcePath || '').trim();
-          const verificationTarget = firstBindingPath || sym.filePath || sym.name || sym.nodeId;
+          const verificationTarget = pickVerificationTarget({
+            seedMode: resourceSeedMode,
+            seedPath,
+            mappedSeedTargets,
+            resourceBindings,
+            fallback: String(sym.filePath || sym.name || sym.nodeId || ''),
+          });
           processRows = mergeProcessEvidence({
             directRows: [],
             projectedRows: [],
@@ -1359,6 +1650,25 @@ export class LocalBackend {
     if (hydrationMetas.length > 0) {
       result.hydrationMeta = hydrationMetas[0];
     }
+    const lowerQuery = searchQuery.toLowerCase();
+    const firstSymbolForHops =
+      dedupedSymbols.find((row: any) => lowerQuery.includes(String(row?.name || '').toLowerCase()))
+      || definitions.find((row: any) => lowerQuery.includes(String(row?.name || '').toLowerCase()))
+      || dedupedSymbols[0]
+      || definitions[0];
+    const firstVerificationHint = processes.find((row: any) => row?.verification_hint)?.verification_hint;
+    const firstResourceBindings = Array.isArray(firstSymbolForHops?.resourceBindings)
+      ? firstSymbolForHops.resourceBindings
+      : [];
+    result.next_hops = buildNextHops({
+      seedPath,
+      mappedSeedTargets,
+      resourceBindings: firstResourceBindings,
+      verificationHint: firstVerificationHint,
+      repoName: repo.name,
+      symbolName: String(firstSymbolForHops?.name || searchQuery),
+      queryForSymbol: String(firstSymbolForHops?.name || searchQuery),
+    });
     const missingEvidenceRows = [...dedupedSymbols, ...definitions]
       .flatMap((row: any) => (Array.isArray(row?.missing_evidence) ? row.missing_evidence : []));
     result.missing_evidence = [...new Set(missingEvidenceRows)];
@@ -1417,6 +1727,8 @@ export class LocalBackend {
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
         queryText: searchQuery,
+        resourceSeedPath: seedPath,
+        mappedSeedTargets,
         resourceBindings,
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
         minimumEvidenceSatisfied: result.evidence_meta?.minimum_evidence_satisfied !== false,
@@ -1437,7 +1749,7 @@ export class LocalBackend {
           {
             segment: 'runtime',
             reason: 'missing verifier evidence',
-            next_command: result.runtime_claim.next_action || 'gitnexus query --runtime-chain-verify on-demand',
+            next_command: result.runtime_claim.next_action || `gitnexus query --repo "${repo.name}" --runtime-chain-verify on-demand`,
           },
         ];
       }
@@ -1783,6 +2095,7 @@ export class LocalBackend {
     binding_kind?: string;
     max_bindings?: number;
     max_reference_fields?: number;
+    resource_seed_mode?: string;
     runtime_chain_verify?: string;
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
@@ -1795,11 +2108,13 @@ export class LocalBackend {
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
     let unityEvidenceMode: 'summary' | 'focused' | 'full' = 'summary';
     let hydrationPolicy: 'fast' | 'balanced' | 'strict' = 'balanced';
+    let resourceSeedMode: ResourceSeedMode = 'balanced';
     try {
       unityResourcesMode = parseUnityResourcesMode(params.unity_resources);
       unityHydrationMode = parseUnityHydrationMode(params.unity_hydration_mode);
       unityEvidenceMode = parseUnityEvidenceMode(params.unity_evidence_mode);
       hydrationPolicy = parseHydrationPolicy(params.hydration_policy);
+      resourceSeedMode = parseResourceSeedMode(params.resource_seed_mode);
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
@@ -1810,7 +2125,42 @@ export class LocalBackend {
       ? Number(params.max_reference_fields)
       : undefined;
     const evidenceResourcePathPrefix = String(params.resource_path_prefix || '').trim() || undefined;
+    const seedPath = resolveSeedPath({
+      resourcePathPrefix: evidenceResourcePathPrefix,
+      filePath: file_path,
+      queryText: name,
+    });
     const evidenceBindingKind = String(params.binding_kind || '').trim() || undefined;
+    let mappedSeedTargets: string[] = [];
+    if (seedPath) {
+      try {
+        const seedRows = await executeParameterized(repo.id, `
+          MATCH (:File {filePath: $seedPath})-[r:CodeRelation {type: 'UNITY_ASSET_GUID_REF'}]->(target:File)
+          RETURN DISTINCT target.filePath AS targetPath, r.reason AS relationReason
+          LIMIT 100
+        `, { seedPath });
+        const candidates: SeedTargetCandidate[] = seedRows
+          .map((row: any) => {
+            const targetPath = normalizePath(String(row?.targetPath || row?.[0] || '').trim());
+            const parsedReason = parseSeedRelationReason(row?.relationReason);
+            return {
+              targetPath,
+              fieldName: parsedReason.fieldName,
+              sourceLayer: parsedReason.sourceLayer,
+            };
+          })
+          .filter((row) => row.targetPath.length > 0);
+        mappedSeedTargets = rankSeedTargetCandidates(seedPath, candidates);
+      } catch (e) {
+        logQueryError('context:seed-mapped-targets', e);
+      }
+      if (mappedSeedTargets.length === 0) {
+        mappedSeedTargets = rankSeedTargetCandidates(
+          seedPath,
+          (await resolveSeedTargetsFromResourceFile(repo.repoPath, seedPath)).map((targetPath) => ({ targetPath })),
+        );
+      }
+    }
     
     if (!name && !uid) {
       return { error: 'Either "name" or "uid" parameter is required.' };
@@ -2085,8 +2435,13 @@ export class LocalBackend {
           : [];
         const needsParityRetry = Boolean((result as any).hydrationMeta?.needsParityRetry);
         if (resourceBindings.length > 0 || needsParityRetry) {
-          const firstBindingPath = String(resourceBindings[0]?.resourcePath || '').trim();
-          const verificationTarget = firstBindingPath || symFilePath || symName || symNodeId;
+          const verificationTarget = pickVerificationTarget({
+            seedMode: resourceSeedMode,
+            seedPath,
+            mappedSeedTargets,
+            resourceBindings,
+            fallback: symFilePath || symName || symNodeId,
+          });
           processRows = mergeProcessEvidence({
             directRows: [],
             projectedRows: [],
@@ -2149,13 +2504,27 @@ export class LocalBackend {
         } : {}),
       };
     });
+    const topVerificationHint = result.processes.find((row: any) => row?.verification_hint)?.verification_hint;
+    const contextResourceBindings = Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [];
+    result.next_hops = buildNextHops({
+      seedPath,
+      mappedSeedTargets,
+      resourceBindings: contextResourceBindings,
+      verificationHint: topVerificationHint,
+      repoName: repo.name,
+      symbolName: symName || String(name || uid || ''),
+      queryForSymbol: symName || String(name || uid || ''),
+    });
 
     if (runtimeChainVerifyMode === 'on-demand' && runtimeChainVerifyEnabled) {
       result.runtime_claim = await verifyRuntimeClaimOnDemand({
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
+        queryText: name,
         symbolName: symName,
         symbolFilePath: symFilePath,
+        resourceSeedPath: seedPath,
+        mappedSeedTargets,
         resourceBindings: Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [],
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
         minimumEvidenceSatisfied: (result as any).evidence_meta?.minimum_evidence_satisfied !== false,
@@ -2176,7 +2545,7 @@ export class LocalBackend {
           {
             segment: 'runtime',
             reason: 'missing verifier evidence',
-            next_command: result.runtime_claim.next_action || 'gitnexus context --runtime-chain-verify on-demand',
+            next_command: result.runtime_claim.next_action || `gitnexus context --repo "${repo.name}" --runtime-chain-verify on-demand`,
           },
         ];
       }

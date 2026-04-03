@@ -86,6 +86,8 @@ export type RelationshipType =
   | 'UNITY_COMPONENT_INSTANCE'
   | 'UNITY_RESOURCE_SUMMARY'
   | 'UNITY_SERIALIZED_TYPE_IN'
+  | 'UNITY_ASSET_GUID_REF'
+  | 'UNITY_GRAPH_NODE_SCRIPT_REF'
 
 export interface GraphNode {
   id:  string,

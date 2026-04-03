@@ -1,0 +1,395 @@
+{
+  "generated_at": "2026-04-02T16:27:16.587Z",
+  "repo_alias": "neonspark-core",
+  "thresholds": {
+    "anchor_pass_rate": 1,
+    "holdout_next_hop_usability": 0.85,
+    "negative_false_positive_rate": 0.1
+  },
+  "anchor": {
+    "total": 1,
+    "passed": 1,
+    "anchor_pass_rate": 1,
+    "case": {
+      "query": "EnergyByAttackCount Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/0_初始武器/1_weapon_0_james_new.asset",
+      "summary": {
+        "top_target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_0_james1.asset",
+        "top_kind": "resource",
+        "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_0_james1.asset\" \"ItemList_武器_全角色初始武器.asset\"",
+        "runtime_status": "verified_partial",
+        "runtime_reason": "",
+        "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+        "next_hops_count": 4
+      },
+      "pass": true
+    }
+  },
+  "holdout": {
+    "total": 10,
+    "usable": 10,
+    "holdout_next_hop_usability": 1,
+    "cases": [
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_lightning.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_lightning.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_lightning.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_lightning.asset\" \"ItemList_weapon_backup_list.asset\"",
+          "runtime_status": "verified_partial",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_kasa.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_kasa.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_kasa.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_kasa.asset\" \"ItemList_weapon_backup_list.asset\"",
+          "runtime_status": "verified_partial",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_hollow.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_hollow.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_hollow.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_hollow.asset\" \"ItemList_weapon_backup_list.asset\"",
+          "runtime_status": "verified_full",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_coin_one.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_coin_one.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_coin_one.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_coin_one.asset\" \"ItemList_weapon_backup_list.asset\"",
+          "runtime_status": "verified_partial",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_ender.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/枪_Gun/1_weapon_gun_ender.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_ender.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_ender.asset\" \"ItemList_weapon_backup_list.asset\"",
+          "runtime_status": "verified_partial",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/棍_Bat/1_weapon_melee_tennis.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/棍_Bat/1_weapon_melee_tennis.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Meleegraph_use/1_weapon_melee_tennis.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Meleegraph_use/1_weapon_melee_tennis.asset\" \"ItemList_武器.asset\"",
+          "runtime_status": "verified_full",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/棍_Bat/1_weapon_melee_baseball_youth.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/棍_Bat/1_weapon_melee_baseball_youth.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Meleegraph_use/Melee Bat.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Meleegraph_use/Melee Bat.asset\" \"ItemList_weapon_backup_list.asset\"",
+          "runtime_status": "verified_partial",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/武士刀_Katana/1_weapon_katana_bomb.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/武士刀_Katana/1_weapon_katana_bomb.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Meleegraph_use/1_weapon_katana_bomb.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Meleegraph_use/1_weapon_katana_bomb.asset\" \"ItemList_武器.asset\"",
+          "runtime_status": "verified_partial",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/拳套_Fist/1_weapon_melee_claw.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/拳套_Fist/1_weapon_melee_claw.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Meleegraph_use/1_weapon_melee_claw.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Meleegraph_use/1_weapon_melee_claw.asset\" \"ItemList_weapon_backup_list.asset\"",
+          "runtime_status": "verified_partial",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      },
+      {
+        "seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_channel.asset",
+        "query": "WeaponPowerUp Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_channel.asset",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_channel.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_gun_channel.asset\" \"ItemList_weapon_backup_list.asset\"",
+          "runtime_status": "verified_partial",
+          "runtime_reason": "",
+          "runtime_rule_id": "neonspark.energy.weapon.instance-chain.v1",
+          "next_hops_count": 4
+        },
+        "usable": true
+      }
+    ]
+  },
+  "negative": {
+    "total": 10,
+    "false_positive": 0,
+    "negative_false_positive_rate": 0,
+    "cases": [
+      {
+        "query": "Reload NEON.Game.Graph.Nodes.Reloads",
+        "summary": {
+          "top_target": "Assets/NEON/Graphs/Monster/测试_标记.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/Monster/测试_标记.asset\" \"Reload\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_matched_but_evidence_missing",
+          "runtime_rule_id": "unity.gungraph.reload.output-getvalue.v1",
+          "next_hops_count": 3
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "MainUIManager UI Canvas",
+        "summary": {
+          "top_target": "Assets/NEON/Scene/BarMode/BarMode.unity",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Scene/BarMode/BarMode.unity\" \"InteractScreenManager\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 3
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "PlayerActor movement",
+        "summary": {
+          "top_target": "Assets/NEON/Prefab/BasePrefabs/B_Player.prefab",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/BasePrefabs/B_Player.prefab\" \"PlayerActor\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 3
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "GlobalDataAssets game settings",
+        "summary": {
+          "top_target": "Assets/NEON/Code/Framework/Global.cs",
+          "top_kind": "verify",
+          "top_next_command": "Inspect asset + .meta linkage for this target, then rerun query/context with --unity-resources on --unity-hydration parity",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 2
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "AudioClip WallVideos Settings",
+        "summary": {
+          "top_target": "VideoWall.shader",
+          "top_kind": "symbol",
+          "top_next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"VideoWall.shader\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 1
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "BattleHudLoader optimization",
+        "summary": {
+          "top_target": "NEON.Editor",
+          "top_kind": "symbol",
+          "top_next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"NEON.Editor\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 1
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "QTEHudLoader UI",
+        "summary": {
+          "top_target": "UIInput",
+          "top_kind": "symbol",
+          "top_next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"UIInput\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 1
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "SoulDataDisplay prefab",
+        "summary": {
+          "top_target": "ui_SoulDataDisplay_show.anim",
+          "top_kind": "symbol",
+          "top_next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"ui_SoulDataDisplay_show.anim\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 1
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "CharacterList DataAsset",
+        "summary": {
+          "top_target": "Assets/NEON/Scene/Global.unity",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Scene/Global.unity\" \"BarHomePage\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 3
+        },
+        "false_positive_anchor_leak": false
+      },
+      {
+        "query": "CoinPowerUp pickup egg",
+        "summary": {
+          "top_target": "Assets/NEON/DataAssets/Powerups/0_pickup/0_pickup_coin_1.asset",
+          "top_kind": "resource",
+          "top_next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Powerups/0_pickup/0_pickup_coin_1.asset\" \"CoinPowerUp\"",
+          "runtime_status": "failed",
+          "runtime_reason": "rule_not_matched",
+          "runtime_rule_id": "none",
+          "next_hops_count": 3
+        },
+        "false_positive_anchor_leak": false
+      }
+    ]
+  },
+  "evidence": {
+    "cypher": {
+      "edge_counts": {
+        "UNITY_COMPONENT_INSTANCE": {
+          "query": "MATCH ()-[r:CodeRelation {type:'UNITY_COMPONENT_INSTANCE'}]->() RETURN count(r) AS c",
+          "row_count": 1,
+          "markdown": "| c |\n| --- |\n| 75637 |",
+          "count": 75637
+        },
+        "UNITY_SERIALIZED_TYPE_IN": {
+          "query": "MATCH ()-[r:CodeRelation {type:'UNITY_SERIALIZED_TYPE_IN'}]->() RETURN count(r) AS c",
+          "row_count": 1,
+          "markdown": "| c |\n| --- |\n| 4822 |",
+          "count": 4822
+        },
+        "UNITY_ASSET_GUID_REF": {
+          "query": "MATCH ()-[r:CodeRelation {type:'UNITY_ASSET_GUID_REF'}]->() RETURN count(r) AS c",
+          "row_count": 1,
+          "markdown": "| c |\n| --- |\n| 8401 |",
+          "count": 8401
+        },
+        "UNITY_GRAPH_NODE_SCRIPT_REF": {
+          "query": "MATCH ()-[r:CodeRelation {type:'UNITY_GRAPH_NODE_SCRIPT_REF'}]->() RETURN count(r) AS c",
+          "row_count": 1,
+          "markdown": "| c |\n| --- |\n| 66152 |",
+          "count": 66152
+        }
+      },
+      "anchor_chain_counts": {
+        "james_new_to_james1": {
+          "query": "MATCH (:File {filePath:'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/0_初始武器/1_weapon_0_james_new.asset'})-[:CodeRelation {type:'UNITY_ASSET_GUID_REF'}]->(:File {filePath:'Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_0_james1.asset'}) RETURN count(*) AS c",
+          "row_count": 1,
+          "markdown": "| c |\n| --- |\n| 1 |",
+          "count": 1
+        },
+        "james1_to_energybyattackcount": {
+          "query": "MATCH (:File {filePath:'Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_0_james1.asset'})-[:CodeRelation {type:'UNITY_GRAPH_NODE_SCRIPT_REF'}]->(:Class {name:'EnergyByAttackCount'}) RETURN count(*) AS c",
+          "row_count": 1,
+          "markdown": "| c |\n| --- |\n| 1 |",
+          "count": 1
+        }
+      }
+    },
+    "command_contract": {
+      "query_help": {
+        "has_resource_seed_mode": true,
+        "has_resource_path_prefix": true,
+        "has_unity_evidence": true,
+        "has_unity_hydration": true
+      },
+      "anchor_next_command_smoke": {
+        "emitted_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_0_james1.asset\" \"ItemList_武器_全角色初始武器.asset\"",
+        "executed_command": "node /Volumes/Shuttle/projects/agentic/GitNexus/gitnexus/dist/cli/index.js query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_0_james1.asset\" \"ItemList_武器_全角色初始武器.asset\"",
+        "exit_code": 0,
+        "has_unknown_option_or_field": false,
+        "stdout_excerpt": "{\n  \"processes\": [],\n  \"process_symbols\": [],\n  \"definitions\": [\n    {\n      \"id\": \"Class:Assets/Plugins/FMOD/src/Editor/EventReferenceUpdater.cs:Asset\",\n      \"name\": \"Asset\",\n      \"filePath\": \"Assets/Plugins/FMOD/src/Editor/EventReferenceUpdater.cs\",\n      \"startLine\": 814,\n      \"endLine\": 814,\n      \"resourceBindings\": [],\n      \"serializedFields\": {\n        \"scalarFields\": [],\n        \"referenceFields\": []\n      },\n      \"unityDiagnostics\": [],\n      \"hydrationMeta\": {\n        \"requestedMode\": \"parity\",\n        \"effectiveMode\": \"parity\",\n        \"elapsedMs\": 2,\n        \"fallbackToCompact",
+        "stderr_excerpt": ""
+      }
+    },
+    "static_checks": {
+      "anti_hardcode_scan": {
+        "command": "rg -n \"1_weapon_0_james_new|1_weapon_0_james1|7289942075c31ab458d5214b4adc38a1|1b63118991a192f4d8ac217fd7fe49ce\" gitnexus/src --glob '!**/*.test.*'",
+        "exit_code": 1,
+        "stdout": "",
+        "stderr": ""
+      },
+      "strict_fallback_scan": {
+        "command": "rg -n \"mappedCandidates\\[0\\]|normalizedBindings\\[0\\]|first item|first binding\" gitnexus/src/mcp/local/local-backend.ts gitnexus/src/mcp/local/runtime-chain-verify.ts",
+        "exit_code": 0,
+        "stdout": "gitnexus/src/mcp/local/local-backend.ts:346:  // Balanced mode fallback only; strict mode is handled above and never falls back to first binding.\ngitnexus/src/mcp/local/local-backend.ts:347:  return normalizedBindings[0] || input.fallback;",
+        "stderr": ""
+      }
+    }
+  },
+  "gates": {
+    "anchor_pass": true,
+    "holdout_pass": true,
+    "negative_pass": true,
+    "command_contract_pass": true,
+    "cypher_edge_counts_pass": true,
+    "anchor_chain_closure_pass": true,
+    "anti_hardcode_pass": true
+  },
+  "overall_pass": true
+}

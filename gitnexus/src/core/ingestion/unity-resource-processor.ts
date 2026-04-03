@@ -1,6 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import { generateId } from '../../lib/utils.js';
-import type { KnowledgeGraph, GraphNode, GraphRelationship } from '../graph/types.js';
+import type { KnowledgeGraph, GraphNode } from '../graph/types.js';
 import type { UnityScanContext, UnitySymbolDeclaration } from '../unity/scan-context.js';
 import { buildUnityScanContext } from '../unity/scan-context.js';
 import { resolveUnityBindings } from '../unity/resolver.js';
@@ -170,6 +170,53 @@ export async function processUnityResources(
 
       for (const binding of resolved.resourceBindings) {
         bindingCount += 1;
+        componentCount += 1;
+        const resourceFileId = ensureResourceFileNode(graph, binding.resourcePath);
+        const componentPayload = buildUnityPayload(binding, payloadMode);
+        graph.addRelationship({
+          id: generateId('UNITY_COMPONENT_INSTANCE', `${classNode.id}->${resourceFileId}:${binding.componentObjectId}`),
+          type: 'UNITY_COMPONENT_INSTANCE',
+          sourceId: classNode.id,
+          targetId: resourceFileId,
+          confidence: 1.0,
+          reason: JSON.stringify(componentPayload),
+        });
+        graph.addRelationship({
+          id: generateId('UNITY_GRAPH_NODE_SCRIPT_REF', `${resourceFileId}->${classNode.id}`),
+          type: 'UNITY_GRAPH_NODE_SCRIPT_REF',
+          sourceId: resourceFileId,
+          targetId: classNode.id,
+          confidence: 1.0,
+          reason: JSON.stringify({
+            resourcePath: normalizePath(binding.resourcePath),
+            resourceType: binding.resourceType,
+            bindingKind: binding.bindingKind,
+            componentObjectId: binding.componentObjectId,
+          }),
+        });
+
+        for (const ref of binding.resolvedReferences || []) {
+          const targetAssetPath = normalizePath(String(ref.target?.assetPath || '').trim());
+          const referenceGuid = String(ref.guid || '').trim();
+          if (!targetAssetPath || !referenceGuid) continue;
+          const sourceFileId = ensureResourceFileNode(graph, binding.resourcePath);
+          const targetFileId = ensureResourceFileNode(graph, targetAssetPath);
+          graph.addRelationship({
+            id: generateId('UNITY_ASSET_GUID_REF', `${sourceFileId}->${targetFileId}:${ref.fieldName}:${referenceGuid}:${String(ref.fileId || '')}`),
+            type: 'UNITY_ASSET_GUID_REF',
+            sourceId: sourceFileId,
+            targetId: targetFileId,
+            confidence: 1.0,
+            reason: JSON.stringify({
+              resourcePath: normalizePath(binding.resourcePath),
+              targetResourcePath: targetAssetPath,
+              guid: referenceGuid.toLowerCase(),
+              fileId: String(ref.fileId || ''),
+              fieldName: ref.fieldName,
+              sourceLayer: ref.sourceLayer || 'unknown',
+            }),
+          });
+        }
 
         appendSummary(classNode.id, binding);
 
@@ -184,8 +231,22 @@ export async function processUnityResources(
         for (const hitSymbol of serializableTypeLinking.symbols) {
           serializedTypeSymbols.add(hitSymbol);
         }
-        for (const targetClassId of serializableTypeLinking.targetClassIds) {
-          appendSummary(targetClassId, binding);
+        for (const link of serializableTypeLinking.links) {
+          appendSummary(link.targetClassId, binding);
+          graph.addRelationship({
+            id: generateId('UNITY_SERIALIZED_TYPE_IN', `${classNode.id}->${link.targetClassId}:${normalizePath(binding.resourcePath)}:${link.fieldName}`),
+            type: 'UNITY_SERIALIZED_TYPE_IN',
+            sourceId: classNode.id,
+            targetId: link.targetClassId,
+            confidence: 1.0,
+            reason: JSON.stringify({
+              hostSymbol: symbol,
+              declaredType: link.declaredType,
+              fieldName: link.fieldName,
+              sourceLayer: link.sourceLayer,
+              resourcePath: normalizePath(binding.resourcePath),
+            }),
+          });
         }
       }
 
@@ -280,25 +341,6 @@ function resolveUnityPayloadMode(explicit?: UnityPayloadMode): UnityPayloadMode 
   return 'compact';
 }
 
-function createComponentNode(
-  symbol: string,
-  binding: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number],
-  payloadMode: UnityPayloadMode,
-): GraphNode {
-  const payload = buildUnityPayload(binding, payloadMode);
-  return {
-    id: generateId('CodeElement', `${binding.resourcePath}:${binding.componentObjectId}`),
-    label: 'CodeElement',
-    properties: {
-      name: `${symbol}@${binding.componentObjectId}`,
-      filePath: binding.resourcePath,
-      startLine: binding.evidence.line,
-      endLine: binding.evidence.line,
-      description: JSON.stringify(payload),
-    },
-  };
-}
-
 function buildUnityPayload(
   binding: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number],
   mode: UnityPayloadMode,
@@ -373,7 +415,12 @@ interface SerializableTypeLinkingStats {
   edgeCount: number;
   missCount: number;
   symbols: Set<string>;
-  targetClassIds: Set<string>;
+  links: Array<{
+    targetClassId: string;
+    fieldName: string;
+    declaredType: string;
+    sourceLayer: string;
+  }>;
 }
 
 function collectSerializableTypeTargetsForBinding(
@@ -386,7 +433,7 @@ function collectSerializableTypeTargetsForBinding(
     edgeCount: 0,
     missCount: 0,
     symbols: new Set<string>(),
-    targetClassIds: new Set<string>(),
+    links: [],
   };
   if (!scanContext) return stats;
 
@@ -412,7 +459,12 @@ function collectSerializableTypeTargetsForBinding(
       continue;
     }
 
-    stats.targetClassIds.add(serializableNode.id);
+    stats.links.push({
+      targetClassId: serializableNode.id,
+      fieldName,
+      declaredType,
+      sourceLayer,
+    });
     stats.edgeCount += 1;
     stats.symbols.add(declaredType);
   }
@@ -435,6 +487,22 @@ function collectBindingFieldSources(
     }
   }
   return fieldSources;
+}
+
+function ensureResourceFileNode(graph: KnowledgeGraph, resourcePath: string): string {
+  const normalizedPath = normalizePath(resourcePath);
+  const fileId = generateId('File', normalizedPath);
+  if (!graph.getNode(fileId)) {
+    graph.addNode({
+      id: fileId,
+      label: 'File',
+      properties: {
+        name: normalizedPath.split('/').pop() || normalizedPath,
+        filePath: normalizedPath,
+      },
+    });
+  }
+  return fileId;
 }
 
 function collectResourceSummaryRows(

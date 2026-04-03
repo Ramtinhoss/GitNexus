@@ -72,7 +72,8 @@ Supports optional scope controls for noisy codebases:
 Includes optional Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
 - Default unity_hydration_mode=compact (fast path).
-- Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.`,
+- Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.
+- Returns next_hops[] with ranked follow-up actions when Unity evidence is available.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -126,6 +127,12 @@ Includes optional Unity retrieval contract:
         max_reference_fields: {
           type: 'number',
           description: 'Optional cap for number of reference fields returned per binding',
+        },
+        resource_seed_mode: {
+          type: 'string',
+          enum: ['strict', 'balanced'],
+          description: 'Resource-seed policy for Unity retrieval hints. strict prioritizes user-provided asset path and deterministic mapped assets.',
+          default: 'balanced',
         },
         runtime_chain_verify: {
           type: 'string',
@@ -208,7 +215,8 @@ Process participation metadata:
 Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
 - Default unity_hydration_mode=compact (fast path).
-- Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.`,
+- Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.
+- Returns next_hops[] with ranked follow-up actions when Unity evidence is available.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -255,6 +263,12 @@ Unity retrieval contract:
         max_reference_fields: {
           type: 'number',
           description: 'Optional cap for number of reference fields returned per binding',
+        },
+        resource_seed_mode: {
+          type: 'string',
+          enum: ['strict', 'balanced'],
+          description: 'Resource-seed policy for Unity retrieval hints. strict prioritizes user-provided asset path and deterministic mapped assets.',
+          default: 'balanced',
         },
         runtime_chain_verify: {
           type: 'string',

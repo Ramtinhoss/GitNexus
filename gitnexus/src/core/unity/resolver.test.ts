@@ -297,6 +297,86 @@ test('resolveUnityBindings deepParseLargeResources can override lightweight fall
   }
 });
 
+test('resolveUnityBindings matches MonoBehaviour script guid case-insensitively', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(path.dirname(fixtureRoot), 'tmp-guid-case-unity-'));
+  const scriptsDir = path.join(tempRoot, 'Assets/Scripts');
+  const assetDir = path.join(tempRoot, 'Assets/Data');
+  await fs.mkdir(scriptsDir, { recursive: true });
+  await fs.mkdir(assetDir, { recursive: true });
+
+  try {
+    const scriptPath = 'Assets/Scripts/CaseGuidSymbol.cs';
+    const assetPath = 'Assets/Data/CaseGuid.asset';
+    const scriptGuid = 'abcdefabcdefabcdefabcdefabcdefab';
+
+    await fs.writeFile(path.join(tempRoot, scriptPath), 'public class CaseGuidSymbol {}', 'utf-8');
+    await fs.writeFile(path.join(tempRoot, `${scriptPath}.meta`), `guid: ${scriptGuid}\n`, 'utf-8');
+    await fs.writeFile(
+      path.join(tempRoot, assetPath),
+      `--- !u!114 &11400000\nMonoBehaviour:\n  m_Script: {fileID: 11500000, guid: ${scriptGuid.toUpperCase()}, type: 3}\n  value: 1\n`,
+      'utf-8',
+    );
+
+    const scanContext = await buildUnityScanContext({
+      repoRoot: tempRoot,
+      scopedPaths: [scriptPath, `${scriptPath}.meta`, assetPath],
+      symbolDeclarations: [{ symbol: 'CaseGuidSymbol', scriptPath }],
+    });
+
+    const resolved = await resolveUnityBindings({
+      repoRoot: tempRoot,
+      symbol: 'CaseGuidSymbol',
+      scanContext,
+    });
+
+    assert.equal(resolved.resourceBindings.length, 1);
+    assert.equal(resolved.resourceBindings[0]?.resourcePath, assetPath);
+    assert.equal(resolved.unityDiagnostics.length, 0);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('resolveUnityBindings parses MonoBehaviour blocks with negative object ids', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(path.dirname(fixtureRoot), 'tmp-negative-object-id-'));
+  const scriptsDir = path.join(tempRoot, 'Assets/Scripts');
+  const assetDir = path.join(tempRoot, 'Assets/Graphs');
+  await fs.mkdir(scriptsDir, { recursive: true });
+  await fs.mkdir(assetDir, { recursive: true });
+
+  try {
+    const scriptPath = 'Assets/Scripts/NegativeIdSymbol.cs';
+    const assetPath = 'Assets/Graphs/NegativeId.asset';
+    const scriptGuid = '1b63118991a192f4d8ac217fd7fe49ce';
+
+    await fs.writeFile(path.join(tempRoot, scriptPath), 'public class NegativeIdSymbol {}', 'utf-8');
+    await fs.writeFile(path.join(tempRoot, `${scriptPath}.meta`), `guid: ${scriptGuid}\n`, 'utf-8');
+    await fs.writeFile(
+      path.join(tempRoot, assetPath),
+      `--- !u!114 &-8618438378761226257\nMonoBehaviour:\n  m_Script: {fileID: 11500000, guid: ${scriptGuid}, type: 3}\n  m_Name: Negative Id Node\n`,
+      'utf-8',
+    );
+
+    const scanContext = await buildUnityScanContext({
+      repoRoot: tempRoot,
+      scopedPaths: [scriptPath, `${scriptPath}.meta`, assetPath],
+      symbolDeclarations: [{ symbol: 'NegativeIdSymbol', scriptPath }],
+    });
+
+    const resolved = await resolveUnityBindings({
+      repoRoot: tempRoot,
+      symbol: 'NegativeIdSymbol',
+      scanContext,
+    });
+
+    assert.equal(resolved.resourceBindings.length, 1);
+    assert.equal(resolved.resourceBindings[0]?.resourcePath, assetPath);
+    assert.equal(resolved.unityDiagnostics.length, 0);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('extractAssetRefPathReferences parses nested _relativePath rows and marks sprite assets', () => {
   const refs = extractAssetRefPathReferences({
     scalarFields: [

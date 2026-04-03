@@ -108,6 +108,9 @@ program
   .option('--scope-preset <preset>', 'Scope preset for retrieval: unity-gameplay|unity-all')
   .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
+  .option('--unity-evidence <mode>', 'Unity evidence payload mode: summary|focused|full', 'summary')
+  .option('--resource-path-prefix <path>', 'Filter or seed Unity resource evidence by path prefix')
+  .option('--resource-seed-mode <mode>', 'Resource seed mode for Unity hint ranking: strict|balanced', 'balanced')
   .option('--runtime-chain-verify <mode>', 'Runtime chain verification mode: off|on-demand', 'off')
   .action(createLazyAction(() => import('./tool.js'), 'queryCommand'));
 
@@ -120,6 +123,9 @@ program
   .option('--content', 'Include full symbol source code')
   .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
+  .option('--unity-evidence <mode>', 'Unity evidence payload mode: summary|focused|full', 'summary')
+  .option('--resource-path-prefix <path>', 'Filter or seed Unity resource evidence by path prefix')
+  .option('--resource-seed-mode <mode>', 'Resource seed mode for Unity hint ranking: strict|balanced', 'balanced')
   .option('--runtime-chain-verify <mode>', 'Runtime chain verification mode: off|on-demand', 'off')
   .action(createLazyAction(() => import('./tool.js'), 'contextCommand'));
 

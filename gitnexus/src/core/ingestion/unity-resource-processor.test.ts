@@ -38,7 +38,7 @@ const listRelativeFixtureFiles = async (root: string): Promise<string[]> => {
   return out;
 };
 
-test('processUnityResources does not emit UNITY_COMPONENT_IN or synthetic resource File nodes', async () => {
+test('processUnityResources emits schema-compatible component-instance edges and materialized resource file nodes', async () => {
   const graph = createKnowledgeGraph();
 
   for (const symbol of symbols) {
@@ -76,6 +76,7 @@ test('processUnityResources does not emit UNITY_COMPONENT_IN or synthetic resour
 
   const result = await processUnityResources(graph, { repoPath: fixtureRoot });
   const unityFileRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_COMPONENT_IN');
+  const unityComponentInstanceRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_COMPONENT_INSTANCE');
   const unitySummaryRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_RESOURCE_SUMMARY');
   const syntheticResourceFiles = [...graph.iterNodes()].filter(
     (node) => node.label === 'File' && /\.(prefab|unity|asset)$/.test(String(node.properties.filePath)),
@@ -84,7 +85,8 @@ test('processUnityResources does not emit UNITY_COMPONENT_IN or synthetic resour
 
   assert.equal(result.bindingCount > 0, true);
   assert.equal(unityFileRelations.length, 0);
-  assert.equal(syntheticResourceFiles.length, 0);
+  assert.ok(unityComponentInstanceRelations.length > 0);
+  assert.ok(syntheticResourceFiles.length > 0);
   assert.ok(unitySummaryRelations.length > 0);
   assert.equal(componentNodes.length, 0);
   assert.ok(result.bindingCount >= symbols.length);
@@ -525,6 +527,78 @@ test('processUnityResources writes UNITY_RESOURCE_SUMMARY for serializable class
   const summaryRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_RESOURCE_SUMMARY');
   const serializableSummary = summaryRelations.filter((rel) => rel.sourceId === serializableClassId);
   assert.equal(serializableSummary.length, 1);
+  const serializedTypeRelations = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_SERIALIZED_TYPE_IN');
+  assert.equal(serializedTypeRelations.length, 1);
+  const reason = JSON.parse(String(serializedTypeRelations[0]?.reason || '{}'));
+  assert.equal(reason.fieldName, 'assetRef');
+  assert.equal(reason.declaredType, 'AssetRef');
+  assert.equal(reason.hostSymbol, 'HostClass');
+});
+
+test('processUnityResources writes asset-guid and graph-node reference edges from resolved references', async () => {
+  const graph = createKnowledgeGraph();
+  const hostPath = 'Assets/Scripts/WeaponConfig.cs';
+  const classId = generateId('Class', `${hostPath}:WeaponConfig`);
+  graph.addNode({
+    id: classId,
+    label: 'Class',
+    properties: { name: 'WeaponConfig', filePath: hostPath },
+  });
+
+  const fakeScanContext = {
+    symbolToScriptPath: new Map([['WeaponConfig', hostPath]]),
+    scriptPathToGuid: new Map([[hostPath, '11111111111111111111111111111111']]),
+    guidToResourceHits: new Map([
+      ['11111111111111111111111111111111', [{ resourcePath: 'Assets/Data/WeaponConfig.asset', resourceType: 'asset', line: 3, lineText: 'guid: 1111' }]],
+    ]),
+    resourceDocCache: new Map(),
+  };
+
+  await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext as any,
+      resolveBindings: async () =>
+        ({
+          symbol: 'WeaponConfig',
+          scriptPath: hostPath,
+          scriptGuid: '11111111111111111111111111111111',
+          resourceBindings: [
+            {
+              resourcePath: 'Assets/Data/WeaponConfig.asset',
+              resourceType: 'asset',
+              bindingKind: 'direct',
+              componentObjectId: '11400000',
+              evidence: { line: 3, lineText: 'guid: 1111' },
+              serializedFields: { scalarFields: [], referenceFields: [] },
+              resolvedReferences: [
+                {
+                  fieldName: 'gungraph',
+                  sourceLayer: 'asset',
+                  fileId: '11400000',
+                  guid: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                  fromList: false,
+                  resolution: 'external-asset',
+                  target: { assetPath: 'Assets/Graphs/Weapon.asset' },
+                },
+              ],
+            },
+          ],
+          serializedFields: { scalarFields: [], referenceFields: [] },
+          unityDiagnostics: [],
+        }) as any,
+    },
+  );
+
+  const graphNodeRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_GRAPH_NODE_SCRIPT_REF');
+  const guidRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF');
+  assert.equal(graphNodeRefs.length, 1);
+  assert.equal(guidRefs.length, 1);
+  const guidReason = JSON.parse(String(guidRefs[0]?.reason || '{}'));
+  assert.equal(guidReason.guid, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+  assert.equal(guidReason.targetResourcePath, 'Assets/Graphs/Weapon.asset');
+  assert.equal(guidReason.fieldName, 'gungraph');
 });
 
 test('processUnityResources writes compact UNITY_RESOURCE_SUMMARY reason by default', async () => {

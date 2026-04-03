@@ -119,9 +119,12 @@ export async function resolveUnityBindings(input: ResolveInput): Promise<Resolve
     }
 
     const blocks = await getResourceBlocks(input.repoRoot, hit.resourcePath, input.scanContext);
-    const matchedComponents = blocks.filter(
-      (block) => block.objectType === 'MonoBehaviour' && block.fields.m_Script?.includes(scriptGuid),
-    );
+    const matchedComponents = blocks.filter((block) => {
+      if (block.objectType !== 'MonoBehaviour') return false;
+      const scriptRefGuid = extractGuidFromScriptField(block.fields.m_Script || '');
+      if (!scriptRefGuid) return false;
+      return scriptRefGuid.toLowerCase() === scriptGuid.toLowerCase();
+    });
 
     if (matchedComponents.length === 0) {
       unityDiagnostics.push(`No MonoBehaviour block matched script guid ${scriptGuid} in ${hit.resourcePath}.`);
@@ -604,6 +607,10 @@ function baseLayerName(resourceType: 'prefab' | 'scene' | 'asset'): string {
 function extractFileId(rawValue?: string): string | undefined {
   if (!rawValue) return undefined;
   return rawValue.match(/fileID:\s*(\d+)/)?.[1];
+}
+
+function extractGuidFromScriptField(rawValue: string): string | undefined {
+  return rawValue.match(/guid:\s*([0-9a-f]{32})/i)?.[1];
 }
 
 function parseObjectReference(rawValue: string): { fileId?: string; guid?: string; resolvedAssetPath?: string } | null {

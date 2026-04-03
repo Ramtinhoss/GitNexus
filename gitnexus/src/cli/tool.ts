@@ -18,7 +18,7 @@
 import { writeSync } from 'node:fs';
 import path from 'node:path';
 import { LocalBackend } from '../mcp/local/local-backend.js';
-import type { UnityHydrationMode, UnityResourcesMode } from '../core/unity/options.js';
+import type { UnityEvidenceMode, UnityHydrationMode, UnityResourcesMode } from '../core/unity/options.js';
 import type { UnityUiTraceGoal, UnityUiSelectorMode } from '../core/unity/ui-trace.js';
 import { getGitRoot } from '../storage/git.js';
 import { getStoragePaths, listRegisteredRepos, loadMeta } from '../storage/repo-manager.js';
@@ -95,6 +95,9 @@ export async function queryCommand(queryText: string, options?: {
   scopePreset?: 'unity-gameplay' | 'unity-all';
   unityResources?: UnityResourcesMode;
   unityHydration?: UnityHydrationMode;
+  unityEvidence?: UnityEvidenceMode;
+  resourcePathPrefix?: string;
+  resourceSeedMode?: 'strict' | 'balanced';
   runtimeChainVerify?: 'off' | 'on-demand';
 }): Promise<void> {
   if (!queryText?.trim()) {
@@ -113,6 +116,9 @@ export async function queryCommand(queryText: string, options?: {
     scope_preset: options?.scopePreset,
     unity_resources: options?.unityResources,
     unity_hydration_mode: options?.unityHydration,
+    unity_evidence_mode: options?.unityEvidence,
+    resource_path_prefix: options?.resourcePathPrefix,
+    resource_seed_mode: options?.resourceSeedMode,
     runtime_chain_verify: options?.runtimeChainVerify,
     repo,
   });
@@ -126,6 +132,9 @@ export async function contextCommand(name: string, options?: {
   content?: boolean;
   unityResources?: UnityResourcesMode;
   unityHydration?: UnityHydrationMode;
+  unityEvidence?: UnityEvidenceMode;
+  resourcePathPrefix?: string;
+  resourceSeedMode?: 'strict' | 'balanced';
   runtimeChainVerify?: 'off' | 'on-demand';
 }): Promise<void> {
   if (!name?.trim() && !options?.uid) {
@@ -142,6 +151,9 @@ export async function contextCommand(name: string, options?: {
     include_content: options?.content ?? false,
     unity_resources: options?.unityResources,
     unity_hydration_mode: options?.unityHydration,
+    unity_evidence_mode: options?.unityEvidence,
+    resource_path_prefix: options?.resourcePathPrefix,
+    resource_seed_mode: options?.resourceSeedMode,
     runtime_chain_verify: options?.runtimeChainVerify,
     repo,
   });
