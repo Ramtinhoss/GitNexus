@@ -256,9 +256,18 @@ function extractLikelySymbolNames(queryText?: string): string[] {
   return dedupeStrings(matches.filter((name) => !blacklist.has(name)));
 }
 
-function pickBestSymbol(rows: any[], preferredNames: string[] = []): SymbolCandidate | undefined {
+function pickBestSymbol(
+  rows: any[],
+  preferredNames: {
+    explicitNames?: string[];
+    hostBaseTypeNames?: string[];
+    queryNames?: string[];
+  } = {},
+): SymbolCandidate | undefined {
   if (!Array.isArray(rows) || rows.length === 0) return undefined;
-  const preferred = preferredNames.map((name) => name.toLowerCase());
+  const explicit = (preferredNames.explicitNames || []).map((name) => name.toLowerCase());
+  const hostBase = (preferredNames.hostBaseTypeNames || []).map((name) => name.toLowerCase());
+  const queryNames = (preferredNames.queryNames || []).map((name) => name.toLowerCase());
   const typed = rows
     .map((row) => ({
       id: String(row.id || ''),
@@ -277,7 +286,9 @@ function pickBestSymbol(rows: any[], preferredNames: string[] = []): SymbolCandi
     if (rowType === 'method') score += 3;
     if (rowType === 'function') score += 2;
     const rowName = row.name.toLowerCase();
-    if (preferred.includes(rowName)) score += 5;
+    if (queryNames.includes(rowName)) score += 5;
+    if (hostBase.includes(rowName)) score += 20;
+    if (explicit.includes(rowName)) score += 30;
     return score;
   };
   return typed.sort((a, b) => rank(b) - rank(a))[0];
@@ -288,13 +299,16 @@ async function resolvePrimarySymbolCandidate(
 ): Promise<SymbolCandidate | undefined> {
   const explicitName = normalizeText(input.symbolName);
   const explicitFilePath = normalizeText(input.symbolFilePath);
-  const ruleHostBaseTypes = Array.isArray(input.rule?.host_base_type)
-    ? input.rule!.host_base_type.map((name) => normalizeText(name)).filter(Boolean)
+  const ruleHostBaseTypes = Array.isArray(input.rule?.match?.host_base_type)
+    ? input.rule!.match!.host_base_type!.map((name) => normalizeText(name)).filter(Boolean)
+    : Array.isArray(input.rule?.host_base_type)
+      ? input.rule!.host_base_type.map((name) => normalizeText(name)).filter(Boolean)
     : [];
+  const likelyQueryNames = extractLikelySymbolNames(input.queryText);
   const likelyNames = dedupeStrings([
     ...(explicitName ? [explicitName] : []),
     ...ruleHostBaseTypes,
-    ...extractLikelySymbolNames(input.queryText),
+    ...likelyQueryNames,
   ]);
 
   if (explicitFilePath) {
@@ -308,7 +322,11 @@ async function resolvePrimarySymbolCandidate(
       filePath: explicitFilePath,
       symbolName: explicitName,
     });
-    const picked = pickBestSymbol(rows, likelyNames);
+    const picked = pickBestSymbol(rows, {
+      explicitNames: explicitName ? [explicitName] : [],
+      hostBaseTypeNames: ruleHostBaseTypes,
+      queryNames: likelyQueryNames,
+    });
     if (picked) return picked;
   }
 
@@ -321,7 +339,11 @@ async function resolvePrimarySymbolCandidate(
     `, {
       symbolNames: likelyNames,
     });
-    const picked = pickBestSymbol(rows, likelyNames);
+    const picked = pickBestSymbol(rows, {
+      explicitNames: explicitName ? [explicitName] : [],
+      hostBaseTypeNames: ruleHostBaseTypes,
+      queryNames: likelyQueryNames,
+    });
     if (picked) return picked;
   }
 
@@ -819,10 +841,59 @@ function matchesRuntimeClaimRule(
   rule: RuntimeClaimRule,
   input: VerifyRuntimeClaimInput,
 ): boolean {
+  return Number.isFinite(scoreRuntimeClaimRule(rule, input));
+}
+
+function scoreRuntimeClaimRule(
+  rule: RuntimeClaimRule,
+  input: VerifyRuntimeClaimInput,
+): number {
   const haystack = buildRuntimeMatchHaystack(input);
-  const tokens = parseTriggerTokens(rule.trigger_family);
-  if (tokens.length === 0) return false;
-  return tokens.some((token) => haystack.includes(token));
+  const tokens = Array.isArray(rule.match?.trigger_tokens) && rule.match!.trigger_tokens.length > 0
+    ? rule.match!.trigger_tokens
+    : parseTriggerTokens(rule.trigger_family);
+  if (tokens.length === 0) return Number.NEGATIVE_INFINITY;
+
+  let score = 0;
+  let matchedTrigger = false;
+  for (const token of tokens) {
+    const normalized = String(token || '').trim().toLowerCase();
+    if (!normalized) continue;
+    if (haystack.includes(normalized)) {
+      matchedTrigger = true;
+      score += 10 + normalized.length;
+    }
+  }
+  if (!matchedTrigger) return Number.NEGATIVE_INFINITY;
+
+  const boostLists = [
+    ...(Array.isArray(rule.match?.host_base_type) ? [rule.match!.host_base_type!] : []),
+    ...(Array.isArray(rule.host_base_type) ? [rule.host_base_type] : []),
+  ];
+  for (const list of boostLists) {
+    for (const token of list) {
+      const normalized = String(token || '').trim().toLowerCase();
+      if (normalized && haystack.includes(normalized)) score += 20 + normalized.length;
+    }
+  }
+
+  const resourceLists = [
+    ...(Array.isArray(rule.match?.resource_types) ? [rule.match!.resource_types!] : []),
+    ...(Array.isArray(rule.resource_types) ? [rule.resource_types] : []),
+  ];
+  for (const list of resourceLists) {
+    for (const token of list) {
+      const normalized = String(token || '').trim().toLowerCase();
+      if (normalized && haystack.includes(normalized)) score += 4 + normalized.length;
+    }
+  }
+
+  for (const token of rule.match?.module_scope || []) {
+    const normalized = String(token || '').trim().toLowerCase();
+    if (normalized && haystack.includes(normalized)) score += 8 + normalized.length;
+  }
+
+  return score;
 }
 
 export async function verifyRuntimeClaimOnDemand(
@@ -852,7 +923,10 @@ export async function verifyRuntimeClaimOnDemand(
     });
   }
 
-  const matchedRule = activeRules.find((rule) => matchesRuntimeClaimRule(rule, input));
+  const matchedRule = [...activeRules]
+    .map((rule) => ({ rule, score: scoreRuntimeClaimRule(rule, input) }))
+    .filter((entry) => Number.isFinite(entry.score))
+    .sort((a, b) => (b.score - a.score) || a.rule.id.localeCompare(b.rule.id))[0]?.rule;
   if (!matchedRule) {
     return buildFailureRuntimeClaim({
       reason: 'rule_not_matched',

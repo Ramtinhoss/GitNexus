@@ -15,6 +15,13 @@ export interface RuntimeClaimRule {
   trigger_family: string;
   resource_types: string[];
   host_base_type: string[];
+  match?: {
+    trigger_tokens: string[];
+    symbol_kind?: string[];
+    module_scope?: string[];
+    resource_types?: string[];
+    host_base_type?: string[];
+  };
   required_hops: string[];
   guarantees: string[];
   non_guarantees: string[];
@@ -197,6 +204,13 @@ function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
     trigger_family: legacyTriggerFamily || triggerTokens[0] || 'unknown',
     resource_types: readList(raw, 'resource_types'),
     host_base_type: readList(raw, 'host_base_type'),
+    match: {
+      trigger_tokens: triggerTokens,
+      symbol_kind: readNestedList(raw, 'match', 'symbol_kind'),
+      module_scope: readNestedList(raw, 'match', 'module_scope'),
+      resource_types: readNestedList(raw, 'match', 'resource_types'),
+      host_base_type: readNestedList(raw, 'match', 'host_base_type'),
+    },
     required_hops: closureRequiredHops.length > 0 ? closureRequiredHops : legacyRequiredHops,
     guarantees: claimGuarantees.length > 0 ? claimGuarantees : legacyGuarantees,
     non_guarantees: claimNonGuarantees.length > 0 ? claimNonGuarantees : legacyNonGuarantees,
@@ -222,6 +236,7 @@ export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Pr
         trigger_family: rule.trigger_family,
         resource_types: rule.resource_types,
         host_base_type: rule.host_base_type,
+        match: rule.match,
         required_hops: rule.required_hops,
         guarantees: rule.guarantees,
         non_guarantees: rule.non_guarantees,
