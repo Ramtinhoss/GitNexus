@@ -26,11 +26,10 @@ Resolved FC-01..FC-06 from the Phase1-4 review/fact-check set.
 
 ## Artifacts
 
-1. `docs/reports/2026-04-02-phase1-4-remediation-baseline.md`
-2. `docs/reports/2026-04-02-phase1-process-ref-acceptance.remediated.json`
-3. `docs/reports/2026-04-02-phase2-runtime-claim-acceptance.remediated.json`
-4. `docs/reports/2026-04-02-phase4-hydration-policy-repeatability.remediated.json`
-5. `docs/reports/2026-04-02-phase1-4-remediation-validation.md`
+1. `docs/reports/2026-04-02-phase1-process-ref-acceptance.remediated.json`
+2. `docs/reports/2026-04-02-phase2-runtime-claim-acceptance.remediated.json`
+3. `docs/reports/2026-04-02-phase4-hydration-policy-repeatability.remediated.json`
+4. `docs/reports/2026-04-02-phase1-4-remediation-validation.md`
 
 ## Gate Outcome
 

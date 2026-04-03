@@ -1,6 +1,6 @@
 # Unity Runtime Process 真理源（Design × As-Built）
 
-Date: 2026-04-02  
+Date: 2026-04-03  
 Owner: GitNexus  
 Status: Active (source of truth)
 
@@ -9,8 +9,9 @@ Status: Active (source of truth)
 本文用于统一以下两类信息：
 
 1. 设计意图：
-   - `docs/2026-03-31-unity-runtime-process-phased-design.md`
-   - `docs/plans/2026-04-01-unity-runtime-process-v1-reload-verified-chain-design.md`
+   - `docs/plans/2026-04-02-unity-runtime-process-phase5-offline-rule-lab-implementation-plan.md`
+   - `docs/plans/2026-04-02-unity-runtime-retrieval-gap-remediation-implementation-plan.md`
+   - `docs/plans/2026-04-03-unity-runtime-validation-gap-remediation-plan.md`
 2. 实际实现（代码与测试）：
    - ingestion / process 生成链路
    - MCP `query/context` 检索链路
@@ -62,7 +63,7 @@ Status: Active (source of truth)
    - 全局 gate `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY` 为启用
    - `query/context` 接入：`gitnexus/src/mcp/local/local-backend.ts`
 3. claim + verifier 调度：
-   - `verifyRuntimeClaimOnDemand` 先加载规则目录、匹配 `trigger_family` token，再把 matched rule 注入 verifier。
+   - `verifyRuntimeClaimOnDemand` 先加载规则目录，按 `trigger_tokens + host_base_type + resource_types + module_scope` 做加权匹配，再把 matched rule 注入 verifier。
    - `verifyRuntimeChainOnDemand` 仅在 matched rule 存在时执行；无 rule 时直接返回 `undefined`（不再存在 legacy Reload token fallback）。
    - verifier 统一走 rule-driven DSL 拓扑执行（`required_hops` + evidence/gap 归并），无项目特化硬编码常量分支。
    - 代码：`gitnexus/src/mcp/local/runtime-chain-verify.ts`
@@ -70,6 +71,7 @@ Status: Active (source of truth)
    - `verifyRuntimeClaimOnDemand` + `verifyRuntimeChainOnDemand`
    - `required_hops` 驱动 `status/evidence_level` 计算；`guarantees/non_guarantees` 来源于 matched rule
    - 输出 `runtime_chain.{status,evidence_level,hops,gaps}`
+   - broad 无 seed 且资源选择歧义时，允许返回 `verified_partial / verified_segment` 的代码段闭环与显式 gap，而不是猜测具体 resource hop
 5. V1 验收 runner：
    - `gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts:149-238`
    - 语义闭环校验（CurGunGraph + runtime anchors）：`101-116`
@@ -166,6 +168,7 @@ Status: Active (source of truth)
 3. `unity_evidence_mode`:
    - `summary | focused | full`
    - 与 `resource_path_prefix / binding_kind / max_bindings / max_reference_fields` 共同决定证据裁剪与 `evidence_meta`
+   - `evidence_meta.minimum_evidence_satisfied` 表示响应负载完整性；`evidence_meta.verifier_minimum_evidence_satisfied` 表示当前 verifier 输入是否足够
 4. `hydration_policy`:
    - `fast => compact`（高优先级，可覆盖 `unity_hydration_mode`）
    - `balanced => 使用请求的 unity_hydration_mode（compact/parity）；compact 且缺证据时可自动 parity 升级`
@@ -174,6 +177,10 @@ Status: Active (source of truth)
 5. `missing_evidence[]`:
    - 在不完整输出时必须返回解释条目
    - 保留兼容字段 `hydrationMeta.needsParityRetry`（compact incomplete 场景）
+6. `resource_path_prefix` / seed contract:
+   - 当请求显式提供资源路径（参数或 query 内嵌 Unity 资源路径）时，query 与 verifier 应以该 seed 为优先锚点
+   - `resource_seed_mode=strict` 不允许回退到任意 first binding；若 seed 无法映射，只返回显式 gap / follow-up
+   - 推荐的运行时链验证姿势是“类符号 + 资源文件路径”联合检索，而不是仅用 broad 类名猜具体 asset
 
 ## 4.5 Phase 5 Offline Rule Lab 合约（新增）
 
@@ -235,6 +242,10 @@ Status: Active (source of truth)
 2. Phase 3 文档中的建议 flag `GITNEXUS_UNITY_PROCESS_METHOD_PROJECTION` 当前未实现为独立开关；方法投影在 query/context 默认启用。
 3. V1 不回写 verified chain 到 Process 持久图（仅请求时计算并返回），与设计的 out-of-scope 一致。
 4. 强验证链路对仓库文件内容与索引状态一致性敏感；若索引 stale，应先 `gitnexus analyze`。
+5. broad、无 seed 的运行时检索当前是“安全 partial”语义：
+   - 若规则已命中但资源锚点无法被 query/resource evidence 唯一确定，`next_hops` 优先返回 retrieval-rule follow-up 与 symbol context，不输出拍脑袋 resource hop
+   - 该场景允许 `runtime_claim=verified_partial` 且 `runtime_chain.gaps` 包含 `resource/guid_map`
+   - 对实际验收与 agent 工作流，seeded 查询是完成运行时链闭环的主路径
 
 ## 7. 2026-04-02 修复回写（FC-01..FC-08）
 
@@ -247,14 +258,23 @@ Status: Active (source of truth)
 7. FC-07: Phase 5 Offline Rule Lab 生命周期（CLI + MCP）与验收 runner 落地，报告产物：`docs/reports/2026-04-02-phase5-rule-lab-acceptance.{json,md}`。
 8. FC-08: Rule Lab 契约测试补齐（`rule-lab-contracts.test.ts`、`rule-lab-tools.test.ts`、`phase5 rule-lab promoted rule is loadable`）并纳入回归基线。
 
-## 8. Rule Lab 当前边界（2026-04-02 As-Built）
+## 8. 2026-04-03 收口回写（RV-01..RV-04）
+
+1. RV-01: runtime rule matching 从单 `trigger_family` token 提升为加权匹配，综合 `trigger_tokens + host_base_type + resource_types + module_scope`，避免 broad reload query 误绑到无关资源。
+2. RV-02: verifier 支持 anchored topology execution；seeded reload/GunGraph 场景可闭合 `resource -> guid_map -> code_loader -> code_runtime`，并接受 seed->mapped graph 等价。
+3. RV-03: query evidence completeness 与 verifier admissibility 拆分；`minimum_evidence_satisfied=false` 不再自动抹掉已闭合的 verifier chain。
+4. RV-04: neonspark live 验证收敛到双形态契约：
+   - broad query：不再漂移到错误资源，返回 retrieval follow-up + partial code chain
+   - seeded query：`verified_full / verified_chain`
+   - `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json` 的 `verify-only` 通过
+## 9. Rule Lab 当前边界（2026-04-02 As-Built）
 
 1. `promote.ts` 仍允许从 curated 内容推断 `trigger_family`，但 scope/topology/claims 必须通过 DSL lint；`unknown|TODO|TBD|<...>` 占位会被拒绝。
 2. `analyze.ts` 已升级为多候选 topology 输出（含 coverage/conflict/counter-example 统计）；当前仍为启发式候选空间，后续可继续增强召回/排序策略。
 3. `review-pack.ts` token 估算采用 `JSON.length/4` 启发式，适配离线包控与截断诊断；后续若引入模型 tokenizer，可替换估算函数但保持 `token_budget_estimate` 字段稳定。
 4. Rule Lab 产物写入 `.gitnexus/rules/**`，受仓库 `.gitignore` 影响（默认忽略 `.gitnexus`）；如需提交样例规则需显式跟踪。
 
-## 9. 维护规则
+## 10. 维护规则
 
 1. 任何 Unity runtime process 行为变更（字段、flag、语义、默认值），必须同步更新本文。
 2. 扩展非 Reload 场景专用 verifier/extractor 时，需在本文补充：

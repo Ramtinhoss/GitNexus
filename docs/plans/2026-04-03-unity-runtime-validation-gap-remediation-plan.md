@@ -23,6 +23,13 @@ Task 4 | completed | Query evidence completeness split from verifier admissibili
 Task 5 | completed | dist rebuilt; neonspark reindexed and reload rule re-promoted; live broad-query drift remediated by retrieval-side fallback tightening
 Task 6 | completed | Live validation reports written; seeded query verified_full, broad query no longer points to unrelated resource hops, legacy acceptance artifact verify-only passes
 
+## Final Acceptance Note
+
+- Plan status: accepted on 2026-04-03.
+- Seeded runtime validation path is fully remediated: class symbol + resource path query returns `verified_full / verified_chain` with closed `resource -> guid_map -> code_loader -> code_runtime`.
+- Broad unseeded reload query is intentionally retained as a safe partial path: it no longer invents unrelated resource hops, and instead returns retrieval follow-up plus explicit `resource/guid_map` gaps.
+- This remaining broad-query partial state is treated as an accepted product boundary, not an open blocker, because the intended agent/user workflow for runtime chain closure is seeded retrieval.
+
 ## Design Traceability Matrix
 
 Design Clause ID | Criticality | Mapped Tasks | Verification Command | Artifact Evidence Field | Failure Signal
