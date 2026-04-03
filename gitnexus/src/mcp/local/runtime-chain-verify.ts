@@ -23,6 +23,7 @@ export interface RuntimeChainGap {
   segment: 'resource' | 'guid_map' | 'loader' | 'runtime';
   reason: string;
   next_command: string;
+  why_not_next?: string;
 }
 
 export interface RuntimeChainResult {
@@ -30,6 +31,7 @@ export interface RuntimeChainResult {
   evidence_level: RuntimeChainEvidenceLevel;
   hops: RuntimeChainHop[];
   gaps: RuntimeChainGap[];
+  why_not_next?: string[];
 }
 
 interface QueryExecutor {
@@ -101,11 +103,16 @@ function sanitizeRequiredHops(requiredHops?: string[]): RuntimeChainHopType[] {
   return normalized.length > 0 ? [...new Set(normalized)] : [...DEFAULT_REQUIRED_HOPS];
 }
 
-function buildGap(segment: RuntimeChainGap['segment'], reason: string): RuntimeChainGap {
+function buildGap(
+  segment: RuntimeChainGap['segment'],
+  reason: string,
+  options?: { nextCommand?: string; whyNotNext?: string },
+): RuntimeChainGap {
   return {
     segment,
     reason,
-    next_command: VERIFY_NEXT_COMMAND,
+    next_command: options?.nextCommand || VERIFY_NEXT_COMMAND,
+    ...(options?.whyNotNext ? { why_not_next: options.whyNotNext } : {}),
   };
 }
 
@@ -434,7 +441,54 @@ function finalizeRuntimeChain(input: {
     evidence_level,
     hops: input.hops,
     gaps: input.gaps,
+    why_not_next: input.gaps.map((gap) => String(gap.why_not_next || '').trim()).filter(Boolean),
   };
+}
+
+function matchesConstraint(value: string, expected: unknown): boolean {
+  const normalizedValue = String(value || '').toLowerCase();
+  const normalizedExpected = String(expected || '').trim().toLowerCase();
+  if (!normalizedExpected) return true;
+  return normalizedValue === normalizedExpected || normalizedValue.includes(normalizedExpected);
+}
+
+function scoreCallEdgeForTopology(edge: CallEdge, constraints?: Record<string, unknown>): number {
+  if (!constraints || Object.keys(constraints).length === 0) return 1;
+  let score = 0;
+  const checks: Array<[string, unknown]> = [
+    [edge.sourceName, constraints.sourceName],
+    [edge.targetName, constraints.targetName],
+    [edge.sourceFilePath, constraints.sourceFilePath],
+    [edge.targetFilePath, constraints.targetFilePath],
+  ];
+  for (const [actual, expected] of checks) {
+    if (expected === undefined) continue;
+    if (!matchesConstraint(actual, expected)) return Number.NEGATIVE_INFINITY;
+    score += 10 + String(expected).length;
+  }
+  return score || 1;
+}
+
+function chooseTopologyCallEdge(
+  edges: CallEdge[],
+  hop: { constraints?: Record<string, unknown> },
+  options?: { previousEdge?: CallEdge },
+): CallEdge | undefined {
+  const ranked = edges
+    .filter((edge) => {
+      const previousEdge = options?.previousEdge;
+      if (!previousEdge) return true;
+      if (edge.sourceId && previousEdge.targetId) {
+        return edge.sourceId === previousEdge.targetId;
+      }
+      const sameName = matchesConstraint(edge.sourceName, previousEdge.targetName);
+      const sameFile = matchesConstraint(edge.sourceFilePath, previousEdge.targetFilePath);
+      return sameName && sameFile;
+    })
+    .map((edge) => ({ edge, score: scoreCallEdgeForTopology(edge, hop.constraints) }))
+    .filter((entry) => Number.isFinite(entry.score))
+    .sort((a, b) => (b.score - a.score) || edgeKey(a.edge).localeCompare(edgeKey(b.edge)));
+  return ranked[0]?.edge;
 }
 
 async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Promise<RuntimeChainResult> {
@@ -494,6 +548,114 @@ async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Pro
       .map((resourcePath) => ({ resourcePath, score: scoreResourcePath(resourcePath, preferredResourceHints) }))
       .sort((a, b) => b.score - a.score);
     selectedResourcePath = scored[0]?.resourcePath || '';
+  }
+
+  if (Array.isArray(input.rule?.topology) && input.rule.topology.length > 0) {
+    const topologyHops = input.rule.topology;
+    let previousCallEdge: CallEdge | undefined;
+    for (const topologyHop of topologyHops) {
+      const hopType = String(topologyHop.hop || '').trim().toLowerCase() as RuntimeChainHopType;
+      if (!requiredSegments.includes(hopType)) continue;
+
+      if (hopType === 'resource') {
+        if (selectedResourcePath) {
+          hops.push({
+            hop_type: 'resource',
+            anchor: `${selectedResourcePath}:1`,
+            confidence: 'medium',
+            note: selectedFromMappedResource
+              ? `Topology resource hop verified by mapped resource equivalence for trigger_family=${triggerFamily}.`
+              : `Topology resource hop verified by binding evidence for trigger_family=${triggerFamily}.`,
+            snippet: selectedResourcePath,
+          });
+          foundSegments.add('resource');
+          continue;
+        }
+        gaps.push(buildGap(
+          'resource',
+          `missing topology resource hop for trigger_family=${triggerFamily}`,
+          {
+            nextCommand: buildDefaultVerifyNextCommand(input.queryText),
+            whyNotNext: `Topology required resource hop before continuing to ${hopType}.`,
+          },
+        ));
+        continue;
+      }
+
+      if (hopType === 'guid_map') {
+        let guidAnchor = '';
+        let guidSnippet = '';
+        if (selectedResourcePath) {
+          const resourceGuidEvidence = await inspectResourceGuidEvidence(input.repoPath, selectedResourcePath);
+          if (resourceGuidEvidence.metaPath) {
+            guidAnchor = `${resourceGuidEvidence.metaPath}:1`;
+            guidSnippet = resourceGuidEvidence.metaPath;
+          } else if (resourceGuidEvidence.guid) {
+            guidAnchor = `${selectedResourcePath}:1`;
+            guidSnippet = `guid:${resourceGuidEvidence.guid}`;
+          }
+        }
+        if (guidAnchor) {
+          hops.push({
+            hop_type: 'guid_map',
+            anchor: guidAnchor,
+            confidence: 'medium',
+            note: `Topology guid_map hop verified by filesystem artifacts for trigger_family=${triggerFamily}.`,
+            snippet: guidSnippet,
+          });
+          foundSegments.add('guid_map');
+          continue;
+        }
+        gaps.push(buildGap(
+          'guid_map',
+          `missing topology guid_map hop for trigger_family=${triggerFamily}`,
+          {
+            nextCommand: buildDefaultVerifyNextCommand(input.queryText),
+            whyNotNext: 'Topology could not establish the guid_map bridge required by the rule.',
+          },
+        ));
+        continue;
+      }
+
+      const matchedEdge = chooseTopologyCallEdge(callEdges, topologyHop, {
+        previousEdge: previousCallEdge,
+      });
+      if (matchedEdge) {
+        hops.push({
+          hop_type: hopType,
+          anchor: formatCallAnchor(matchedEdge),
+          confidence: 'high',
+          note: `Topology ${hopType} hop verified by rule constraints for trigger_family=${triggerFamily}.`,
+          snippet: `${matchedEdge.sourceName} -> ${matchedEdge.targetName}`,
+        });
+        foundSegments.add(hopType);
+        previousCallEdge = matchedEdge;
+        continue;
+      }
+
+      const isRuntime = hopType === 'code_runtime';
+      const targetHint = String((topologyHop.constraints || {}).targetName || '').trim();
+      const previousTargetHint = previousCallEdge?.targetName
+        ? ` after ${previousCallEdge.targetName}`
+        : '';
+      gaps.push(buildGap(
+        isRuntime ? 'runtime' : 'loader',
+        `missing topology ${hopType} hop for trigger_family=${triggerFamily}`,
+        {
+          nextCommand: buildDefaultVerifyNextCommand(input.queryText),
+          whyNotNext: targetHint
+            ? `Expected ${hopType} hop target matching ${targetHint}${previousTargetHint}.`
+            : `Rule topology requires ${hopType}${previousTargetHint} before chain closure.`,
+        },
+      ));
+    }
+
+    return finalizeRuntimeChain({
+      requiredSegments,
+      foundSegments,
+      hops,
+      gaps,
+    });
   }
 
   if (requiredSegments.includes('resource')) {
@@ -621,7 +783,10 @@ export async function verifyRuntimeChainOnDemand(
   input: VerifyRuntimeChainInput,
 ): Promise<RuntimeChainResult | undefined> {
   if (!input.rule) return undefined;
-  return await verifyRuleDrivenRuntimeChain(input);
+  return await verifyRuleDrivenRuntimeChain({
+    ...input,
+    requiredHops: input.requiredHops || input.rule.required_hops,
+  });
 }
 
 function buildFailureRuntimeClaim(input: {

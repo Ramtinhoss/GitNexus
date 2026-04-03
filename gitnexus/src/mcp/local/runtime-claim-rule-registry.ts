@@ -20,6 +20,22 @@ export interface RuntimeClaimRule {
   non_guarantees: string[];
   next_action?: string;
   file_path: string;
+  topology?: Array<{
+    hop: string;
+    from: Record<string, unknown>;
+    to: Record<string, unknown>;
+    edge: { kind: string };
+    constraints?: Record<string, unknown>;
+  }>;
+  closure?: {
+    required_hops: string[];
+    failure_map: Record<string, string>;
+  };
+  claims?: {
+    guarantees: string[];
+    non_guarantees: string[];
+    next_action: string;
+  };
 }
 
 export interface RuntimeClaimRuleRegistry {
@@ -211,6 +227,9 @@ export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Pr
         non_guarantees: rule.non_guarantees,
         next_action: rule.next_action,
         file_path: rule.file_path,
+        topology: rule.topology,
+        closure: rule.closure,
+        claims: rule.claims,
       })),
     };
   }

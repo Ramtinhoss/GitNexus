@@ -2,7 +2,7 @@
 
 Date: 2026-04-02  
 Owner: GitNexus  
-Status: In Progress (M0 and M1 accepted on 2026-04-03; remaining work shifted to M2 verifier topology)
+Status: Completed (M0, M1, and M2 accepted on 2026-04-03)
 
 ## 0. Scope and Decision
 
@@ -76,6 +76,16 @@ Decision:
 8. Independent review for M1 completed with no blocking findings:
    - verdict: M1 accepted
    - review scope covered bundle stability, retrieval configurability, and three-bucket regression gates
+9. M2 topology verifier execution landed and validated:
+   - verification bundle loader now preserves `topology`, `closure`, and `claims`
+   - topology verification inherits `rule.required_hops` when caller does not override required segments
+   - code hops execute as a connected chain instead of independent best-edge picks
+   - missing topology hops now emit gap-local `why_not_next` plus deterministic `next_command`
+   - strict-seed mapped-resource equivalence is covered by a default `test/unit` regression
+   - validation report: `docs/reports/2026-04-03-m2-topology-verifier-validation.md`
+10. Independent review for M2 completed with no blocking findings:
+   - verdict: M2 accepted
+   - review confirmed connected topology execution, reload baseline stability, mapped-resource equivalence coverage, and absence of case-literal gating
 
 ### Open issues (fact-checked, updated 2026-04-03)
 
@@ -116,11 +126,7 @@ Observed result after refresh:
 
 1. Treat reload wave-3 as completed evidence-sync work, not as an active live verifier bug.
 2. Keep `docs/reports/2026-04-03-v1-reload-runtime-chain-acceptance-recheck.md` as the canonical record of the refresh and compatibility fix.
-3. M1 is complete; continue execution only for M2 scope items:
-   - topology-driven verifier execution
-   - `verified_segment` vs `verified_chain` closure semantics
-   - gap-local retry guidance / `why_not_next`
-4. Keep anti-hardcode and next-command contract gates mandatory for any further verifier/reporting changes.
+3. Keep anti-hardcode and next-command contract gates mandatory for any future verifier/reporting changes.
 
 ---
 
@@ -467,6 +473,8 @@ Done when:
 ## Milestone M2 (P2): Topology executor verifier
 
 Includes: D.
+
+Status: Accepted on 2026-04-03.
 
 Done when:
 
