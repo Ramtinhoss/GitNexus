@@ -471,8 +471,9 @@ export const runPipelineFromRepo = async (
             );
           }
         }
-      } catch {
+      } catch (err) {
         // rule catalog missing or invalid — skip silently
+        console.warn(`[UnityRuleBinding] failed to load or apply analyze rules: ${err instanceof Error ? err.message : String(err)}`);
       }
 
       // ── Phase 6: Processes ─────────────────────────────────────────────

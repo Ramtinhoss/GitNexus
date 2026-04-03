@@ -141,20 +141,25 @@ if (scopePattern && !scopePattern.test(cls.properties.name)) continue;
 | # | 修复 | 文件 | 状态 |
 |---|------|------|------|
 | 1 | loadAnalyzeRules 直接读 analyze_rules bundle | runtime-claim-rule-registry.ts | 已修复，已验证 |
+| 2 | Pipeline catch 输出 warning 而非静默吞错误 | pipeline.ts:474 | 已修复 |
+| 3 | method_triggers_field_load 无 entry_points 时使用默认 lifecycle 入口 | unity-runtime-binding-rules.ts:163 | 已修复，已验证 |
+| 4 | lifecycle scope 匹配 filePath 而非 className | unity-runtime-binding-rules.ts:215 | 已修复，已验证 |
 
 ## 待修复项
 
 | # | 问题 | 优先级 | 影响 |
 |---|------|--------|------|
-| 2 | Pipeline catch 静默吞错误 | P2 | 诊断困难 |
-| 3 | method_triggers_field_load 强制要求 entry_points | P1 | Binding C/D 无法注入边 |
-| 4 | lifecycle scope 匹配类名而非文件路径 | P1 | lifecycle override 边全部丢失 |
-| 5 | 缺少独立的 compile/rebuild-bundle 命令 | P3 | 工作流摩擦 |
+| 5 | 缺少独立的 compile/rebuild-bundle 命令 | P3 | 工作流摩擦（当前需手动创建 compiled bundle） |
 
 ---
 
-## 下一步
+## 验证结果（2026-04-03 最终）
 
-1. 修复问题 3 和 4（P1），重新构建 + analyze + 验证合成边
-2. 完成验证 3（Process 完整性）和验证 4（端到端链路）
-3. 可选：修复问题 2 的静默 catch
+| # | 验证项 | 结果 | 详情 |
+|---|--------|------|------|
+| 1 | 合成边存在性 | PASS | 306 条 unity-rule-* 边（resource-load: 179, lifecycle-override: 78, loader-bridge: 49） |
+| 2 | 运行时链路验证 | PASS | status=verified_full, evidence_level=verified_chain, 20 hops, 0 gaps |
+| 3 | Process 完整性 | PASS | ReloadBase 有 5 个 unity_runtime_root process |
+| 4 | 端到端链路 | PASS | Equip→OnEnable/Awake/Start（loader-bridge），runtime-root→Init（lifecycle-override，含 SawReload/ReloadBase 子类） |
+
+总体结论：**PASS**

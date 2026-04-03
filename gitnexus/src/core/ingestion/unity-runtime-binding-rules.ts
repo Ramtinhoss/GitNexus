@@ -160,7 +160,9 @@ function processMethodTriggersFieldLoad(
   const classPattern = binding.host_class_pattern ? new RegExp(binding.host_class_pattern) : null;
   const loaderMethodNames = new Set(binding.loader_methods ?? []);
   const entryPoints = binding.target_entry_points ?? [];
-  if (!classPattern || loaderMethodNames.size === 0 || entryPoints.length === 0) return 0;
+  const defaultEntryPoints = ['OnEnable', 'Awake', 'Start'];
+  const resolvedEntryPoints = entryPoints.length > 0 ? entryPoints : defaultEntryPoints;
+  if (!classPattern || loaderMethodNames.size === 0) return 0;
 
   // Build asset ref index by source file
   const refsBySource = new Map<string, GraphRelationship[]>();
@@ -185,7 +187,7 @@ function processMethodTriggersFieldLoad(
     // Follow asset refs from those resource files
     for (const resourceFileId of resourceFileIds) {
       for (const ref of refsBySource.get(resourceFileId) ?? []) {
-        const targetMethods = findMethodsOnResource(ref.targetId, componentInstances, methodsByClassId, entryPoints);
+        const targetMethods = findMethodsOnResource(ref.targetId, componentInstances, methodsByClassId, resolvedEntryPoints);
         for (const loader of loaders) {
           for (const target of targetMethods) {
             if (addEdge(loader.id, target.id, `unity-rule-loader-bridge:${ruleId}`)) count++;
@@ -212,7 +214,7 @@ function processLifecycleOverrides(
   const runtimeRootId = generateId('Method', 'unity-runtime-root');
 
   for (const cls of classNodes) {
-    if (scopePattern && !scopePattern.test(cls.properties.name)) continue;
+    if (scopePattern && !scopePattern.test(cls.properties.filePath ?? cls.properties.name)) continue;
     for (const method of methodsByClassId.get(cls.id) ?? []) {
       if (!entrySet.has(method.properties.name)) continue;
       if (addEdge(runtimeRootId, method.id, `unity-rule-lifecycle-override:${rule.id}`)) count++;
