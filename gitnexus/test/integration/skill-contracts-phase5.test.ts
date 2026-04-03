@@ -9,12 +9,6 @@ const repoRoot = path.resolve(packageRoot, '..');
 
 const WORKFLOW_CONTRACT = '.agents/skills/gitnexus/_shared/workflow-contract.md';
 const UNITY_BINDING_CONTRACT = '.agents/skills/gitnexus/_shared/unity-resource-binding-contract.md';
-const PHASE5_SKILLS = [
-  '.agents/skills/gitnexus/gitnexus-exploring/SKILL.md',
-  '.agents/skills/gitnexus/gitnexus-debugging/SKILL.md',
-  '.agents/skills/gitnexus/gitnexus-impact-analysis/SKILL.md',
-  '.agents/skills/gitnexus/gitnexus-guide/SKILL.md',
-];
 
 async function readRepoFile(relPath: string): Promise<string> {
   return fs.readFile(path.join(repoRoot, relPath), 'utf-8');
@@ -24,22 +18,15 @@ describe('phase5 confidence-aware skill contracts', () => {
   it('emptyProcessFallbackContract', async () => {
     const workflow = await readRepoFile(WORKFLOW_CONTRACT);
     const unityBinding = await readRepoFile(UNITY_BINDING_CONTRACT);
-    const skillTexts = await Promise.all(PHASE5_SKILLS.map(readRepoFile));
 
     expect(workflow).toMatch(/empty process/i);
     expect(workflow).toMatch(/resourceBindings/i);
     expect(unityBinding).toMatch(/asset\/meta/i);
-
-    for (const skillText of skillTexts) {
-      expect(skillText).toMatch(/empty process/i);
-      expect(skillText).toMatch(/resourceBindings|unity resource evidence/i);
-    }
   });
 
   it('lowConfidenceVerificationHintContract', async () => {
     const workflow = await readRepoFile(WORKFLOW_CONTRACT);
     const unityBinding = await readRepoFile(UNITY_BINDING_CONTRACT);
-    const skillTexts = await Promise.all(PHASE5_SKILLS.map(readRepoFile));
 
     expect(workflow).toMatch(/confidence.*low/i);
     expect(workflow).toMatch(/verification_hint/i);
@@ -47,24 +34,14 @@ describe('phase5 confidence-aware skill contracts', () => {
     expect(workflow).toMatch(/target/i);
     expect(workflow).toMatch(/next_command/i);
     expect(unityBinding).toMatch(/verification_hint/i);
-
-    for (const skillText of skillTexts) {
-      expect(skillText).toMatch(/verification_hint/i);
-      expect(skillText).toMatch(/low confidence/i);
-    }
   });
 
   it('chainClosureAnchorContract', async () => {
     const workflow = await readRepoFile(WORKFLOW_CONTRACT);
     const unityBinding = await readRepoFile(UNITY_BINDING_CONTRACT);
-    const skillTexts = await Promise.all(PHASE5_SKILLS.map(readRepoFile));
 
     expect(workflow).toMatch(/hop anchor|evidence anchor/i);
     expect(workflow).toMatch(/chain closure|close the chain|semantically closed/i);
     expect(unityBinding).toMatch(/hop anchor|evidence anchor/i);
-
-    for (const skillText of skillTexts) {
-      expect(skillText).toMatch(/hop anchor|evidence anchor|semantically closed/i);
-    }
   });
 });

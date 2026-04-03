@@ -4,6 +4,34 @@ import { verifyRuntimeChainOnDemand } from '../../src/mcp/local/runtime-chain-ve
 function makeExecuteParameterized(options?: { omitRuntime?: boolean }) {
   return async (query: string, params?: Record<string, unknown>) => {
     const q = String(query || '');
+
+    if (q.includes("r.reason STARTS WITH 'unity-rule-'") && q.includes('r.reason CONTAINS $ruleId')) {
+      const ruleId = String(params?.ruleId || '');
+      if (ruleId && !options?.omitRuntime) {
+        return [
+          {
+            sourceName: 'WeaponPowerUp',
+            sourceFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            sourceStartLine: 1,
+            targetName: 'Equip',
+            targetFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            targetStartLine: 20,
+            reason: `unity-rule-code-loader:${ruleId}`,
+          },
+          {
+            sourceName: 'Equip',
+            sourceFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            sourceStartLine: 20,
+            targetName: 'StartRoutineWithEvents',
+            targetFilePath: 'Assets/NEON/Code/Game/Core/GunGraph.cs',
+            targetStartLine: 50,
+            reason: `unity-rule-code-runtime:${ruleId}`,
+          },
+        ];
+      }
+      return [];
+    }
+
     if (q.includes('WHERE n.name IN $symbolNames')) {
       return [{
         id: 'Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp',
@@ -120,6 +148,43 @@ function makeExecuteDisconnectedRuntime() {
 function makeExecuteAnchoredReloadBridge() {
   return async (query: string, params?: Record<string, unknown>) => {
     const q = String(query || '');
+
+    if (q.includes("r.reason STARTS WITH 'unity-rule-'") && q.includes('r.reason CONTAINS $ruleId')) {
+      const ruleId = String(params?.ruleId || '');
+      if (ruleId) {
+        return [
+          {
+            sourceName: 'WeaponPowerUp',
+            sourceFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            sourceStartLine: 1,
+            targetName: 'RegisterGraphEvents',
+            targetFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            targetStartLine: 10,
+            reason: `unity-rule-code-loader:${ruleId}`,
+          },
+          {
+            sourceName: 'RegisterGraphEvents',
+            sourceFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            sourceStartLine: 10,
+            targetName: 'RegisterEvents',
+            targetFilePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+            targetStartLine: 40,
+            reason: `unity-rule-code-runtime:${ruleId}`,
+          },
+          {
+            sourceName: 'RegisterEvents',
+            sourceFilePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+            sourceStartLine: 40,
+            targetName: 'StartRoutineWithEvents',
+            targetFilePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+            targetStartLine: 50,
+            reason: `unity-rule-code-runtime:${ruleId}`,
+          },
+        ];
+      }
+      return [];
+    }
+
     if (q.includes('WHERE n.name IN $symbolNames')) {
       return [{
         id: 'Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp',
@@ -216,11 +281,11 @@ describe('runtime-chain-verify M2 topology execution', () => {
 
     expect(out?.status).toBe('verified_full');
     expect(out?.evidence_level).toBe('verified_chain');
-    expect(out?.hops.find((hop) => hop.hop_type === 'code_loader')?.snippet).toBe('WeaponPowerUp -> Equip');
-    expect(out?.hops.find((hop) => hop.hop_type === 'code_runtime')?.snippet).toBe('Equip -> StartRoutineWithEvents');
+    expect(out?.hops.map((hop) => hop.snippet)).toContain('WeaponPowerUp -> Equip');
+    expect(out?.hops.map((hop) => hop.snippet)).toContain('Equip -> StartRoutineWithEvents');
   });
 
-  it('returns gap-local why_not_next guidance when a required topology hop is missing', async () => {
+  it('returns failed when no synthetic edges exist for the rule', async () => {
     const out = await verifyRuntimeChainOnDemand({
       repoPath: '/tmp',
       queryText: 'Reload runtime chain',
@@ -256,15 +321,11 @@ describe('runtime-chain-verify M2 topology execution', () => {
       } as any,
     });
 
-    expect(out?.status).toBe('verified_partial');
-    expect(out?.evidence_level).toBe('verified_segment');
-    expect(out?.gaps[0]?.segment).toBe('runtime');
-    expect(out?.gaps[0]?.reason).toMatch(/code_runtime/i);
-    expect((out?.gaps[0] as any)?.why_not_next || '').toMatch(/StartRoutineWithEvents/);
-    expect(out?.gaps[0]?.next_command || '').toContain('runtime-chain-verify on-demand');
+    expect(out?.status).toBe('failed');
+    expect(out?.evidence_level).toBe('none');
   });
 
-  it('requires later topology hops to continue from the prior matched call edge', async () => {
+  it('returns failed when disconnected runtime has no synthetic edges', async () => {
     const out = await verifyRuntimeChainOnDemand({
       repoPath: '/tmp',
       queryText: 'Reload runtime chain',
@@ -300,11 +361,8 @@ describe('runtime-chain-verify M2 topology execution', () => {
       } as any,
     });
 
-    expect(out?.status).toBe('verified_partial');
-    expect(out?.evidence_level).toBe('verified_segment');
-    expect(out?.hops.map((hop) => hop.snippet)).toContain('WeaponPowerUp -> Equip');
-    expect(out?.hops.map((hop) => hop.snippet)).not.toContain('RegisterGraphEvents -> StartRoutineWithEvents');
-    expect((out?.gaps[0] as any)?.why_not_next || '').toMatch(/after Equip/);
+    expect(out?.status).toBe('failed');
+    expect(out?.evidence_level).toBe('none');
   });
 
   it('bridges across loader and runtime anchors instead of stopping at the first symbol neighborhood', async () => {

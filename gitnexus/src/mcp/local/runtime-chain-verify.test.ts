@@ -180,6 +180,22 @@ function makeExecuteParameterized(repoPath: string): (query: string, params?: Re
       return [];
     }
 
+    if (q.includes("r.reason STARTS WITH 'unity-rule-'") && q.includes('r.reason CONTAINS $ruleId')) {
+      const ruleId = String(params?.ruleId || '');
+      if (ruleId && reloadBasePresent) {
+        return [{
+          sourceName: 'unity-runtime-root',
+          sourceFilePath: '',
+          sourceStartLine: 1,
+          targetName: 'ReloadBase',
+          targetFilePath: reloadBasePath,
+          targetStartLine: 1,
+          reason: `unity-rule-resource-load:${ruleId}`,
+        }];
+      }
+      return [];
+    }
+
     return [];
   };
 }

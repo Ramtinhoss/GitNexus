@@ -17,32 +17,22 @@ const writeFile = async (filePath: string, content: string): Promise<void> => {
   await fs.writeFile(filePath, content, 'utf-8');
 };
 
-const probePipeline = async (repoPath: string, flag: 'on' | 'off'): Promise<PipelineProbe> => {
-  const previous = process.env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS;
-  process.env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS = flag;
-  try {
-    const result = await runPipelineFromRepo(repoPath, () => {});
-    const syntheticEdgeCount = [...result.graph.iterRelationships()].filter(
-      (edge) =>
-        edge.type === 'CALLS' &&
-        (edge.reason === 'unity-lifecycle-synthetic' || edge.reason === 'unity-runtime-loader-synthetic'),
-    ).length;
-    const runtimeRootProcessCount =
-      result.processResult?.processes.filter((processNode) =>
-        processNode.trace.some((nodeId) => nodeId.includes('unity-runtime-root')),
-      ).length ?? 0;
-    return {
-      syntheticEdgeCount,
-      runtimeRootProcessCount,
-      totalProcesses: result.processResult?.stats.totalProcesses ?? 0,
-    };
-  } finally {
-    if (previous === undefined) {
-      delete process.env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS;
-    } else {
-      process.env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS = previous;
-    }
-  }
+const probePipeline = async (repoPath: string): Promise<PipelineProbe> => {
+  const result = await runPipelineFromRepo(repoPath, () => {});
+  const syntheticEdgeCount = [...result.graph.iterRelationships()].filter(
+    (edge) =>
+      edge.type === 'CALLS' &&
+      (edge.reason === 'unity-lifecycle-synthetic' || edge.reason === 'unity-runtime-loader-synthetic'),
+  ).length;
+  const runtimeRootProcessCount =
+    result.processResult?.processes.filter((processNode) =>
+      processNode.trace.some((nodeId) => nodeId.includes('unity-runtime-root')),
+    ).length ?? 0;
+  return {
+    syntheticEdgeCount,
+    runtimeRootProcessCount,
+    totalProcesses: result.processResult?.stats.totalProcesses ?? 0,
+  };
 };
 
 describe('unity lifecycle synthetic calls pipeline integration', () => {
@@ -116,16 +106,12 @@ public class ExpandedReloadConfig : ScriptableObject
   });
 
   it('pipeline injects synthetic lifecycle edges before process detection', async () => {
-    const flagOffResult = await probePipeline(unityRepo, 'off');
-    const flagOnResult = await probePipeline(unityRepo, 'on');
-    const nonUnityFlagOnResult = await probePipeline(nonUnityRepo, 'on');
-    const expandedFlagOnResult = await probePipeline(expandedUnityRepo, 'on');
+    const unityResult = await probePipeline(unityRepo);
+    const nonUnityResult = await probePipeline(nonUnityRepo);
+    const expandedResult = await probePipeline(expandedUnityRepo);
 
-    expect(flagOffResult.syntheticEdgeCount).toBe(0);
-    expect(flagOnResult.syntheticEdgeCount).toBeGreaterThan(0);
-    expect(flagOnResult.runtimeRootProcessCount).toBeGreaterThan(0);
-    expect(nonUnityFlagOnResult.syntheticEdgeCount).toBe(0);
-    expect(expandedFlagOnResult.syntheticEdgeCount).toBeLessThanOrEqual(MAX_SYNTHETIC_EDGES);
-    expect(flagOnResult.totalProcesses).toBeGreaterThanOrEqual(flagOffResult.totalProcesses);
+    expect(unityResult.syntheticEdgeCount).toBeGreaterThan(0);
+    expect(nonUnityResult.syntheticEdgeCount).toBe(0);
+    expect(expandedResult.syntheticEdgeCount).toBeLessThanOrEqual(MAX_SYNTHETIC_EDGES);
   }, 180000);
 });

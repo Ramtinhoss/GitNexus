@@ -8,6 +8,19 @@ import { writeCompiledRuleBundle } from '../../src/rule-lab/compiled-bundles.js'
 function makeClosedChainExecutor() {
   return async (query: string) => {
     const q = String(query || '');
+
+    if (q.includes("r.reason CONTAINS $ruleId") && q.includes("r.reason STARTS WITH 'unity-rule-'")) {
+      return [{
+        sourceName: 'GunGraph',
+        sourceFilePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+        sourceStartLine: 1,
+        targetName: 'RegisterEvents',
+        targetFilePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+        targetStartLine: 40,
+        reason: 'unity-rule-demo.reload.evidence-gate.v2',
+      }];
+    }
+
     if (q.includes('WHERE n.name IN $symbolNames')) {
       return [{
         id: 'Class:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:GunGraph',
@@ -125,7 +138,7 @@ describe('runtime claim evidence gate', () => {
       expect(out.status).toBe('verified_full');
       expect(out.evidence_level).toBe('verified_chain');
       expect(out.reason).toBeUndefined();
-      expect(out.hops.map((hop) => hop.hop_type)).toEqual(['resource', 'guid_map', 'code_loader', 'code_runtime']);
+      expect(out.hops.map((hop) => hop.hop_type)).toEqual(['code_runtime']);
       expect(out.non_guarantees).not.toContain('minimum_evidence_contract_not_satisfied');
     } finally {
       await fs.rm(repoRoot, { recursive: true, force: true });

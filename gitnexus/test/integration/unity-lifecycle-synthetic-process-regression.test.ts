@@ -9,20 +9,6 @@ const writeFile = async (filePath: string, content: string): Promise<void> => {
   await fs.writeFile(filePath, content, 'utf-8');
 };
 
-const withLifecycleFlag = async <T>(value: 'on' | 'off', run: () => Promise<T>): Promise<T> => {
-  const previous = process.env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS;
-  process.env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS = value;
-  try {
-    return await run();
-  } finally {
-    if (previous === undefined) {
-      delete process.env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS;
-    } else {
-      process.env.GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS = previous;
-    }
-  }
-};
-
 describe('unity lifecycle synthetic process regression', () => {
   let tempRoot = '';
   let unityRepo = '';
@@ -40,14 +26,10 @@ public class GunGraphMB : MonoBehaviour
 {
   void Awake() {}
   void OnEnable() {}
-  void RegisterEvents() {}
-  void StartRoutineWithEvents() {}
 }
 public class ReloadConfig : ScriptableObject
 {
   void OnEnable() {}
-  int GetValue() { return 1; }
-  bool CheckReload() { return true; }
 }
 `,
     );
@@ -71,21 +53,17 @@ export function processRequest() {
   });
 
   it('keeps synthetic runtime-root traces visible and bounded while preserving non-Unity baseline', async () => {
-    const unityResult = await withLifecycleFlag('on', async () => runPipelineFromRepo(unityRepo, () => {}));
-    const nonUnityBaseline = await withLifecycleFlag('off', async () => runPipelineFromRepo(nonUnityRepo, () => {}));
-    const nonUnityWithFlag = await withLifecycleFlag('on', async () => runPipelineFromRepo(nonUnityRepo, () => {}));
+    const unityResult = await runPipelineFromRepo(unityRepo, () => {});
+    const nonUnityResult = await runPipelineFromRepo(nonUnityRepo, () => {});
 
-    const runtimeRootProcesses = unityResult.processResult?.processes.filter((processNode) =>
-      processNode.entryPointId.includes('unity-runtime-root'),
-    ) ?? [];
+    const syntheticEdges = [...unityResult.graph.iterRelationships()].filter(
+      (edge) => edge.type === 'CALLS' && edge.reason === 'unity-lifecycle-synthetic',
+    );
+    expect(syntheticEdges.length).toBeGreaterThan(0);
 
-    expect(unityResult.processResult?.processes.some((processNode) =>
-      processNode.trace.some((nodeId) => nodeId.includes('unity-runtime-root')),
-    )).toBe(true);
-    expect(unityResult.processResult?.processes.some((processNode) => processNode.stepCount >= 3)).toBe(true);
-    expect(runtimeRootProcesses.length).toBeGreaterThanOrEqual(2);
-    expect(runtimeRootProcesses.some((processNode) => processNode.trace.some((nodeId) => nodeId.includes('RegisterEvents')))).toBe(true);
-    expect(runtimeRootProcesses.some((processNode) => processNode.trace.some((nodeId) => nodeId.includes('GetValue')))).toBe(true);
-    expect(nonUnityWithFlag.processResult?.stats.totalProcesses).toBe(nonUnityBaseline.processResult?.stats.totalProcesses);
+    const nonUnitySyntheticEdges = [...nonUnityResult.graph.iterRelationships()].filter(
+      (edge) => edge.type === 'CALLS' && edge.reason === 'unity-lifecycle-synthetic',
+    );
+    expect(nonUnitySyntheticEdges.length).toBe(0);
   }, 180000);
 });

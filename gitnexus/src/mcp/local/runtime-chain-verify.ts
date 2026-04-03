@@ -1,19 +1,6 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import {
-  deriveRuntimeChainEvidenceLevel,
-  type RuntimeChainEvidenceLevel,
-} from './runtime-chain-evidence.js';
+import type { RuntimeChainEvidenceLevel } from './runtime-chain-evidence.js';
 import { buildRuntimeClaimFromRule, type RuntimeClaim } from './runtime-claim.js';
 import { RuleRegistryLoadError, loadRuleRegistry, type RuntimeClaimRule } from './runtime-claim-rule-registry.js';
-import {
-  callEdgeKey,
-  dedupeCallEdges,
-  fetchAnchoredCallEdges,
-  symbolCandidateFromCallEdgeTarget,
-  type RuntimeCallEdge as CallEdge,
-  type RuntimeSymbolCandidate as SymbolCandidate,
-} from './runtime-chain-extractors.js';
 
 export type RuntimeChainVerifyMode = 'off' | 'on-demand';
 export type RuntimeChainStatus = 'pending' | 'verified_partial' | 'verified_full' | 'failed';
@@ -37,6 +24,7 @@ export interface RuntimeChainGap {
 export interface RuntimeChainResult {
   status: RuntimeChainStatus;
   evidence_level: RuntimeChainEvidenceLevel;
+  evidence_source?: 'analyze_time' | 'query_time';
   hops: RuntimeChainHop[];
   gaps: RuntimeChainGap[];
   why_not_next?: string[];
@@ -58,22 +46,13 @@ interface VerifyRuntimeChainInput {
   requiredHops?: string[];
   rule?: RuntimeClaimRule;
 }
-
 interface VerifyRuntimeClaimInput extends VerifyRuntimeChainInput {
   rulesRoot?: string;
   minimumEvidenceSatisfied?: boolean;
 }
 
-const VERIFY_NEXT_COMMAND = 'node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "Reload NEON.Game.Graph.Nodes.Reloads"';
-const DEFAULT_REQUIRED_HOPS: RuntimeChainHopType[] = ['resource', 'guid_map', 'code_loader', 'code_runtime'];
-const SYMBOL_NAME_QUERY_LIMIT = 30;
-
-function normalizeText(value: unknown): string {
-  return String(value || '').trim();
-}
-
 function buildDefaultVerifyNextCommand(queryText?: string): string {
-  const normalizedQuery = normalizeText(queryText) || 'Reload NEON.Game.Graph.Nodes.Reloads';
+  const normalizedQuery = String(queryText || '').trim() || 'Reload NEON.Game.Graph.Nodes.Reloads';
   const escapedQuery = normalizedQuery
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"');
@@ -102,663 +81,55 @@ function parseTriggerTokens(triggerFamily: string): string[] {
     .filter((token) => token.length > 0);
 }
 
-function sanitizeRequiredHops(requiredHops?: string[]): RuntimeChainHopType[] {
-  const allowed = new Set<RuntimeChainHopType>(['resource', 'guid_map', 'code_loader', 'code_runtime']);
-  const normalized = (requiredHops || [])
-    .map((hop) => String(hop || '').trim().toLowerCase())
-    .filter((hop): hop is RuntimeChainHopType => allowed.has(hop as RuntimeChainHopType));
-  return normalized.length > 0 ? [...new Set(normalized)] : [...DEFAULT_REQUIRED_HOPS];
-}
-
-function buildGap(
-  segment: RuntimeChainGap['segment'],
-  reason: string,
-  options?: { nextCommand?: string; whyNotNext?: string },
-): RuntimeChainGap {
-  return {
-    segment,
-    reason,
-    next_command: options?.nextCommand || VERIFY_NEXT_COMMAND,
-    ...(options?.whyNotNext ? { why_not_next: options.whyNotNext } : {}),
-  };
-}
-
-function normalizePathLike(value: string): string {
-  return String(value || '').replace(/\\/g, '/').trim().toLowerCase();
-}
-
-function dedupeStrings(values: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const value of values) {
-    const normalized = value.trim();
-    if (!normalized) continue;
-    const key = normalized.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(normalized);
-  }
-  return out;
-}
-
-function extractQueryResourcePaths(queryText?: string): string[] {
-  const raw = String(queryText || '');
-  const matches = raw.match(/Assets\/[^\s"']+\.(?:asset|prefab|meta)/gi) || [];
-  return dedupeStrings(matches);
-}
-
-function resolvePrimaryQueryResourcePath(input: VerifyRuntimeChainInput): string {
-  const candidates = dedupeStrings([
-    String(input.resourceSeedPath || '').trim(),
-    ...extractQueryResourcePaths(input.queryText),
-  ]);
-  return candidates[0] || '';
-}
-
-async function resolveMappedResourceCandidates(input: VerifyRuntimeChainInput, seedPath: string): Promise<string[]> {
-  const fromInput = dedupeStrings((input.mappedSeedTargets || []).map((value) => normalizeText(value)));
-  if (fromInput.length > 0) {
-    return fromInput;
-  }
-  try {
-    const rows = await input.executeParameterized(`
-      MATCH (:File {filePath: $seedPath})-[r:CodeRelation {type: 'UNITY_ASSET_GUID_REF'}]->(target:File)
-      RETURN DISTINCT target.filePath AS targetPath
-      LIMIT 100
-    `, { seedPath });
-    return dedupeStrings(
-      rows.map((row: any) => normalizeText(row?.targetPath || row?.[0])),
-    );
-  } catch {
-    return [];
-  }
-}
-
-function scoreResourcePath(pathText: string, hints: string[]): number {
-  const normalizedPath = normalizePathLike(pathText);
-  if (!normalizedPath) return 0;
-  let score = 0;
-  for (const hint of hints) {
-    const normalizedHint = normalizePathLike(hint);
-    if (!normalizedHint) continue;
-    if (normalizedPath.includes(normalizedHint)) score += 3;
-  }
-  if (normalizedPath.includes('/graphs/')) score += 1;
-  return score;
-}
-
-function hasAmbiguousResourceSelection(
-  rankedBindings: Array<{ resourcePath: string; score: number }>,
-): boolean {
-  if (rankedBindings.length < 2) return false;
-  const topScore = rankedBindings[0]?.score ?? Number.NEGATIVE_INFINITY;
-  if (!Number.isFinite(topScore)) return false;
-  const topCandidates = rankedBindings.filter((entry) => entry.score === topScore);
-  return topCandidates.length > 1;
-}
-
-function resolveRepoPath(repoPath: string, relativePath: string): string {
-  const resolved = path.resolve(repoPath, relativePath);
-  return resolved;
-}
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function inspectResourceGuidEvidence(repoPath: string, resourcePath: string): Promise<{
-  metaPath?: string;
-  guid?: string;
-}> {
-  const absResourcePath = resolveRepoPath(repoPath, resourcePath);
-  const absMetaPath = resolveRepoPath(repoPath, `${resourcePath}.meta`);
-  if (await pathExists(absMetaPath)) {
-    return { metaPath: `${resourcePath}.meta` };
-  }
-  if (!(await pathExists(absResourcePath))) {
-    return {};
-  }
-  try {
-    const content = await fs.readFile(absResourcePath, 'utf-8');
-    const match = content.match(/\bguid\s*[:=]\s*([a-f0-9]{32})\b/i)
-      || content.match(/\b([a-f0-9]{32})\b/i);
-    if (match?.[1]) {
-      return { guid: String(match[1]) };
-    }
-  } catch {
-    // Best-effort evidence probe; fall through to missing evidence.
-  }
-  return {};
-}
-
-function extractLikelySymbolNames(queryText?: string): string[] {
-  const raw = String(queryText || '');
-  const matches = raw.match(/\b[A-Z][A-Za-z0-9_]{2,}\b/g) || [];
-  const blacklist = new Set([
-    'Assets',
-    'NEON',
-    'DataAssets',
-    'Powerups',
-    'Graphs',
-    'PlayerGun',
-    'Code',
-    'Game',
-    'Node',
-    'Guid',
-  ]);
-  return dedupeStrings(matches.filter((name) => !blacklist.has(name)));
-}
-
-function pickBestSymbol(
-  rows: any[],
-  preferredNames: {
-    explicitNames?: string[];
-    hostBaseTypeNames?: string[];
-    queryNames?: string[];
-  } = {},
-): SymbolCandidate | undefined {
-  if (!Array.isArray(rows) || rows.length === 0) return undefined;
-  const explicit = (preferredNames.explicitNames || []).map((name) => name.toLowerCase());
-  const hostBase = (preferredNames.hostBaseTypeNames || []).map((name) => name.toLowerCase());
-  const queryNames = (preferredNames.queryNames || []).map((name) => name.toLowerCase());
-  const typed = rows
-    .map((row) => ({
-      id: String(row.id || ''),
-      name: String(row.name || ''),
-      type: String(row.type || ''),
-      filePath: String(row.filePath || ''),
-      startLine: Number.isFinite(Number(row.startLine)) ? Number(row.startLine) : undefined,
-    }))
-    .filter((row) => row.id && row.filePath);
-  if (typed.length === 0) return undefined;
-
-  const rank = (row: SymbolCandidate): number => {
-    let score = 0;
-    const rowType = row.type.toLowerCase();
-    if (rowType === 'class') score += 4;
-    if (rowType === 'method') score += 3;
-    if (rowType === 'function') score += 2;
-    const rowName = row.name.toLowerCase();
-    if (queryNames.includes(rowName)) score += 5;
-    if (hostBase.includes(rowName)) score += 20;
-    if (explicit.includes(rowName)) score += 30;
-    return score;
-  };
-  return typed.sort((a, b) => rank(b) - rank(a))[0];
-}
-
-async function resolvePrimarySymbolCandidate(
-  input: VerifyRuntimeChainInput,
-): Promise<SymbolCandidate | undefined> {
-  const explicitName = normalizeText(input.symbolName);
-  const explicitFilePath = normalizeText(input.symbolFilePath);
-  const ruleHostBaseTypes = Array.isArray(input.rule?.match?.host_base_type)
-    ? input.rule!.match!.host_base_type!.map((name) => normalizeText(name)).filter(Boolean)
-    : Array.isArray(input.rule?.host_base_type)
-      ? input.rule!.host_base_type.map((name) => normalizeText(name)).filter(Boolean)
-    : [];
-  const likelyQueryNames = extractLikelySymbolNames(input.queryText);
-  const likelyNames = dedupeStrings([
-    ...(explicitName ? [explicitName] : []),
-    ...ruleHostBaseTypes,
-    ...likelyQueryNames,
-  ]);
-
-  if (explicitFilePath) {
-    const rows = await input.executeParameterized(`
-      MATCH (n)
-      WHERE n.filePath = $filePath
-        AND ($symbolName = '' OR n.name = $symbolName)
-      RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine
-      LIMIT 20
-    `, {
-      filePath: explicitFilePath,
-      symbolName: explicitName,
-    });
-    const picked = pickBestSymbol(rows, {
-      explicitNames: explicitName ? [explicitName] : [],
-      hostBaseTypeNames: ruleHostBaseTypes,
-      queryNames: likelyQueryNames,
-    });
-    if (picked) return picked;
-  }
-
-  if (likelyNames.length > 0) {
-    const rows = await input.executeParameterized(`
-      MATCH (n)
-      WHERE n.name IN $symbolNames
-      RETURN n.id AS id, n.name AS name, labels(n)[0] AS type, n.filePath AS filePath, n.startLine AS startLine
-      LIMIT ${SYMBOL_NAME_QUERY_LIMIT}
-    `, {
-      symbolNames: likelyNames,
-    });
-    const picked = pickBestSymbol(rows, {
-      explicitNames: explicitName ? [explicitName] : [],
-      hostBaseTypeNames: ruleHostBaseTypes,
-      queryNames: likelyQueryNames,
-    });
-    if (picked) return picked;
-  }
-
-  return undefined;
-}
-
-function formatCallAnchor(edge: CallEdge): string {
-  const left = `${edge.sourceFilePath}:${edge.sourceStartLine || 1}`;
-  const right = `${edge.targetFilePath}:${edge.targetStartLine || 1}`;
-  return `${left}->${right}`;
-}
-
-function chooseBestCallEdge(
-  edges: CallEdge[],
-  matcher: RegExp,
-  options?: { requireMatch?: boolean; excludeKeys?: Set<string> },
-): CallEdge | undefined {
-  if (edges.length === 0) return undefined;
-  const excludeKeys = options?.excludeKeys || new Set<string>();
-  const scored = edges
-    .filter((edge) => !excludeKeys.has(callEdgeKey(edge)))
-    .map((edge) => {
-    const text = `${edge.sourceName} ${edge.sourceFilePath} ${edge.targetName} ${edge.targetFilePath}`;
-    const score = matcher.test(text) ? 10 : 0;
-    return { edge, score };
-    });
-  if (scored.length === 0) return undefined;
-  scored.sort((a, b) => b.score - a.score);
-  if (options?.requireMatch && scored[0]?.score === 0) return undefined;
-  return scored[0]?.edge;
-}
-
-function finalizeRuntimeChain(input: {
-  requiredSegments: RuntimeChainHopType[];
-  foundSegments: Set<string>;
-  hops: RuntimeChainHop[];
-  gaps: RuntimeChainGap[];
-}): RuntimeChainResult {
-  const missingRequired = input.requiredSegments.filter((segment) => !input.foundSegments.has(segment));
-  const evidence_level = deriveRuntimeChainEvidenceLevel({
-    mode: input.hops.length > 0 ? 'verified_hops' : 'none',
-    requiredSegments: input.requiredSegments,
-    foundSegments: [...input.foundSegments],
-  });
-  const status: RuntimeChainStatus =
-    missingRequired.length === 0 ? 'verified_full'
-      : input.foundSegments.size === 0 ? 'failed'
-        : input.hops.length > 0 ? 'verified_partial'
-          : 'failed';
-  return {
-    status,
-    evidence_level,
-    hops: input.hops,
-    gaps: input.gaps,
-    why_not_next: input.gaps.map((gap) => String(gap.why_not_next || '').trim()).filter(Boolean),
-  };
-}
-
-function matchesConstraint(value: string, expected: unknown): boolean {
-  const normalizedValue = String(value || '').toLowerCase();
-  const normalizedExpected = String(expected || '').trim().toLowerCase();
-  if (!normalizedExpected) return true;
-  return normalizedValue === normalizedExpected || normalizedValue.includes(normalizedExpected);
-}
-
-function scoreCallEdgeForTopology(edge: CallEdge, constraints?: Record<string, unknown>): number {
-  if (!constraints || Object.keys(constraints).length === 0) return 1;
-  let score = 0;
-  const checks: Array<[string, unknown]> = [
-    [edge.sourceName, constraints.sourceName],
-    [edge.targetName, constraints.targetName],
-    [edge.sourceFilePath, constraints.sourceFilePath],
-    [edge.targetFilePath, constraints.targetFilePath],
-  ];
-  for (const [actual, expected] of checks) {
-    if (expected === undefined) continue;
-    if (!matchesConstraint(actual, expected)) return Number.NEGATIVE_INFINITY;
-    score += 10 + String(expected).length;
-  }
-  return score || 1;
-}
-
-function chooseTopologyCallEdge(
-  edges: CallEdge[],
-  hop: { constraints?: Record<string, unknown> },
-  options?: { previousEdge?: CallEdge },
-): CallEdge | undefined {
-  const ranked = edges
-    .filter((edge) => {
-      const previousEdge = options?.previousEdge;
-      if (!previousEdge) return true;
-      if (edge.sourceId && previousEdge.targetId) {
-        return edge.sourceId === previousEdge.targetId;
-      }
-      const sameName = matchesConstraint(edge.sourceName, previousEdge.targetName);
-      const sameFile = matchesConstraint(edge.sourceFilePath, previousEdge.targetFilePath);
-      return sameName && sameFile;
-    })
-    .map((edge) => ({ edge, score: scoreCallEdgeForTopology(edge, hop.constraints) }))
-    .filter((entry) => Number.isFinite(entry.score))
-    .sort((a, b) => (b.score - a.score) || callEdgeKey(a.edge).localeCompare(callEdgeKey(b.edge)));
-  return ranked[0]?.edge;
-}
-
 async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Promise<RuntimeChainResult> {
-  const requiredSegments = sanitizeRequiredHops(input.requiredHops);
-  const hops: RuntimeChainHop[] = [];
-  const gaps: RuntimeChainGap[] = [];
-  const foundSegments = new Set<string>();
-  const bindingPaths = dedupeStrings(
-    (input.resourceBindings || [])
-      .map((binding) => normalizeText(binding.resourcePath))
-      .filter((resourcePath) => resourcePath.length > 0),
-  );
-  const queryResourcePath = resolvePrimaryQueryResourcePath(input);
-  const queryResourcePathNorm = normalizePathLike(queryResourcePath || '');
-  const bindingPathMap = new Map(bindingPaths.map((resourcePath) => [normalizePathLike(resourcePath), resourcePath]));
-  const triggerFamily = String(input.rule?.trigger_family || '').trim() || 'unknown';
-  const triggerTokens = parseTriggerTokens(triggerFamily);
-  const symbolCandidate = await resolvePrimarySymbolCandidate(input);
-  const callEdges = symbolCandidate?.id
-    ? await fetchAnchoredCallEdges(input.executeParameterized, symbolCandidate)
-    : [];
-  const preferredResourceHints = dedupeStrings([
-    normalizeText(symbolCandidate?.name || ''),
-    normalizeText(path.basename(symbolCandidate?.filePath || '', path.extname(symbolCandidate?.filePath || ''))),
-    ...triggerTokens,
-  ]);
-  let selectedResourcePath = '';
-  let queryResourceMissingFromBindings = false;
-  let selectedFromMappedResource = false;
-
-  if (queryResourcePathNorm) {
-    selectedResourcePath = bindingPathMap.get(queryResourcePathNorm) || '';
-    queryResourceMissingFromBindings = !selectedResourcePath;
-    if (!selectedResourcePath) {
-      const mappedCandidates = await resolveMappedResourceCandidates(input, queryResourcePath);
-      const mappedMatch = mappedCandidates
-        .map((resourcePath) => normalizePathLike(resourcePath))
-        .find((resourcePathNorm) => bindingPathMap.has(resourcePathNorm));
-      if (mappedMatch) {
-        selectedResourcePath = bindingPathMap.get(mappedMatch) || '';
-        queryResourceMissingFromBindings = !selectedResourcePath;
-        selectedFromMappedResource = Boolean(selectedResourcePath);
-      } else if (mappedCandidates.length > 0) {
-        const rankedMapped = mappedCandidates
-          .map((resourcePath) => ({
-            resourcePath,
-            score: scoreResourcePath(resourcePath, preferredResourceHints),
-          }))
-          .sort((a, b) => (b.score - a.score) || a.resourcePath.localeCompare(b.resourcePath));
-        selectedResourcePath = rankedMapped[0]?.resourcePath || '';
-        queryResourceMissingFromBindings = !selectedResourcePath;
-        selectedFromMappedResource = Boolean(selectedResourcePath);
-      }
-    }
-  } else if (bindingPaths.length > 0) {
-    const scored = bindingPaths
-      .map((resourcePath) => ({ resourcePath, score: scoreResourcePath(resourcePath, preferredResourceHints) }))
-      .sort((a, b) => (b.score - a.score) || a.resourcePath.localeCompare(b.resourcePath));
-    if (!hasAmbiguousResourceSelection(scored)) {
-      selectedResourcePath = scored[0]?.resourcePath || '';
-    }
+  const ruleId = input.rule?.id;
+  if (!ruleId) {
+    return { status: 'failed', evidence_level: 'none', evidence_source: 'analyze_time', hops: [], gaps: [] };
   }
-
-  if (Array.isArray(input.rule?.topology) && input.rule.topology.length > 0) {
-    const topologyHops = input.rule.topology;
-    let topologyCallEdges = [...callEdges];
-    const expandedAnchorIds = new Set<string>();
-    let previousCallEdge: CallEdge | undefined;
-    for (const topologyHop of topologyHops) {
-      const hopType = String(topologyHop.hop || '').trim().toLowerCase() as RuntimeChainHopType;
-      if (!requiredSegments.includes(hopType)) continue;
-
-      if (hopType === 'resource') {
-        if (selectedResourcePath) {
-          hops.push({
-            hop_type: 'resource',
-            anchor: `${selectedResourcePath}:1`,
-            confidence: 'medium',
-            note: selectedFromMappedResource
-              ? `Topology resource hop verified by mapped resource equivalence for trigger_family=${triggerFamily}.`
-              : `Topology resource hop verified by binding evidence for trigger_family=${triggerFamily}.`,
-            snippet: selectedResourcePath,
-          });
-          foundSegments.add('resource');
-          continue;
-        }
-        gaps.push(buildGap(
-          'resource',
-          `missing topology resource hop for trigger_family=${triggerFamily}`,
-          {
-            nextCommand: buildDefaultVerifyNextCommand(input.queryText),
-            whyNotNext: `Topology required resource hop before continuing to ${hopType}.`,
-          },
-        ));
-        continue;
-      }
-
-      if (hopType === 'guid_map') {
-        let guidAnchor = '';
-        let guidSnippet = '';
-        if (selectedResourcePath) {
-          const resourceGuidEvidence = await inspectResourceGuidEvidence(input.repoPath, selectedResourcePath);
-          if (resourceGuidEvidence.metaPath) {
-            guidAnchor = `${resourceGuidEvidence.metaPath}:1`;
-            guidSnippet = resourceGuidEvidence.metaPath;
-          } else if (resourceGuidEvidence.guid) {
-            guidAnchor = `${selectedResourcePath}:1`;
-            guidSnippet = `guid:${resourceGuidEvidence.guid}`;
-          }
-        }
-        if (guidAnchor) {
-          hops.push({
-            hop_type: 'guid_map',
-            anchor: guidAnchor,
-            confidence: 'medium',
-            note: `Topology guid_map hop verified by filesystem artifacts for trigger_family=${triggerFamily}.`,
-            snippet: guidSnippet,
-          });
-          foundSegments.add('guid_map');
-          continue;
-        }
-        gaps.push(buildGap(
-          'guid_map',
-          `missing topology guid_map hop for trigger_family=${triggerFamily}`,
-          {
-            nextCommand: buildDefaultVerifyNextCommand(input.queryText),
-            whyNotNext: 'Topology could not establish the guid_map bridge required by the rule.',
-          },
-        ));
-        continue;
-      }
-
-      let matchedEdge = chooseTopologyCallEdge(topologyCallEdges, topologyHop, {
-        previousEdge: previousCallEdge,
-      });
-      if (!matchedEdge && previousCallEdge) {
-        const nextAnchor = symbolCandidateFromCallEdgeTarget(previousCallEdge);
-        if (nextAnchor?.id && !expandedAnchorIds.has(nextAnchor.id)) {
-          expandedAnchorIds.add(nextAnchor.id);
-          const anchoredEdges = await fetchAnchoredCallEdges(input.executeParameterized, nextAnchor);
-          topologyCallEdges = dedupeCallEdges([...topologyCallEdges, ...anchoredEdges]);
-          matchedEdge = chooseTopologyCallEdge(topologyCallEdges, topologyHop, {
-            previousEdge: previousCallEdge,
-          });
-        }
-      }
-      if (matchedEdge) {
-        hops.push({
-          hop_type: hopType,
-          anchor: formatCallAnchor(matchedEdge),
-          confidence: 'high',
-          note: `Topology ${hopType} hop verified by rule constraints for trigger_family=${triggerFamily}.`,
-          snippet: `${matchedEdge.sourceName} -> ${matchedEdge.targetName}`,
-        });
-        foundSegments.add(hopType);
-        previousCallEdge = matchedEdge;
-        continue;
-      }
-
-      const isRuntime = hopType === 'code_runtime';
-      const targetHint = String((topologyHop.constraints || {}).targetName || '').trim();
-      const previousTargetHint = previousCallEdge?.targetName
-        ? ` after ${previousCallEdge.targetName}`
-        : '';
-      gaps.push(buildGap(
-        isRuntime ? 'runtime' : 'loader',
-        `missing topology ${hopType} hop for trigger_family=${triggerFamily}`,
-        {
-          nextCommand: buildDefaultVerifyNextCommand(input.queryText),
-          whyNotNext: targetHint
-            ? `Expected ${hopType} hop target matching ${targetHint}${previousTargetHint}.`
-            : `Rule topology requires ${hopType}${previousTargetHint} before chain closure.`,
-        },
-      ));
+  try {
+    const rows = await input.executeParameterized(`
+      MATCH (s)-[r:CodeRelation {type: 'CALLS'}]->(t)
+      WHERE r.reason CONTAINS $ruleId
+        AND r.reason STARTS WITH 'unity-rule-'
+      RETURN s.name AS sourceName, s.filePath AS sourceFilePath, s.startLine AS sourceStartLine,
+             t.name AS targetName, t.filePath AS targetFilePath, t.startLine AS targetStartLine,
+             r.reason AS reason
+      LIMIT 20
+    `, { ruleId });
+    if (rows.length > 0) {
+      const hops: RuntimeChainHop[] = rows.map((row) => ({
+        hop_type: 'code_runtime' as RuntimeChainHopType,
+        anchor: `${row.sourceFilePath}:${row.sourceStartLine || 1}->${row.targetFilePath}:${row.targetStartLine || 1}`,
+        confidence: 'high' as const,
+        note: `Synthetic edge injected at analyze time (${row.reason}).`,
+        snippet: `${row.sourceName} -> ${row.targetName}`,
+      }));
+      return {
+        status: 'verified_full',
+        evidence_level: 'verified_chain',
+        evidence_source: 'analyze_time',
+        hops,
+        gaps: [],
+      };
     }
-
-    return finalizeRuntimeChain({
-      requiredSegments,
-      foundSegments,
-      hops,
-      gaps,
-    });
+  } catch {
+    // Graph query failed; fall through to no match.
   }
-
-  if (requiredSegments.includes('resource')) {
-    if (selectedResourcePath) {
-      hops.push({
-        hop_type: 'resource',
-        anchor: `${selectedResourcePath}:1`,
-        confidence: 'medium',
-        note: selectedFromMappedResource
-          ? `Rule-driven resource anchor verified by mapped resource equivalence for trigger_family=${triggerFamily}.`
-          : `Rule-driven resource anchor verified by binding evidence for trigger_family=${triggerFamily}.`,
-        snippet: selectedResourcePath,
-      });
-      foundSegments.add('resource');
-    } else if (queryResourceMissingFromBindings && queryResourcePath) {
-      gaps.push(buildGap('resource', `queried resource is not present in symbol binding evidence: ${queryResourcePath}`));
-    } else {
-      gaps.push(buildGap('resource', `missing resource binding evidence for trigger_family=${triggerFamily}`));
-    }
-  }
-
-  if (requiredSegments.includes('guid_map')) {
-    let guidAnchor = '';
-    let guidSnippet = '';
-    if (selectedResourcePath) {
-      const resourceGuidEvidence = await inspectResourceGuidEvidence(input.repoPath, selectedResourcePath);
-      if (resourceGuidEvidence.metaPath) {
-        guidAnchor = `${resourceGuidEvidence.metaPath}:1`;
-        guidSnippet = resourceGuidEvidence.metaPath;
-      } else if (resourceGuidEvidence.guid) {
-        guidAnchor = `${selectedResourcePath}:1`;
-        guidSnippet = `guid:${resourceGuidEvidence.guid}`;
-      }
-    }
-    if (!guidAnchor && symbolCandidate?.filePath) {
-      const symbolMetaPath = `${symbolCandidate.filePath}.meta`;
-      if (await pathExists(resolveRepoPath(input.repoPath, symbolMetaPath))) {
-        guidAnchor = `${symbolMetaPath}:1`;
-        guidSnippet = symbolMetaPath;
-      }
-    }
-    if (guidAnchor) {
-      hops.push({
-        hop_type: 'guid_map',
-        anchor: guidAnchor,
-        confidence: 'medium',
-        note: `Rule-driven guid_map evidence verified by filesystem artifacts for trigger_family=${triggerFamily}.`,
-        snippet: guidSnippet,
-      });
-      foundSegments.add('guid_map');
-    } else {
-      gaps.push(buildGap('guid_map', `missing guid_map evidence for trigger_family=${triggerFamily}`));
-    }
-  }
-
-  if (requiredSegments.includes('code_loader')) {
-    const loaderEdge = chooseBestCallEdge(
-      callEdges,
-      /load|reload|equip|register|bootstrap|init|graph|node/i,
-      { requireMatch: true },
-    );
-    if (loaderEdge) {
-      hops.push({
-        hop_type: 'code_loader',
-        anchor: formatCallAnchor(loaderEdge),
-        confidence: 'high',
-        note: `Rule-driven code_loader evidence verified by CALLS edge for trigger_family=${triggerFamily}.`,
-        snippet: `${loaderEdge.sourceName} -> ${loaderEdge.targetName}`,
-      });
-      foundSegments.add('code_loader');
-    } else if (symbolCandidate?.filePath) {
-      gaps.push(buildGap('loader', `no CALLS edge evidence found for loader segment in ${symbolCandidate.filePath}`));
-    } else {
-      gaps.push(buildGap('loader', `missing symbol evidence for code_loader verification under trigger_family=${triggerFamily}`));
-    }
-  }
-
-  if (requiredSegments.includes('code_runtime')) {
-    const loaderKeys = new Set(
-      hops
-        .filter((hop) => hop.hop_type === 'code_loader')
-        .flatMap((hop) => {
-          const [left, right] = String(hop.anchor || '').split('->');
-          if (!left || !right) return [];
-          return [`${left}->${right}`];
-        }),
-    );
-    const runtimeEdge = chooseBestCallEdge(
-      callEdges,
-      /runtime|start|tick|update|execute|routine|finish|shoot|trigger|onreload|value|getvalue|checkreload|output|rpm/i,
-      {
-        requireMatch: true,
-        excludeKeys: new Set(
-          callEdges
-            .filter((edge) => loaderKeys.has(`${edge.sourceFilePath}:${edge.sourceStartLine || 1}->${edge.targetFilePath}:${edge.targetStartLine || 1}`))
-            .map((edge) => callEdgeKey(edge)),
-        ),
-      },
-    );
-    if (runtimeEdge) {
-      hops.push({
-        hop_type: 'code_runtime',
-        anchor: formatCallAnchor(runtimeEdge),
-        confidence: 'high',
-        note: `Rule-driven code_runtime evidence verified by CALLS edge for trigger_family=${triggerFamily}.`,
-        snippet: `${runtimeEdge.sourceName} -> ${runtimeEdge.targetName}`,
-      });
-      foundSegments.add('code_runtime');
-    } else if (symbolCandidate?.filePath) {
-      gaps.push(buildGap('runtime', `no CALLS edge evidence found for runtime segment in ${symbolCandidate.filePath}`));
-    } else {
-      gaps.push(buildGap('runtime', `missing symbol evidence for code_runtime verification under trigger_family=${triggerFamily}`));
-    }
-  }
-
-  return finalizeRuntimeChain({
-    requiredSegments,
-    foundSegments,
-    hops,
-    gaps,
-  });
+  return {
+    status: 'failed',
+    evidence_level: 'none',
+    evidence_source: 'analyze_time',
+    hops: [],
+    gaps: [],
+  };
 }
 
 export async function verifyRuntimeChainOnDemand(
   input: VerifyRuntimeChainInput,
 ): Promise<RuntimeChainResult | undefined> {
   if (!input.rule) return undefined;
-  return await verifyRuleDrivenRuntimeChain({
-    ...input,
-    requiredHops: input.requiredHops || input.rule.required_hops,
-  });
+  return await verifyRuleDrivenRuntimeChain(input);
 }
-
 function buildFailureRuntimeClaim(input: {
   reason: RuntimeClaim['reason'];
   next_action: string;
@@ -783,13 +154,6 @@ function buildFailureRuntimeClaim(input: {
     reason: input.reason,
     next_action: input.next_action,
   };
-}
-
-function matchesRuntimeClaimRule(
-  rule: RuntimeClaimRule,
-  input: VerifyRuntimeClaimInput,
-): boolean {
-  return Number.isFinite(scoreRuntimeClaimRule(rule, input));
 }
 
 function scoreRuntimeClaimRule(
@@ -843,7 +207,6 @@ function scoreRuntimeClaimRule(
 
   return score;
 }
-
 export async function verifyRuntimeClaimOnDemand(
   input: VerifyRuntimeClaimInput,
 ): Promise<RuntimeClaim> {
@@ -931,3 +294,4 @@ export async function verifyRuntimeClaimOnDemand(
 
   return resolved;
 }
+

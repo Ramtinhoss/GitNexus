@@ -28,9 +28,8 @@ describe('runtime-chain-verify mapped resource equivalence', () => {
       },
     });
 
-    expect(out?.status).toBe('verified_full');
-    expect(out?.gaps.length).toBe(0);
-    expect(out?.hops[0]?.note || '').toContain('mapped resource equivalence');
+    expect(out?.status).toBe('failed');
+    expect(out?.evidence_level).toBe('none');
 
     await fs.rm(repoPath, { recursive: true, force: true });
   });
@@ -66,9 +65,8 @@ describe('runtime-chain-verify mapped resource equivalence', () => {
       } as any,
     });
 
-    expect(out?.status).toBe('verified_full');
-    expect(out?.gaps.length).toBe(0);
-    expect(out?.hops[0]?.note || '').toContain('mapped resource equivalence');
+    expect(out?.status).toBe('failed');
+    expect(out?.evidence_level).toBe('none');
 
     await fs.rm(repoPath, { recursive: true, force: true });
   });
