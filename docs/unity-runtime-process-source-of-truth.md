@@ -1,285 +1,207 @@
 # Unity Runtime Process 真理源（Design × As-Built）
 
-Date: 2026-04-03  
-Owner: GitNexus  
-Status: Active (source of truth)
+Date: 2026-04-03
+Owner: GitNexus
+Status: Active (source of truth) — V2 规则驱动架构
 
 ## 1. 文档定位
 
 本文用于统一以下两类信息：
 
 1. 设计意图：
-   - `docs/plans/2026-04-02-unity-runtime-process-phase5-offline-rule-lab-implementation-plan.md`
-   - `docs/plans/2026-04-02-unity-runtime-retrieval-gap-remediation-implementation-plan.md`
-   - `docs/plans/2026-04-03-unity-runtime-validation-gap-remediation-plan.md`
+   - `docs/plans/2026-04-03-unity-runtime-process-rule-driven-design.md`（V2 规则驱动方案设计）
+   - `docs/unity-runtime-process-rule-driven-implementation.md`（V2 技术实现手册）
 2. 实际实现（代码与测试）：
    - ingestion / process 生成链路
    - MCP `query/context` 检索链路
    - `runtime_chain_verify=on-demand` 强验证链路
 
-当历史设计文档与当前代码行为冲突时，以“当前代码 + 本文”作为 Unity runtime process 的对外真理源。
+当历史设计文档与当前代码行为冲突时，以"当前代码 + 本文"作为 Unity runtime process 的对外真理源。
 
 ## 2. As-Built 架构总览
 
 ### 2.1 Analyze 侧（图构建）
 
-1. Pipeline 先构图再注入 Unity synthetic CALLS：
-   - `gitnexus/src/core/ingestion/pipeline.ts:430-433`
-2. Synthetic CALLS 来源：
-   - lifecycle 回调与 runtime loader 锚点检测：`gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.ts:8-38, 76-122`
-   - runtime-root/lifecycle/loader bridge 注入：`gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.ts:230-299`
-3. Process 生成基于 CALLS tracing，并标注：
-   - `processSubtype = unity_lifecycle | static_calls`
-   - `runtimeChainConfidence = medium | high`
-   - 代码：`gitnexus/src/core/ingestion/process-processor.ts:178-195`
-4. 生命周期 metadata 持久化受开关控制：
-   - `GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST`
-   - 代码：`gitnexus/src/core/ingestion/pipeline.ts:431, 487-510`
-5. Unity 资源摘要边持久化：
-   - `UNITY_RESOURCE_SUMMARY`：`gitnexus/src/core/ingestion/unity-resource-processor.ts:192-207`
-   - `Class -> File` schema 路由：`gitnexus/src/core/lbug/schema.ts:254`
+Pipeline 执行顺序（`gitnexus/src/core/ingestion/pipeline.ts`）：
+
+```
+Phase 1-4:   Scan → Structure → Parse → MRO
+Phase 5:     Communities
+Phase 5.5:   processUnityResources (UNITY_COMPONENT_INSTANCE / UNITY_ASSET_GUID_REF 边)
+Phase 5.6:   applyUnityLifecycleSyntheticCalls (通用 lifecycle 合成 CALLS)
+Phase 5.7:   applyUnityRuntimeBindingRules (规则驱动资源↔代码边界穿越 CALLS)
+Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
+```
+
+1. Unity 资源绑定解析（Phase 5.5）：
+   - `processUnityResources`：`pipeline.ts:441`
+   - 产出 `UNITY_COMPONENT_INSTANCE`、`UNITY_ASSET_GUID_REF`、`UNITY_RESOURCE_SUMMARY` 边
+2. 内置 Lifecycle 注入（Phase 5.6）：
+   - 对 Unity 项目自动生效（检测 `Assets/*.cs` 文件）：`pipeline.ts:444`
+   - 通用 lifecycle 回调注入（OnEnable/Awake/Start/Update 等）：`unity-lifecycle-synthetic-calls.ts:52-107`
+   - 配置从 `resolveUnityConfig()` 读取：`pipeline.ts:445`
+3. 规则驱动注入（Phase 5.7）：
+   - 加载 `analyze_rules` 族规则：`pipeline.ts:465`
+   - 三种绑定处理器：`unity-runtime-binding-rules.ts:119,150,200`
+   - 合成边属性：`confidence=0.75`，`reason=unity-rule-{kind}:{ruleId}`
+4. Process 生成（Phase 6）：
+   - 基于 CALLS tracing，标注 `processSubtype` 和 `runtimeChainConfidence`：`pipeline.ts:490-525`
+   - 生命周期 metadata 始终持久化：`pipeline.ts:446`
 
 ### 2.2 Query/Context 侧（检索与投影）
 
 1. 直接 process membership：`STEP_IN_PROCESS`。
-2. 类符号方法投影（Phase 2）：
-   - `HAS_METHOD -> STEP_IN_PROCESS` 合并：`gitnexus/src/mcp/local/local-backend.ts:763-793, 1460-1483`
-   - 证据模式合并：`gitnexus/src/mcp/local/process-evidence.ts:46-114`
-3. empty-process + Unity evidence fallback（Phase 5/V1）：
+2. 类符号方法投影：
+   - `HAS_METHOD -> STEP_IN_PROCESS` 合并：`local-backend.ts:763-793, 1460-1483`
+   - 证据模式合并：`process-evidence.ts:46-114`
+3. empty-process + Unity evidence fallback：
    - 触发：`processRows.length===0` 且 `resourceBindings>0` 或 `needsParityRetry`
    - 注入 `resource_heuristic` + low clue
-   - `query`：`gitnexus/src/mcp/local/local-backend.ts:858-883`
-   - `context`：`gitnexus/src/mcp/local/local-backend.ts:1544-1567`
+4. 扩展字段始终输出（不再需要 flag）：
+   - `runtime_chain_confidence`、`runtime_chain_evidence_level`、`verification_hint`
+   - `process-confidence.ts`；`local-backend.ts`
 
-### 2.3 On-Demand 强验证（Rule-Driven Dispatch + Reload Deep Extractor）
+### 2.3 On-Demand 强验证（简化后的规则驱动验证）
 
 1. 显式入口：
-   - CLI: `--runtime-chain-verify off|on-demand`  
-     `gitnexus/src/cli/index.ts:106, 118`
-   - MCP schema: `runtime_chain_verify`  
-     `gitnexus/src/mcp/tools.ts:102-107, 203-208`
-2. 执行条件：
-   - 请求参数 `runtime_chain_verify=on-demand`
-   - 全局 gate `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY` 为启用
-   - `query/context` 接入：`gitnexus/src/mcp/local/local-backend.ts`
-3. claim + verifier 调度：
-   - `verifyRuntimeClaimOnDemand` 先加载规则目录，按 `trigger_tokens + host_base_type + resource_types + module_scope` 做加权匹配，再把 matched rule 注入 verifier。
-   - `verifyRuntimeChainOnDemand` 仅在 matched rule 存在时执行；无 rule 时直接返回 `undefined`（不再存在 legacy Reload token fallback）。
-   - verifier 统一走 rule-driven DSL 拓扑执行（`required_hops` + evidence/gap 归并），无项目特化硬编码常量分支。
-   - 代码：`gitnexus/src/mcp/local/runtime-chain-verify.ts`
-4. Verifier 实现：
-   - `verifyRuntimeClaimOnDemand` + `verifyRuntimeChainOnDemand`
-   - `required_hops` 驱动 `status/evidence_level` 计算；`guarantees/non_guarantees` 来源于 matched rule
-   - 输出 `runtime_chain.{status,evidence_level,hops,gaps}`
-   - broad 无 seed 且资源选择歧义时，允许返回 `verified_partial / verified_segment` 的代码段闭环与显式 gap，而不是猜测具体 resource hop
-5. V1 验收 runner：
-   - `gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts:149-238`
-   - 语义闭环校验（CurGunGraph + runtime anchors）：`101-116`
+   - CLI: `--runtime-chain-verify off|on-demand`
+   - MCP schema: `runtime_chain_verify`（`tools.ts`）
+   - 请求参数为唯一控制开关，无全局 gate
+2. 验证逻辑（`runtime-chain-verify.ts`，297 行）：
+   - `verifyRuntimeClaimOnDemand`：加载规则目录 → 加权匹配（`trigger_tokens + host_base_type + resource_types + module_scope`）→ 分发验证
+   - `verifyRuleDrivenRuntimeChain`：查询图谱中 `unity-rule-*` 合成边 → 二元结果
+   - 无文件系统 I/O、无 regex 启发式、无单跳展开
+3. 验证结果：
+   - `status: 'verified_full'` + `evidence_source: 'analyze_time'`（图谱中存在匹配的合成边）
+   - `status: 'failed'` + `evidence_level: 'none'`（无匹配合成边）
+   - `runtime_claim` 统一输出失败分类：`rule_not_matched | rule_matched_but_evidence_missing | rule_matched_but_verification_failed`
 
 ### 2.4 Phase 5 Offline Rule Lab（Discover → Analyze → Review → Curate → Promote → Regress）
 
 1. Rule Lab 模块分层（`gitnexus/src/rule-lab/`）：
    - 路径与 run/slice 约定：`paths.ts:32-56`
-   - discover（规则注册表 -> slice 枚举 + manifest）：`discover.ts:45-87`
-   - analyze（slice -> anchor-backed candidate）：`analyze.ts:45-63`
-   - review-pack（token budget 截断 + card 打包）：`review-pack.ts:83-116`
-   - curate（语义闭环校验 + placeholder 拒绝）：`curate.ts:5-103`
-   - promote（approved YAML + catalog upsert）：`promote.ts:103-156`
-   - regress（precision/coverage gate + 报告）：`regress.ts:21-64`
-2. CLI 接入：
-   - `gitnexus rule-lab` 六子命令统一入口：`gitnexus/src/cli/rule-lab.ts:11-171`
-   - 主 CLI 注册：`gitnexus/src/cli/index.ts:9,77`
-3. MCP 接入（Agent 可调用）：
-   - Tool schema 暴露 `rule_lab_*`：`gitnexus/src/mcp/tools.ts:347-429`
-   - `LocalBackend.callTool` 分发与参数校验：`gitnexus/src/mcp/local/local-backend.ts:675-899`
-4. Runtime verifier 装载闭环：
+   - discover → analyze → review-pack → curate → promote → regress
+2. 规则族区分：
+   - `family: 'analyze_rules'`：索引阶段注入合成边（`loadAnalyzeRules`）
+   - `family: 'verification_rules'`：查询阶段验证（`loadRuleRegistry`）
+   - v1 规则（无 family 字段）默认归类为 `verification_rules`
+3. Runtime verifier 装载闭环：
    - promote 写入 `.gitnexus/rules/catalog.json` + `approved/*.yaml`
-   - `verifyRuntimeClaimOnDemand` 通过 `loadRuleRegistry` 直接读取 repo-local 规则：`gitnexus/src/mcp/local/runtime-chain-verify.ts:515-591`
-   - 集成验证用例：`runtime-chain-verify.test.ts:343`，`local-backend-calltool.test.ts:386`
-5. Phase 5 验收与证据沉淀：
-   - acceptance runner：`gitnexus/src/benchmark/u2-e2e/phase5-rule-lab-acceptance-runner.ts:106-306`
-   - gate 校验：`runPhase5RuleLabGate`（stage 覆盖/指标完整性）：`226-242`
-   - 报告产物：`docs/reports/2026-04-02-phase5-rule-lab-acceptance.{json,md}`
+   - `verifyRuntimeClaimOnDemand` 通过 `loadRuleRegistry` 读取 repo-local 规则
 
 ## 3. 设计与实现对照（阶段）
 
 | 阶段 | 设计目标 | As-Built 结论 | 代码/证据 |
 | --- | --- | --- | --- |
-| Phase 0 | 基线与指标固化 | 已有报告产物 | `docs/reports/2026-03-31-phase0-unity-runtime-process-*.{json,md}` |
-| Phase 1 | Unity summary schema hygiene + fallback 统计真实化 | 已落地 | `schema.ts:254`; `lbug-adapter.ts:256-259`; `analyze-summary.ts:62-88` |
-| Phase 2 | class->method process 投影 | 已落地（query/context 双侧） | `local-backend.ts:763-793, 1460-1483`; `process-evidence.ts` |
-| Phase 3 | lifecycle + loader synthetic CALLS | 已落地（默认关闭） | `unity-lifecycle-synthetic-calls.ts`; `unity-lifecycle-config.ts:24-41` |
-| Phase 4 | persisted lifecycle process artifact | 已落地（受 persist 开关控制） | `pipeline.ts:487-510`; `resources.ts:302-307, 428-430` |
-| Phase 5 | confidence + verification_hint agent-safe 合约 | 已落地（字段开关控制） | `process-confidence.ts`; `local-backend.ts:924-928, 954-958, 1579-1583` |
-| V1 Reload | 双层信号 + on-demand verify + 验收闭环 | 已落地（Reload-focused） | `runtime-chain-evidence.ts`; `runtime-chain-verify.ts`; `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.md` |
+| Phase 0 | 基线与指标固化 | 已有报告产物 | `docs/reports/2026-03-31-phase0-*` |
+| Phase 1 | Unity summary schema hygiene | 已落地 | `schema.ts:254` |
+| Phase 2 | class→method process 投影 | 已落地（query/context 双侧） | `local-backend.ts:763-793, 1460-1483` |
+| Phase 3 | lifecycle + loader synthetic CALLS | **V2 重构**：lifecycle 始终启用，loader 改为规则驱动 | `unity-lifecycle-synthetic-calls.ts`；`unity-runtime-binding-rules.ts` |
+| Phase 4 | persisted lifecycle process artifact | **V2 变更**：始终持久化 | `pipeline.ts:446,524-525` |
+| Phase 5 | confidence + verification_hint 合约 | **V2 变更**：扩展字段始终输出 | `process-confidence.ts`；`local-backend.ts` |
+| V1 Reload | on-demand verify + 验收闭环 | **V2 重构**：verifier 简化为图谱查询 | `runtime-chain-verify.ts` (934→297 行) |
+| V2 规则驱动 | 规则定义资源↔代码边界穿越 | 已落地 | `unity-runtime-binding-rules.ts`；`unity-config.ts` |
 
 ## 4. 对外契约真理源
 
-## 4.1 `query/context` 常驻字段（无需 flag）
+### 4.1 `query/context` 常驻字段（始终输出）
 
 1. `processes[].evidence_mode`: `direct_step | method_projected | resource_heuristic`
 2. `processes[].confidence`: `high | medium | low`
 3. `process_symbols[].process_evidence_mode`
 4. `process_symbols[].process_confidence`
+5. `runtime_chain_confidence`（V2：始终输出，不再需要 flag）
+6. `runtime_chain_evidence_level`: `none | clue | verified_segment | verified_chain`
+7. `verification_hint`（low confidence 时应可行动）
 
-代码依据：
-- `gitnexus/src/mcp/local/local-backend.ts:952-953, 1577-1578`
+### 4.2 `runtime_chain` 输出条件
 
-## 4.2 `GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on` 扩展字段
+1. 请求显式传 `runtime_chain_verify=on-demand`（唯一开关）
+2. 运行时始终通过 `runtime_claim` 统一输出（包括失败分类）
+   - 无规则 / 无匹配 → `reason=rule_not_matched`
+   - 匹配但证据不足 → `reason=rule_matched_but_evidence_missing`
+   - 匹配且验证失败 → `reason=rule_matched_but_verification_failed`
+3. 验证结果携带 `evidence_source: 'analyze_time' | 'query_time'`
 
-1. `runtime_chain_confidence`
-2. `runtime_chain_evidence_level`: `none | clue | verified_segment | verified_chain`
-3. `verification_hint`（low confidence 时应可行动）
+### 4.3 `process_ref / runtime_claim / evidence policy` 合约
 
-代码依据：
-- `gitnexus/src/mcp/local/local-backend.ts:924-928, 954-958, 1579-1583`
-- `gitnexus/src/mcp/local/runtime-chain-evidence.ts:1-24`
-
-## 4.3 `runtime_chain` 输出条件
-
-1. 请求显式传 `runtime_chain_verify=on-demand`
-2. 全局 gate `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY` 未关闭
-3. 运行时始终通过 `runtime_claim` 统一输出（包括失败分类）
-   - 无规则 / 无匹配 -> `reason=rule_not_matched`
-   - 匹配但证据不足 -> `reason=rule_matched_but_evidence_missing`
-   - 匹配且验证失败 -> `reason=rule_matched_but_verification_failed`
-   - gate 关闭 -> `reason=gate_disabled`
-4. 若存在 matched rule，verifier 读取该 rule 的 `required_hops` 参与 `status/evidence_level` 判定（`missing required -> partial/failed`）
-
-代码依据：
-- `gitnexus/src/mcp/local/local-backend.ts:994-1004, 1586-1594`
-- `gitnexus/src/mcp/local/runtime-chain-verify.ts`
-
-## 4.4 `process_ref / runtime_claim / evidence policy` 合约（Phase 1-4 补充）
-
-1. `query/context` 的 `processes[]` 现在同时返回：
+1. `query/context` 的 `processes[]` 返回：
    - `id`（可读 process id；heuristic 情况下为 `derived:*`）
-   - `process_ref`：
-     - `id`
-     - `kind`: `persistent | derived`
-     - `readable`
-     - `reader_uri`
-     - `origin`: `step_in_process | method_projected | resource_heuristic`
+   - `process_ref`：`id`, `kind`, `readable`, `reader_uri`, `origin`
 2. 请求 `runtime_chain_verify=on-demand` 时，返回 `runtime_claim`（rule-driven）：
    - `rule_id`, `rule_version`, `scope`
    - `status`, `evidence_level`, `hops`, `gaps`
    - `guarantees`, `non_guarantees`
-   - 失败分类：`rule_not_matched | rule_matched_but_evidence_missing | rule_matched_but_verification_failed | gate_disabled`
-3. `unity_evidence_mode`:
-   - `summary | focused | full`
-   - 与 `resource_path_prefix / binding_kind / max_bindings / max_reference_fields` 共同决定证据裁剪与 `evidence_meta`
-   - `evidence_meta.minimum_evidence_satisfied` 表示响应负载完整性；`evidence_meta.verifier_minimum_evidence_satisfied` 表示当前 verifier 输入是否足够
-4. `hydration_policy`:
-   - `fast => compact`（高优先级，可覆盖 `unity_hydration_mode`）
-   - `balanced => 使用请求的 unity_hydration_mode（compact/parity）；compact 且缺证据时可自动 parity 升级`
-   - `strict => parity`（高优先级，可覆盖 `unity_hydration_mode`）；若 fallback_to_compact，runtime claim 降级到 `verified_partial / verified_segment`
-   - 响应 `hydrationMeta` 必须可观测：`requestedMode/effectiveMode/reason`
-5. `missing_evidence[]`:
-   - 在不完整输出时必须返回解释条目
-   - 保留兼容字段 `hydrationMeta.needsParityRetry`（compact incomplete 场景）
-6. `resource_path_prefix` / seed contract:
-   - 当请求显式提供资源路径（参数或 query 内嵌 Unity 资源路径）时，query 与 verifier 应以该 seed 为优先锚点
-   - `resource_seed_mode=strict` 不允许回退到任意 first binding；若 seed 无法映射，只返回显式 gap / follow-up
-   - 推荐的运行时链验证姿势是“类符号 + 资源文件路径”联合检索，而不是仅用 broad 类名猜具体 asset
+3. `unity_evidence_mode`: `summary | focused | full`
+4. `hydration_policy`: `fast => compact`; `balanced => 按请求`; `strict => parity`
+5. `resource_path_prefix` / seed contract：类符号 + 资源路径联合检索为主路径
 
-## 4.5 Phase 5 Offline Rule Lab 合约（新增）
+### 4.4 Phase 5 Offline Rule Lab 合约
 
-1. Rule Lab 六阶段生命周期：
-   - `rule_lab_discover`
-   - `rule_lab_analyze`
-   - `rule_lab_review_pack`
-   - `rule_lab_curate`
-   - `rule_lab_promote`
-   - `rule_lab_regress`
-2. 阶段输入输出（As-Built）：
-   - `discover`：输入 repo/scope/seed，输出 `run_id + manifest + slices + next_actions`
-   - `analyze`：输入 `run_id + slice_id`，输出 `candidates.jsonl`（多候选 topology + `stats.coverage_rate/conflict_rate` + `counter_examples`）
-   - `review-pack`：输入 `max_tokens`，输出 `review-cards.md`（含 `decision_inputs.required_hops/failure_map/guarantees/non_guarantees`）与 `token_budget_estimate/truncated`
-   - `curate`：输入人工确认 JSON，强制校验 `match/topology/closure/claims`、`confirmed_chain.steps` 与 placeholder 约束，输出 `curated.json` + `dsl-draft.json`
-   - `promote`：输入 curated/dsl draft artifacts，输出 DSL+runtime 兼容 YAML（含 `match/topology/closure/claims`），并 lint 拦截 `unknown|TODO|TBD|<...>` scope 占位
-   - `regress`：输入 `precision/coverage/probes`，阈值 gate：`precision >= 0.90 && coverage >= 0.80 && probe_pass_rate >= 0.85`
-3. Artifact 所有权与路径：
-   - `.gitnexus/rules/lab/runs/<run_id>/manifest.json`
-   - `.gitnexus/rules/lab/runs/<run_id>/slice-plan.json`
-   - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/candidates.jsonl`
-   - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/review-cards.md`
-   - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/curated.json`
-   - `.gitnexus/rules/lab/runs/<run_id>/slices/<slice_id>/dsl-draft.json`
-   - `.gitnexus/rules/catalog.json` 与 `.gitnexus/rules/approved/*.yaml`（promote 后即时供 runtime claim verifier 读取）
-4. MCP 对外返回契约：
-   - `rule_lab_discover/analyze/review_pack/curate/promote/regress` 均返回阶段结果 + `artifact_paths`
-   - 参数缺失时返回显式 `error`（例如 `run_id/slice_id` 必填，或 `precision/coverage` 必须为数值）
-5. Runtime verifier 装载边界：
-   - promote 成功后，`verifyRuntimeClaimOnDemand` 直接从 repo-local `.gitnexus/rules/**` 装载，不依赖跨仓库 fallback。
-6. 验收报告最小合约：
-   - `stage_coverage.length === 6`
-   - `metrics.precision|coverage|probe_pass_rate|token_budget` 均为 numeric
-   - `authenticity_checks.static_no_hardcoded_reload.pass === true`
-   - `authenticity_checks.dsl_lint_pass === true`
-   - `metrics.probe_pass_rate >= 0.85`
-   - `failure_classifications[]` 每项包含 `code + retry_hint + repro_command`
-   - `artifact_paths` 全部可访问
+1. Rule Lab 六阶段生命周期：discover → analyze → review_pack → curate → promote → regress
+2. Artifact 路径：`.gitnexus/rules/lab/runs/<run_id>/...`
+3. promote 后即时供 runtime claim verifier 和 analyze pipeline 读取
+4. 规则族区分：`analyze_rules`（索引阶段注入）vs `verification_rules`（查询阶段验证）
 
-## 5. 运行时开关（当前真实默认值）
+## 5. 配置方式（V2）
 
-| 开关 | 默认 | 作用 |
+### 5.1 行为控制
+
+V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式配置控制：
+
+| 行为 | 控制方式 |
+| --- | --- |
+| Lifecycle 合成边注入 | 对 Unity 项目自动生效（检测 `Assets/*.cs`） |
+| 规则驱动边注入 | `.gitnexus/rules/` 下有 `analyze_rules` 规则即生效 |
+| Process 元数据持久化 | 始终持久化 |
+| 扩展置信度字段输出 | 始终输出 |
+| 运行时链路验证 | 请求参数 `runtime_chain_verify=on-demand` 为唯一开关 |
+
+### 5.2 调优参数
+
+通过 `.gitnexus/config.json` 的 `unity` 键配置，CLI 参数可覆盖：
+
+| 参数 | 默认值 | 作用 |
 | --- | --- | --- |
-| `GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS` | `off` | 是否注入 lifecycle/loader synthetic CALLS |
-| `GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST` | `off` | 是否持久化 processSubtype/runtimeChainConfidence/sourceReasons |
-| `GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS` | `off` | 是否输出 runtime_chain_* 与 verification_hint 扩展字段 |
-| `GITNEXUS_UNITY_RUNTIME_CHAIN_VERIFY` | `on` | 全局 gate；关闭后禁用 on-demand 强验证 |
-| 请求参数 `runtime_chain_verify` | `off` | 单次请求是否触发 verifier |
+| `maxSyntheticEdgesPerClass` | 12 | 每个类最多注入合成边数 |
+| `maxSyntheticEdgesTotal` | 256 | 全局合成边上限 |
+| `lazyMaxPaths` | 120 | lazy hydration 最大路径数 |
+| `lazyBatchSize` | 30 | lazy hydration 批次大小 |
+| `lazyMaxMs` | 5000 | lazy hydration 超时 |
+| `payloadMode` | `compact` | 资源绑定载荷详略 |
+| `parityWarmup` | false | 启动时预热 parity |
+| `parityWarmupMaxParallel` | 4 | 预热并发数 |
 
-代码依据：
-- `unity-lifecycle-config.ts:24-41`
-- `unity-process-confidence-config.ts:1-4`
-- `unity-runtime-chain-verify-config.ts:1-7`
-- `cli/index.ts:106, 118`
+代码依据：`gitnexus/src/core/config/unity-config.ts:4-18,26-40`
+
+优先级：`CLI 参数 > .gitnexus/config.json > 内置默认值`
 
 ## 6. 已确认偏差与边界
 
-1. Verifier 执行入口已按 matched rule 驱动（不再由 Reload 关键字硬门控）。Reload 场景使用深度锚点提取；非 Reload 当前走通用 rule-driven heuristic（resource/guid/code hints），专用深度 hop 抽取器仍待扩展。
-2. Phase 3 文档中的建议 flag `GITNEXUS_UNITY_PROCESS_METHOD_PROJECTION` 当前未实现为独立开关；方法投影在 query/context 默认启用。
-3. V1 不回写 verified chain 到 Process 持久图（仅请求时计算并返回），与设计的 out-of-scope 一致。
+1. V2 verifier 为二元结果（`verified_full` / `failed`），不再产出 `verified_partial` / `verified_segment` 中间状态。需要中间状态的场景应通过规则覆盖度提升来解决。
+2. 方法投影在 query/context 默认启用，无独立开关。
+3. 强验证链路不回写 verified chain 到 Process 持久图（仅请求时计算并返回）。
 4. 强验证链路对仓库文件内容与索引状态一致性敏感；若索引 stale，应先 `gitnexus analyze`。
-5. broad、无 seed 的运行时检索当前是“安全 partial”语义：
-   - 若规则已命中但资源锚点无法被 query/resource evidence 唯一确定，`next_hops` 优先返回 retrieval-rule follow-up 与 symbol context，不输出拍脑袋 resource hop
-   - 该场景允许 `runtime_claim=verified_partial` 且 `runtime_chain.gaps` 包含 `resource/guid_map`
-   - 对实际验收与 agent 工作流，seeded 查询是完成运行时链闭环的主路径
+5. 资源锚点优先：seeded 查询（类符号 + 资源路径）是完成运行时链闭环的主路径。无 seed 时返回 gap 而非猜测。
 
-## 7. 2026-04-02 修复回写（FC-01..FC-08）
+## 7. V2 迁移回写（2026-04-03）
 
-1. FC-01: `queryProcessDetail` 支持 `id` 优先查找；`phase1 process_ref readable` 从字段检查升级为 `reader_uri` 实际回读。
-2. FC-02: 移除 rule registry ancestor fallback；缺 catalog/rule 文件会抛可诊断错误，并在 claim 层映射为 `rule_not_matched`。
-3. FC-03: `trigger_family` 匹配改为 token-based rule matching；`required_hops` 驱动 status；verifier 改为按 matched rule 分发执行（Reload deep extractor + non-Reload heuristic）；claim 的 `guarantees/non_guarantees` 来源于 matched rule。
-4. FC-04: hydration precedence 显式化并可观测（`requestedMode/effectiveMode/reason`）。
-5. FC-05: YAML scalar/list 解析改为 quote-safe 逻辑，`next_action` 保证可 shell 解析。
-6. FC-06: Phase2 acceptance runner 强制 4/4 失败分类覆盖，不足则直接失败并输出缺失分类及复现命令。
-7. FC-07: Phase 5 Offline Rule Lab 生命周期（CLI + MCP）与验收 runner 落地，报告产物：`docs/reports/2026-04-02-phase5-rule-lab-acceptance.{json,md}`。
-8. FC-08: Rule Lab 契约测试补齐（`rule-lab-contracts.test.ts`、`rule-lab-tools.test.ts`、`phase5 rule-lab promoted rule is loadable`）并纳入回归基线。
+1. **规则基础设施**：`UnityResourceBinding` / `LifecycleOverrides` 类型 + `family` 字段 + `loadAnalyzeRules()` + 统一配置加载器
+2. **Pipeline 重排序**：Unity 资源处理从 Phase 7 提前到 Phase 5.5，lifecycle 始终启用，规则驱动注入插入 Phase 5.7
+3. **规则驱动注入**：`applyUnityRuntimeBindingRules` 实现三种绑定处理器（`asset_ref_loads_components` / `method_triggers_field_load` / `lifecycle_overrides`）
+4. **环境变量清除**：15 个 `GITNEXUS_UNITY_*` env var 全部移除，迁移到 `resolveUnityConfig()` 统一配置
+5. **Verifier 简化**：`runtime-chain-verify.ts` 从 934 行缩减到 297 行，移除所有启发式/文件 I/O，改为图谱查询
+6. **硬编码移除**：`RUNTIME_LOADER_ANCHORS`（8 锚点）、`DETERMINISTIC_LOADER_BRIDGES`（7 桥接）、项目特化评分全部删除
 
-## 8. 2026-04-03 收口回写（RV-01..RV-04）
+## 8. Rule Lab 当前边界（2026-04-03 As-Built）
 
-1. RV-01: runtime rule matching 从单 `trigger_family` token 提升为加权匹配，综合 `trigger_tokens + host_base_type + resource_types + module_scope`，避免 broad reload query 误绑到无关资源。
-2. RV-02: verifier 支持 anchored topology execution；seeded reload/GunGraph 场景可闭合 `resource -> guid_map -> code_loader -> code_runtime`，并接受 seed->mapped graph 等价。
-3. RV-03: query evidence completeness 与 verifier admissibility 拆分；`minimum_evidence_satisfied=false` 不再自动抹掉已闭合的 verifier chain。
-4. RV-04: neonspark live 验证收敛到双形态契约：
-   - broad query：不再漂移到错误资源，返回 retrieval follow-up + partial code chain
-   - seeded query：`verified_full / verified_chain`
-   - `docs/reports/2026-04-01-v1-reload-runtime-chain-acceptance.json` 的 `verify-only` 通过
-## 9. Rule Lab 当前边界（2026-04-02 As-Built）
+1. `promote.ts` 仍允许从 curated 内容推断 `trigger_family`，但 scope/topology/claims 必须通过 DSL lint。
+2. `analyze.ts` 已升级为多候选 topology 输出（含 coverage/conflict/counter-example 统计）。
+3. Rule Lab 产物写入 `.gitnexus/rules/**`，受仓库 `.gitignore` 影响（默认忽略 `.gitnexus`）。
+4. V2 新增 `analyze_rules` 族规则在索引阶段生效；现有 `verification_rules` 族规则在查询阶段生效。两种规则通过 `family` 字段区分，互不干扰。
 
-1. `promote.ts` 仍允许从 curated 内容推断 `trigger_family`，但 scope/topology/claims 必须通过 DSL lint；`unknown|TODO|TBD|<...>` 占位会被拒绝。
-2. `analyze.ts` 已升级为多候选 topology 输出（含 coverage/conflict/counter-example 统计）；当前仍为启发式候选空间，后续可继续增强召回/排序策略。
-3. `review-pack.ts` token 估算采用 `JSON.length/4` 启发式，适配离线包控与截断诊断；后续若引入模型 tokenizer，可替换估算函数但保持 `token_budget_estimate` 字段稳定。
-4. Rule Lab 产物写入 `.gitnexus/rules/**`，受仓库 `.gitignore` 影响（默认忽略 `.gitnexus`）；如需提交样例规则需显式跟踪。
+## 9. 维护规则
 
-## 10. 维护规则
-
-1. 任何 Unity runtime process 行为变更（字段、flag、语义、默认值），必须同步更新本文。
-2. 扩展非 Reload 场景专用 verifier/extractor 时，需在本文补充：
-   - 触发判定
-   - 必需 hop 段
-   - 与通用 heuristic 的优先级
-   - 验收与回滚策略
-3. `AGENTS.md` 应持续指向本文，作为该领域唯一入口文档。
+1. 任何 Unity runtime process 行为变更（字段、配置、语义、默认值），必须同步更新本文。
+2. 扩展新的 `resource_bindings` kind 时，需在本文补充触发判定、图谱遍历路径、合成边属性。
+3. `AGENTS.md` / `CLAUDE.md` 应持续指向本文，作为该领域唯一入口文档。
