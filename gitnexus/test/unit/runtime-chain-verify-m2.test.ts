@@ -118,7 +118,7 @@ function makeExecuteDisconnectedRuntime() {
 }
 
 function makeExecuteAnchoredReloadBridge() {
-  return async (query: string) => {
+  return async (query: string, params?: Record<string, unknown>) => {
     const q = String(query || '');
     if (q.includes('WHERE n.name IN $symbolNames')) {
       return [{
@@ -131,6 +131,18 @@ function makeExecuteAnchoredReloadBridge() {
     }
 
     if (q.includes("MATCH (s {id: $symbolId})-[r:CodeRelation {type: 'CALLS'}]->(t)")) {
+      if (String(params?.symbolId || '') === 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:RegisterEvents') {
+        return [{
+          sourceId: 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:RegisterEvents',
+          sourceName: 'RegisterEvents',
+          sourceFilePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+          sourceStartLine: 40,
+          targetId: 'Method:Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:StartRoutineWithEvents',
+          targetName: 'StartRoutineWithEvents',
+          targetFilePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+          targetStartLine: 50,
+        }];
+      }
       return [
         {
           sourceId: 'Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp',

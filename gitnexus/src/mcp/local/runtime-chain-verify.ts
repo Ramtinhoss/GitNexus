@@ -6,6 +6,14 @@ import {
 } from './runtime-chain-evidence.js';
 import { buildRuntimeClaimFromRule, type RuntimeClaim } from './runtime-claim.js';
 import { RuleRegistryLoadError, loadRuleRegistry, type RuntimeClaimRule } from './runtime-claim-rule-registry.js';
+import {
+  callEdgeKey,
+  dedupeCallEdges,
+  fetchAnchoredCallEdges,
+  symbolCandidateFromCallEdgeTarget,
+  type RuntimeCallEdge as CallEdge,
+  type RuntimeSymbolCandidate as SymbolCandidate,
+} from './runtime-chain-extractors.js';
 
 export type RuntimeChainVerifyMode = 'off' | 'on-demand';
 export type RuntimeChainStatus = 'pending' | 'verified_partial' | 'verified_full' | 'failed';
@@ -59,7 +67,6 @@ interface VerifyRuntimeClaimInput extends VerifyRuntimeChainInput {
 const VERIFY_NEXT_COMMAND = 'node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "Reload NEON.Game.Graph.Nodes.Reloads"';
 const DEFAULT_REQUIRED_HOPS: RuntimeChainHopType[] = ['resource', 'guid_map', 'code_loader', 'code_runtime'];
 const SYMBOL_NAME_QUERY_LIMIT = 30;
-const CALL_EDGE_QUERY_LIMIT = 40;
 
 function normalizeText(value: unknown): string {
   return String(value || '').trim();
@@ -114,25 +121,6 @@ function buildGap(
     next_command: options?.nextCommand || VERIFY_NEXT_COMMAND,
     ...(options?.whyNotNext ? { why_not_next: options.whyNotNext } : {}),
   };
-}
-
-interface SymbolCandidate {
-  id: string;
-  name: string;
-  type: string;
-  filePath: string;
-  startLine?: number;
-}
-
-interface CallEdge {
-  sourceId: string;
-  sourceName: string;
-  sourceFilePath: string;
-  sourceStartLine?: number;
-  targetId: string;
-  targetName: string;
-  targetFilePath: string;
-  targetStartLine?: number;
 }
 
 function normalizePathLike(value: string): string {
@@ -350,75 +338,10 @@ async function resolvePrimarySymbolCandidate(
   return undefined;
 }
 
-async function fetchCallEdges(
-  input: VerifyRuntimeChainInput,
-  symbol: SymbolCandidate,
-): Promise<CallEdge[]> {
-  if (!symbol?.id) return [];
-  const symbolId = symbol.id;
-  const directQueries = [
-    input.executeParameterized(`
-      MATCH (s {id: $symbolId})-[r:CodeRelation {type: 'CALLS'}]->(t)
-      RETURN s.id AS sourceId, s.name AS sourceName, s.filePath AS sourceFilePath, s.startLine AS sourceStartLine,
-             t.id AS targetId, t.name AS targetName, t.filePath AS targetFilePath, t.startLine AS targetStartLine
-      LIMIT ${CALL_EDGE_QUERY_LIMIT}
-    `, { symbolId }),
-    input.executeParameterized(`
-      MATCH (s)-[r:CodeRelation {type: 'CALLS'}]->(t {id: $symbolId})
-      RETURN s.id AS sourceId, s.name AS sourceName, s.filePath AS sourceFilePath, s.startLine AS sourceStartLine,
-             t.id AS targetId, t.name AS targetName, t.filePath AS targetFilePath, t.startLine AS targetStartLine
-      LIMIT ${CALL_EDGE_QUERY_LIMIT}
-    `, { symbolId }),
-  ];
-  const containerType = String(symbol.type || '').toLowerCase();
-  const isMethodContainer = new Set(['class', 'interface', 'struct', 'trait', 'impl', 'record']).has(containerType)
-    || String(symbol.id).toLowerCase().startsWith('class:');
-  if (isMethodContainer) {
-    directQueries.push(
-      input.executeParameterized(`
-        MATCH (n {id: $symbolId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
-        MATCH (m)-[r:CodeRelation {type: 'CALLS'}]->(t)
-        RETURN m.id AS sourceId, m.name AS sourceName, m.filePath AS sourceFilePath, m.startLine AS sourceStartLine,
-               t.id AS targetId, t.name AS targetName, t.filePath AS targetFilePath, t.startLine AS targetStartLine
-        LIMIT ${CALL_EDGE_QUERY_LIMIT}
-      `, { symbolId }),
-      input.executeParameterized(`
-        MATCH (n {id: $symbolId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
-        MATCH (s)-[r:CodeRelation {type: 'CALLS'}]->(m)
-        RETURN s.id AS sourceId, s.name AS sourceName, s.filePath AS sourceFilePath, s.startLine AS sourceStartLine,
-               m.id AS targetId, m.name AS targetName, m.filePath AS targetFilePath, m.startLine AS targetStartLine
-        LIMIT ${CALL_EDGE_QUERY_LIMIT}
-      `, { symbolId }),
-    );
-  }
-  const rows = await Promise.all(directQueries);
-  const combined = rows.flatMap((rowSet) => rowSet || []);
-  return combined
-    .map((row) => ({
-      sourceId: String(row.sourceId || ''),
-      sourceName: String(row.sourceName || ''),
-      sourceFilePath: String(row.sourceFilePath || ''),
-      sourceStartLine: Number.isFinite(Number(row.sourceStartLine)) ? Number(row.sourceStartLine) : undefined,
-      targetId: String(row.targetId || ''),
-      targetName: String(row.targetName || ''),
-      targetFilePath: String(row.targetFilePath || ''),
-      targetStartLine: Number.isFinite(Number(row.targetStartLine)) ? Number(row.targetStartLine) : undefined,
-    }))
-    .filter((row) => row.sourceId && row.targetId && row.sourceFilePath && row.targetFilePath)
-    .filter((row, index, list) => {
-      const key = `${row.sourceId}->${row.targetId}`;
-      return list.findIndex((other) => `${other.sourceId}->${other.targetId}` === key) === index;
-    });
-}
-
 function formatCallAnchor(edge: CallEdge): string {
   const left = `${edge.sourceFilePath}:${edge.sourceStartLine || 1}`;
   const right = `${edge.targetFilePath}:${edge.targetStartLine || 1}`;
   return `${left}->${right}`;
-}
-
-function edgeKey(edge: CallEdge): string {
-  return `${edge.sourceId}->${edge.targetId}`;
 }
 
 function chooseBestCallEdge(
@@ -429,7 +352,7 @@ function chooseBestCallEdge(
   if (edges.length === 0) return undefined;
   const excludeKeys = options?.excludeKeys || new Set<string>();
   const scored = edges
-    .filter((edge) => !excludeKeys.has(edgeKey(edge)))
+    .filter((edge) => !excludeKeys.has(callEdgeKey(edge)))
     .map((edge) => {
     const text = `${edge.sourceName} ${edge.sourceFilePath} ${edge.targetName} ${edge.targetFilePath}`;
     const score = matcher.test(text) ? 10 : 0;
@@ -509,7 +432,7 @@ function chooseTopologyCallEdge(
     })
     .map((edge) => ({ edge, score: scoreCallEdgeForTopology(edge, hop.constraints) }))
     .filter((entry) => Number.isFinite(entry.score))
-    .sort((a, b) => (b.score - a.score) || edgeKey(a.edge).localeCompare(edgeKey(b.edge)));
+    .sort((a, b) => (b.score - a.score) || callEdgeKey(a.edge).localeCompare(callEdgeKey(b.edge)));
   return ranked[0]?.edge;
 }
 
@@ -530,7 +453,7 @@ async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Pro
   const triggerTokens = parseTriggerTokens(triggerFamily);
   const symbolCandidate = await resolvePrimarySymbolCandidate(input);
   const callEdges = symbolCandidate?.id
-    ? await fetchCallEdges(input, symbolCandidate)
+    ? await fetchAnchoredCallEdges(input.executeParameterized, symbolCandidate)
     : [];
   const preferredResourceHints = dedupeStrings([
     normalizeText(symbolCandidate?.name || ''),
@@ -574,6 +497,8 @@ async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Pro
 
   if (Array.isArray(input.rule?.topology) && input.rule.topology.length > 0) {
     const topologyHops = input.rule.topology;
+    let topologyCallEdges = [...callEdges];
+    const expandedAnchorIds = new Set<string>();
     let previousCallEdge: CallEdge | undefined;
     for (const topologyHop of topologyHops) {
       const hopType = String(topologyHop.hop || '').trim().toLowerCase() as RuntimeChainHopType;
@@ -639,9 +564,20 @@ async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Pro
         continue;
       }
 
-      const matchedEdge = chooseTopologyCallEdge(callEdges, topologyHop, {
+      let matchedEdge = chooseTopologyCallEdge(topologyCallEdges, topologyHop, {
         previousEdge: previousCallEdge,
       });
+      if (!matchedEdge && previousCallEdge) {
+        const nextAnchor = symbolCandidateFromCallEdgeTarget(previousCallEdge);
+        if (nextAnchor?.id && !expandedAnchorIds.has(nextAnchor.id)) {
+          expandedAnchorIds.add(nextAnchor.id);
+          const anchoredEdges = await fetchAnchoredCallEdges(input.executeParameterized, nextAnchor);
+          topologyCallEdges = dedupeCallEdges([...topologyCallEdges, ...anchoredEdges]);
+          matchedEdge = chooseTopologyCallEdge(topologyCallEdges, topologyHop, {
+            previousEdge: previousCallEdge,
+          });
+        }
+      }
       if (matchedEdge) {
         hops.push({
           hop_type: hopType,
@@ -773,7 +709,7 @@ async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Pro
         excludeKeys: new Set(
           callEdges
             .filter((edge) => loaderKeys.has(`${edge.sourceFilePath}:${edge.sourceStartLine || 1}->${edge.targetFilePath}:${edge.targetStartLine || 1}`))
-            .map((edge) => edgeKey(edge)),
+            .map((edge) => callEdgeKey(edge)),
         ),
       },
     );
