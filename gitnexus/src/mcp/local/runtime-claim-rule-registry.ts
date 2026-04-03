@@ -319,6 +319,17 @@ export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Pr
 }
 
 export async function loadAnalyzeRules(repoPath: string, rulesRoot?: string): Promise<RuntimeClaimRule[]> {
+  const normalizedRepoPath = path.resolve(repoPath);
+  const root = rulesRoot
+    ? path.resolve(rulesRoot)
+    : path.join(normalizedRepoPath, '.gitnexus', 'rules');
+  const analyzeBundle = await loadCompiledRuleBundle(normalizedRepoPath, 'analyze_rules', root);
+  if (analyzeBundle && analyzeBundle.rules.length > 0) {
+    return analyzeBundle.rules.map((rule) => ({
+      ...rule,
+      family: 'analyze_rules' as const,
+    }));
+  }
   const registry = await loadRuleRegistry(repoPath, rulesRoot);
   return registry.activeRules.filter((r) => r.family === 'analyze_rules');
 }
