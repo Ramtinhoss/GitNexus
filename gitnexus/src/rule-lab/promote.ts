@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getRuleLabPaths } from './paths.js';
 import type { RuleDslDraft, RuleDslTopologyHop } from './types.js';
+import { writeCompiledRuleBundle, loadCompiledRuleBundle, type StageAwareCompiledRule } from './compiled-bundles.js';
 
 interface PromotableItem {
   id: string;
@@ -60,6 +61,7 @@ export interface PromoteInput {
 export interface PromoteOutput {
   catalog: CatalogShape;
   promotedFiles: string[];
+  compiledPaths: Record<'analyze_rules' | 'retrieval_rules' | 'verification_rules', string>;
   paths: ReturnType<typeof getRuleLabPaths>;
 }
 
@@ -170,6 +172,26 @@ function compileRule(ruleId: string, version: string, draft: RuleDslDraft): Comp
     topology: draft.topology,
     closure: draft.closure,
     claims: draft.claims,
+  };
+}
+
+function toStageAwareCompiledRule(rule: CompiledRuntimeRule, relativeFile: string): StageAwareCompiledRule {
+  return {
+    id: rule.id,
+    version: rule.version,
+    trigger_family: rule.trigger_family,
+    trigger_tokens: [...rule.match.trigger_tokens],
+    resource_types: [...rule.resource_types],
+    host_base_type: [...rule.host_base_type],
+    required_hops: [...rule.required_hops],
+    guarantees: [...rule.guarantees],
+    non_guarantees: [...rule.non_guarantees],
+    next_action: rule.next_action,
+    file_path: relativeFile,
+    match: rule.match,
+    topology: rule.topology,
+    closure: rule.closure,
+    claims: rule.claims,
   };
 }
 
@@ -284,6 +306,7 @@ export async function promoteCuratedRules(input: PromoteInput): Promise<PromoteO
   const catalogPath = path.join(paths.rulesRoot, 'catalog.json');
   const catalog = await readCatalog(catalogPath);
   const promotedFiles: string[] = [];
+  const compiledRules: StageAwareCompiledRule[] = [];
 
   await fs.mkdir(paths.promotedRoot, { recursive: true });
 
@@ -302,6 +325,7 @@ export async function promoteCuratedRules(input: PromoteInput): Promise<PromoteO
     const yaml = buildRuleYaml(compiledRule);
     await fs.writeFile(absoluteFile, yaml, 'utf-8');
     promotedFiles.push(absoluteFile);
+    compiledRules.push(toStageAwareCompiledRule(compiledRule, relativeFile));
 
     const nextEntry: CatalogEntry = {
       id: ruleId,
@@ -321,9 +345,28 @@ export async function promoteCuratedRules(input: PromoteInput): Promise<PromoteO
   await fs.mkdir(path.dirname(catalogPath), { recursive: true });
   await fs.writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`, 'utf-8');
 
+  const mergeCompiledRules = async (family: 'analyze_rules' | 'retrieval_rules' | 'verification_rules'): Promise<string> => {
+    const existing = await loadCompiledRuleBundle(normalizedRepoPath, family, paths.rulesRoot);
+    const merged = new Map<string, StageAwareCompiledRule>();
+    for (const rule of existing?.rules || []) {
+      merged.set(rule.id, rule);
+    }
+    for (const rule of compiledRules) {
+      merged.set(rule.id, rule);
+    }
+    return writeCompiledRuleBundle(paths.rulesRoot, family, [...merged.values()]);
+  };
+
+  const compiledPaths = {
+    analyze_rules: await mergeCompiledRules('analyze_rules'),
+    retrieval_rules: await mergeCompiledRules('retrieval_rules'),
+    verification_rules: await mergeCompiledRules('verification_rules'),
+  };
+
   return {
     catalog,
     promotedFiles,
+    compiledPaths,
     paths,
   };
 }

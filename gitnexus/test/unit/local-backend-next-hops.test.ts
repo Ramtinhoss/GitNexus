@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildNextHops } from '../../src/mcp/local/local-backend.js';
+import { buildNextHops, pickRetrievalRuleHintFromBundle } from '../../src/mcp/local/local-backend.js';
 
 describe('buildNextHops command templates', () => {
   it('includes repo in generated next commands when repoName is provided', () => {
@@ -46,5 +46,51 @@ describe('buildNextHops command templates', () => {
     });
 
     expect(hops[0]?.next_command || '').not.toContain('--repo');
+  });
+
+  it('adds a retrieval-rule-configured verify hop ahead of generic symbol follow-up', () => {
+    const hops = buildNextHops({
+      seedPath: 'Assets/Data/Seed.asset',
+      mappedSeedTargets: ['Assets/Graph/Target.asset'],
+      resourceBindings: [{ resourcePath: 'Assets/Graph/Target.asset' } as any],
+      repoName: 'neonspark-core',
+      retrievalRule: {
+        id: 'demo.rule.v2',
+        next_action: 'gitnexus query --unity-resources on "Reload"',
+      },
+      symbolName: 'EnergyByAttackCount',
+      queryForSymbol: 'EnergyByAttackCount',
+    } as any);
+
+    const configuredHop = hops.find((hop) => hop.kind === 'verify' && hop.why.includes('demo.rule.v2'));
+    expect(configuredHop).toBeDefined();
+    expect(configuredHop?.next_command || '').toContain('--repo "neonspark-core"');
+  });
+
+  it('prefers the highest-signal retrieval rule instead of first substring match', () => {
+    const hint = pickRetrievalRuleHintFromBundle({
+      queryText: 'Reload ReloadBase asset runtime chain',
+      symbolName: 'ReloadBase',
+      seedPath: 'Assets/Data/Reload.asset',
+      rules: [
+        {
+          id: 'generic.reload',
+          trigger_tokens: ['reload'],
+          host_base_type: ['MonoBehaviour'],
+          resource_types: ['asset'],
+          next_action: 'gitnexus query "generic"',
+        },
+        {
+          id: 'specific.reloadbase',
+          trigger_tokens: ['reload'],
+          host_base_type: ['ReloadBase'],
+          resource_types: ['asset'],
+          next_action: 'gitnexus query "specific"',
+        },
+      ] as any,
+    });
+
+    expect(hint?.id).toBe('specific.reloadbase');
+    expect(hint?.next_action).toContain('specific');
   });
 });

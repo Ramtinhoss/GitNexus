@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { loadCompiledRuleBundle } from '../../rule-lab/compiled-bundles.js';
 
 export interface RuntimeClaimRuleCatalogEntry {
   id: string;
@@ -193,6 +194,26 @@ export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Pr
   const root = rulesRoot
     ? path.resolve(rulesRoot)
     : path.join(normalizedRepoPath, '.gitnexus', 'rules');
+  const compiledVerificationBundle = await loadCompiledRuleBundle(normalizedRepoPath, 'verification_rules', root);
+  if (compiledVerificationBundle && compiledVerificationBundle.rules.length > 0) {
+    return {
+      repoPath: normalizedRepoPath,
+      rulesRoot: root,
+      catalogPath: path.join(root, 'compiled', 'verification_rules.v2.json'),
+      activeRules: compiledVerificationBundle.rules.map((rule) => ({
+        id: rule.id,
+        version: rule.version,
+        trigger_family: rule.trigger_family,
+        resource_types: rule.resource_types,
+        host_base_type: rule.host_base_type,
+        required_hops: rule.required_hops,
+        guarantees: rule.guarantees,
+        non_guarantees: rule.non_guarantees,
+        next_action: rule.next_action,
+        file_path: rule.file_path,
+      })),
+    };
+  }
   const catalogPath = path.join(root, 'catalog.json');
   let catalogRaw: string;
   try {

@@ -10,6 +10,7 @@ export interface BuildRunIdInput {
 
 export interface RuleLabPaths {
   rulesRoot: string;
+  compiledRoot: string;
   runsRoot: string;
   runRoot: string;
   slicesRoot: string;
@@ -39,6 +40,7 @@ export function buildRunId(input: BuildRunIdInput): string {
 export function getRuleLabPaths(repoPath: string, runId: string, sliceId = 'default'): RuleLabPaths {
   const normalizedRepoPath = path.resolve(repoPath);
   const rulesRoot = path.join(normalizedRepoPath, '.gitnexus', 'rules');
+  const compiledRoot = path.join(rulesRoot, 'compiled');
   const runsRoot = path.join(rulesRoot, 'lab', 'runs');
   const runRoot = path.join(runsRoot, normalizeIdPart(runId));
   const slicesRoot = path.join(runRoot, 'slices');
@@ -46,6 +48,7 @@ export function getRuleLabPaths(repoPath: string, runId: string, sliceId = 'defa
 
   return {
     rulesRoot,
+    compiledRoot,
     runsRoot,
     runRoot,
     slicesRoot,

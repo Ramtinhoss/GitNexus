@@ -214,3 +214,55 @@ test('rejects rule yaml when topology/closure/claims are missing', async () => {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
+
+test('loads v2 verification bundle from explicit compiled path without catalog fallback', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-runtime-claim-rules-'));
+  const repoPath = path.join(tempRoot, 'repo');
+  const compiledRoot = path.join(repoPath, '.gitnexus', 'rules', 'compiled');
+  await fs.mkdir(compiledRoot, { recursive: true });
+  await fs.writeFile(
+    path.join(compiledRoot, 'verification_rules.v2.json'),
+    JSON.stringify({
+      bundle_version: '2.0.0',
+      family: 'verification_rules',
+      generated_at: new Date().toISOString(),
+      rules: [
+        {
+          id: 'demo.bundle.rule.v2',
+          version: '2.0.0',
+          trigger_family: 'reload',
+          resource_types: ['asset'],
+          host_base_type: ['ReloadBase'],
+          required_hops: ['resource', 'code_runtime'],
+          guarantees: ['reload_chain_closed'],
+          non_guarantees: ['no_runtime_execution'],
+          next_action: 'gitnexus query "reload"',
+          file_path: '.gitnexus/rules/compiled/verification_rules.v2.json',
+          match: { trigger_tokens: ['reload'] },
+          topology: [
+            { hop: 'resource', from: { entity: 'resource' }, to: { entity: 'script' }, edge: { kind: 'binds_script' } },
+          ],
+          closure: {
+            required_hops: ['resource', 'code_runtime'],
+            failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' },
+          },
+          claims: {
+            guarantees: ['reload_chain_closed'],
+            non_guarantees: ['no_runtime_execution'],
+            next_action: 'gitnexus query "reload"',
+          },
+        },
+      ],
+    }, null, 2),
+    'utf-8',
+  );
+
+  try {
+    const registry = await loadRuleRegistry(repoPath);
+    assert.equal(registry.activeRules[0].id, 'demo.bundle.rule.v2');
+    assert.equal(registry.activeRules[0].version, '2.0.0');
+    assert.deepEqual(registry.activeRules[0].required_hops, ['resource', 'code_runtime']);
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});

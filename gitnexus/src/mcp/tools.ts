@@ -433,6 +433,7 @@ Output enforces unique-result policy and includes path+line evidence hops.`,
       properties: {
         precision: { type: 'number', description: 'Observed precision metric' },
         coverage: { type: 'number', description: 'Observed coverage metric' },
+        probes_path: { type: 'string', description: 'Optional path to a JSON array of regression probes with bucket metadata' },
         run_id: { type: 'string', description: 'Optional run id for report naming' },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
       },

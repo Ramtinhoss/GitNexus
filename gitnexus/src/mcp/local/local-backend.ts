@@ -42,6 +42,7 @@ import { buildReviewPack } from '../../rule-lab/review-pack.js';
 import { curateRuleLabSlice } from '../../rule-lab/curate.js';
 import { promoteCuratedRules } from '../../rule-lab/promote.js';
 import { runRuleLabRegress } from '../../rule-lab/regress.js';
+import { loadCompiledRuleBundle } from '../../rule-lab/compiled-bundles.js';
 // AI context generation is CLI-only (gitnexus analyze)
 // import { generateAIContextFiles } from '../../cli/ai-context.js';
 
@@ -234,6 +235,11 @@ interface NextHopPayload {
   next_command: string;
 }
 
+interface RetrievalRuleHint {
+  id: string;
+  next_action: string;
+}
+
 interface SeedTargetCandidate {
   targetPath: string;
   fieldName?: string;
@@ -352,6 +358,7 @@ export function buildNextHops(input: {
   mappedSeedTargets: string[];
   resourceBindings: ResolvedUnityBinding[];
   verificationHint?: VerificationHint;
+  retrievalRule?: RetrievalRuleHint;
   repoName?: string;
   symbolName: string;
   queryForSymbol: string;
@@ -407,6 +414,15 @@ export function buildNextHops(input: {
     });
   }
 
+  if (input.retrievalRule?.next_action) {
+    addHop({
+      kind: 'verify',
+      target: input.seedPath || input.symbolName,
+      why: `Retrieval rule ${input.retrievalRule.id} configured this follow-up action.`,
+      next_command: withRepoInCommand(input.retrievalRule.next_action),
+    });
+  }
+
   addHop({
     kind: 'symbol',
     target: input.symbolName,
@@ -415,6 +431,78 @@ export function buildNextHops(input: {
   });
 
   return hops.slice(0, 5);
+}
+
+async function resolveRetrievalRuleHint(input: {
+  repoPath: string;
+  queryText?: string;
+  symbolName?: string;
+  seedPath?: string;
+}): Promise<RetrievalRuleHint | undefined> {
+  const bundle = await loadCompiledRuleBundle(input.repoPath, 'retrieval_rules');
+  if (!bundle) return undefined;
+  return pickRetrievalRuleHintFromBundle({
+    queryText: input.queryText,
+    symbolName: input.symbolName,
+    seedPath: input.seedPath,
+    rules: bundle.rules,
+  });
+}
+
+export function pickRetrievalRuleHintFromBundle(input: {
+  queryText?: string;
+  symbolName?: string;
+  seedPath?: string;
+  rules: Array<{
+    id: string;
+    trigger_tokens?: string[];
+    host_base_type?: string[];
+    resource_types?: string[];
+    next_action: string;
+  }>;
+}): RetrievalRuleHint | undefined {
+  const haystack = [
+    String(input.queryText || ''),
+    String(input.symbolName || ''),
+    String(input.seedPath || ''),
+  ].join(' ').toLowerCase();
+
+  const rank = (rule: {
+    trigger_tokens?: string[];
+    host_base_type?: string[];
+    resource_types?: string[];
+  }): number => {
+    let score = 0;
+    let matchedTrigger = false;
+    for (const token of rule.trigger_tokens || []) {
+      const normalized = String(token || '').trim().toLowerCase();
+      if (!normalized) continue;
+      if (haystack.includes(normalized)) {
+        matchedTrigger = true;
+        score += 10 + normalized.length;
+      }
+    }
+    if (!matchedTrigger) return Number.NEGATIVE_INFINITY;
+    for (const token of rule.host_base_type || []) {
+      const normalized = String(token || '').trim().toLowerCase();
+      if (normalized && haystack.includes(normalized)) score += 20 + normalized.length;
+    }
+    for (const token of rule.resource_types || []) {
+      const normalized = String(token || '').trim().toLowerCase();
+      if (normalized && haystack.includes(normalized)) score += 4 + normalized.length;
+    }
+    return score;
+  };
+
+  const matched = [...input.rules]
+    .map((rule) => ({ rule, score: rank(rule) }))
+    .filter((entry) => Number.isFinite(entry.score))
+    .sort((a, b) => (b.score - a.score) || a.rule.id.localeCompare(b.rule.id))[0]?.rule;
+  if (!matched || !String(matched.next_action || '').trim()) return undefined;
+  return {
+    id: matched.id,
+    next_action: matched.next_action,
+  };
 }
 
 export async function resolveSeedTargetsFromResourceFile(repoPath: string, seedPath: string): Promise<string[]> {
@@ -1115,6 +1203,7 @@ export class LocalBackend {
         artifact_paths: {
           catalog: path.join(out.paths.rulesRoot, 'catalog.json'),
           promoted_files: out.promotedFiles,
+          compiled_bundles: out.compiledPaths,
         },
       };
     } catch (err: any) {
@@ -1125,6 +1214,9 @@ export class LocalBackend {
   private async ruleLabRegress(repo: RepoHandle, params: {
     precision?: number;
     coverage?: number;
+    probes?: Array<any>;
+    probes_path?: string;
+    probesPath?: string;
     run_id?: string;
     runId?: string;
   }): Promise<any> {
@@ -1134,9 +1226,16 @@ export class LocalBackend {
       return { error: 'precision and coverage are required numeric fields for rule_lab_regress' };
     }
     try {
+      let probes = Array.isArray(params?.probes) ? params.probes : undefined;
+      const probesPath = String(params?.probes_path || params?.probesPath || '').trim();
+      if (!probes && probesPath) {
+        const raw = await fs.readFile(path.isAbsolute(probesPath) ? probesPath : path.join(repo.repoPath, probesPath), 'utf-8');
+        probes = JSON.parse(raw) as Array<any>;
+      }
       const out = await runRuleLabRegress({
         precision,
         coverage,
+        probes,
         repoPath: repo.repoPath,
         runId: String(params?.run_id || params?.runId || '').trim() || undefined,
       });
@@ -1660,11 +1759,18 @@ export class LocalBackend {
     const firstResourceBindings = Array.isArray(firstSymbolForHops?.resourceBindings)
       ? firstSymbolForHops.resourceBindings
       : [];
+    const retrievalRule = await resolveRetrievalRuleHint({
+      repoPath: repo.repoPath,
+      queryText: params.query,
+      symbolName: String(firstSymbolForHops?.name || searchQuery),
+      seedPath,
+    });
     result.next_hops = buildNextHops({
       seedPath,
       mappedSeedTargets,
       resourceBindings: firstResourceBindings,
       verificationHint: firstVerificationHint,
+      retrievalRule,
       repoName: repo.name,
       symbolName: String(firstSymbolForHops?.name || searchQuery),
       queryForSymbol: String(firstSymbolForHops?.name || searchQuery),
@@ -2506,11 +2612,18 @@ export class LocalBackend {
     });
     const topVerificationHint = result.processes.find((row: any) => row?.verification_hint)?.verification_hint;
     const contextResourceBindings = Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [];
+    const retrievalRule = await resolveRetrievalRuleHint({
+      repoPath: repo.repoPath,
+      queryText: name,
+      symbolName: symName || String(name || uid || ''),
+      seedPath,
+    });
     result.next_hops = buildNextHops({
       seedPath,
       mappedSeedTargets,
       resourceBindings: contextResourceBindings,
       verificationHint: topVerificationHint,
+      retrievalRule,
       repoName: repo.name,
       symbolName: symName || String(name || uid || ''),
       queryForSymbol: symName || String(name || uid || ''),

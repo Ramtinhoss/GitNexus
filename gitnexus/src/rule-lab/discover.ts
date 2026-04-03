@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { loadRuleRegistry } from '../mcp/local/runtime-claim-rule-registry.js';
 import { buildRunId, getRuleLabPaths } from './paths.js';
+import { loadCompiledRuleBundle } from './compiled-bundles.js';
 import type { RuleLabManifest, RuleLabScope, RuleLabSlice } from './types.js';
 
 export interface DiscoverInput {
@@ -46,7 +47,8 @@ async function writeJson(filePath: string, value: unknown): Promise<void> {
 
 export async function discoverRuleLabRun(input: DiscoverInput): Promise<DiscoverOutput> {
   const normalizedRepoPath = path.resolve(input.repoPath);
-  const registry = await loadRuleRegistry(normalizedRepoPath);
+  const analyzeBundle = await loadCompiledRuleBundle(normalizedRepoPath, 'analyze_rules');
+  const registry = analyzeBundle ? undefined : await loadRuleRegistry(normalizedRepoPath);
   const runId = buildRunId({
     repo: path.basename(normalizedRepoPath),
     scope: input.scope,
@@ -54,7 +56,8 @@ export async function discoverRuleLabRun(input: DiscoverInput): Promise<Discover
   });
   const runPaths = getRuleLabPaths(normalizedRepoPath, runId);
 
-  const slices: RuleLabSlice[] = registry.activeRules.map((rule) => ({
+  const sourceRules = analyzeBundle?.rules || registry?.activeRules || [];
+  const slices: RuleLabSlice[] = sourceRules.map((rule) => ({
     id: buildSliceId(rule),
     trigger_family: rule.trigger_family,
     resource_types: rule.resource_types,

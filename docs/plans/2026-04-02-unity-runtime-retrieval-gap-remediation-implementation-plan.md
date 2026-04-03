@@ -2,7 +2,7 @@
 
 Date: 2026-04-02  
 Owner: GitNexus  
-Status: In Progress (M0 accepted on 2026-04-03; remaining work shifted to post-M0 follow-up)
+Status: In Progress (M0 and M1 accepted on 2026-04-03; remaining work shifted to M2 verifier topology)
 
 ## 0. Scope and Decision
 
@@ -55,6 +55,27 @@ Decision:
    - next-command contract gate: pass
    - anti-hardcode gate: pass
    - holdout/negative threshold gate: pass
+7. M1 rule model/workflow migration acceptance is now explicitly satisfied:
+   - `promote` emits versioned stage-aware bundles:
+     - `analyze_rules.v2.json`
+     - `retrieval_rules.v2.json`
+     - `verification_rules.v2.json`
+   - compiled bundles are consumed by:
+     - `discover` (`analyze_rules`)
+     - `query/context next_hops` (`retrieval_rules`)
+     - runtime rule registry / verifier (`verification_rules`)
+   - compiled bundle promotion merges with prior bundle contents by `rule_id`, preventing silent rule loss on later promote runs
+   - `rule_lab_regress` now reports:
+     - `key_resource_hit_rate`
+     - `next_hop_usability_rate`
+     - `hint_drift_rate`
+     - anchor / holdout / negative bucket splits
+     - threshold checks for all three buckets
+   - regress now fails if any of `anchor` / `holdout` / `negative` buckets are missing
+   - retrieval-rule next-hop selection is score-ranked instead of first-hit substring matching
+8. Independent review for M1 completed with no blocking findings:
+   - verdict: M1 accepted
+   - review scope covered bundle stability, retrieval configurability, and three-bucket regression gates
 
 ### Open issues (fact-checked, updated 2026-04-03)
 
@@ -95,7 +116,10 @@ Observed result after refresh:
 
 1. Treat reload wave-3 as completed evidence-sync work, not as an active live verifier bug.
 2. Keep `docs/reports/2026-04-03-v1-reload-runtime-chain-acceptance-recheck.md` as the canonical record of the refresh and compatibility fix.
-3. Continue post-M0 work only for M1/M2 scope items (rule model migration and topology executor), not for M0 acceptance recovery.
+3. M1 is complete; continue execution only for M2 scope items:
+   - topology-driven verifier execution
+   - `verified_segment` vs `verified_chain` closure semantics
+   - gap-local retry guidance / `why_not_next`
 4. Keep anti-hardcode and next-command contract gates mandatory for any further verifier/reporting changes.
 
 ---
@@ -431,6 +455,8 @@ Done when:
 ## Milestone M1 (P1): Rule model/workflow migration
 
 Includes: C1, C2, and B1/B2 stabilization.
+
+Status: Accepted on 2026-04-03.
 
 Done when:
 

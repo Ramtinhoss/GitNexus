@@ -1,4 +1,5 @@
 import { writeSync } from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Command } from 'commander';
 import { discoverRuleLabRun } from '../rule-lab/discover.js';
@@ -107,6 +108,7 @@ export function attachRuleLabCommands(program: Command, lazyFactory?: LazyFactor
     .requiredOption('--coverage <n>', 'Coverage metric')
     .option('--repo-path <path>', 'Repository path (default: cwd)')
     .option('--run-id <id>', 'Run id (if provided, write report to .gitnexus/rules/reports)')
+    .option('--probes-path <path>', 'Optional JSON file containing regress probes')
     .action(action('ruleLabRegressCommand'));
 }
 
@@ -158,12 +160,18 @@ export async function ruleLabPromoteCommand(options: { repoPath?: string; runId:
   output(result);
 }
 
-export async function ruleLabRegressCommand(options: { precision: string | number; coverage: string | number; repoPath?: string; runId?: string }): Promise<void> {
+export async function ruleLabRegressCommand(options: { precision: string | number; coverage: string | number; repoPath?: string; runId?: string; probesPath?: string }): Promise<void> {
+  let probes: any[] | undefined;
+  if (options.probesPath) {
+    const raw = await fs.readFile(path.resolve(options.probesPath), 'utf-8');
+    probes = JSON.parse(raw) as any[];
+  }
   const result = await runRuleLabRegress({
     precision: Number(options.precision),
     coverage: Number(options.coverage),
     repoPath: options.repoPath ? resolveRepoPath(options.repoPath) : undefined,
     runId: options.runId,
+    probes,
   });
   output(result);
 }
