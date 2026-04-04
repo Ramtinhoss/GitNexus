@@ -2,6 +2,19 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.5.0-rc.2] - 2026-04-04
+
+> Release candidate notes comparing `v1.5.0-rc` -> `v1.5.0-rc.2`.
+
+### Changed
+- Replaced `/path/to/repo/INSTALL-GUIDE.md` placeholder paths with raw GitHub URL in all install prompts (INSTALL-GUIDE, DISTRIBUTION.md release template, release pages).
+- Hardened scope decision workflow: manifest absent now requires explicit user confirmation before analyze; no silent default to full index.
+- Added `clean` manifest-deletion warning with backup/restore recipe to INSTALL-GUIDE.
+- Added `--no-reuse-options` guidance for scope change scenarios.
+- Added CLI-first verification note: MCP may use stale session cache; verify via CLI first, then restart session for MCP acceptance.
+- Added `--scope-manifest` flag and manifest syntax rules (path prefix, not glob) to `gitnexus-cli` skill.
+- Updated `gitnexus-config-files.md` with manifest syntax clarification.
+
 ## [1.5.0-rc] - 2026-04-04
 
 > Release candidate notes comparing `v1.4.11-rc.2` -> `v1.5.0-rc`.
