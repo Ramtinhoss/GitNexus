@@ -43,17 +43,19 @@ fi
 
 ## 一句话指令模板（给任意 agent）
 
-把下面这句话直接发给 agent：
+把下面这句话直接发给 agent（URL 指向本文件的 raw 地址）：
 
 ```text
-阅读 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；按文档先确认 agent 类型，并先检查 .gitnexus/sync-manifest.txt 是否已有 scope，若已有则优先复用后再执行。
+阅读 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；按文档先确认 agent 类型，再检查 .gitnexus/sync-manifest.txt 是否已有 scope——若已有则优先复用，若不存在则必须先向用户确认"全量索引还是指定 scope"再执行。
 ```
 
-如果你在本地使用，可改为本地路径：
+如果目标仓库已安装 GitNexus 且有 INSTALL-GUIDE 本地副本，可改为本地路径（替换为实际绝对路径）：
 
 ```text
-阅读 /path/to/repo/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；按文档先确认 agent 类型，并先检查 .gitnexus/sync-manifest.txt 是否已有 scope，若已有则优先复用后再执行。
+阅读 <INSTALL-GUIDE.md 的绝对路径> ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；按文档先确认 agent 类型，再检查 .gitnexus/sync-manifest.txt 是否已有 scope——若已有则优先复用，若不存在则必须先向用户确认"全量索引还是指定 scope"再执行。
 ```
+
+> **注意**：不要使用 `/path/to/repo/INSTALL-GUIDE.md` 占位路径。必须替换为实际路径或直接使用上方 URL 版本。
 
 ## 0. 执行前必须确认（先检查，再确认）
 
@@ -138,6 +140,8 @@ $GN setup --scope project --agent codex --cli-spec "$GITNEXUS_CLI_SPEC"
 - `project + opencode`：写 `<repo>/opencode.json` + 项目 skills
 - `project + codex`：写 `<repo>/.codex/config.toml` + 项目 skills
 
+> **提交策略建议**：`setup` 和 `analyze` 会修改/生成多个文件（`.mcp.json`、`AGENTS.md`、`CLAUDE.md`、`.agents/skills/` 等）。建议将这些工具变更单独提交（如 `chore: gitnexus setup + analyze`），与业务代码改动分开，方便 review 和回滚。
+
 ## 3. 进入目标仓库并确认 alias 策略
 
 ```bash
@@ -158,9 +162,21 @@ manifest 统一放在：`.gitnexus/sync-manifest.txt`
 执行顺序（必须遵守）：
 
 1. 先检查 `.gitnexus/sync-manifest.txt` 是否存在且非空
-2. 若存在：直接复用该 manifest 作为 scoped 输入，并向用户确认“本次将复用已有 scope”
-3. 若不存在：才进入“全量 / 新 scoped”选择
+2. 若存在：直接复用该 manifest 作为 scoped 输入，并向用户确认”本次将复用已有 scope”
+3. **若不存在：必须先询问用户”全量索引还是指定 scope”，禁止默认全量执行**（新建 scoped 时需确认包含/排除目录）
 4. 只有用户明确要求改 scope 时，才覆盖写 manifest
+
+> **⚠ clean 会删除 manifest**：`gitnexus clean --force` 会删除整个 `.gitnexus/` 目录，包括 `sync-manifest.txt`。如果需要 clean 后重建索引，先备份 manifest：
+> ```bash
+> cp .gitnexus/sync-manifest.txt /tmp/sync-manifest-backup.txt
+> $GN clean --force
+> mkdir -p .gitnexus && cp /tmp/sync-manifest-backup.txt .gitnexus/sync-manifest.txt
+> ```
+
+> **⚠ scope 变更场景**：如果要修改 scope（改 manifest 内容或从全量切 scoped），必须加 `--no-reuse-options` 防止复用旧 scope：
+> ```bash
+> $GN analyze --repo-alias “$ALIAS” --scope-manifest .gitnexus/sync-manifest.txt --no-reuse-options
+> ```
 
 ```bash
 if [ -s .gitnexus/sync-manifest.txt ]; then
@@ -175,10 +191,32 @@ fi
 ```bash
 mkdir -p .gitnexus
 cat > .gitnexus/sync-manifest.txt <<'EOF'
-# 一行一个路径前缀；支持 * 通配（末尾）
+# 一行一个路径前缀（不是 glob）
 src
 packages
 EOF
+```
+
+**manifest 语法规则（必须遵守）：**
+
+- 每行一个**路径前缀**，匹配该前缀下的所有文件（等价于 `startsWith`）
+- 末尾 `*` 表示通配前缀（例如 `Packages/com.veewo.*` 匹配 `Packages/com.veewo.stat/...`）
+- `#` 开头的行是注释，空行被忽略
+- **不支持 glob 语法**：`Assets/**/*.cs`、`src/*.ts` 等写法无效，会导致零匹配
+- 扩展名过滤用 `--extensions` 参数，不要写在 manifest 里
+
+正确示例：
+
+```text
+Assets/NEON/Code
+Packages/com.veewo.*
+```
+
+错误示例（不要这样写）：
+
+```text
+Assets/**/*.cs        ← glob 语法，不会匹配任何文件
+Assets/NEON/*.meta    ← 不支持中间通配
 ```
 
 注意（必须遵守）：
@@ -219,6 +257,8 @@ $GN analyze --repo-alias "$ALIAS"
 - skills 安装路径遵循 `setup` 作用域
 
 ## 6. 验收测试（必须执行）
+
+> **验收以 CLI 为准**：CLI 直接读取最新索引，MCP 可能使用会话缓存。如果 CLI 验收通过但 MCP 结果不一致，先完成 CLI 验收，然后按第 9 节重启会话后再做 MCP 验收。
 
 ### 6.1 基础状态
 

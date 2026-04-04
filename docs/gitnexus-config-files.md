@@ -48,7 +48,7 @@ Notes:
 | File | Purpose |
 |------|---------|
 | `.gitnexusignore` | Extra ignore rules on top of `.gitignore` |
-| `.gitnexus/sync-manifest.txt` | Recommended location for scoped analyze manifest (`--scope-manifest`) |
+| `.gitnexus/sync-manifest.txt` | Recommended location for scoped analyze manifest (`--scope-manifest`). Each line is a **path prefix** (not glob); trailing `*` is a wildcard prefix. Use `--extensions` for file type filtering. |
 | `.gitnexus/rules/overrides.yaml` | Optional project-specific alias/disable/threshold overrides for approved rules |
 
 `sync-manifest.txt` and `rules/overrides.yaml` are user-provided inputs, not system-owned state.

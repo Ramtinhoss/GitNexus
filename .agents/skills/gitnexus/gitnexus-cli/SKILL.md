@@ -48,7 +48,10 @@ Run from the project root. This parses all source files, builds the knowledge gr
 | `--embeddings`             | Enable embedding generation for semantic search (off by default)                          |
 | `--extensions <ext>`       | Limit parsing to specific file types (e.g., `--extensions ".cs .meta"` for Unity)        |
 | `--scope-prefix <prefix>`  | Limit analysis to a path prefix (e.g., `--scope-prefix Assets/` for Unity)               |
+| `--scope-manifest <file>`  | Read scope rules from a manifest file (e.g., `.gitnexus/sync-manifest.txt`)              |
 | `--skills`                 | Generate repo-specific skill files from detected code communities                         |
+
+**Scope manifest syntax:** Each line is a **path prefix** (not glob). `Assets/Code` matches all files under `Assets/Code/`. Trailing `*` is a wildcard prefix (`Packages/com.veewo.*` matches `Packages/com.veewo.stat/...`). Lines starting with `#` are comments. Do **not** use glob patterns like `**/*.cs` — they will match nothing. Use `--extensions` for file type filtering instead.
 
 **When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale. In Claude Code, a PostToolUse hook runs `analyze` automatically after `git commit` and `git merge`, preserving embeddings if previously generated.
 
