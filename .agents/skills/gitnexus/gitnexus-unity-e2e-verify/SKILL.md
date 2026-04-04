@@ -135,6 +135,17 @@ resource_bindings:
     loader_methods:
       - <method_name>
 
+  # 类型 C（可选）：方法触发场景加载，场景中组件 lifecycle 被触发
+  - kind: method_triggers_scene_load
+    host_class_pattern: "<class_pattern>"
+    loader_methods:
+      - <method_name>
+    scene_name: "<scene_name>"           # 匹配 .unity 文件名（不含扩展名）
+    target_entry_points:
+      - Awake
+      - Start
+      - OnEnable
+
 # 可选：项目特有的 lifecycle 入口
 lifecycle_overrides:
   additional_entry_points:

@@ -111,6 +111,7 @@ Grep: pattern="void Init\b|void Setup\b" path=<Assets目录>
 |---------|-------------|------|
 | asset GUID 引用 → 目标资源组件激活 | `asset_ref_loads_components` | 序列化字段引用 asset，加载时触发组件 lifecycle |
 | 方法调用 → 字段引用的资源加载 | `method_triggers_field_load` | 特定方法触发序列化字段引用的资源加载 |
+| 方法调用 → SceneManager.LoadScene → 场景组件激活 | `method_triggers_scene_load` | 特定方法触发场景加载，场景中组件 lifecycle 被触发 |
 | 项目自定义入口方法 | `lifecycle_overrides` | 非标准 Unity lifecycle 的自定义入口 |
 
 ### 1.5 生成规则 YAML
@@ -152,6 +153,17 @@ resource_bindings:
     field_name: "<field_name>"
     loader_methods:
       - <method_name>
+
+  # 类型 C（可选）：方法触发场景加载，场景中组件 lifecycle 被触发
+  - kind: method_triggers_scene_load
+    host_class_pattern: "<class_pattern>"
+    loader_methods:
+      - <method_name>
+    scene_name: "<scene_name>"           # 匹配 .unity 文件名（不含扩展名）
+    target_entry_points:
+      - Awake
+      - Start
+      - OnEnable
 
 lifecycle_overrides:
   additional_entry_points:
@@ -286,13 +298,14 @@ mcp__gitnexus__cypher:
         WHEN r.reason CONTAINS 'resource-load' THEN 'resource-load'
         WHEN r.reason CONTAINS 'lifecycle-override' THEN 'lifecycle-override'
         WHEN r.reason CONTAINS 'loader-bridge' THEN 'loader-bridge'
+        WHEN r.reason CONTAINS 'scene-load' THEN 'scene-load'
         ELSE 'other'
       END AS edgeKind,
       count(*) AS cnt
   repo: <repo-name>
 ```
 
-**PASS**: 三种边类型（resource-load, lifecycle-override, loader-bridge）均有产出。
+**PASS**: 规则涉及的边类型（resource-load, lifecycle-override, loader-bridge, scene-load）均有产出。
 
 ---
 
@@ -302,6 +315,7 @@ mcp__gitnexus__cypher:
 |------|---------|---------|
 | 验证 1 失败（0 合成边） | 规则未被 compile 或 family 不对 | 检查 catalog.json + compiled bundle |
 | 验证 1 部分（只有 resource-load） | method_triggers_field_load 参数错误 | 检查 host_class_pattern / loader_methods |
+| 验证 1 部分（无 scene-load） | method_triggers_scene_load 参数错误 | 检查 scene_name 是否匹配 .unity 文件名 |
 | 验证 2 失败（rule_not_matched） | trigger_tokens 未匹配查询文本 | 调整 match.trigger_tokens |
 | 验证 2 失败（verification_failed） | 合成边 reason 中的 ruleId 不匹配 | 检查规则 ID 一致性 |
 | 验证 3 失败（无 Process） | 合成边 confidence 过低 | 检查 RULE_EDGE_CONFIDENCE（应为 0.75） |

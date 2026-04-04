@@ -101,7 +101,7 @@ unity-runtime-root → Update
 
 这是 V2 方案的核心。系统读取 `.gitnexus/rules/` 中的规则，根据规则定义注入资源↔代码的边界穿越边。
 
-规则定义两类边界穿越：
+规则定义三类边界穿越：
 
 #### 类型 A：资源引用链触发代码执行
 
@@ -137,6 +137,29 @@ resource_bindings:
     field_name: "gungraph"            # 序列化字段名
     loader_methods: [Equip]           # 触发加载的方法
 ```
+
+#### 类型 C：代码方法触发场景加载
+
+"当某个类的特定方法被调用时，它会通过 `SceneManager.LoadScene` 加载指定场景，场景中挂载的脚本的生命周期方法会被触发"
+
+```
+Global.InitGlobal ──→ LoadScene("Global") ──→ Global.unity 场景文件
+                                                    │
+                                                    ├─[UNITY_COMPONENT_INSTANCE] → ServiceManager 类
+                                                    └─ 注入合成 CALLS：InitGlobal → ServiceManager.Awake
+```
+
+对应规则：
+```yaml
+resource_bindings:
+  - kind: method_triggers_scene_load
+    host_class_pattern: "^Global$"     # 调用 LoadScene 的类名
+    loader_methods: [InitGlobal]       # 触发场景加载的方法
+    scene_name: "Global"               # 目标场景名（匹配 .unity 文件名）
+    target_entry_points: [Awake, Start, OnEnable]  # 场景中组件被触发的生命周期方法
+```
+
+处理流程：预构建场景文件索引（lowercase scene name → File node ID），匹配 host class 上的 loader method，通过 `UNITY_COMPONENT_INSTANCE` 边找到场景中挂载的组件，注入 loader → lifecycle 的合成 CALLS 边。
 
 #### 规则还可以扩展内置 Lifecycle
 
@@ -214,6 +237,12 @@ resource_bindings:
     field_name: "gungraph"
     loader_methods: [Equip]
 
+  - kind: method_triggers_scene_load
+    host_class_pattern: "^Global$"
+    loader_methods: [InitGlobal]
+    scene_name: "Global"
+    target_entry_points: [Awake, Start, OnEnable]
+
 lifecycle_overrides:                         # 可选
   additional_entry_points: [Init, Setup]
   scope: "Assets/NEON/Code/Game/Graph"
@@ -225,6 +254,7 @@ lifecycle_overrides:                         # 可选
 |---------|----------|
 | 资源引用链触发哪些代码入口 | 代码方法之间的调用关系（已在 CALLS 边中） |
 | 哪个方法触发资源加载 | 具体的方法到方法桥接链 |
+| 哪个方法触发场景加载及场景中组件的生命周期 | 场景内组件之间的调用关系 |
 | 项目特有的 lifecycle 入口扩展 | 通用 lifecycle 回调（内置自动处理） |
 
 ### 6.3 Rule Lab — "规则工厂"
@@ -372,7 +402,7 @@ Unity 项目文件系统
   └──────────────────────────────────────────────┘
 ```
 
-## 十二、实现状态（2026-04-03）
+## 十二、实现状态（2026-04-04）
 
 | 模块 | 状态 | 关键文件 |
 |------|------|---------|
@@ -380,11 +410,11 @@ Unity 项目文件系统
 | 规则族区分 | ✅ 已实现 | `runtime-claim-rule-registry.ts`（`family`, `loadAnalyzeRules`） |
 | 统一配置加载器 | ✅ 已实现 | `core/config/unity-config.ts`（`resolveUnityConfig`） |
 | Pipeline 重排序 | ✅ 已实现 | `pipeline.ts`（5.5→5.6→5.7→6） |
-| 规则驱动注入 | ✅ 已实现 | `unity-runtime-binding-rules.ts`（222 行） |
+| 规则驱动注入 | ✅ 已实现 | `unity-runtime-binding-rules.ts`（282 行，含 scene load 处理器） |
 | Verifier 简化 | ✅ 已实现 | `runtime-chain-verify.ts`（934→297 行） |
 | 硬编码移除 | ✅ 已实现 | `unity-lifecycle-synthetic-calls.ts`（448→238 行） |
 | 环境变量清除 | ✅ 已实现 | 15 个 `GITNEXUS_UNITY_*` 全部移除 |
-| neonspark 实测 | ⏳ 待验证 | 需创建 analyze_rules 并运行 `gitnexus analyze` |
+| neonspark 实测 | ✅ 已验证 | 23 条 scene-load 合成边注入，`runtime_claim.status=verified_full`，20 hops 全部 high confidence |
 
 详细实现手册：`docs/unity-runtime-process-rule-driven-implementation.md`
 SSOT 文档：`docs/unity-runtime-process-source-of-truth.md`

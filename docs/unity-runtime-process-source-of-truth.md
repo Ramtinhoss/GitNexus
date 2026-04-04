@@ -1,6 +1,6 @@
 # Unity Runtime Process 真理源（Design × As-Built）
 
-Date: 2026-04-03
+Date: 2026-04-04
 Owner: GitNexus
 Status: Active (source of truth) — V2 规则驱动架构
 
@@ -42,7 +42,12 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - 配置从 `resolveUnityConfig()` 读取：`pipeline.ts:445`
 3. 规则驱动注入（Phase 5.7）：
    - 加载 `analyze_rules` 族规则：`pipeline.ts:465`
-   - 三种绑定处理器：`unity-runtime-binding-rules.ts:119,150,200`
+   - 三种绑定处理器 + lifecycle_overrides：`unity-runtime-binding-rules.ts`
+     - `asset_ref_loads_components`：资源引用链触发代码执行
+     - `method_triggers_field_load`：代码方法触发字段引用资源加载
+     - `method_triggers_scene_load`：代码方法触发场景加载（通过场景文件名匹配 `.unity` File 节点）
+     - `lifecycle_overrides`：扩展内置 lifecycle 入口
+   - 场景文件索引：预构建 lowercase scene name → File node ID 映射，供 `method_triggers_scene_load` 使用
    - 合成边属性：`confidence=0.75`，`reason=unity-rule-{kind}:{ruleId}`
 4. Process 生成（Phase 6）：
    - 基于 CALLS tracing，标注 `processSubtype` 和 `runtimeChainConfidence`：`pipeline.ts:490-525`
@@ -188,7 +193,7 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 
 1. **规则基础设施**：`UnityResourceBinding` / `LifecycleOverrides` 类型 + `family` 字段 + `loadAnalyzeRules()` + 统一配置加载器
 2. **Pipeline 重排序**：Unity 资源处理从 Phase 7 提前到 Phase 5.5，lifecycle 始终启用，规则驱动注入插入 Phase 5.7
-3. **规则驱动注入**：`applyUnityRuntimeBindingRules` 实现三种绑定处理器（`asset_ref_loads_components` / `method_triggers_field_load` / `lifecycle_overrides`）
+3. **规则驱动注入**：`applyUnityRuntimeBindingRules` 实现三种绑定处理器（`asset_ref_loads_components` / `method_triggers_field_load` / `method_triggers_scene_load`）+ `lifecycle_overrides`
 4. **环境变量清除**：15 个 `GITNEXUS_UNITY_*` env var 全部移除，迁移到 `resolveUnityConfig()` 统一配置
 5. **Verifier 简化**：`runtime-chain-verify.ts` 从 934 行缩减到 297 行，移除所有启发式/文件 I/O，改为图谱查询
 6. **硬编码移除**：`RUNTIME_LOADER_ANCHORS`（8 锚点）、`DETERMINISTIC_LOADER_BRIDGES`（7 桥接）、项目特化评分全部删除
