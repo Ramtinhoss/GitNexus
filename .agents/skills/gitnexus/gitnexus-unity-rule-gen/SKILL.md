@@ -59,6 +59,7 @@ loop:
 | 目标入口方法 | 加载的资源上哪些方法会被触发？ | OnEnable, Awake |
 | 持有字段的类 | 哪些类持有触发加载的字段？ | WeaponPowerUp |
 | 加载方法 | 哪些方法触发资源加载？ | Equip |
+| 动态跳转 | 链路中是否有静态分析无法解析的间接调用？ | 事件派发 `NetEventHub.OnPickUpItem → OnClientPickItUp`；条件分支多态 `if (isX) handler = new A()` 后 `handler.Run()` |
 | 额外 lifecycle | 项目有自定义入口方法吗？ | Init |
 | lifecycle 范围 | 自定义入口方法的作用范围？ | Assets/Code/Graph |
 
@@ -112,6 +113,7 @@ Grep: pattern="void Init\b|void Setup\b" path=<Assets目录>
 | asset GUID 引用 → 目标资源组件激活 | `asset_ref_loads_components` | 序列化字段引用 asset，加载时触发组件 lifecycle |
 | 方法调用 → 字段引用的资源加载 | `method_triggers_field_load` | 特定方法触发序列化字段引用的资源加载 |
 | 方法调用 → SceneManager.LoadScene → 场景组件激活 | `method_triggers_scene_load` | 特定方法触发场景加载，场景中组件 lifecycle 被触发 |
+| 静态分析无法解析的间接调用（调用目标在编译期不确定） | `method_triggers_method` | 声明"方法 A 在运行时触发方法 B"，注入合成 CALLS 边桥接 gap |
 | 项目自定义入口方法 | `lifecycle_overrides` | 非标准 Unity lifecycle 的自定义入口 |
 
 ### 1.5 生成规则 YAML
@@ -122,6 +124,9 @@ Grep: pattern="void Init\b|void Setup\b" path=<Assets目录>
 id: unity.<scenario-name>.v2
 version: 2.0.0
 family: analyze_rules
+description: >-
+  （可选）描述该规则覆盖的业务场景和调用链背景，
+  包括间接调用的机制说明（事件派发/回调/条件分支多态等）。
 trigger_family: <scenario-name>
 resource_types:
   - asset
@@ -164,6 +169,24 @@ resource_bindings:
       - Awake
       - Start
       - OnEnable
+
+  # 类型 D（可选）：声明静态分析无法解析的间接调用
+  # 适用场景：
+  #   - 事件派发：C# Action/UnityEvent/delegate 的 Invoke()
+  #   - 回调注册：Mirror SyncList.Callback、Observer 模式
+  #   - 条件分支多态：if/switch 决定实际调用目标（状态机、策略模式）
+  #   - 虚方法分派：接口/基类引用调用，实际类型由运行时条件决定
+  # 注入一条 source_method → target_method 的合成 CALLS 边（精确匹配，一条边）
+  - kind: method_triggers_method
+    description: >-
+      说明间接调用的机制。例如：
+      "A 通过 EventHub.OnXxx?.Invoke() 触发，B 在初始化时订阅该事件"；
+      "if (isServer) 分支中 handler 实际类型为 ConcreteHandler，
+      后续 handler.Run() 实际调用 ConcreteHandler.Run()"
+    source_class_pattern: "<source_class_regex>"   # 例如 "^PlayerActor$"
+    source_method: "<source_method_name>"           # 例如 "ProcessInteractables"
+    target_class_pattern: "<target_class_regex>"   # 例如 "^NetPlayer$"
+    target_method: "<target_method_name>"           # 例如 "OnClientPickItUp"
 
 lifecycle_overrides:
   additional_entry_points:
@@ -299,13 +322,14 @@ mcp__gitnexus__cypher:
         WHEN r.reason CONTAINS 'lifecycle-override' THEN 'lifecycle-override'
         WHEN r.reason CONTAINS 'loader-bridge' THEN 'loader-bridge'
         WHEN r.reason CONTAINS 'scene-load' THEN 'scene-load'
+        WHEN r.reason CONTAINS 'method-bridge' THEN 'method-bridge'
         ELSE 'other'
       END AS edgeKind,
       count(*) AS cnt
   repo: <repo-name>
 ```
 
-**PASS**: 规则涉及的边类型（resource-load, lifecycle-override, loader-bridge, scene-load）均有产出。
+**PASS**: 规则涉及的边类型均有产出（`method_triggers_method` 对应 `method-bridge`）。
 
 ---
 
@@ -316,9 +340,11 @@ mcp__gitnexus__cypher:
 | 验证 1 失败（0 合成边） | 规则未被 compile 或 family 不对 | 检查 catalog.json + compiled bundle |
 | 验证 1 部分（只有 resource-load） | method_triggers_field_load 参数错误 | 检查 host_class_pattern / loader_methods |
 | 验证 1 部分（无 scene-load） | method_triggers_scene_load 参数错误 | 检查 scene_name 是否匹配 .unity 文件名 |
+| 验证 1 部分（无 method-bridge） | method_triggers_method 类名/方法名不匹配 | 检查 source/target_class_pattern 和 source/target_method 是否与图谱中节点名一致 |
 | 验证 2 失败（rule_not_matched） | trigger_tokens 未匹配查询文本 | 调整 match.trigger_tokens |
 | 验证 2 失败（verification_failed） | 合成边 reason 中的 ruleId 不匹配 | 检查规则 ID 一致性 |
 | 验证 3 失败（无 Process） | 合成边 confidence 过低 | 检查 RULE_EDGE_CONFIDENCE（应为 0.75） |
+| 验证 4 链路断裂（中间有间接调用） | 事件派发/回调/条件分支多态/虚方法分派无静态 CALLS 边 | 添加 `method_triggers_method` binding 桥接间接调用 |
 | lifecycle_overrides 无效 | scope 值不是文件路径前缀 | scope 应匹配 filePath 而非类名 |
 
 ---
@@ -328,5 +354,5 @@ mcp__gitnexus__cypher:
 - 设计文档：`docs/plans/2026-04-04-unity-rule-gen-skill-design.md`
 - YAML 格式定义：设计文档 section 3.3
 - 注入逻辑：`gitnexus/src/core/ingestion/unity-runtime-binding-rules.ts`
-- 规则类型定义：`gitnexus/src/rule-lab/types.ts:90-102`
+- 规则类型定义：`gitnexus/src/rule-lab/types.ts:90-114`
 - 编译命令：`gitnexus rule-lab compile --repo-path <path>`

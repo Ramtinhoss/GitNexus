@@ -236,6 +236,10 @@ export function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
       binding.field_name = scalar('field_name');
       binding.loader_methods = list('loader_methods');
       binding.scene_name = scalar('scene_name');
+      binding.source_class_pattern = scalar('source_class_pattern');
+      binding.source_method = scalar('source_method');
+      binding.target_class_pattern = scalar('target_class_pattern');
+      binding.target_method = scalar('target_method');
       resource_bindings.push(binding);
     }
     if (resource_bindings.length === 0) resource_bindings = undefined;

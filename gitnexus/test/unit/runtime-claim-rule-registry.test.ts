@@ -156,3 +156,76 @@ resource_bindings:
     expect(rule.resource_bindings![0].scene_name).toBeUndefined();
   });
 });
+
+describe('parseRuleYaml – method_triggers_method', () => {
+  const METHOD_BRIDGE_YAML = `
+id: unity.method-bridge.v1
+version: 1.0.0
+family: analyze_rules
+match:
+  trigger_tokens:
+    - WeaponPowerUp
+resource_bindings:
+  - kind: method_triggers_method
+    source_class_pattern: PlayerActor
+    source_method: HoldPickup
+    target_class_pattern: WeaponPowerUp
+    target_method: PickItUp
+  - kind: method_triggers_method
+    source_class_pattern: FirearmsPowerUp
+    source_method: EquipWithEvent
+    target_class_pattern: WeaponPowerUp
+    target_method: Equip
+topology:
+  - hop: method_bridge
+    from:
+      entity: method
+    to:
+      entity: method
+    edge:
+      kind: method_triggers_method
+closure:
+  required_hops:
+    - method_bridge
+  failure_map:
+    missing_evidence: rule_matched_but_evidence_missing
+claims:
+  guarantees:
+    - equip_chain_closed
+  non_guarantees:
+    - no_runtime_execution_guarantee
+  next_action: gitnexus query "WeaponPowerUp equip"
+`.trim();
+
+  it('parses source_class_pattern, source_method, target_class_pattern, target_method', () => {
+    const rule = parseRuleYaml(METHOD_BRIDGE_YAML, '/fake/path/unity.method-bridge.v1.yaml');
+    expect(rule.resource_bindings).toBeDefined();
+    expect(rule.resource_bindings!.length).toBe(2);
+
+    const first = rule.resource_bindings![0];
+    expect(first.kind).toBe('method_triggers_method');
+    expect(first.source_class_pattern).toBe('PlayerActor');
+    expect(first.source_method).toBe('HoldPickup');
+    expect(first.target_class_pattern).toBe('WeaponPowerUp');
+    expect(first.target_method).toBe('PickItUp');
+
+    const second = rule.resource_bindings![1];
+    expect(second.kind).toBe('method_triggers_method');
+    expect(second.source_class_pattern).toBe('FirearmsPowerUp');
+    expect(second.source_method).toBe('EquipWithEvent');
+    expect(second.target_class_pattern).toBe('WeaponPowerUp');
+    expect(second.target_method).toBe('Equip');
+  });
+
+  it('method_triggers_method fields are undefined when not present', () => {
+    const yaml = METHOD_BRIDGE_YAML
+      .replace(/    source_class_pattern: PlayerActor\n/, '')
+      .replace(/    source_method: HoldPickup\n/, '');
+    const rule = parseRuleYaml(yaml, '/fake/path/test.yaml');
+    const first = rule.resource_bindings![0];
+    expect(first.source_class_pattern).toBeUndefined();
+    expect(first.source_method).toBeUndefined();
+    expect(first.target_class_pattern).toBe('WeaponPowerUp');
+    expect(first.target_method).toBe('PickItUp');
+  });
+});

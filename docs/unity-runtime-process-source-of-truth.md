@@ -83,6 +83,8 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 
 ### 2.4 Phase 5 Offline Rule Lab（Discover → Analyze → Review → Curate → Promote → Regress）
 
+MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_review_pack` → `rule_lab_curate` → `rule_lab_promote` → `rule_lab_regress`
+
 1. Rule Lab 模块分层（`gitnexus/src/rule-lab/`）：
    - 路径与 run/slice 约定：`paths.ts:32-56`
    - discover → analyze → review-pack → curate → promote → regress

@@ -266,3 +266,4 @@ test('loads v2 verification bundle from explicit compiled path without catalog f
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
+
