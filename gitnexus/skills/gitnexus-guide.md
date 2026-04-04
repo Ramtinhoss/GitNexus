@@ -27,6 +27,7 @@ For any task involving code understanding, debugging, impact analysis, or refact
 | Rename / extract / split / refactor          | `gitnexus-refactoring`       |
 | Tools, resources, schema reference           | `gitnexus-guide` (this file) |
 | Index, status, clean, wiki CLI commands      | `gitnexus-cli`               |
+| Create Unity analyze_rules interactively     | `gitnexus-unity-rule-gen`    |
 
 ## Tools Reference
 
@@ -99,6 +100,7 @@ Lightweight reads (~100-500 tokens) for navigation:
 
 **Nodes:** File, Function, Class, Interface, Method, Community, Process
 **Edges (via CodeRelation.type):** CALLS, IMPORTS, EXTENDS, IMPLEMENTS, DEFINES, MEMBER_OF, STEP_IN_PROCESS
+**Unity edges:** UNITY_ASSET_GUID_REF (serialized field → asset), UNITY_COMPONENT_INSTANCE (class → asset file)
 
 ```cypher
 MATCH (caller)-[:CodeRelation {type: 'CALLS'}]->(f:Function {name: "myFunc"})

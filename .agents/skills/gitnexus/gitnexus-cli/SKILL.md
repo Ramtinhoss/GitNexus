@@ -42,12 +42,17 @@ $GN analyze
 
 Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and generates CLAUDE.md / AGENTS.md context files.
 
-| Flag           | Effect                                                           |
-| -------------- | ---------------------------------------------------------------- |
-| `--force`      | Force full re-index even if up to date                           |
-| `--embeddings` | Enable embedding generation for semantic search (off by default) |
+| Flag                       | Effect                                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| `--force`                  | Force full re-index even if up to date                                                    |
+| `--embeddings`             | Enable embedding generation for semantic search (off by default)                          |
+| `--extensions <ext>`       | Limit parsing to specific file types (e.g., `--extensions ".cs .meta"` for Unity)        |
+| `--scope-prefix <prefix>`  | Limit analysis to a path prefix (e.g., `--scope-prefix Assets/` for Unity)               |
+| `--skills`                 | Generate repo-specific skill files from detected code communities                         |
 
 **When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale. In Claude Code, a PostToolUse hook runs `analyze` automatically after `git commit` and `git merge`, preserving embeddings if previously generated.
+
+**Unity projects:** Add `--extensions ".cs .meta"` to ensure Unity asset edges (`UNITY_ASSET_GUID_REF`, `UNITY_COMPONENT_INSTANCE`) are parsed. Add `--scope-prefix Assets/` to limit scope if all code lives under `Assets/`.
 
 ### status — Check index freshness
 
@@ -131,32 +136,13 @@ $GN context ReloadNode --repo neonspark --unity-resources on --unity-hydration c
 
 ### unity-ui-trace — Unity UI evidence tracing workflow
 
+For full workflow details, load: `_shared/unity-ui-trace-contract.md`
+
 ```bash
 $GN unity-ui-trace "Assets/NEON/VeewoUI/Uxml/BarScreen/Patch/PatchItemPreview.uxml" --goal asset_refs --repo neonspark
 $GN unity-ui-trace "Assets/NEON/VeewoUI/Uxml/BarScreen/CoreScreen.uxml" --goal template_refs --repo neonspark
 $GN unity-ui-trace "Assets/NEON/VeewoUI/Uxml/BarScreen/Patch/PatchItemPreview.uxml" --goal selector_bindings --selector-mode balanced --repo neonspark
 ```
-
-Supported goals:
-- `asset_refs`: 哪些 prefab/asset 引用了目标 UXML
-- `template_refs`: 目标 UXML 里引用了哪些模板 UXML
-- `selector_bindings`: C# `AddToClassList/Q(className)` 到 USS 选择器证据链
-
-Selector mode（仅 `selector_bindings` 生效）:
-- `--selector-mode balanced`（默认）: 复合选择器 token 匹配，召回更高
-- `--selector-mode strict`: 仅匹配精确 `.className` 选择器，精度更高
-
-输出字段解读:
-- `results[].evidence_chain`: 每跳都有 `path + line + snippet`
-- `results[].score`: 排序分数（越高越优先）
-- `results[].confidence`: `high|medium|low`（基于 score）
-- `diagnostics`: `not_found|ambiguous` 诊断
-
-推荐排查顺序（实仓）:
-1. 先跑 `asset_refs`，确认资源链是否存在
-2. 再跑 `template_refs`，确认模板链是否存在
-3. 最后跑 `selector_bindings`，默认 `balanced`
-4. 若怀疑误报，复跑 `--selector-mode strict` 对比
 
 ## After Indexing
 

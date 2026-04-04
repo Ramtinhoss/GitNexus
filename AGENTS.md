@@ -21,7 +21,6 @@
 | Rename / extract / split / refactor | `.agents/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.agents/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.agents/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Unity runtime process E2E verify | `.agents/skills/gitnexus/gitnexus-unity-e2e-verify/SKILL.md` |
 
 <!-- gitnexus:end -->
 

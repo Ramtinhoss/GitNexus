@@ -142,16 +142,21 @@ lifecycle_overrides:
     - Setup
   scope: "<path_prefix>"
 
-required_hops:
-  - resource
-  - guid_map
-  - code_loader
-  - code_runtime
-guarantees:
-  - resource_to_runtime_chain_closed
-non_guarantees:
-  - no_runtime_execution
-  - no_dynamic_data_flow_proof
+topology:
+
+closure:
+  required_hops:
+    - resource
+    - guid_map
+    - code_loader
+    - code_runtime
+
+claims:
+  guarantees:
+    - resource_to_runtime_chain_closed
+  non_guarantees:
+    - no_runtime_execution
+    - no_dynamic_data_flow_proof
 ```
 
 写入规则文件：
@@ -186,7 +191,15 @@ fi
 }
 ```
 
-### 1.5 验证规则可加载
+### 1.5 编译规则
+
+将 approved YAML 编译为 compiled bundle：
+
+```bash
+$GITNEXUS_CLI rule-lab compile --repo-path "$TARGET_REPO"
+```
+
+### 1.6 验证规则可加载
 
 ```bash
 $GITNEXUS_CLI rule-lab discover --repo-path "$TARGET_REPO" --scope full

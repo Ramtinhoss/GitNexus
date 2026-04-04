@@ -44,12 +44,6 @@ When impact analysis depends on Unity runtime process closure or confidence inte
 
 - `_shared/unity-runtime-process-contract.md`
 
-## Phase5 Confidence Contract
-
-- If Unity retrieval returns an **empty process** list, continue using `resourceBindings` and asset/meta evidence before scoring impact confidence.
-- Any **low confidence** evidence path must include `verification_hint` (`action`, `target`, `next_command`) before risk sign-off.
-- Blast radius conclusions requiring runtime closure must cite a **hop anchor** or **evidence anchor** per step; call it **semantically closed** only when anchors are complete.
-
 ## Understanding Output
 
 | Depth | Risk Level       | Meaning                  |
