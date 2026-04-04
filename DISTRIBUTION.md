@@ -180,6 +180,8 @@ git push origin v1.4.8-rc.2
 
 ## GitHub Release Page Standard
 
+**Target repository: `nantas/GitNexus`** — always pass `--repo nantas/GitNexus` to every `gh release` command. Never omit this flag; the local git remote may resolve to the upstream fork instead.
+
 Every GitHub release page for this repository must follow these rules:
 
 1. Write **bilingual release notes**, with **Chinese first** and **English second**.
@@ -191,20 +193,20 @@ Every GitHub release page for this repository must follow these rules:
    - include a direct link to the upstream release page
    - avoid dumping internal cherry-pick or merge history into the notes
 4. Include the **agent-facing one-line install prompt** instead of ad hoc install instructions when the release needs an agent workflow prompt.
-5. Always use `gh release create` or `gh release edit` for the release page in this repository.
+5. Always use `gh release create --repo nantas/GitNexus` or `gh release edit --repo nantas/GitNexus` for the release page in this repository.
 
 ## CI vs Manual Release Page Ownership
 
 Current policy: manual `gh` ownership.
 
-1. Release page is always authored/updated via `gh`.
+1. Release page is always authored/updated via `gh --repo nantas/GitNexus`.
 2. CI publish workflow must not create or mutate GitHub release pages.
-3. If a release page already exists (for example created earlier), use `gh release edit` to reconcile it to this standard.
+3. If a release page already exists (for example created earlier), use `gh release edit --repo nantas/GitNexus` to reconcile it to this standard.
 
 Validation command before deciding ownership:
 
 ```bash
-gh release view <tag> --json name,tagName,url,body
+gh release view <tag> --repo nantas/GitNexus --json name,tagName,url,body
 ```
 
 Recommended release-page structure:
