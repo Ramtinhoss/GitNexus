@@ -20,6 +20,8 @@ export interface StageAwareCompiledRule {
   topology: RuleDslTopologyHop[];
   closure: RuleDslClosure;
   claims: RuleDslClaims;
+  resource_bindings?: import('./types.js').UnityResourceBinding[];
+  lifecycle_overrides?: import('./types.js').LifecycleOverrides;
 }
 
 export interface CompiledRuleBundle {

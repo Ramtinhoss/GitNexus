@@ -79,7 +79,8 @@ function generateGitNexusContent(
 | Trace bugs / "Why is X failing?" | \`${skillRoot}/gitnexus-debugging/SKILL.md\` |
 | Rename / extract / split / refactor | \`${skillRoot}/gitnexus-refactoring/SKILL.md\` |
 | Tools, resources, schema reference | \`${skillRoot}/gitnexus-guide/SKILL.md\` |
-| Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |${generatedRows}
+| Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |
+| Create Unity analyze_rules interactively | \`${skillRoot}/gitnexus-unity-rule-gen/SKILL.md\` |${generatedRows}
 
 ${GITNEXUS_END_MARKER}`;
 }
@@ -169,6 +170,10 @@ async function installSkills(repoPath: string): Promise<string[]> {
     {
       name: 'gitnexus-cli',
       description: 'Use when the user needs to run GitNexus CLI commands like analyze/index a repo, check status, clean the index, generate a wiki, or list indexed repos. Examples: "Index this repo", "Reanalyze the codebase", "Generate a wiki"',
+    },
+    {
+      name: 'gitnexus-unity-rule-gen',
+      description: 'Use when the user wants to create Unity analyze_rules for a Unity project repo — interactively collecting chain clues, exploring the graph, generating rule YAML, compiling, and verifying. Examples: "Create unity rules", "Generate analyze rules", "Add resource binding rules for this Unity project"',
     },
   ];
 

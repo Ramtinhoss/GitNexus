@@ -8,6 +8,7 @@ import { buildReviewPack } from '../rule-lab/review-pack.js';
 import { curateRuleLabSlice } from '../rule-lab/curate.js';
 import { promoteCuratedRules } from '../rule-lab/promote.js';
 import { runRuleLabRegress } from '../rule-lab/regress.js';
+import { compileRules } from '../rule-lab/compile.js';
 
 const RULE_LAB_COMMANDS = ['discover', 'analyze', 'review-pack', 'curate', 'promote', 'regress'] as const;
 
@@ -110,6 +111,15 @@ export function attachRuleLabCommands(program: Command, lazyFactory?: LazyFactor
     .option('--run-id <id>', 'Run id (if provided, write report to .gitnexus/rules/reports)')
     .option('--probes-path <path>', 'Optional JSON file containing regress probes')
     .action(action('ruleLabRegressCommand'));
+
+  root
+    .command('compile')
+    .description('Compile approved YAML rules into a JSON bundle')
+    .option('--repo-path <path>', 'Repository path (default: cwd)')
+    .option('--family <family>', 'Rule family to compile', 'analyze_rules')
+    .action((options: { repoPath?: string; family?: string }) =>
+      compileRules({ repoPath: options.repoPath, family: options.family as any }),
+    );
 }
 
 export async function ruleLabDiscoverCommand(options: { repoPath?: string; scope?: 'full' | 'diff'; seed?: string }): Promise<void> {

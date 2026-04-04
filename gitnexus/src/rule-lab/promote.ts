@@ -28,6 +28,7 @@ interface CatalogEntry {
   version: string;
   enabled: boolean;
   file: string;
+  family?: string;
 }
 
 interface CatalogShape {
@@ -38,6 +39,7 @@ interface CatalogShape {
 interface CompiledRuntimeRule {
   id: string;
   version: string;
+  family?: string;
   trigger_family: string;
   resource_types: string[];
   host_base_type: string[];
@@ -49,6 +51,8 @@ interface CompiledRuntimeRule {
   topology: RuleDslTopologyHop[];
   closure: RuleDslDraft['closure'];
   claims: RuleDslDraft['claims'];
+  resource_bindings?: import('./types.js').UnityResourceBinding[];
+  lifecycle_overrides?: import('./types.js').LifecycleOverrides;
 }
 
 export interface PromoteInput {
@@ -172,6 +176,8 @@ function compileRule(ruleId: string, version: string, draft: RuleDslDraft): Comp
     topology: draft.topology,
     closure: draft.closure,
     claims: draft.claims,
+    ...(draft.resource_bindings ? { resource_bindings: draft.resource_bindings } : {}),
+    ...(draft.lifecycle_overrides ? { lifecycle_overrides: draft.lifecycle_overrides } : {}),
   };
 }
 
@@ -192,6 +198,8 @@ function toStageAwareCompiledRule(rule: CompiledRuntimeRule, relativeFile: strin
     topology: rule.topology,
     closure: rule.closure,
     claims: rule.claims,
+    ...(rule.resource_bindings ? { resource_bindings: rule.resource_bindings } : {}),
+    ...(rule.lifecycle_overrides ? { lifecycle_overrides: rule.lifecycle_overrides } : {}),
   };
 }
 
@@ -214,6 +222,7 @@ function buildRuleYaml(rule: CompiledRuntimeRule): string {
   const lines: string[] = [
     `id: ${quoteYaml(rule.id)}`,
     `version: ${quoteYaml(rule.version)}`,
+    ...(rule.family ? [`family: ${quoteYaml(rule.family)}`] : []),
     `trigger_family: ${quoteYaml(rule.trigger_family)}`,
   ];
 
@@ -264,6 +273,28 @@ function buildRuleYaml(rule: CompiledRuntimeRule): string {
   pushList(lines, 'guarantees', rule.claims.guarantees, '  ');
   pushList(lines, 'non_guarantees', rule.claims.non_guarantees, '  ');
   lines.push(`  next_action: ${quoteYaml(rule.claims.next_action)}`);
+
+  if (rule.resource_bindings && rule.resource_bindings.length > 0) {
+    lines.push('resource_bindings:');
+    for (const binding of rule.resource_bindings) {
+      lines.push(`  - kind: ${binding.kind}`);
+      if (binding.ref_field_pattern) lines.push(`    ref_field_pattern: ${quoteYaml(binding.ref_field_pattern)}`);
+      if (binding.target_entry_points?.length) pushList(lines, 'target_entry_points', binding.target_entry_points, '    ');
+      if (binding.host_class_pattern) lines.push(`    host_class_pattern: ${quoteYaml(binding.host_class_pattern)}`);
+      if (binding.field_name) lines.push(`    field_name: ${quoteYaml(binding.field_name)}`);
+      if (binding.loader_methods?.length) pushList(lines, 'loader_methods', binding.loader_methods, '    ');
+    }
+  }
+
+  if (rule.lifecycle_overrides) {
+    lines.push('lifecycle_overrides:');
+    if (rule.lifecycle_overrides.additional_entry_points?.length) {
+      pushList(lines, 'additional_entry_points', rule.lifecycle_overrides.additional_entry_points, '  ');
+    }
+    if (rule.lifecycle_overrides.scope) {
+      lines.push(`  scope: ${quoteYaml(rule.lifecycle_overrides.scope)}`);
+    }
+  }
 
   return `${lines.join('\n')}\n`;
 }
@@ -332,6 +363,7 @@ export async function promoteCuratedRules(input: PromoteInput): Promise<PromoteO
       version,
       enabled: true,
       file: relativeFile,
+      ...(compiledRule.family ? { family: compiledRule.family } : {}),
     };
 
     const existingIndex = catalog.rules.findIndex((entry) => entry.id === ruleId);

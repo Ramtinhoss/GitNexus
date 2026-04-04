@@ -183,7 +183,7 @@ function assertDslShape(raw: string, filePath: string, version: string): void {
   }
 }
 
-function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
+export function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
   const id = readScalar(raw, 'id');
   const version = readScalar(raw, 'version');
   if (!id || !version) {
@@ -203,6 +203,53 @@ function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
   const legacyNonGuarantees = readList(raw, 'non_guarantees');
   const legacyNextAction = readScalar(raw, 'next_action');
 
+  // Parse resource_bindings
+  const rbLines = readSectionLines(raw, 'resource_bindings');
+  let resource_bindings: UnityResourceBinding[] | undefined;
+  if (rbLines.length > 0) {
+    resource_bindings = [];
+    const joined = rbLines.map((l) => l.replace(/^\s{2}/, '')).join('\n');
+    const entries = joined.split(/(?=^\s*- kind:)/m).filter((s) => s.trim());
+    for (const entry of entries) {
+      const kindMatch = entry.match(/- kind:\s*(.+)/);
+      if (!kindMatch) continue;
+      const binding: UnityResourceBinding = { kind: decodeYamlScalar(kindMatch[1]) as UnityResourceBinding['kind'] };
+      const scalar = (k: string) => {
+        const m = entry.match(new RegExp(`^\\s+${k}:\\s*(.+)$`, 'm'));
+        return m ? decodeYamlScalar(m[1]) : undefined;
+      };
+      const list = (k: string): string[] | undefined => {
+        const lines = entry.split('\n');
+        const idx = lines.findIndex((l) => new RegExp(`^\\s+${k}:\\s*$`).test(l));
+        if (idx < 0) return undefined;
+        const out: string[] = [];
+        for (let i = idx + 1; i < lines.length; i++) {
+          if (!/^\s+-\s+/.test(lines[i])) break;
+          out.push(decodeYamlScalar(lines[i].replace(/^\s+-\s+/, '')));
+        }
+        return out.length > 0 ? out : undefined;
+      };
+      binding.ref_field_pattern = scalar('ref_field_pattern');
+      binding.target_entry_points = list('target_entry_points');
+      binding.host_class_pattern = scalar('host_class_pattern');
+      binding.field_name = scalar('field_name');
+      binding.loader_methods = list('loader_methods');
+      resource_bindings.push(binding);
+    }
+    if (resource_bindings.length === 0) resource_bindings = undefined;
+  }
+
+  // Parse lifecycle_overrides
+  const loEntryPoints = readNestedList(raw, 'lifecycle_overrides', 'additional_entry_points');
+  const loScope = readNestedScalar(raw, 'lifecycle_overrides', 'scope');
+  const lifecycle_overrides: LifecycleOverrides | undefined =
+    loEntryPoints.length > 0 || loScope
+      ? {
+          ...(loEntryPoints.length > 0 ? { additional_entry_points: loEntryPoints } : {}),
+          ...(loScope ? { scope: loScope } : {}),
+        }
+      : undefined;
+
   return {
     id,
     version,
@@ -221,6 +268,8 @@ function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
     non_guarantees: claimNonGuarantees.length > 0 ? claimNonGuarantees : legacyNonGuarantees,
     next_action: claimNextAction || legacyNextAction,
     family: (readScalar(raw, 'family') as RuntimeClaimRule['family']) || 'verification_rules',
+    resource_bindings,
+    lifecycle_overrides,
     file_path: filePath,
   };
 }
