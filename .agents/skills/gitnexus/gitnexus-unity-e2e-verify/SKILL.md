@@ -73,6 +73,7 @@ test -d "$TARGET_REPO/Assets" && echo "Unity project detected" || echo "ERROR: n
 | 持有字段的类 | 哪些类持有触发加载的字段？（正则） | `PowerUp$` |
 | 字段名 | 具体的序列化字段名？ | `gungraph` |
 | 加载方法 | 哪些方法触发资源加载？ | `Equip` |
+| 动态跳转 | 链路中是否有事件派发或回调（C# Action/SyncList/delegate）？ | `NetEventHub.OnPickUpItem → OnClientPickItUp` |
 | 额外 lifecycle | 项目有自定义入口方法吗？ | `Init, Setup` |
 | lifecycle 范围 | 自定义入口方法的作用范围？ | `Assets/NEON/Code/Game/Graph` |
 
@@ -103,6 +104,9 @@ mkdir -p "$TARGET_REPO/.gitnexus/rules/approved"
 id: unity.<scenario-name>.v2
 version: 2.0.0
 family: analyze_rules
+description: >-
+  （可选）描述该规则覆盖的业务场景和调用链背景，
+  包括动态跳转的机制说明（事件派发/回调绑定等）。
 trigger_family: <scenario-name>
 resource_types:
   - asset
@@ -145,6 +149,19 @@ resource_bindings:
       - Awake
       - Start
       - OnEnable
+
+  # 类型 D（可选）：声明静态分析无法捕获的动态跳转（事件派发/回调/delegate）
+  # 适用场景：C# Action/UnityEvent 事件派发、Mirror SyncList 回调、delegate 绑定等
+  # 注入一条 source_method → target_method 的合成 CALLS 边（精确匹配，一条边）
+  - kind: method_triggers_method
+    description: >-
+      说明动态跳转的机制：例如"A 通过 EventHub.OnXxx?.Invoke() 触发，
+      B 在初始化时订阅该事件"，或"A 调用 SyncList.Add()，
+      触发 SyncList.Callback 回调到 B"
+    source_class_pattern: "<source_class_regex>"   # 例如 "^PlayerActor$"
+    source_method: "<source_method_name>"           # 例如 "ProcessInteractables"
+    target_class_pattern: "<target_class_regex>"   # 例如 "^NetPlayer$"
+    target_method: "<target_method_name>"           # 例如 "OnClientPickItUp"
 
 # 可选：项目特有的 lifecycle 入口
 lifecycle_overrides:
@@ -328,7 +345,8 @@ mcp__gitnexus__cypher:
 | 验证 2 失败（rule_not_matched） | `trigger_tokens` 未匹配 | 调整规则的 `match.trigger_tokens` |
 | 验证 2 失败（verification_failed） | 合成边存在但 ruleId 不匹配 | 检查规则 ID 一致性 |
 | 验证 3 失败（无 Process） | 合成边 confidence 过低 | 检查 `RULE_EDGE_CONFIDENCE`（应为 0.75） |
-| 验证 4 失败（链路断裂） | 中间缺少资源→代码穿越边 | 添加更多 `resource_bindings` 覆盖缺失段 |
+| 验证 4 失败（链路断裂，中间有动态跳转） | 事件派发/回调/delegate 无静态 CALLS 边 | 添加 `method_triggers_method` binding 桥接动态跳转 |
+| 验证 4 失败（链路断裂，无动态跳转） | 中间缺少资源→代码穿越边 | 添加更多 `resource_bindings` 覆盖缺失段 |
 
 ---
 
@@ -337,5 +355,5 @@ mcp__gitnexus__cypher:
 - 设计文档：`docs/plans/2026-04-03-unity-runtime-process-rule-driven-design.md`
 - 实现手册：`docs/unity-runtime-process-rule-driven-implementation.md`
 - SSOT：`docs/unity-runtime-process-source-of-truth.md`
-- 规则类型定义：`gitnexus/src/rule-lab/types.ts:90-113`
+- 规则类型定义：`gitnexus/src/rule-lab/types.ts:90-114`
 - 注入逻辑：`gitnexus/src/core/ingestion/unity-runtime-binding-rules.ts`

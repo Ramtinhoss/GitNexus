@@ -149,3 +149,109 @@ describe('method_triggers_scene_load binding processor', () => {
     expect(applyUnityRuntimeBindingRules(graph, [rule], {} as any).edgesInjected).toBe(0);
   });
 });
+
+describe('method_triggers_method binding processor', () => {
+  function buildMethodGraph() {
+    const graph = createKnowledgeGraph();
+
+    const playerClassId = generateId('Class', 'PlayerActor.cs:PlayerActor');
+    graph.addNode({
+      id: playerClassId,
+      label: 'Class',
+      properties: { name: 'PlayerActor', filePath: 'Assets/NEON/Code/Game/Actors/PlayerActor.cs' },
+    });
+    const processId = generateId('Method', 'PlayerActor.cs:PlayerActor.ProcessInteractables');
+    graph.addNode({
+      id: processId,
+      label: 'Method',
+      properties: { name: 'ProcessInteractables', filePath: 'PlayerActor.cs' },
+    });
+    graph.addRelationship({
+      id: generateId('HAS_METHOD', `${playerClassId}->${processId}`),
+      type: 'HAS_METHOD', sourceId: playerClassId, targetId: processId, confidence: 1, reason: '',
+    });
+
+    const netPlayerClassId = generateId('Class', 'NetPlayer.cs:NetPlayer');
+    graph.addNode({
+      id: netPlayerClassId,
+      label: 'Class',
+      properties: { name: 'NetPlayer', filePath: 'Assets/NEON/Code/NetworkCode/NetPlayer.cs' },
+    });
+    const onClientPickItUpId = generateId('Method', 'NetPlayer.cs:NetPlayer.OnClientPickItUp');
+    graph.addNode({
+      id: onClientPickItUpId,
+      label: 'Method',
+      properties: { name: 'OnClientPickItUp', filePath: 'NetPlayer.cs' },
+    });
+    graph.addRelationship({
+      id: generateId('HAS_METHOD', `${netPlayerClassId}->${onClientPickItUpId}`),
+      type: 'HAS_METHOD', sourceId: netPlayerClassId, targetId: onClientPickItUpId, confidence: 1, reason: '',
+    });
+
+    return { graph, processId, onClientPickItUpId };
+  }
+
+  it('injects CALLS edge from source method to target method', () => {
+    const { graph, processId, onClientPickItUpId } = buildMethodGraph();
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_method',
+        source_class_pattern: '^PlayerActor$',
+        source_method: 'ProcessInteractables',
+        target_class_pattern: '^NetPlayer$',
+        target_method: 'OnClientPickItUp',
+      }],
+    });
+
+    const result = applyUnityRuntimeBindingRules(graph, [rule], {} as any);
+    expect(result.edgesInjected).toBe(1);
+
+    const edges = [...graph.iterRelationships()].filter(
+      r => r.type === 'CALLS' && r.reason.startsWith('unity-rule-method-bridge:'),
+    );
+    expect(edges.length).toBe(1);
+    expect(edges[0].sourceId).toBe(processId);
+    expect(edges[0].targetId).toBe(onClientPickItUpId);
+  });
+
+  it('no edges when source class does not exist', () => {
+    const { graph } = buildMethodGraph();
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_method',
+        source_class_pattern: '^NonExistentClass$',
+        source_method: 'ProcessInteractables',
+        target_class_pattern: '^NetPlayer$',
+        target_method: 'OnClientPickItUp',
+      }],
+    });
+    expect(applyUnityRuntimeBindingRules(graph, [rule], {} as any).edgesInjected).toBe(0);
+  });
+
+  it('no edges when target method does not exist', () => {
+    const { graph } = buildMethodGraph();
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_method',
+        source_class_pattern: '^PlayerActor$',
+        source_method: 'ProcessInteractables',
+        target_class_pattern: '^NetPlayer$',
+        target_method: 'NonExistentMethod',
+      }],
+    });
+    expect(applyUnityRuntimeBindingRules(graph, [rule], {} as any).edgesInjected).toBe(0);
+  });
+
+  it('no edges when source_class_pattern is missing', () => {
+    const { graph } = buildMethodGraph();
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_method',
+        source_method: 'ProcessInteractables',
+        target_class_pattern: '^NetPlayer$',
+        target_method: 'OnClientPickItUp',
+      }],
+    });
+    expect(applyUnityRuntimeBindingRules(graph, [rule], {} as any).edgesInjected).toBe(0);
+  });
+});

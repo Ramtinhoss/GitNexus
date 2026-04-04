@@ -14,6 +14,7 @@ export interface RuntimeClaimRuleCatalogEntry {
 export interface RuntimeClaimRule {
   id: string;
   version: string;
+  description?: string;
   trigger_family: string;
   resource_types: string[];
   host_base_type: string[];

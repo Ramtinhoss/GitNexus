@@ -88,13 +88,19 @@ export interface RuleDslClaims {
 }
 
 export interface UnityResourceBinding {
-  kind: 'asset_ref_loads_components' | 'method_triggers_field_load' | 'method_triggers_scene_load';
+  kind: 'asset_ref_loads_components' | 'method_triggers_field_load' | 'method_triggers_scene_load' | 'method_triggers_method';
+  description?: string;
   ref_field_pattern?: string;
   target_entry_points?: string[];
   host_class_pattern?: string;
   field_name?: string;
   loader_methods?: string[];
   scene_name?: string;   // used by method_triggers_scene_load
+  // used by method_triggers_method
+  source_class_pattern?: string;
+  source_method?: string;
+  target_class_pattern?: string;
+  target_method?: string;
 }
 
 export interface LifecycleOverrides {
@@ -105,6 +111,7 @@ export interface LifecycleOverrides {
 export interface RuleDslDraft {
   id: string;
   version: string;
+  description?: string;
   match: RuleDslMatch;
   topology: RuleDslTopologyHop[];
   closure: RuleDslClosure;

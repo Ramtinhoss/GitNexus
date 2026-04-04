@@ -29,3 +29,52 @@
 - 统一设计与实现对照文档：`docs/unity-runtime-process-source-of-truth.md`
 - 涉及 Unity runtime process 的任务，先阅读该文档，再执行检索/实现/验收。
 - 若历史设计文档与当前实现不一致，以该真理源文档和对应代码为准，并在变更后同步更新。
+
+## CLI Setup 安装内容索引
+
+`gitnexus setup` 命令会将以下内容安装到用户仓库。**每次功能或代码变更提交后，必须检查这些文件是否需要同步更新。**
+
+### Skills（安装到 `.agents/skills/gitnexus/`）
+
+| 源文件 | 安装路径 | 用途 |
+|--------|---------|------|
+| `gitnexus/skills/gitnexus-exploring.md` | `.agents/skills/gitnexus/gitnexus-exploring/SKILL.md` | 架构探索 / "How does X work?" |
+| `gitnexus/skills/gitnexus-impact-analysis.md` | `.agents/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` | 影响分析 / "What breaks if I change X?" |
+| `gitnexus/skills/gitnexus-debugging.md` | `.agents/skills/gitnexus/gitnexus-debugging/SKILL.md` | Bug 追踪 / "Why is X failing?" |
+| `gitnexus/skills/gitnexus-refactoring.md` | `.agents/skills/gitnexus/gitnexus-refactoring/SKILL.md` | 重构 / rename / extract / split |
+| `gitnexus/skills/gitnexus-guide.md` | `.agents/skills/gitnexus/gitnexus-guide/SKILL.md` | 工具、资源、schema 参考 |
+| `gitnexus/skills/gitnexus-cli.md` | `.agents/skills/gitnexus/gitnexus-cli/SKILL.md` | CLI 命令：index / status / clean / wiki |
+| `gitnexus/skills/gitnexus-pr-review.md` | `.agents/skills/gitnexus/gitnexus-pr-review/SKILL.md` | PR 审查工作流 |
+| `gitnexus/skills/gitnexus-unity-rule-gen.md` | `.agents/skills/gitnexus/gitnexus-unity-rule-gen/SKILL.md` | Unity analyze_rules 交互式生成 |
+
+### Shared Contracts（安装到 `.agents/skills/gitnexus/_shared/`）
+
+| 源文件 | 安装路径 |
+|--------|---------|
+| `gitnexus/skills/_shared/unity-runtime-process-contract.md` | `.agents/skills/gitnexus/_shared/unity-runtime-process-contract.md` |
+| `gitnexus/skills/_shared/unity-ui-trace-contract.md` | `.agents/skills/gitnexus/_shared/unity-ui-trace-contract.md` |
+| `gitnexus/skills/_shared/unity-hydration-contract.md` | `.agents/skills/gitnexus/_shared/unity-hydration-contract.md` |
+
+### Hooks（安装到用户全局 Claude 配置）
+
+| 内容 | 安装路径 |
+|------|---------|
+| GitNexus Claude Code hook | `~/.claude/hooks/gitnexus/gitnexus-hook.cjs` |
+
+### MCP Config
+
+`gitnexus setup` 会向以下编辑器配置文件注入 MCP server 条目（视用户环境而定）：
+- `.mcp.json`（项目级）
+- `~/.cursor/mcp.json`（Cursor 全局）
+- `~/.config/claude/claude_desktop_config.json`（Claude Desktop）
+
+### 维护规则
+
+> **每次提交涉及以下内容时，必须检查并同步更新上表中对应的源文件：**
+> - MCP 工具接口变更（新增/修改/删除工具参数或行为）
+> - `analyze_rules` 规则格式变更（新增 binding kind、新增字段、修改 YAML schema）
+> - CLI 命令变更（新增子命令、修改参数）
+> - Unity runtime process 架构变更（新增 edge type、新增 process 阶段）
+> - Shared contract 接口变更
+>
+> 检查方式：阅读对应源文件，确认 skill 中的示例、字段说明、工作流步骤与当前实现一致。

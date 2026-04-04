@@ -129,6 +129,9 @@ function processBinding(
   if (binding.kind === 'method_triggers_scene_load') {
     return processMethodTriggersSceneLoad(binding, ruleId, componentInstances, methodsByClassId, classNodes, sceneFilesByName, addEdge);
   }
+  if (binding.kind === 'method_triggers_method') {
+    return processMethodTriggersMethod(binding, ruleId, methodsByClassId, classNodes, addEdge);
+  }
   return 0;
 }
 
@@ -254,6 +257,38 @@ function processMethodTriggersSceneLoad(
     }
   }
   return count;
+}
+
+function processMethodTriggersMethod(
+  binding: UnityResourceBinding,
+  ruleId: string,
+  methodsByClassId: Map<string, GraphNode[]>,
+  classNodes: GraphNode[],
+  addEdge: (s: string, t: string, reason: string) => boolean,
+): number {
+  const { source_class_pattern, source_method, target_class_pattern, target_method } = binding;
+  if (!source_class_pattern || !source_method || !target_class_pattern || !target_method) return 0;
+
+  const srcPattern = new RegExp(source_class_pattern);
+  const tgtPattern = new RegExp(target_class_pattern);
+
+  let sourceMethodId: string | undefined;
+  let targetMethodId: string | undefined;
+
+  for (const cls of classNodes) {
+    if (!sourceMethodId && srcPattern.test(cls.properties.name)) {
+      const match = (methodsByClassId.get(cls.id) ?? []).find(m => m.properties.name === source_method);
+      if (match) sourceMethodId = match.id;
+    }
+    if (!targetMethodId && tgtPattern.test(cls.properties.name)) {
+      const match = (methodsByClassId.get(cls.id) ?? []).find(m => m.properties.name === target_method);
+      if (match) targetMethodId = match.id;
+    }
+    if (sourceMethodId && targetMethodId) break;
+  }
+
+  if (!sourceMethodId || !targetMethodId) return 0;
+  return addEdge(sourceMethodId, targetMethodId, `unity-rule-method-bridge:${ruleId}`) ? 1 : 0;
 }
 
 function processLifecycleOverrides(
