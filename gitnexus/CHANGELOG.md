@@ -2,7 +2,17 @@
 
 All notable changes to GitNexus will be documented in this file.
 
-## [1.5.0-rc.2] - 2026-04-04
+## [1.5.0-rc.3] - 2026-04-04
+
+> Release candidate notes comparing `v1.5.0-rc.2` -> `v1.5.0-rc.3`.
+
+### Added
+- Added `method_triggers_method` binding kind to `analyze_rules`: lets rule authors declare dynamic dispatch gaps (C# events, Mirror SyncList callbacks, delegates) that static analysis cannot capture. At analyze time, a synthetic CALLS edge is injected from the source method to the target method, bridging the gap and enabling complete chain retrieval.
+- Added `description` field to `UnityResourceBinding` and rule top-level (`RuleDslDraft`): documentation-only, not parsed by the engine, readable by agents for context and expected-behavior validation.
+- Updated `gitnexus-unity-rule-gen` skill with `method_triggers_method` binding kind guidance, YAML template, and failure diagnostics.
+- Added CLI setup installed-content index to `AGENTS.md` with maintenance rules requiring sync checks after functional changes.
+
+
 
 > Release candidate notes comparing `v1.5.0-rc` -> `v1.5.0-rc.2`.
 
