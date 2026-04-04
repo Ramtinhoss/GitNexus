@@ -88,12 +88,13 @@ export interface RuleDslClaims {
 }
 
 export interface UnityResourceBinding {
-  kind: 'asset_ref_loads_components' | 'method_triggers_field_load';
+  kind: 'asset_ref_loads_components' | 'method_triggers_field_load' | 'method_triggers_scene_load';
   ref_field_pattern?: string;
   target_entry_points?: string[];
   host_class_pattern?: string;
   field_name?: string;
   loader_methods?: string[];
+  scene_name?: string;   // used by method_triggers_scene_load
 }
 
 export interface LifecycleOverrides {
