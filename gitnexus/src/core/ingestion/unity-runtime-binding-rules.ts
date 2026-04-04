@@ -65,10 +65,22 @@ export function applyUnityRuntimeBindingRules(
     else if (rel.type === 'UNITY_COMPONENT_INSTANCE') componentInstances.push(rel);
   }
 
+  // Pre-build scene file index: lowercase scene name → fileId[]
+  const sceneFilesByName = new Map<string, string[]>();
+  for (const node of graph.iterNodes()) {
+    if (node.label !== 'File') continue;
+    const filePath = String(node.properties.filePath ?? '');
+    if (!filePath.endsWith('.unity')) continue;
+    const fileName = (filePath.split('/').pop() ?? '').replace(/\.unity$/, '').toLowerCase();
+    const list = sceneFilesByName.get(fileName) ?? [];
+    list.push(node.id);
+    sceneFilesByName.set(fileName, list);
+  }
+
   for (const rule of rules) {
     let ruleEdges = 0;
     for (const binding of rule.resource_bindings ?? []) {
-      ruleEdges += processBinding(binding, rule.id, assetGuidRefs, componentInstances, methodsByClassId, classNodes, addSyntheticEdge);
+      ruleEdges += processBinding(binding, rule.id, assetGuidRefs, componentInstances, methodsByClassId, classNodes, sceneFilesByName, addSyntheticEdge);
     }
     if (rule.lifecycle_overrides?.additional_entry_points?.length) {
       ruleEdges += processLifecycleOverrides(rule, methodsByClassId, classNodes, addSyntheticEdge);
@@ -105,6 +117,7 @@ function processBinding(
   componentInstances: GraphRelationship[],
   methodsByClassId: Map<string, GraphNode[]>,
   classNodes: GraphNode[],
+  sceneFilesByName: Map<string, string[]>,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   if (binding.kind === 'asset_ref_loads_components') {
@@ -112,6 +125,9 @@ function processBinding(
   }
   if (binding.kind === 'method_triggers_field_load') {
     return processMethodTriggersFieldLoad(binding, ruleId, assetGuidRefs, componentInstances, methodsByClassId, classNodes, addEdge);
+  }
+  if (binding.kind === 'method_triggers_scene_load') {
+    return processMethodTriggersSceneLoad(binding, ruleId, componentInstances, methodsByClassId, classNodes, sceneFilesByName, addEdge);
   }
   return 0;
 }
@@ -192,6 +208,47 @@ function processMethodTriggersFieldLoad(
           for (const target of targetMethods) {
             if (addEdge(loader.id, target.id, `unity-rule-loader-bridge:${ruleId}`)) count++;
           }
+        }
+      }
+    }
+  }
+  return count;
+}
+
+function processMethodTriggersSceneLoad(
+  binding: UnityResourceBinding,
+  ruleId: string,
+  componentInstances: GraphRelationship[],
+  methodsByClassId: Map<string, GraphNode[]>,
+  classNodes: GraphNode[],
+  sceneFilesByName: Map<string, string[]>,
+  addEdge: (s: string, t: string, reason: string) => boolean,
+): number {
+  const classPattern = binding.host_class_pattern ? new RegExp(binding.host_class_pattern) : null;
+  const loaderMethodNames = new Set(binding.loader_methods ?? []);
+  const sceneName = binding.scene_name;
+  const defaultEntryPoints = ['OnEnable', 'Awake', 'Start'];
+  const entryPoints = (binding.target_entry_points ?? []).length > 0
+    ? binding.target_entry_points!
+    : defaultEntryPoints;
+
+  if (!classPattern || loaderMethodNames.size === 0 || !sceneName) return 0;
+
+  const sceneFileIds = sceneFilesByName.get(sceneName.toLowerCase()) ?? [];
+  if (sceneFileIds.length === 0) return 0;
+
+  let count = 0;
+  for (const cls of classNodes) {
+    if (!classPattern.test(cls.properties.name)) continue;
+    const methods = methodsByClassId.get(cls.id) ?? [];
+    const loaders = methods.filter(m => loaderMethodNames.has(m.properties.name));
+    if (loaders.length === 0) continue;
+
+    for (const sceneFileId of sceneFileIds) {
+      const targetMethods = findMethodsOnResource(sceneFileId, componentInstances, methodsByClassId, entryPoints);
+      for (const loader of loaders) {
+        for (const target of targetMethods) {
+          if (addEdge(loader.id, target.id, `unity-rule-scene-load:${ruleId}`)) count++;
         }
       }
     }
