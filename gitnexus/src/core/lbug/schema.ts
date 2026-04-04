@@ -285,6 +285,7 @@ CREATE REL TABLE ${REL_TABLE_NAME} (
   FROM Method TO \`Constructor\`,
   FROM Method TO \`Property\`,
   FROM Method TO \`Delegate\`,
+  FROM Method TO \`Record\`,
   FROM \`Template\` TO \`Template\`,
   FROM \`Template\` TO Function,
   FROM \`Template\` TO Method,

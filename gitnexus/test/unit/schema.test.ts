@@ -120,6 +120,10 @@ describe('LadybugDB Schema', () => {
       expect(RELATION_SCHEMA).toContain('FROM Method TO Process');
     });
 
+    it('includes Method->Record pair for C# record type CALLS edges', () => {
+      expect(RELATION_SCHEMA).toContain('FROM Method TO `Record`');
+    });
+
     it('has all FROM/TO pairs needed for HAS_METHOD edges', () => {
       // HAS_METHOD sources: Class, Interface, Struct, Trait, Impl, Record
       // HAS_METHOD targets: Method, Constructor, Property

@@ -94,4 +94,24 @@ describe('rule-lab M1 guards', () => {
     expect(out.threshold_checks.holdout_pass).toBe(false);
     expect(out.threshold_checks.negative_pass).toBe(false);
   });
+
+  it('compiled bundle is valid JSON after sequential promotes (no concatenated objects)', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-m1-bundle-'));
+    try {
+      await setupCuratedSlice(repoRoot, 'slice-a', 'demo.reload.rule.v2', 'reload');
+      await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a', version: '2.0.0' });
+
+      await setupCuratedSlice(repoRoot, 'slice-b', 'demo.energy.rule.v2', 'energy');
+      await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-b', version: '2.0.0' });
+
+      const bundlePath = path.join(repoRoot, '.gitnexus', 'rules', 'compiled', 'analyze_rules.v2.json');
+      const raw = await fs.readFile(bundlePath, 'utf-8');
+      const bundle = JSON.parse(raw); // throws if concatenated / invalid JSON
+      expect(bundle.family).toBe('analyze_rules');
+      expect(bundle.rules).toHaveLength(2);
+      expect(bundle.rules.map((r: { id: string }) => r.id).sort()).toEqual(['demo.energy.rule.v2', 'demo.reload.rule.v2']);
+    } finally {
+      await fs.rm(repoRoot, { recursive: true, force: true });
+    }
+  });
 });
