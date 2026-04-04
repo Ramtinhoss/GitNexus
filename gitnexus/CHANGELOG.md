@@ -2,6 +2,38 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.5.0-rc] - 2026-04-04
+
+> Release candidate notes comparing `v1.4.11-rc.2` -> `v1.5.0-rc`.
+
+### Added
+- Added `gitnexus rule-lab compile --repo-path` CLI subcommand to compile YAML analyze_rules into stage-aware bundles.
+- Added `gitnexus-unity-rule-gen` interactive skill: guided workflow for generating Unity `analyze_rules` from natural-language chain clues, with graph exploration, YAML generation, compile, re-index, and 4-step verification.
+- Added `_shared/unity-hydration-contract.md` shared contract (compact→parity decision rule) and `_shared/unity-ui-trace-contract.md` full contract (goals, selector modes, output fields), extracted from inline skill content.
+- Added Unity runtime process E2E verification skill (`gitnexus-unity-e2e-verify`) for end-to-end chain closure validation.
+- Added `process_ref` model and stable derived process IDs returned from `query`/`context` tool outputs.
+- Added `gitnexus://repo/{name}/process/{processName}` MCP resource reader for step-by-step process traces.
+- Added `runtime_claim` contract schema and rule-based runtime claim integration with explicit failure classes.
+- Added `hydration_policy` semantics and strict fallback downgrade for evidence delivery control.
+- Added evidence view filtering/truncation and minimum evidence gate for `query`/`context` responses.
+- Added probe-based regression gating and replay evidence in rule-lab.
+- Added semantic authenticity gate for rule-lab phase5 acceptance.
+
+### Changed
+- Replaced hardcoded Unity runtime verification system with a rule-driven resource↔code binding infrastructure; all synthetic edge injection is now governed by `analyze_rules` YAML.
+- Removed all `GITNEXUS_UNITY_*` environment variables; Unity runtime configuration is now unified under the config file.
+- Simplified query-time verifier: removed hardcoded fallback paths, unified topology execution via DSL rules.
+- Updated `gitnexus-cli` skill: added `--extensions`, `--scope-prefix`, `--skills` flags to analyze table; replaced inline unity-ui-trace block with `_shared/` reference.
+- Updated `gitnexus-guide` skill: added `gitnexus-unity-rule-gen` to skills table; added Unity edge types (`UNITY_ASSET_GUID_REF`, `UNITY_COMPONENT_INSTANCE`) to graph schema section.
+- Extended `StageAwareCompiledRule` and promote pipeline to carry `resource_bindings` and `lifecycle_overrides` Unity fields through the bundle.
+
+### Fixed
+- Fixed 3 bugs in rule-driven synthetic edge injection (field pattern matching, lifecycle scope resolution, loader-bridge edge emission).
+- Fixed retrieval fallback tightening and evidence trimming decoupling in query path.
+- Fixed runtime rule selection and symbol ranking in verifier.
+- Fixed runtime rule fallback from nested cwd and workspace catalog when repo root lacks rules.
+- Fixed rule-lab startup artifact alignment with DSL v2 compile output.
+
 ## [1.4.11-rc.2] - 2026-04-01
 
 > Release candidate notes comparing `v1.4.11-rc` -> `v1.4.11-rc.2`.
