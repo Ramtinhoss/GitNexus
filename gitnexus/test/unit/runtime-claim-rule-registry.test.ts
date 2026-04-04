@@ -88,3 +88,71 @@ next_action: done
     expect(result.id).toBe('test-rule-002');
   });
 });
+
+describe('parseRuleYaml – method_triggers_scene_load', () => {
+  const SCENE_LOAD_YAML = `
+id: test.scene-load
+version: 2.0.0
+family: analyze_rules
+trigger_family: test_family
+resource_types:
+  - scene
+host_base_type:
+  - MonoBehaviour
+
+match:
+  trigger_tokens:
+    - Global
+
+topology:
+  - hop: resource
+    from:
+      entity: resource
+    to:
+      entity: guid
+    edge:
+      kind: references
+
+closure:
+  required_hops:
+    - resource
+  failure_map:
+    missing_evidence: rule_matched_but_evidence_missing
+
+claims:
+  guarantees:
+    - test_guarantee
+  non_guarantees:
+    - no_runtime_proof
+  next_action: gitnexus query "Global"
+
+resource_bindings:
+  - kind: method_triggers_scene_load
+    host_class_pattern: "^Global$"
+    loader_methods:
+      - InitGlobal
+    scene_name: "Global"
+    target_entry_points:
+      - Awake
+      - Start
+      - OnEnable
+`.trim();
+
+  it('parses scene_name field', () => {
+    const rule = parseRuleYaml(SCENE_LOAD_YAML, '/fake/path/test.yaml');
+    expect(rule.resource_bindings).toBeDefined();
+    expect(rule.resource_bindings!.length).toBe(1);
+    const binding = rule.resource_bindings![0];
+    expect(binding.kind).toBe('method_triggers_scene_load');
+    expect(binding.scene_name).toBe('Global');
+    expect(binding.loader_methods).toEqual(['InitGlobal']);
+    expect(binding.target_entry_points).toEqual(['Awake', 'Start', 'OnEnable']);
+    expect(binding.host_class_pattern).toBe('^Global$');
+  });
+
+  it('scene_name is undefined when not present', () => {
+    const yaml = SCENE_LOAD_YAML.replace(/    scene_name: "Global"\n/, '');
+    const rule = parseRuleYaml(yaml, '/fake/path/test.yaml');
+    expect(rule.resource_bindings![0].scene_name).toBeUndefined();
+  });
+});
