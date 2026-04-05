@@ -2,6 +2,15 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.5.0-rc.4] - 2026-04-05
+
+> Release candidate notes comparing `v1.5.0-rc.3` -> `v1.5.0-rc.4`.
+
+### Fixed
+- Fixed `method_triggers_method` binding kind not producing synthetic CALL edges at analyze time. The YAML parser in `parseRuleYaml()` was missing extraction of the four required fields (`source_class_pattern`, `source_method`, `target_class_pattern`, `target_method`), causing all `method_triggers_method` rules to silently produce zero edges and `runtime_chain_verify` to always return `failed`. Added parser fix and round-trip unit tests.
+- Fixed `docs/unity-runtime-process-source-of-truth.md` missing MCP tool name references (`rule_lab_discover`, `rule_lab_promote`) required by contract tests.
+- Added mandatory three-part checklist to `AGENTS.md`: when adding a new `UnityResourceBinding` binding kind or field, type definition + parser extraction + unit test must land in the same commit.
+
 ## [1.5.0-rc.3] - 2026-04-04
 
 > Release candidate notes comparing `v1.5.0-rc.2` -> `v1.5.0-rc.3`.
