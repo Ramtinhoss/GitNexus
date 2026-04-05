@@ -50,3 +50,40 @@ namespace MyApp {
     expect(() => parseContent(code, tree1)).not.toThrow();
   });
 });
+
+describe('parseContent edge cases', () => {
+  it('handles empty string without throwing', async () => {
+    await loadParser();
+    await loadLanguage(SupportedLanguages.CSharp);
+    expect(() => parseContent('')).not.toThrow();
+  });
+
+  it('handles exactly MAX_CHUNK boundary content (4096 bytes)', async () => {
+    await loadParser();
+    await loadLanguage(SupportedLanguages.TypeScript);
+    // Generate content of exactly 4096 bytes
+    const content = 'const x = 1;\n'.repeat(Math.ceil(4096 / 14)).slice(0, 4096);
+    expect(() => parseContent(content)).not.toThrow();
+  });
+
+  it('handles content with multi-byte UTF-8 characters (Chinese comments)', async () => {
+    await loadParser();
+    await loadLanguage(SupportedLanguages.CSharp);
+    // Chinese characters are 3 bytes each in UTF-8 — stress tests slice boundaries
+    const code = `
+// 这是一个测试文件，包含大量中文注释以测试 UTF-8 多字节字符在分块边界处的处理
+namespace 测试命名空间 {
+  public class 测试类 {
+    // 这个方法用于测试中文标识符
+    public void 测试方法() {
+      string 变量名 = "中文字符串";
+    }
+  }
+}
+`;
+    const tree = parseContent(code);
+    expect(tree).toBeDefined();
+    // Should not have cascading top-level errors
+    expect(tree.rootNode.hasError).toBe(false);
+  });
+});
