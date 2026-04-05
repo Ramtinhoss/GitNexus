@@ -1217,3 +1217,38 @@ describe('C# nested member access foreach (this.data.Values)', () => {
     expect(wrongSave).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// C# Unicode identifiers: regression guard for tree-sitter-c-sharp >= 0.23.1
+// Verifies that files with Chinese field/method names are parsed correctly and
+// class nodes are not lost due to cascading ERROR nodes (pre-0.23.1 bug).
+// ---------------------------------------------------------------------------
+
+describe('C# Unicode identifiers (tree-sitter-c-sharp >= 0.23.1 regression guard)', () => {
+  let result: PipelineResult;
+
+  beforeAll(async () => {
+    result = await runPipelineFromRepo(
+      path.join(FIXTURES, 'csharp-unicode-identifiers'),
+      () => {},
+    );
+  }, 60000);
+
+  it('detects DataProcessor and DataItem classes (class nodes not lost)', () => {
+    const classes = getNodesByLabel(result, 'Class');
+    expect(classes).toContain('DataProcessor');
+    expect(classes).toContain('DataItem');
+  });
+
+  it('detects methods in DataProcessor (methods not orphaned)', () => {
+    const rels = getRelationships(result, 'HAS_METHOD');
+    const processorMethods = rels.filter(r => r.source === 'DataProcessor');
+    expect(processorMethods.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('resolves Process() call to GetName() via DataItem receiver', () => {
+    const calls = getRelationships(result, 'CALLS');
+    const getNameCall = calls.find(c => c.target === 'GetName');
+    expect(getNameCall).toBeDefined();
+  });
+});
