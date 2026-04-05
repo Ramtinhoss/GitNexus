@@ -48,10 +48,35 @@ Notes:
 | File | Purpose |
 |------|---------|
 | `.gitnexusignore` | Extra ignore rules on top of `.gitignore` |
-| `.gitnexus/sync-manifest.txt` | Recommended location for scoped analyze manifest (`--scope-manifest`). Each line is a **path prefix** (not glob); trailing `*` is a wildcard prefix. Use `--extensions` for file type filtering. |
+| `.gitnexus/sync-manifest.txt` | Recommended location for unified analyze manifest (`--scope-manifest`): supports path-prefix scope lines and `@key=value` directives for analyze options. |
 | `.gitnexus/rules/overrides.yaml` | Optional project-specific alias/disable/threshold overrides for approved rules |
 
 `sync-manifest.txt` and `rules/overrides.yaml` are user-provided inputs, not system-owned state.
+
+### `sync-manifest.txt` unified rules (current)
+
+`sync-manifest.txt` is the user-intent config file for analyze scope and selected analyze options.
+
+Supported format:
+
+```txt
+# scope rules
+Assets/
+Packages/
+
+@extensions=.cs,.meta
+@repoAlias=neonspark-core
+@embeddings=false
+```
+
+Rules:
+- Non-`@` lines are scope path-prefix rules (same semantics as before; trailing `*` supported).
+- `@key=value` directives are case-insensitive for key and support:
+  - `@extensions=<csv>` (equivalent to `--extensions`)
+  - `@repoAlias=<name>` (equivalent to `--repo-alias`)
+  - `@embeddings=<true|false>` (equivalent to `--embeddings`)
+- Unknown directives must fail fast with explicit error (no silent ignore).
+- If the same directive appears multiple times, the last one wins.
 
 ### Runtime Claim Bootstrap (current)
 
@@ -70,7 +95,11 @@ Notes:
 
 ## Precedence rules
 
-1. CLI explicit flags (for example `--repo`, `--repo-alias`, `--scope-manifest`) have highest priority.
+1. For analyze option resolution (`extensions`, `repoAlias`, `embeddings`, `scope rules`):
+   1. CLI explicit flags
+   2. manifest directives from `--scope-manifest` (`@extensions`, `@repoAlias`, `@embeddings`, plus scope lines)
+   3. `<repo>/.gitnexus/meta.json.analyzeOptions` when `reuseOptions !== false`
+   4. built-in defaults
 2. For direct tool commands, when `--repo` is missing:
    1. use `<repo>/.gitnexus/meta.json.repoId`
    2. fallback to `~/.gitnexus/registry.json` path match
@@ -82,6 +111,37 @@ Notes:
    1. explicit setup flags / env
    2. `~/.gitnexus/config.json` (`cliPackageSpec`, then `cliVersion`)
    3. package default dist-tag
+
+## Why `meta.json` Is Not Merged With `sync-manifest.txt`
+
+- `sync-manifest.txt` is user-authored intent config.
+- `meta.json` is analyze runtime output snapshot (`repoId`, `stats`, `lastCommit`, `indexedAt`, and effective `analyzeOptions`).
+
+They have different ownership and lifecycle. Merging them couples mutable user intent with runtime state and increases drift/conflict risk.
+
+## Migration guidance
+
+Recommended stable analyze setup:
+
+```txt
+Assets/
+Packages/
+@extensions=.cs,.meta
+@repoAlias=neonspark-core
+@embeddings=false
+```
+
+Recommended command in automation:
+
+```bash
+gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt
+```
+
+If you want to disable historical option reuse:
+
+```bash
+gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt --no-reuse-options
+```
 
 ## Ownership rules
 

@@ -507,6 +507,8 @@ The wiki generator reads the indexed graph structure, groups files into modules 
 | **Clustering**      | Graphology                            | Graphology                              |
 | **Concurrency**     | Worker threads + async                | Web Workers + Comlink                   |
 
+> **解析陷阱参考**：Tree-sitter native binding 的已知限制与上层识别模式 → [`docs/tree-sitter-parsing-pitfalls.md`](docs/tree-sitter-parsing-pitfalls.md)
+
 ---
 
 ## Roadmap
