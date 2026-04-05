@@ -23,7 +23,6 @@ import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
 import { formatFallbackSummary, formatUnityDiagnosticsSummary, resolveFallbackStats } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
-import { resolveCliSpec } from '../config/cli-spec.js';
 import type { PipelineResult } from '../types/pipeline.js';
 import type { UnityParitySeed } from '../core/ingestion/unity-parity-seed.js';
 
@@ -448,7 +447,6 @@ export const analyzeCommand = async (
     processes: pipelineRuntime.processResult?.stats.totalProcesses,
   }, {
     skillScope: (cliConfig.setupScope === 'global') ? 'global' : 'project',
-    cliPackageSpec: resolveCliSpec({ config: cliConfig }).packageSpec,
   }, generatedSkills);
 
   await closeLbug();

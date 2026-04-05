@@ -11,11 +11,6 @@ const execFileAsync = promisify(execFile);
 const here = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(here, '..', '..');
 const cliPath = path.join(packageRoot, 'dist', 'cli', 'index.js');
-const packageName = JSON.parse(
-  await fs.readFile(path.join(packageRoot, 'package.json'), 'utf-8'),
-) as { name?: string };
-const expectedMcpPackage = `${packageName.name || 'gitnexus'}@latest`;
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 async function runSetup(args: string[], env: NodeJS.ProcessEnv, cwd = packageRoot) {
   return execFileAsync(process.execPath, [cliPath, 'setup', ...args], { cwd, env });
@@ -41,8 +36,8 @@ test('setup without --agent uses legacy Cursor install path', async () => {
     const cursorMcp = JSON.parse(cursorMcpRaw) as {
       mcpServers?: Record<string, { command?: string; args?: string[] }>;
     };
-    assert.equal(cursorMcp.mcpServers?.gitnexus?.command, 'npx');
-    assert.deepEqual(cursorMcp.mcpServers?.gitnexus?.args, ['-y', expectedMcpPackage, 'mcp']);
+    assert.equal(cursorMcp.mcpServers?.gitnexus?.command, 'gitnexus');
+    assert.deepEqual(cursorMcp.mcpServers?.gitnexus?.args, ['mcp']);
     await fs.access(cursorSkillPath);
 
     const configRaw = await fs.readFile(configPath, 'utf-8');
@@ -175,7 +170,7 @@ process.exit(0);
     const parsed = JSON.parse(raw) as { args: string[] };
 
     assert.deepEqual(parsed.args.slice(0, 4), ['mcp', 'add', 'gitnexus', '--']);
-    assert.ok(parsed.args.includes(expectedMcpPackage));
+    assert.ok(parsed.args.includes('gitnexus'));
     assert.ok(parsed.args.includes('mcp'));
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
@@ -203,7 +198,7 @@ test('setup configures OpenCode MCP in ~/.config/opencode/opencode.json', async 
     };
 
     assert.equal(opencodeConfig.mcp?.gitnexus?.type, 'local');
-    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['npx', '-y', expectedMcpPackage, 'mcp']);
+    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['gitnexus', 'mcp']);
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
   }
@@ -235,7 +230,8 @@ test('setup --cli-version pins MCP package spec and persists it in config', asyn
       cliVersion?: string;
     };
 
-    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['npx', '-y', '@veewo/gitnexus@1.4.7-rc', 'mcp']);
+    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['gitnexus', 'mcp']);
+    // Version is persisted to config, not MCP entry:
     assert.equal(savedConfig.cliPackageSpec, '@veewo/gitnexus@1.4.7-rc');
     assert.equal(savedConfig.cliVersion, '1.4.7-rc');
   } finally {
@@ -267,7 +263,7 @@ test('setup keeps using legacy ~/.config/opencode/config.json when it already ex
 
     assert.equal(legacyConfig.existing, true);
     assert.equal(legacyConfig.mcp?.gitnexus?.type, 'local');
-    assert.deepEqual(legacyConfig.mcp?.gitnexus?.command, ['npx', '-y', expectedMcpPackage, 'mcp']);
+    assert.deepEqual(legacyConfig.mcp?.gitnexus?.command, ['gitnexus', 'mcp']);
     await assert.rejects(fs.access(preferredConfigPath));
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
@@ -316,9 +312,10 @@ test('setup --scope project --agent claude writes only .mcp.json', async () => {
     const opencodeConfigPath = path.join(fakeRepo, 'opencode.json');
 
     const projectMcpRaw = await fs.readFile(projectMcpPath, 'utf-8');
-    const projectMcp = JSON.parse(projectMcpRaw) as { mcpServers?: Record<string, { command?: string }> };
+    const projectMcp = JSON.parse(projectMcpRaw) as { mcpServers?: Record<string, { command?: string; args?: string[] }> };
 
-    assert.equal(projectMcp.mcpServers?.gitnexus?.command, 'npx');
+    assert.equal(projectMcp.mcpServers?.gitnexus?.command, 'gitnexus');
+    assert.deepEqual(projectMcp.mcpServers?.gitnexus?.args, ['mcp']);
     await assert.rejects(fs.access(codexConfigPath));
     await assert.rejects(fs.access(opencodeConfigPath));
   } finally {
@@ -347,7 +344,8 @@ test('setup --scope project --agent codex writes only .codex/config.toml', async
     const codexConfigRaw = await fs.readFile(codexConfigPath, 'utf-8');
 
     assert.match(codexConfigRaw, /\[mcp_servers\.gitnexus\]/);
-    assert.match(codexConfigRaw, /command = "npx"/);
+    assert.match(codexConfigRaw, /command = "gitnexus"/);
+    assert.match(codexConfigRaw, /args = \["mcp"\]/);
     await assert.rejects(fs.access(projectMcpPath));
     await assert.rejects(fs.access(opencodeConfigPath));
   } finally {
@@ -397,7 +395,7 @@ test('setup --scope project --agent codex replaces existing gitnexus table witho
 
     assert.equal((gitnexusTable.match(/^command\s*=/gm) || []).length, 1);
     assert.equal((gitnexusTable.match(/^args\s*=/gm) || []).length, 1);
-    assert.match(gitnexusTable, new RegExp(escapeRegExp(expectedMcpPackage)));
+    assert.match(gitnexusTable, /command = "gitnexus"/);
     assert.doesNotMatch(gitnexusTable, /oldpkg@latest/);
     assert.match(codexConfigRaw, /^\[profiles\.default\]$/m);
   } finally {
@@ -435,7 +433,7 @@ test('setup --scope project --agent codex is idempotent across repeated runs', a
 
     assert.equal((gitnexusTable.match(/^command\s*=/gm) || []).length, 1);
     assert.equal((gitnexusTable.match(/^args\s*=/gm) || []).length, 1);
-    assert.match(gitnexusTable, new RegExp(escapeRegExp(expectedMcpPackage)));
+    assert.match(gitnexusTable, /command = "gitnexus"/);
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
     await fs.rm(fakeRepo, { recursive: true, force: true });
@@ -484,7 +482,7 @@ test('setup --scope project --agent opencode writes only opencode.json', async (
     const config = JSON.parse(configRaw) as { setupScope?: string };
 
     assert.equal(opencodeConfig.mcp?.gitnexus?.type, 'local');
-    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['npx', '-y', expectedMcpPackage, 'mcp']);
+    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['gitnexus', 'mcp']);
     await assert.rejects(fs.access(projectMcpPath));
     await assert.rejects(fs.access(codexConfigPath));
     await fs.access(localSkillPath);

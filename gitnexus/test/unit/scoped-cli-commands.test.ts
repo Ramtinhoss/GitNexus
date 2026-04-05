@@ -10,11 +10,13 @@ async function read(relPath: string): Promise<string> {
   return fs.readFile(path.join(packageRoot, relPath), 'utf-8');
 }
 
-test('core generated guidance resolves analyze remediation commands through shared cli-spec resolver', async () => {
+test('core generated guidance uses static npx resolution pattern (no hardcoded version)', async () => {
   const aiContext = await read('src/cli/ai-context.ts');
   const resources = await read('src/mcp/resources.ts');
 
-  expect(aiContext).toContain("buildNpxCommand(cliPackageSpec, 'analyze')");
+  // ai-context.ts no longer embeds a resolved command — it uses a static pattern description
+  expect(aiContext).not.toContain("buildNpxCommand(cliPackageSpec, 'analyze')");
+  expect(aiContext).toContain('npx -y <resolved-spec> analyze');
   expect(resources).toContain('resolveAnalyzeNpxCommand');
   expect(aiContext).not.toContain('npx -y gitnexus analyze');
   expect(resources).not.toContain('npx -y gitnexus analyze');
