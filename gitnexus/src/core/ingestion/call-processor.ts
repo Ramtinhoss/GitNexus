@@ -4,7 +4,7 @@ import type { SymbolDefinition } from './symbol-table.js';
 import Parser from 'tree-sitter';
 import type { ResolutionContext } from './resolution-context.js';
 import { TIER_CONFIDENCE, type ResolutionTier } from './resolution-context.js';
-import { isLanguageAvailable, loadParser, loadLanguage } from '../tree-sitter/parser-loader.js';
+import { isLanguageAvailable, loadParser, loadLanguage, parseContent } from '../tree-sitter/parser-loader.js';
 import { LANGUAGE_QUERIES } from './tree-sitter-queries.js';
 import { generateId } from '../../lib/utils.js';
 import {
@@ -164,7 +164,7 @@ export const processCalls = async (
     let tree = astCache.get(file.path);
     if (!tree) {
       try {
-        tree = parser.parse(file.content, undefined, { bufferSize: getTreeSitterBufferSize(file.content.length) });
+        tree = parseContent(file.content);
       } catch (parseError) {
         continue;
       }

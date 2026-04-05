@@ -1,6 +1,6 @@
 import { KnowledgeGraph, GraphNode, GraphRelationship } from '../graph/types.js';
 import Parser from 'tree-sitter';
-import { loadParser, loadLanguage, isLanguageAvailable } from '../tree-sitter/parser-loader.js';
+import { loadParser, loadLanguage, isLanguageAvailable, parseContent } from '../tree-sitter/parser-loader.js';
 import { LANGUAGE_QUERIES } from './tree-sitter-queries.js';
 import { generateId } from '../../lib/utils.js';
 import { SymbolTable } from './symbol-table.js';
@@ -154,7 +154,7 @@ const processParsingSequential = async (
 
     let tree;
     try {
-      tree = parser.parse(file.content, undefined, { bufferSize: getTreeSitterBufferSize(file.content.length) });
+      tree = parseContent(file.content);
     } catch (parseError) {
       console.warn(`Skipping unparseable file: ${file.path}`);
       continue;
