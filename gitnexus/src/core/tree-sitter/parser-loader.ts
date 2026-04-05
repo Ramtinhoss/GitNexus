@@ -62,3 +62,22 @@ export const loadLanguage = async (language: SupportedLanguages, filePath?: stri
   }
   parser!.setLanguage(lang);
 };
+
+const MAX_CHUNK = 4096;
+
+/**
+ * Parse source code using tree-sitter's chunked callback API.
+ * Avoids the native binding's single-buffer size limit (< 32768 bytes)
+ * that causes "Invalid argument" errors on large files.
+ *
+ * @param content - Full source file content as UTF-8 string
+ * @param oldTree - Optional previous tree for incremental parsing (must call tree.edit() first)
+ * @returns Parsed syntax tree
+ */
+export const parseContent = (content: string, oldTree?: any): any => {
+  if (!parser) throw new Error('Parser not initialized — call loadParser() first');
+  return parser.parse((index: number) => {
+    if (index >= content.length) return null;
+    return content.slice(index, index + MAX_CHUNK);
+  }, oldTree);
+};
