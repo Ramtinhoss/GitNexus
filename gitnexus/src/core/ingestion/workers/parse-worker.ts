@@ -863,7 +863,11 @@ const processFileGroup = (
 
     let tree;
     try {
-      tree = parser.parse(file.content, undefined, { bufferSize: getTreeSitterBufferSize(file.content.length) });
+      const MAX_CHUNK = 4096;
+      tree = parser.parse((index: number) => {
+        if (index >= file.content.length) return null;
+        return file.content.slice(index, index + MAX_CHUNK);
+      });
     } catch (err) {
       console.warn(`Failed to parse file ${file.path}: ${err instanceof Error ? err.message : String(err)}`);
       continue;
