@@ -1,0 +1,71 @@
+---
+name: gitnexus-cli-dev-link
+description: "Use when you need to replace the globally installed gitnexus CLI with a symlink to this repository's freshly built dist/cli for cross-repo testing, or uninstall that dev link and restore npm-installed CLI."
+---
+
+# GitNexus CLI Dev Link Workflow
+
+Use this workflow to switch your machine-wide `gitnexus` command between:
+
+- npm global package version
+- local development build from this repository (`gitnexus/dist/cli/index.js`)
+
+## Preconditions
+
+- Repository path: `/Volumes/Shuttle/projects/agentic/GitNexus`
+- Node.js + npm available
+- You are allowed to run global npm commands (`npm link`, `npm unlink -g`, `npm install -g`)
+
+## Install Dev CLI (local build -> global symlink)
+
+```bash
+set -euo pipefail
+
+REPO_ROOT="/Volumes/Shuttle/projects/agentic/GitNexus"
+CLI_PKG_DIR="$REPO_ROOT/gitnexus"
+
+cd "$CLI_PKG_DIR"
+npm run build
+npm link
+
+echo "gitnexus path: $(command -v gitnexus)"
+ls -l "$(command -v gitnexus)"
+```
+
+Expected result:
+
+- `command -v gitnexus` points to npm global bin
+- the bin target resolves to this repo (symlink to current workspace package)
+
+## Uninstall Dev CLI (remove symlink)
+
+```bash
+set -euo pipefail
+
+REPO_ROOT="/Volumes/Shuttle/projects/agentic/GitNexus"
+CLI_PKG_DIR="$REPO_ROOT/gitnexus"
+
+cd "$CLI_PKG_DIR"
+npm unlink -g @veewo/gitnexus
+
+echo "dev symlink removed; reinstall npm package to restore published CLI:"
+echo "  npm install -g @veewo/gitnexus"
+```
+
+Important:
+
+- `npm unlink -g @veewo/gitnexus` only removes the dev link.
+- To get npm published version back, run:
+
+```bash
+npm install -g @veewo/gitnexus
+```
+
+## Quick Verification
+
+```bash
+command -v gitnexus
+gitnexus --version
+```
+
+If you just switched versions, restart the agent/editor session so MCP servers pick up the new CLI process.
