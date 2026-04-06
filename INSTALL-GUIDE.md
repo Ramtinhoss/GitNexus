@@ -10,35 +10,21 @@
 
 ## 版本与执行策略（必须遵守）
 
-- `setup` 完成后，`~/.gitnexus/config.json` 是 npx 版本源的单一事实来源
+- **首次安装阶段**：如果 release prompt 指定了版本号（例如 `@veewo/gitnexus@<VERSION>`），必须先安装这个指定版本；**此时不能先读取旧的 `~/.gitnexus/config.json` 作为版本源**
+- `setup` 完成后，`~/.gitnexus/config.json` 才是 npx 版本源的单一事实来源
 - 整个会话只能有一个 CLI 版本源，禁止混用本地 `gitnexus` / 固定 `npx` 包版本 / `latest`
-- 若用户在 prompt 指定版本，必须通过 `setup --cli-version` 或 `setup --cli-spec` 写入 `~/.gitnexus/config.json`
+- 若用户在 prompt 指定版本，必须先用该版本完成安装/启动，再通过 `setup --cli-version` 或 `setup --cli-spec` 写入 `~/.gitnexus/config.json`
 - 整个流程统一复用 `$GN`，不要在中途手写新的 npx 包版本
 - `setup` 支持写入版本源：`--cli-version <version>` 或 `--cli-spec <packageSpec>`
 
 ```bash
-if command -v gitnexus >/dev/null 2>&1; then
-  GN="gitnexus"
-else
-  GITNEXUS_CLI_SPEC="$(
-    node -e 'const fs=require("fs");const os=require("os");const path=require("path");
-    try {
-      const raw=fs.readFileSync(path.join(os.homedir(),".gitnexus","config.json"),"utf8");
-      const parsed=JSON.parse(raw);
-      const spec=typeof parsed.cliPackageSpec==="string" && parsed.cliPackageSpec.trim()
-        ? parsed.cliPackageSpec.trim()
-        : typeof parsed.cliVersion==="string" && parsed.cliVersion.trim()
-          ? `@veewo/gitnexus@${parsed.cliVersion.trim()}`
-          : "";
-      if (spec) process.stdout.write(spec);
-    } catch {}'
-  )"
-  if [ -z "$GITNEXUS_CLI_SPEC" ]; then
-    echo "Missing GitNexus CLI package spec in ~/.gitnexus/config.json. Run gitnexus setup --cli-spec <packageSpec> first." >&2
-    exit 1
-  fi
-  GN="npx -y ${GITNEXUS_CLI_SPEC}"
-fi
+BOOTSTRAP_CLI_SPEC="@veewo/gitnexus@<VERSION>"   # 由 release prompt 显式提供
+
+# 第一次安装/切到指定版本：先以 prompt 指定版本为准
+npm uninstall -g gitnexus
+npm install -g "$BOOTSTRAP_CLI_SPEC"
+
+GN="gitnexus"
 ```
 
 ## 一句话指令模板（给任意 agent）
@@ -46,13 +32,13 @@ fi
 把下面这句话直接发给 agent（URL 指向本文件的 raw 地址）：
 
 ```text
-严格按照 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
+严格按照 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收；先安装本次发布版本 @veewo/gitnexus@<VERSION>，再执行 setup 写入 config.json，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
 ```
 
 如果目标仓库已安装 GitNexus 且有 INSTALL-GUIDE 本地副本，可改为本地路径（替换为实际绝对路径）：
 
 ```text
-严格按照 <INSTALL-GUIDE.md 的绝对路径> 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
+严格按照 <INSTALL-GUIDE.md 的绝对路径> 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收；先安装本次发布版本 @veewo/gitnexus@<VERSION>，再执行 setup 写入 config.json，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
 ```
 
 > **注意**：不要使用 `/path/to/repo/INSTALL-GUIDE.md` 占位路径。必须替换为实际路径或直接使用上方 URL 版本。
@@ -71,16 +57,40 @@ fi
 
 ## 1. 安装与版本确认
 
+先区分两个阶段：
+
+- **阶段 A：首次安装 / 按 release prompt 切换到指定版本**
+  - 版本号来自当前 release prompt，例如 `@veewo/gitnexus@1.5.0`
+  - 这一步**不要先读** `~/.gitnexus/config.json`
+- **阶段 B：`setup` 完成之后**
+  - 才允许把 `~/.gitnexus/config.json` 当作后续 npx fallback 的版本源
+
+### 1.1 首次安装或切换到 release 指定版本
+
 在任意仓库内可执行：
 
 ```bash
+BOOTSTRAP_CLI_SPEC="@veewo/gitnexus@<VERSION>"
+
 npm uninstall -g gitnexus
-npm install -g "${GITNEXUS_CLI_SPEC}"
+npm install -g "$BOOTSTRAP_CLI_SPEC"
 
 which gitnexus
 gitnexus --version
 npm view @veewo/gitnexus version --registry=https://registry.npmjs.org
+GN="gitnexus"
+```
 
+通过标准：
+
+- `gitnexus --version` 等于本次 release prompt 指定版本
+- `which gitnexus` 指向当前有效的全局安装路径
+
+### 1.2 setup 完成后，如何从 config 恢复会话版本源
+
+仅在 `setup` 已经把目标版本写入 `~/.gitnexus/config.json` 之后，才使用下面这段逻辑：
+
+```bash
 if command -v gitnexus >/dev/null 2>&1; then
   GN="gitnexus"
 else
@@ -107,8 +117,8 @@ fi
 
 通过标准：
 
-- `gitnexus --version` 与 npm 最新版本一致（或符合团队指定版本）
-- `which gitnexus` 指向当前有效的全局安装路径
+- `setup` 后写入的 `cliPackageSpec` / `cliVersion` 与本次 release 指定版本一致
+- 后续 session 不会再回退到旧的 rc 版本
 
 ## 2. Setup（严格按 agent 选择执行）
 

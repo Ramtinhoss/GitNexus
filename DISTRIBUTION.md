@@ -256,7 +256,7 @@ Release body template:
 ### Agent 安装提示
 
 ```text
-严格按照 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
+严格按照 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收；先安装本次发布版本 @veewo/gitnexus@1.4.8，再执行 setup 写入 config.json，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
 ```
 
 ## English Release Notes
@@ -282,7 +282,7 @@ Release body template:
 ### Agent Install Prompt
 
 ```text
-Strictly follow https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md to complete first-time GitNexus installation, project-scoped setup, index build, and retrieval acceptance in the current repository; do not skip steps or bypass the guide's scope, sync-manifest, or C# define requirements.
+Strictly follow https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md to complete first-time GitNexus installation, project-scoped setup, index build, and retrieval acceptance in the current repository; install the release-pinned version @veewo/gitnexus@1.4.8 first, then run setup to write config.json; do not skip steps or bypass the guide's scope, sync-manifest, or C# define requirements.
 ```
 ```
 
@@ -291,7 +291,7 @@ Strictly follow https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nan
 Generic template:
 
 ```text
-严格按照 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
+严格按照 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收；先安装本次发布版本 @veewo/gitnexus@<VERSION>，再执行 setup 写入 config.json，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
 ```
 
 ## Definition of Done (DoD)
