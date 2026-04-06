@@ -256,7 +256,7 @@ Release body template:
 ### Agent 安装提示
 
 ```text
-阅读 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@1.4.8，请先确认 agent 类型，再检查 .gitnexus/sync-manifest.txt 是否已有 scope——若已有则优先复用，若不存在则必须先向用户确认"全量索引还是指定 scope"再执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
+严格按照 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
 ```
 
 ## English Release Notes
@@ -282,7 +282,7 @@ Release body template:
 ### Agent Install Prompt
 
 ```text
-Read https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md, then complete GitNexus installation, setup, index build, and retrieval acceptance in the current repository; if this release is pinned to @veewo/gitnexus@1.4.8, confirm the agent type first, then check whether .gitnexus/sync-manifest.txt already stores scope (reuse it when present; if absent, ask the user whether to do full or scoped indexing before proceeding), and ensure all npx fallbacks resolve through ~/.gitnexus/config.json.
+Strictly follow https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md to complete first-time GitNexus installation, project-scoped setup, index build, and retrieval acceptance in the current repository; do not skip steps or bypass the guide's scope, sync-manifest, or C# define requirements.
 ```
 ```
 
@@ -291,7 +291,7 @@ Read https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INS
 Generic template:
 
 ```text
-阅读 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md ，并在当前仓库完成 GitNexus 安装、setup、索引构建和检索验收；若本次发布固定版本为 @veewo/gitnexus@<VERSION>，请先确认 agent 类型，再检查 .gitnexus/sync-manifest.txt 是否已有 scope——若已有则优先复用，若不存在则必须先向用户确认"全量索引还是指定 scope"再执行，并确保所有 npx 回退都统一读取 ~/.gitnexus/config.json。
+严格按照 https://raw.githubusercontent.com/nantas/GitNexus/refs/heads/nantas-dev/INSTALL-GUIDE.md 在当前仓库完成 GitNexus 首次安装、project 级 setup、索引构建和检索验收，不要简化步骤，也不要绕过文档里的 scope / sync-manifest / C# define 要求。
 ```
 
 ## Definition of Done (DoD)
