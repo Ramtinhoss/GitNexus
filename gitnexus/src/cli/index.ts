@@ -35,6 +35,10 @@ program
   .option('--embeddings', 'Enable embedding generation for semantic search (off by default)')
   .option('--extensions <list>', 'Comma-separated file extensions to include (e.g. .cs,.ts)')
   .option('--repo-alias <name>', 'Override indexed repository name with a stable alias')
+  .option(
+    '--sync-manifest-policy <policy>',
+    'When CLI options differ from sync manifest directives: ask|update|keep|error (default: ask)',
+  )
   .option('--skills', 'Generate repo-specific skill files from detected communities')
   .option('-v, --verbose', 'Enable verbose ingestion warnings (default: false)')
   .option(

@@ -23,7 +23,7 @@ import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
 import { formatFallbackSummary, formatUnityDiagnosticsSummary, resolveFallbackStats } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
-import { resolveScopeManifestForAnalyze } from './sync-manifest.js';
+import { enforceSyncManifestConsistency, resolveScopeManifestForAnalyze, type SyncManifestPolicy } from './sync-manifest.js';
 import type { PipelineResult } from '../types/pipeline.js';
 import type { UnityParitySeed } from '../core/ingestion/unity-parity-seed.js';
 
@@ -60,6 +60,7 @@ export interface AnalyzeOptions {
   repoAlias?: string;
   scopeManifest?: string;
   scopePrefix?: string[];
+  syncManifestPolicy?: SyncManifestPolicy;
   reuseOptions?: boolean;
   skills?: boolean;
   verbose?: boolean;
@@ -142,6 +143,14 @@ export const analyzeCommand = async (
     const scopeManifest = await resolveScopeManifestForAnalyze(repoPath, {
       scopeManifest: options?.scopeManifest,
       scopePrefix: options?.scopePrefix,
+    });
+
+    await enforceSyncManifestConsistency({
+      manifestPath: scopeManifest,
+      extensions: options?.extensions,
+      repoAlias: options?.repoAlias,
+      embeddings: options?.embeddings,
+      policy: options?.syncManifestPolicy,
     });
 
     const effectiveOptions = await resolveEffectiveAnalyzeOptions({
