@@ -58,7 +58,7 @@ export async function benchmarkAgentContextCommand(
     }
     const analyzePath = path.resolve(options.targetPath);
     const analyzeOptions = {
-      extensions: options.extensions || '.cs',
+      extensions: options.extensions,
       repoAlias: options.repoAlias,
       scopeManifest: options.scopeManifest,
       scopePrefix: options.scopePrefix,

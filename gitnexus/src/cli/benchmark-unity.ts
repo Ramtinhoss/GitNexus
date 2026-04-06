@@ -34,7 +34,7 @@ export async function benchmarkUnityCommand(
     targetPath: options.targetPath,
     profile: profileConfig,
     reportDir: options.reportDir,
-    extensions: options.extensions || '.cs',
+    extensions: options.extensions,
     scopeManifest: options.scopeManifest,
     scopePrefix: options.scopePrefix,
     skipAnalyze: options.skipAnalyze ?? false,

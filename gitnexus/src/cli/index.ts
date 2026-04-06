@@ -183,7 +183,7 @@ program
   .option('--repo-alias <name>', 'Analyze-time repo alias and default evaluation repo when --repo is omitted')
   .option('--target-path <path>', 'Path to analyze before evaluation (required unless --skip-analyze)')
   .option('--report-dir <path>', 'Output directory for benchmark-report.json and benchmark-summary.md', '.gitnexus/benchmark')
-  .option('--extensions <list>', 'Analyze extension filter (default: .cs)', '.cs')
+  .option('--extensions <list>', 'Analyze extension filter (comma-separated, optional)')
   .option('--scope-manifest <path>', 'Analyze scope manifest file')
   .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
   .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
@@ -201,7 +201,7 @@ program
     'Output directory for benchmark-report.json and benchmark-summary.md',
     '.gitnexus/benchmark-agent-context',
   )
-  .option('--extensions <list>', 'Analyze extension filter (default: .cs)', '.cs')
+  .option('--extensions <list>', 'Analyze extension filter (comma-separated, optional)')
   .option('--scope-manifest <path>', 'Analyze scope manifest file')
   .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
   .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')

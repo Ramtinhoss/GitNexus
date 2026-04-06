@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 
 export interface AnalyzeRunOptions {
-  extensions: string;
+  extensions?: string;
   repoAlias?: string;
   scopeManifest?: string;
   scopePrefix?: string[];
@@ -23,10 +23,12 @@ export function buildAnalyzeArgs(repoPath: string, options: AnalyzeRunOptions): 
     'dist/cli/index.js',
     'analyze',
     '--force',
-    '--extensions',
-    options.extensions,
-    repoPath,
   ];
+
+  if (options.extensions !== undefined) {
+    args.push('--extensions', options.extensions);
+  }
+  args.push(repoPath);
 
   if (options.repoAlias) {
     args.push('--repo-alias', options.repoAlias);
