@@ -5,7 +5,25 @@ description: "Use when the user needs to run GitNexus CLI commands like analyze/
 
 # GitNexus CLI Commands
 
-Use one command alias in the session so every CLI/MCP call stays on one version line. After `setup`, treat `~/.gitnexus/config.json` as the only npx version source.
+Use one command alias in the session so every CLI/MCP call stays on one version line. After `setup`, use `~/.gitnexus/config.json` as the CLI package spec source (`cliPackageSpec` first, then `cliVersion`). MCP wiring and skill install locations are scope-dependent (`project` vs `global`).
+
+### setup — choose scope explicitly
+
+```bash
+gitnexus setup --scope project --agent codex --cli-spec @veewo/gitnexus@<version>
+```
+
+Rules:
+
+- If user asks "setup this repository" / "本仓库 setup", use `--scope project`.
+- `--scope project` updates repo-local files:
+  - Codex MCP config: `.codex/config.toml`
+  - Skills: `.agents/skills/gitnexus/`
+- `--scope global` updates user-global files:
+  - Codex MCP config: `~/.codex/config.toml`
+  - Skills: `~/.agents/skills/gitnexus/`
+- `--scope global` does not overwrite repo-local `.agents/skills` or `.codex/config.toml`.
+- Never rely on setup defaults for scope; pass `--scope` explicitly to avoid global/project mismatch.
 
 ```bash
 if command -v gitnexus >/dev/null 2>&1; then

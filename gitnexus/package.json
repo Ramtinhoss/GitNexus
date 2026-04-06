@@ -37,7 +37,7 @@
     "vendor"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc",
+    "build": "rm -rf dist && tsc && chmod +x dist/cli/index.js",
     "dev": "tsx watch src/cli/index.ts",
     "test": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
