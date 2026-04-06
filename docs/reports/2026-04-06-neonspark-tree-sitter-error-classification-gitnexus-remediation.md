@@ -110,3 +110,127 @@
 - 容器扩展可能带来过匹配，需要新增规则侧约束与回归测试。
 
 建议先在 neonspark scope 做 A/B 回放，再全仓默认开启。
+
+---
+
+## 6. 复验结论（2026-04-06 二次审计）
+
+复验基于本地已修复源码重新执行，覆盖单测/集成测试、`analyze` 实仓回放、tree-sitter 审计重跑与分类复判。
+
+### 6.1 建议 2（C# 预处理归一化）结论
+
+状态：**通过（显著改善）**
+
+- neonspark `analyze`（带 `--csharp-define-csproj /Volumes/Shuttle/projects/neonspark/Assembly-CSharp.csproj`）成功。
+- runtime 摘要输出：
+  - `CSharp Preproc: defines=165, normalized=1370, fallback=2, skipped=6606, exprErrors=874`
+- 全量 `.cs`（8070 文件）对比：
+  - raw `root_has_error`: **161**
+  - normalized+fallback 最终 `root_has_error`: **5**
+- 重点样本：
+  - `Assets/NEON/Code/Game/Input/LocalPlayerInput.cs`: `true -> false`
+  - `Packages/com.veewo.stat/Runtime/Stat.cs`: `true -> false`
+  - `Assets/Plugins/FMOD/src/StudioEventEmitter.cs`: `true -> false`
+
+证据：
+
+- `.gitnexus/reports/tree-sitter-audit/ts-audit-20260406092647-recheck/preproc-effect-summary.json`
+- `.gitnexus/reports/tree-sitter-audit/ts-audit-20260406092647-recheck/sample-raw-vs-normalized.json`
+
+### 6.2 建议 3（container-aware 分类口径）结论
+
+状态：**通过**
+
+- 复跑审计得到历史口径原始计数：
+  - `parse_throw=0`, `root_has_error=161`, `missing_class_with_methods=176`
+- 使用新分类器复判后：
+  - `missing_container_with_methods=0`
+  - `missing_class_with_methods=176` 仅作为 `compatibility_tags`
+  - `falsePositiveLikely=173`
+- interface-heavy 样本 `Assets/Plugins/WeGameSDK/rail_game_server.cs`：
+  - `classified_error_type=ok`
+  - `compatibility_tags=["missing_class_with_methods"]`
+
+证据：
+
+- `.gitnexus/reports/tree-sitter-audit/ts-audit-20260406092647-recheck/classification.json`
+
+### 6.3 建议 4（runtime 容器扩展）结论
+
+状态：**通过**
+
+- `unity.enableContainerNodes` 默认值为 `false`（保持基线）。
+- `applyUnityRuntimeBindingRules` 已按开关扩展容器集合：
+  - off: `Class`
+  - on: `Class|Struct|Interface|Record`
+- 回归测试通过：
+  - `enableContainerNodes=false` 不注入新增边
+  - `enableContainerNodes=true` 命中 struct/interface 并注入 `unity-rule-method-bridge:*`
+
+证据：
+
+- `gitnexus/src/core/config/unity-config.ts`
+- `gitnexus/src/core/ingestion/unity-runtime-binding-rules.ts`
+- `gitnexus/test/unit/unity-runtime-binding-rules.test.ts`
+
+结论汇总：
+
+- 建议 2：**已解决（剩余 5 个文件，见下一节）**
+- 建议 3：**已解决**
+- 建议 4：**已解决**
+
+---
+
+## 7. 剩余 5 个 `root_has_error` 文件分析
+
+剩余文件列表（normalized+fallback 后）：
+
+1. `Assets/Plugins/Sirenix/Odin Inspector/Modules/Unity.Addressables/Validators/AssetLabelReferenceValidator.cs`
+2. `Assets/Plugins/Mirror/Runtime/NetworkReader.cs`
+3. `Assets/Plugins/Mirror/Runtime/NetworkWriter.cs`
+4. `Assets/NEON/Code/Framework/InGameConsole_ScriptRegister.cs`
+5. `Assets/GameAnalytics/Plugins/Scripts/Setup/Settings.cs`
+
+分析产物：
+
+- `.gitnexus/reports/tree-sitter-audit/ts-audit-20260406092647-recheck/remaining-error-analysis.json`
+
+### 7.1 文件级结论
+
+1) Sirenix `AssetLabelReferenceValidator.cs`
+- normalized 后仍报错，错误锚点集中在：
+  - `required = true;`
+  - `required = requiredAttr != null;`
+- 判断：更像是 grammar 在该上下文对标识符/表达式恢复失败（非 preproc 分支拼接问题）。
+
+2) Mirror `NetworkReader.cs`
+- 主要锚点在 unsafe 泛型指针表达式：
+  - `value = *(T*)ptr;`
+- 判断：属于 `unsafe + pointer cast + generic T` 语法形态兼容性问题（非 preproc 主因）。
+
+3) Mirror `NetworkWriter.cs`
+- 主要锚点：
+  - `*(T*)ptr = value;`
+- 判断：同上，属于 tree-sitter-c-sharp 对该类 unsafe 写法的解析盲点。
+
+4) `InGameConsole_ScriptRegister.cs`
+- preproc 归一化后，原先 `#if/#endif` 相关错误已消失，仅剩：
+  - `var msg = $"";`
+- 判断：主问题已由 preproc 修复收敛，剩余为单点语法解析问题（疑似 grammar 对空插值字符串恢复不稳）。
+
+5) GameAnalytics `Settings.cs`
+- 锚点为类型体中的孤立分号：
+  - `;`（两处）
+- raw 中曾出现平台枚举列表错误，但 normalized 后已消失。
+- 判断：剩余问题与 empty declaration（孤立分号）处理相关，非 preproc 主因。
+
+### 7.2 风险与建议
+
+- 风险面：5/8070（约 0.06%），且 4/5 位于第三方插件目录（Sirenix/Mirror/GameAnalytics）。
+- 对 GitNexus runtime/process 的当前影响：相较修复前已显著收敛，不再是系统性 preproc 失败。
+
+建议：
+
+1. 对第三方插件路径维持“低优先级已知解析噪声”策略，避免阻塞主链路验收。
+2. 为 `unsafe pointer cast` 与 `empty declaration` 追加最小复现语料到 grammar 回归测试集。
+3. 在后续 tree-sitter-c-sharp 升级窗口，优先验证这 5 个文件是否自然消失。
