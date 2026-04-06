@@ -74,17 +74,21 @@ export async function enforceSyncManifestConsistency(
   if (!input.manifestPath) {
     return { decision: 'none', diff: [] };
   }
+  ensureConcreteManifestPath(input.manifestPath);
 
   const raw = await fs.readFile(input.manifestPath, 'utf-8');
   const parsed = parseScopeManifestConfig(raw);
   const normalizedDirectives = normalizeManifestDirectives(parsed.directives);
   const diff = computeDiff(normalizedDirectives, input);
+  const policy = normalizePolicy(input.policy);
 
   if (diff.length === 0) {
+    if (policy === 'update') {
+      throw new Error('Sync manifest rewrite requires non-empty diff entries.');
+    }
     return { decision: 'none', diff };
   }
 
-  const policy = normalizePolicy(input.policy);
   const decision = await resolveDecision(policy, diff, input.stdinIsTTY, input.prompt);
 
   if (decision === 'update') {
@@ -173,7 +177,11 @@ async function resolveDecision(
     throw new Error(`${formatMismatchHeader()}\n${formatDiff(diff)}`);
   }
 
-  const interactive = stdinIsTTY ?? Boolean(process.stdin.isTTY);
+  if (stdinIsTTY === undefined) {
+    throw new Error('TTY prompt branch requires concrete stdin.isTTY evidence.');
+  }
+
+  const interactive = stdinIsTTY;
   if (!interactive) {
     throw new Error(
       `${formatMismatchHeader()}\n${formatDiff(diff)}\n` +
@@ -250,5 +258,20 @@ async function defaultPrompt(message: string): Promise<'update' | 'keep'> {
     return /^y(es)?$/i.test(answer.trim()) ? 'update' : 'keep';
   } finally {
     rl.close();
+  }
+}
+
+function ensureConcreteManifestPath(manifestPath: string): void {
+  const normalized = manifestPath.trim();
+  if (!normalized) {
+    throw new Error('Invalid placeholder manifest path: empty value.');
+  }
+
+  if (
+    /placeholder/i.test(normalized) ||
+    /<\s*path\s*>/i.test(normalized) ||
+    /todo/i.test(normalized)
+  ) {
+    throw new Error(`Invalid placeholder manifest path: ${manifestPath}`);
   }
 }

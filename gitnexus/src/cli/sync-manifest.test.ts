@@ -74,3 +74,60 @@ test('policy=update rewrites manifest with normalized directives', async () => {
     ['Assets', 'Packages', '@extensions=.ts,.tsx', '@repoAlias=demo-repo', '@embeddings=true', ''].join('\n'),
   );
 });
+
+test('rejects placeholder manifest path values', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-sync-manifest-placeholder-'));
+  const manifestPath = path.join(tmpDir, '.gitnexus', 'sync-manifest-placeholder.txt');
+  await writeManifest(
+    manifestPath,
+    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=demo-repo', '@embeddings=false'].join('\n'),
+  );
+
+  await assert.rejects(
+    enforceSyncManifestConsistency({
+      manifestPath,
+      extensions: '.ts',
+      policy: 'keep',
+    }),
+    /placeholder manifest path/i,
+  );
+});
+
+test('TTY prompt branch requires concrete stdin.isTTY evidence', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-sync-manifest-tty-evidence-'));
+  const manifestPath = path.join(tmpDir, '.gitnexus', 'sync-manifest.txt');
+  await writeManifest(
+    manifestPath,
+    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=demo-repo', '@embeddings=false'].join('\n'),
+  );
+
+  await assert.rejects(
+    enforceSyncManifestConsistency({
+      manifestPath,
+      extensions: '.ts',
+      policy: 'ask',
+      prompt: async () => 'keep',
+    }),
+    /stdin\.isTTY evidence/i,
+  );
+});
+
+test('manifest rewrite requires non-empty diff entries', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-sync-manifest-noop-'));
+  const manifestPath = path.join(tmpDir, '.gitnexus', 'sync-manifest.txt');
+  await writeManifest(
+    manifestPath,
+    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=demo-repo', '@embeddings=false'].join('\n'),
+  );
+
+  await assert.rejects(
+    enforceSyncManifestConsistency({
+      manifestPath,
+      extensions: '.cs,.meta',
+      repoAlias: 'demo-repo',
+      embeddings: false,
+      policy: 'update',
+    }),
+    /non-empty diff/i,
+  );
+});

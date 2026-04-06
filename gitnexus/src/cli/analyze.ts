@@ -151,6 +151,7 @@ export const analyzeCommand = async (
       repoAlias: options?.repoAlias,
       embeddings: options?.embeddings,
       policy: options?.syncManifestPolicy,
+      stdinIsTTY: Boolean(process.stdin.isTTY),
     });
 
     const effectiveOptions = await resolveEffectiveAnalyzeOptions({
