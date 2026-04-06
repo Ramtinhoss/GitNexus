@@ -32,6 +32,9 @@ test('when explicit CLI values differ from manifest, TTY mode asks whether to up
 
   assert.equal(result.decision, 'keep');
   assert.match(promptMessage, /@extensions/i);
+  assert.match(promptMessage, /sync-manifest\.txt/i);
+  assert.match(promptMessage, /update/i);
+  assert.match(promptMessage, /keep/i);
 });
 
 test('non-TTY without explicit policy exits with actionable error', async () => {

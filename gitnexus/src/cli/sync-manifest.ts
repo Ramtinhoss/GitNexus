@@ -89,7 +89,13 @@ export async function enforceSyncManifestConsistency(
     return { decision: 'none', diff };
   }
 
-  const decision = await resolveDecision(policy, diff, input.stdinIsTTY, input.prompt);
+  const decision = await resolveDecision(
+    policy,
+    input.manifestPath,
+    diff,
+    input.stdinIsTTY,
+    input.prompt,
+  );
 
   if (decision === 'update') {
     const nextDirectives = mergeDirectivesForUpdate(normalizedDirectives, input);
@@ -168,13 +174,14 @@ function computeDiff(
 
 async function resolveDecision(
   policy: SyncManifestPolicy,
+  manifestPath: string,
   diff: SyncManifestDiffEntry[],
   stdinIsTTY: boolean | undefined,
   prompt: ((message: string) => Promise<'update' | 'keep'>) | undefined,
 ): Promise<'update' | 'keep'> {
   if (policy === 'update' || policy === 'keep') return policy;
   if (policy === 'error') {
-    throw new Error(`${formatMismatchHeader()}\n${formatDiff(diff)}`);
+    throw new Error(`${formatMismatchHeader(manifestPath)}\n${formatDiff(diff)}`);
   }
 
   if (stdinIsTTY === undefined) {
@@ -184,13 +191,19 @@ async function resolveDecision(
   const interactive = stdinIsTTY;
   if (!interactive) {
     throw new Error(
-      `${formatMismatchHeader()}\n${formatDiff(diff)}\n` +
+      `${formatMismatchHeader(manifestPath)}\n${formatDiff(diff)}\n` +
       'Non-interactive mode requires --sync-manifest-policy ask|update|keep|error.',
     );
   }
 
   const promptFn = prompt || defaultPrompt;
-  return promptFn(`${formatMismatchHeader()}\n${formatDiff(diff)}`);
+  return promptFn(
+    [
+      formatMismatchHeader(manifestPath),
+      formatDiff(diff),
+      'Choose: update (rewrite sync-manifest) or keep (continue without rewrite).',
+    ].join('\n'),
+  );
 }
 
 function mergeDirectivesForUpdate(
@@ -241,8 +254,8 @@ function normalizeEmbeddings(raw?: string): string | undefined {
   throw new Error(`Invalid @embeddings directive value: ${raw}. Expected true or false.`);
 }
 
-function formatMismatchHeader(): string {
-  return 'Explicit analyze options differ from sync manifest directives.';
+function formatMismatchHeader(manifestPath: string): string {
+  return `Explicit analyze options differ from sync manifest directives: ${manifestPath}`;
 }
 
 function formatDiff(diff: SyncManifestDiffEntry[]): string {
