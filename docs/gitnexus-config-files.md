@@ -77,6 +77,13 @@ Rules:
   - `@embeddings=<true|false>` (equivalent to `--embeddings`)
 - Unknown directives must fail fast with explicit error (no silent ignore).
 - If the same directive appears multiple times, the last one wins.
+- When `.gitnexus/sync-manifest.txt` exists and analyze is called without `--scope-manifest` and without `--scope-prefix`, CLI auto-uses this default manifest path.
+- When explicit CLI values (`--extensions`, `--repo-alias`, `--embeddings`) differ from manifest directives, CLI applies `--sync-manifest-policy` (`ask|update|keep|error`, default `ask`):
+  - `ask`: TTY prompt asks whether to update manifest
+  - `update`: rewrite directives deterministically
+  - `keep`: keep manifest unchanged and continue
+  - `error`: fail immediately with actionable drift summary
+- In non-interactive mode, `ask` fails with an actionable error requiring explicit policy selection.
 
 ### Runtime Claim Bootstrap (current)
 
@@ -100,6 +107,7 @@ Rules:
    2. manifest directives from `--scope-manifest` (`@extensions`, `@repoAlias`, `@embeddings`, plus scope lines)
    3. `<repo>/.gitnexus/meta.json.analyzeOptions` when `reuseOptions !== false`
    4. built-in defaults
+   5. default manifest auto-discovery path: `.gitnexus/sync-manifest.txt` is treated as `--scope-manifest` only when no scope option is explicitly provided
 2. For direct tool commands, when `--repo` is missing:
    1. use `<repo>/.gitnexus/meta.json.repoId`
    2. fallback to `~/.gitnexus/registry.json` path match

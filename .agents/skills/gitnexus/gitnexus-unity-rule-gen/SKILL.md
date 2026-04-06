@@ -28,7 +28,7 @@ mcp__gitnexus__cypher:
 如果这两种边不存在，说明索引时未启用 Unity 资源解析，需要重新 analyze，**必须加 Unity 参数**：
 
 ```bash
-gitnexus analyze --force --extensions ".cs .meta"
+gitnexus analyze --force --extensions ".cs,.meta"
 # 如果所有代码都在 Assets/ 下，可加 --scope-prefix Assets/ 缩短分析时间
 ```
 
@@ -59,7 +59,7 @@ loop:
 | 目标入口方法 | 加载的资源上哪些方法会被触发？ | OnEnable, Awake |
 | 持有字段的类 | 哪些类持有触发加载的字段？ | WeaponPowerUp |
 | 加载方法 | 哪些方法触发资源加载？ | Equip |
-| 动态跳转 | 链路中是否有静态分析无法解析的间接调用？ | 事件派发 `NetEventHub.OnPickUpItem → OnClientPickItUp`；条件分支多态 `if (isX) handler = new A()` 后 `handler.Run()` |
+| 动态跳转 | 链路中是否有事件派发或回调（C# Action/SyncList/delegate）？ | `NetEventHub.OnPickUpItem → OnClientPickItUp` |
 | 额外 lifecycle | 项目有自定义入口方法吗？ | Init |
 | lifecycle 范围 | 自定义入口方法的作用范围？ | Assets/Code/Graph |
 
@@ -113,7 +113,7 @@ Grep: pattern="void Init\b|void Setup\b" path=<Assets目录>
 | asset GUID 引用 → 目标资源组件激活 | `asset_ref_loads_components` | 序列化字段引用 asset，加载时触发组件 lifecycle |
 | 方法调用 → 字段引用的资源加载 | `method_triggers_field_load` | 特定方法触发序列化字段引用的资源加载 |
 | 方法调用 → SceneManager.LoadScene → 场景组件激活 | `method_triggers_scene_load` | 特定方法触发场景加载，场景中组件 lifecycle 被触发 |
-| 静态分析无法解析的间接调用（调用目标在编译期不确定） | `method_triggers_method` | 声明"方法 A 在运行时触发方法 B"，注入合成 CALLS 边桥接 gap |
+| 动态跳转（事件派发/回调/delegate，静态分析不可见） | `method_triggers_method` | 声明"方法 A 动态触发方法 B"，注入合成 CALLS 边桥接 gap |
 | 项目自定义入口方法 | `lifecycle_overrides` | 非标准 Unity lifecycle 的自定义入口 |
 
 ### 1.5 生成规则 YAML
@@ -126,7 +126,7 @@ version: 2.0.0
 family: analyze_rules
 description: >-
   （可选）描述该规则覆盖的业务场景和调用链背景，
-  包括间接调用的机制说明（事件派发/回调/条件分支多态等）。
+  包括动态跳转的机制说明（事件派发/回调绑定等）。
 trigger_family: <scenario-name>
 resource_types:
   - asset
@@ -170,19 +170,14 @@ resource_bindings:
       - Start
       - OnEnable
 
-  # 类型 D（可选）：声明静态分析无法解析的间接调用
-  # 适用场景：
-  #   - 事件派发：C# Action/UnityEvent/delegate 的 Invoke()
-  #   - 回调注册：Mirror SyncList.Callback、Observer 模式
-  #   - 条件分支多态：if/switch 决定实际调用目标（状态机、策略模式）
-  #   - 虚方法分派：接口/基类引用调用，实际类型由运行时条件决定
+  # 类型 D（可选）：声明静态分析无法捕获的动态跳转（事件派发/回调/delegate）
+  # 适用场景：C# Action/UnityEvent 事件派发、Mirror SyncList 回调、delegate 绑定等
   # 注入一条 source_method → target_method 的合成 CALLS 边（精确匹配，一条边）
   - kind: method_triggers_method
     description: >-
-      说明间接调用的机制。例如：
-      "A 通过 EventHub.OnXxx?.Invoke() 触发，B 在初始化时订阅该事件"；
-      "if (isServer) 分支中 handler 实际类型为 ConcreteHandler，
-      后续 handler.Run() 实际调用 ConcreteHandler.Run()"
+      说明动态跳转的机制：例如"A 通过 EventHub.OnXxx?.Invoke() 触发，
+      B 在初始化时订阅该事件"，或"A 调用 SyncList.Add()，
+      触发 SyncList.Callback 回调到 B"
     source_class_pattern: "<source_class_regex>"   # 例如 "^PlayerActor$"
     source_method: "<source_method_name>"           # 例如 "ProcessInteractables"
     target_class_pattern: "<target_class_regex>"   # 例如 "^NetPlayer$"
@@ -259,7 +254,7 @@ gitnexus rule-lab compile --repo-path "$TARGET_REPO"
 ### 2.4 重建索引
 
 ```bash
-gitnexus analyze "$TARGET_REPO" --force --extensions ".cs .meta"
+gitnexus analyze "$TARGET_REPO" --force --extensions ".cs,.meta"
 # 如果所有代码都在 Assets/ 下，可加 --scope-prefix Assets/
 ```
 
@@ -344,7 +339,7 @@ mcp__gitnexus__cypher:
 | 验证 2 失败（rule_not_matched） | trigger_tokens 未匹配查询文本 | 调整 match.trigger_tokens |
 | 验证 2 失败（verification_failed） | 合成边 reason 中的 ruleId 不匹配 | 检查规则 ID 一致性 |
 | 验证 3 失败（无 Process） | 合成边 confidence 过低 | 检查 RULE_EDGE_CONFIDENCE（应为 0.75） |
-| 验证 4 链路断裂（中间有间接调用） | 事件派发/回调/条件分支多态/虚方法分派无静态 CALLS 边 | 添加 `method_triggers_method` binding 桥接间接调用 |
+| 验证 4 链路断裂（中间有动态跳转） | 事件派发/回调/delegate 无静态 CALLS 边 | 添加 `method_triggers_method` binding 桥接动态跳转 |
 | lifecycle_overrides 无效 | scope 值不是文件路径前缀 | scope 应匹配 filePath 而非类名 |
 
 ---

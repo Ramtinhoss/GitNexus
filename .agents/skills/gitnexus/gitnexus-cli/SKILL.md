@@ -46,16 +46,19 @@ Run from the project root. This parses all source files, builds the knowledge gr
 | -------------------------- | ----------------------------------------------------------------------------------------- |
 | `--force`                  | Force full re-index even if up to date                                                    |
 | `--embeddings`             | Enable embedding generation for semantic search (off by default)                          |
-| `--extensions <ext>`       | Limit parsing to specific file types (e.g., `--extensions ".cs .meta"` for Unity)        |
+| `--extensions <ext>`       | Limit parsing to specific file types (comma-separated, e.g., `--extensions ".cs,.meta"`) |
 | `--scope-prefix <prefix>`  | Limit analysis to a path prefix (e.g., `--scope-prefix Assets/` for Unity)               |
 | `--scope-manifest <file>`  | Read scope rules from a manifest file (e.g., `.gitnexus/sync-manifest.txt`)              |
+| `--sync-manifest-policy <policy>` | Drift policy when explicit CLI values differ from manifest directives: `ask|update|keep|error` |
 | `--skills`                 | Generate repo-specific skill files from detected code communities                         |
 
-**Scope manifest syntax:** Each line is a **path prefix** (not glob). `Assets/Code` matches all files under `Assets/Code/`. Trailing `*` is a wildcard prefix (`Packages/com.veewo.*` matches `Packages/com.veewo.stat/...`). Lines starting with `#` are comments. Do **not** use glob patterns like `**/*.cs` — they will match nothing. Use `--extensions` for file type filtering instead.
+**Scope manifest syntax:** Non-`@` lines are path-prefix scope rules (same semantics as before). `@key=value` directives set analyze options: `@extensions=<csv>`, `@repoAlias=<name>`, `@embeddings=<true|false>`. Unknown directives fail fast.
+
+**Defaulting + drift guard:** If `.gitnexus/sync-manifest.txt` exists and you do not pass `--scope-manifest`/`--scope-prefix`, analyze auto-uses that file. When explicit CLI values (`--extensions`, `--repo-alias`, `--embeddings`) differ from manifest directives, CLI follows `--sync-manifest-policy` (default `ask`; non-TTY requires explicit policy).
 
 **When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale. In Claude Code, a PostToolUse hook runs `analyze` automatically after `git commit` and `git merge`, preserving embeddings if previously generated.
 
-**Unity projects:** Add `--extensions ".cs .meta"` to ensure Unity asset edges (`UNITY_ASSET_GUID_REF`, `UNITY_COMPONENT_INSTANCE`) are parsed. Add `--scope-prefix Assets/` to limit scope if all code lives under `Assets/`.
+**Unity projects:** Add `--extensions ".cs,.meta"` to ensure Unity asset edges (`UNITY_ASSET_GUID_REF`, `UNITY_COMPONENT_INSTANCE`) are parsed. Add `--scope-prefix Assets/` to limit scope if all code lives under `Assets/`.
 
 ### status — Check index freshness
 

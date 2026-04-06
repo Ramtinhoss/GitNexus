@@ -28,7 +28,7 @@ mcp__gitnexus__cypher:
 如果这两种边不存在，说明索引时未启用 Unity 资源解析，需要重新 analyze，**必须加 Unity 参数**：
 
 ```bash
-gitnexus analyze --force --extensions ".cs .meta"
+gitnexus analyze --force --extensions ".cs,.meta"
 # 如果所有代码都在 Assets/ 下，可加 --scope-prefix Assets/ 缩短分析时间
 ```
 
@@ -254,7 +254,7 @@ gitnexus rule-lab compile --repo-path "$TARGET_REPO"
 ### 2.4 重建索引
 
 ```bash
-gitnexus analyze "$TARGET_REPO" --force --extensions ".cs .meta"
+gitnexus analyze "$TARGET_REPO" --force --extensions ".cs,.meta"
 # 如果所有代码都在 Assets/ 下，可加 --scope-prefix Assets/
 ```
 

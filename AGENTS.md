@@ -12,7 +12,7 @@
 > If step 1 warns the index is stale, ask user whether to rebuild index via `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` (`cliPackageSpec` first, then `cliVersion`) and run `npx -y @veewo/gitnexus@1.5.0-rc.4 analyze` with that exact package spec (it reuses previous analyze scope/options by default; add `--no-reuse-options` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
 
 > **When you must read `docs/gitnexus-config-files.md`:**
-> 1. Any task touching `gitnexus analyze` options (`--scope-manifest`, `--scope-prefix`, `--extensions`, `--repo-alias`, `--no-reuse-options`, `--embeddings`)
+> 1. Any task touching `gitnexus analyze` options (`--scope-manifest`, `--scope-prefix`, `--extensions`, `--repo-alias`, `--sync-manifest-policy`, `--no-reuse-options`, `--embeddings`)
 > 2. Any task touching `.gitnexus/` config/state files (`sync-manifest.txt`, `meta.json`, `unity-parity-seed.json`, `rules/**`)
 > 3. Any task changing config precedence/ownership semantics (CLI vs manifest vs `meta.json`)
 
