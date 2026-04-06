@@ -9,6 +9,7 @@ import {
   resolveAnalyzeScopeRules,
   resolveEffectiveAnalyzeOptions,
 } from './analyze-options.js';
+import { parseScopeManifestConfig } from './scope-manifest-config.js';
 
 test('parseExtensionList normalizes dot prefixes', () => {
   const exts = parseExtensionList('cs,.ts, go ');
@@ -168,4 +169,25 @@ test('resolveEffectiveAnalyzeOptions rejects unknown manifest directives', async
     resolveEffectiveAnalyzeOptions({ scopeManifest: manifestPath }),
     /unknown manifest directive/i,
   );
+});
+
+test('parseScopeManifestConfig splits scope rules and directives', () => {
+  const parsed = parseScopeManifestConfig(
+    [
+      '# comment',
+      'Assets/',
+      'Packages/com.veewo.*',
+      '',
+      '@extensions=.cs,.meta',
+      '@repoAlias=demo-repo',
+      '@embeddings=false',
+    ].join('\n'),
+  );
+
+  assert.deepEqual(parsed.scopeRules, ['Assets', 'Packages/com.veewo.*']);
+  assert.deepEqual(parsed.directives, {
+    extensions: '.cs,.meta',
+    repoAlias: 'demo-repo',
+    embeddings: 'false',
+  });
 });
