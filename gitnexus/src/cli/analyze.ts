@@ -23,6 +23,7 @@ import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
 import { formatFallbackSummary, formatUnityDiagnosticsSummary, resolveFallbackStats } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
+import { resolveScopeManifestForAnalyze } from './sync-manifest.js';
 import type { PipelineResult } from '../types/pipeline.js';
 import type { UnityParitySeed } from '../core/ingestion/unity-parity-seed.js';
 
@@ -138,9 +139,14 @@ export const analyzeCommand = async (
   let repoAlias: string | undefined;
   let embeddingsEnabled = false;
   try {
+    const scopeManifest = await resolveScopeManifestForAnalyze(repoPath, {
+      scopeManifest: options?.scopeManifest,
+      scopePrefix: options?.scopePrefix,
+    });
+
     const effectiveOptions = await resolveEffectiveAnalyzeOptions({
       extensions: options?.extensions,
-      scopeManifest: options?.scopeManifest,
+      scopeManifest,
       scopePrefix: options?.scopePrefix,
       repoAlias: options?.repoAlias,
       embeddings: options?.embeddings,
