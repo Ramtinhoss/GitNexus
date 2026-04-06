@@ -23,6 +23,12 @@ export interface WorkerExtractedData {
   constructorBindings: FileConstructorBindings[];
 }
 
+export interface ParsingFileInput {
+  path: string;
+  content: string;
+  rawContent?: string;
+}
+
 // isNodeExported imported from ./export-detection.js (shared module)
 // Re-export for backward compatibility with any external consumers
 export { isNodeExported } from './export-detection.js';
@@ -33,17 +39,24 @@ export { isNodeExported } from './export-detection.js';
 
 const processParsingWithWorkers = async (
   graph: KnowledgeGraph,
-  files: { path: string; content: string }[],
+  files: ParsingFileInput[],
   symbolTable: SymbolTable,
   astCache: ASTCache,
   workerPool: WorkerPool,
   onFileProgress?: FileProgressCallback,
+  onRawFallbackParse?: (count: number) => void,
 ): Promise<WorkerExtractedData> => {
   // Filter to parseable files only
   const parseableFiles: ParseWorkerInput[] = [];
   for (const file of files) {
     const lang = getLanguageFromFilename(file.path);
-    if (lang) parseableFiles.push({ path: file.path, content: file.content });
+    if (lang) {
+      parseableFiles.push({
+        path: file.path,
+        content: file.content,
+        ...(file.rawContent ? { rawContent: file.rawContent } : {}),
+      });
+    }
   }
 
   if (parseableFiles.length === 0) return { imports: [], calls: [], heritage: [], routes: [], constructorBindings: [] };
@@ -64,6 +77,7 @@ const processParsingWithWorkers = async (
   const allHeritage: ExtractedHeritage[] = [];
   const allRoutes: ExtractedRoute[] = [];
   const allConstructorBindings: FileConstructorBindings[] = [];
+  let rawFallbackCount = 0;
   for (const result of chunkResults) {
     for (const node of result.nodes) {
       graph.addNode({
@@ -90,7 +104,10 @@ const processParsingWithWorkers = async (
     allHeritage.push(...result.heritage);
     allRoutes.push(...result.routes);
     allConstructorBindings.push(...result.constructorBindings);
+    rawFallbackCount += result.csharpPreprocFallbackFiles;
   }
+
+  if (rawFallbackCount > 0) onRawFallbackParse?.(rawFallbackCount);
 
   // Merge and log skipped languages from workers
   const skippedLanguages = new Map<string, number>();
@@ -117,10 +134,11 @@ const processParsingWithWorkers = async (
 
 const processParsingSequential = async (
   graph: KnowledgeGraph,
-  files: { path: string; content: string }[],
+  files: ParsingFileInput[],
   symbolTable: SymbolTable,
   astCache: ASTCache,
-  onFileProgress?: FileProgressCallback
+  onFileProgress?: FileProgressCallback,
+  onRawFallbackParse?: (count: number) => void,
 ) => {
   const parser = await loadParser();
   const total = files.length;
@@ -155,9 +173,31 @@ const processParsingSequential = async (
     let tree;
     try {
       tree = parseContent(file.content);
-    } catch (parseError) {
-      console.warn(`Skipping unparseable file: ${file.path}`);
-      continue;
+    } catch {
+      if (file.rawContent && file.rawContent !== file.content) {
+        try {
+          tree = parseContent(file.rawContent);
+          onRawFallbackParse?.(1);
+        } catch {
+          console.warn(`Skipping unparseable file: ${file.path}`);
+          continue;
+        }
+      } else {
+        console.warn(`Skipping unparseable file: ${file.path}`);
+        continue;
+      }
+    }
+
+    if (file.rawContent && file.rawContent !== file.content && tree.rootNode?.hasError) {
+      try {
+        const rawTree = parseContent(file.rawContent);
+        if (!rawTree.rootNode?.hasError) {
+          tree = rawTree;
+          onRawFallbackParse?.(1);
+        }
+      } catch {
+        // Keep normalized parse result when raw fallback fails
+      }
     }
 
     astCache.set(file.path, tree);
@@ -324,21 +364,22 @@ const processParsingSequential = async (
 
 export const processParsing = async (
   graph: KnowledgeGraph,
-  files: { path: string; content: string }[],
+  files: ParsingFileInput[],
   symbolTable: SymbolTable,
   astCache: ASTCache,
   onFileProgress?: FileProgressCallback,
   workerPool?: WorkerPool,
+  onRawFallbackParse?: (count: number) => void,
 ): Promise<WorkerExtractedData | null> => {
   if (workerPool) {
     try {
-      return await processParsingWithWorkers(graph, files, symbolTable, astCache, workerPool, onFileProgress);
+      return await processParsingWithWorkers(graph, files, symbolTable, astCache, workerPool, onFileProgress, onRawFallbackParse);
     } catch (err) {
       console.warn('Worker pool parsing failed, falling back to sequential:', err instanceof Error ? err.message : err);
     }
   }
 
   // Fallback: sequential parsing (no pre-extracted data)
-  await processParsingSequential(graph, files, symbolTable, astCache, onFileProgress);
+  await processParsingSequential(graph, files, symbolTable, astCache, onFileProgress, onRawFallbackParse);
   return null;
 };

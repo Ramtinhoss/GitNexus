@@ -155,12 +155,14 @@ export interface ParseWorkerResult {
   routes: ExtractedRoute[];
   constructorBindings: FileConstructorBindings[];
   skippedLanguages: Record<string, number>;
+  csharpPreprocFallbackFiles: number;
   fileCount: number;
 }
 
 export interface ParseWorkerInput {
   path: string;
   content: string;
+  rawContent?: string;
 }
 
 // ============================================================================
@@ -281,6 +283,7 @@ const processBatch = (files: ParseWorkerInput[], onProgress?: (filesProcessed: n
     routes: [],
     constructorBindings: [],
     skippedLanguages: {},
+    csharpPreprocFallbackFiles: 0,
     fileCount: 0,
   };
 
@@ -862,6 +865,7 @@ const processFileGroup = (
     if (file.content.length > TREE_SITTER_MAX_BUFFER) continue;
 
     let tree;
+    let usedRawContentFallback = false;
     try {
       const MAX_CHUNK = 4096;
       tree = parser.parse((index: number) => {
@@ -869,11 +873,42 @@ const processFileGroup = (
         return file.content.slice(index, index + MAX_CHUNK);
       });
     } catch (err) {
-      console.warn(`Failed to parse file ${file.path}: ${err instanceof Error ? err.message : String(err)}`);
-      continue;
+      if (file.rawContent && file.rawContent !== file.content) {
+        try {
+          const MAX_CHUNK = 4096;
+          tree = parser.parse((index: number) => {
+            if (index >= file.rawContent!.length) return null;
+            return file.rawContent!.slice(index, index + MAX_CHUNK);
+          });
+          usedRawContentFallback = true;
+        } catch {
+          console.warn(`Failed to parse file ${file.path}: ${err instanceof Error ? err.message : String(err)}`);
+          continue;
+        }
+      } else {
+        console.warn(`Failed to parse file ${file.path}: ${err instanceof Error ? err.message : String(err)}`);
+        continue;
+      }
+    }
+
+    if (file.rawContent && file.rawContent !== file.content && tree.rootNode?.hasError) {
+      try {
+        const MAX_CHUNK = 4096;
+        const rawTree = parser.parse((index: number) => {
+          if (index >= file.rawContent!.length) return null;
+          return file.rawContent!.slice(index, index + MAX_CHUNK);
+        });
+        if (!rawTree.rootNode?.hasError) {
+          tree = rawTree;
+          usedRawContentFallback = true;
+        }
+      } catch {
+        // Keep normalized parse result when raw fallback parsing fails
+      }
     }
 
     result.fileCount++;
+    if (usedRawContentFallback) result.csharpPreprocFallbackFiles += 1;
     onFileProcessed?.();
 
     // Build per-file type environment + constructor bindings in a single AST walk.
@@ -1203,7 +1238,7 @@ const processFileGroup = (
 /** Accumulated result across sub-batches */
 let accumulated: ParseWorkerResult = {
   nodes: [], relationships: [], symbols: [],
-  imports: [], calls: [], heritage: [], routes: [], constructorBindings: [], skippedLanguages: {}, fileCount: 0,
+  imports: [], calls: [], heritage: [], routes: [], constructorBindings: [], skippedLanguages: {}, csharpPreprocFallbackFiles: 0, fileCount: 0,
 };
 let cumulativeProcessed = 0;
 
@@ -1219,6 +1254,7 @@ const mergeResult = (target: ParseWorkerResult, src: ParseWorkerResult) => {
   for (const [lang, count] of Object.entries(src.skippedLanguages)) {
     target.skippedLanguages[lang] = (target.skippedLanguages[lang] || 0) + count;
   }
+  target.csharpPreprocFallbackFiles += src.csharpPreprocFallbackFiles;
   target.fileCount += src.fileCount;
 };
 
@@ -1240,7 +1276,7 @@ parentPort!.on('message', (msg: any) => {
     if (msg && msg.type === 'flush') {
       parentPort!.postMessage({ type: 'result', data: accumulated });
       // Reset for potential reuse
-      accumulated = { nodes: [], relationships: [], symbols: [], imports: [], calls: [], heritage: [], routes: [], constructorBindings: [], skippedLanguages: {}, fileCount: 0 };
+      accumulated = { nodes: [], relationships: [], symbols: [], imports: [], calls: [], heritage: [], routes: [], constructorBindings: [], skippedLanguages: {}, csharpPreprocFallbackFiles: 0, fileCount: 0 };
       cumulativeProcessed = 0;
       return;
     }

@@ -35,6 +35,7 @@ program
   .option('--embeddings', 'Enable embedding generation for semantic search (off by default)')
   .option('--extensions <list>', 'Comma-separated file extensions to include (e.g. .cs,.ts)')
   .option('--repo-alias <name>', 'Override indexed repository name with a stable alias')
+  .option('--csharp-define-csproj <path>', 'Load C# DefineConstants from the specified .csproj and normalize conditional-compilation blocks before parsing')
   .option(
     '--sync-manifest-policy <policy>',
     'When CLI options differ from sync manifest directives: ask|update|keep|error (default: ask)',

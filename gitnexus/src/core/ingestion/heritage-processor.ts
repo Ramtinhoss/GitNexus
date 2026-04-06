@@ -86,10 +86,11 @@ const resolveHeritageId = (
 
 export const processHeritage = async (
   graph: KnowledgeGraph,
-  files: { path: string; content: string }[],
+  files: { path: string; content: string; rawContent?: string }[],
   astCache: ASTCache,
   ctx: ResolutionContext,
   onProgress?: (current: number, total: number) => void,
+  onRawFallbackParse?: (count: number) => void,
 ) => {
   const parser = await loadParser();
   const logSkipped = isVerboseIngestionEnabled();
@@ -122,9 +123,30 @@ export const processHeritage = async (
       // Use larger bufferSize for files > 32KB
       try {
         tree = parseContent(file.content);
-      } catch (parseError) {
-        // Skip files that can't be parsed
-        continue;
+      } catch {
+        if (file.rawContent && file.rawContent !== file.content) {
+          try {
+            tree = parseContent(file.rawContent);
+            onRawFallbackParse?.(1);
+          } catch {
+            // Skip files that can't be parsed
+            continue;
+          }
+        } else {
+          // Skip files that can't be parsed
+          continue;
+        }
+      }
+      if (file.rawContent && file.rawContent !== file.content && tree.rootNode?.hasError) {
+        try {
+          const rawTree = parseContent(file.rawContent);
+          if (!rawTree.rootNode?.hasError) {
+            tree = rawTree;
+            onRawFallbackParse?.(1);
+          }
+        } catch {
+          // Keep normalized parse result when raw fallback fails
+        }
       }
       // Cache re-parsed tree for potential future use
       astCache.set(file.path, tree);

@@ -1,6 +1,6 @@
 import { createKnowledgeGraph } from '../graph/graph.js';
 import { processStructure } from './structure-processor.js';
-import { processParsing } from './parsing-processor.js';
+import { processParsing, type ParsingFileInput } from './parsing-processor.js';
 import {
   processImports,
   processImportsFromExtracted,
@@ -15,12 +15,15 @@ import { processUnityResources } from './unity-resource-processor.js';
 import { applyUnityLifecycleSyntheticCalls } from './unity-lifecycle-synthetic-calls.js';
 import { applyUnityRuntimeBindingRules } from './unity-runtime-binding-rules.js';
 import { resolveUnityConfig } from '../config/unity-config.js';
+import { loadCSharpDefineProfileFromCsproj } from '../tree-sitter/csharp-define-profile.js';
+import { normalizeCSharpPreprocessorBranches } from '../tree-sitter/csharp-preproc-normalizer.js';
 import { loadAnalyzeRules } from '../../mcp/local/runtime-claim-rule-registry.js';
 import { createResolutionContext } from './resolution-context.js';
 import { createASTCache } from './ast-cache.js';
-import { PipelineProgress, PipelineResult, type PipelineRunOptions } from '../../types/pipeline.js';
+import { PipelineProgress, PipelineResult, type PipelineRunOptions, type CSharpPreprocDiagnostics } from '../../types/pipeline.js';
 import { walkRepositoryPaths, readFileContents, walkUnityResourcePaths } from './filesystem-walker.js';
 import { getLanguageFromFilename } from './utils.js';
+import { SupportedLanguages } from '../../config/supported-languages.js';
 import { isLanguageAvailable } from '../tree-sitter/parser-loader.js';
 import { createWorkerPool, WorkerPool } from './workers/worker-pool.js';
 import { selectEntriesByScopeRules } from './scope-filter.js';
@@ -59,7 +62,26 @@ export const runPipelineFromRepo = async (
     ctx.clear();
   };
 
+  let csharpDefineSymbols: Set<string> | undefined;
+  const csharpUndefinedSymbols = new Set<string>();
+  let csharpPreprocDiagnostics: CSharpPreprocDiagnostics | undefined;
+
   try {
+    if (options?.csharpDefineCsproj) {
+      const defineProfile = await loadCSharpDefineProfileFromCsproj(options.csharpDefineCsproj);
+      csharpDefineSymbols = defineProfile.symbols;
+      csharpPreprocDiagnostics = {
+        enabled: true,
+        sourcePath: defineProfile.sourcePath,
+        defineSymbolCount: defineProfile.symbols.size,
+        normalizedFiles: 0,
+        fallbackFiles: 0,
+        skippedFiles: 0,
+        expressionErrors: 0,
+        undefinedSymbols: [],
+      };
+    }
+
     // ── Phase 1: Scan paths only (no content read) ─────────────────────
     onProgress({
       phase: 'extracting',
@@ -230,7 +252,7 @@ export const runPipelineFromRepo = async (
     // Calls/heritage use the symbol table built so far (symbols from earlier chunks
     // are already registered). This trades ~5% cross-chunk resolution accuracy for
     // 200-400MB less memory — critical for Linux-kernel-scale repos.
-    const sequentialChunkPaths: string[][] = [];
+    const sequentialChunkFiles: ParsingFileInput[][] = [];
 
     try {
       for (let chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
@@ -238,9 +260,32 @@ export const runPipelineFromRepo = async (
 
         // Read content for this chunk only
         const chunkContents = await readFileContents(repoPath, chunkPaths);
-        const chunkFiles = chunkPaths
+        const chunkFiles: ParsingFileInput[] = chunkPaths
           .filter(p => chunkContents.has(p))
-          .map(p => ({ path: p, content: chunkContents.get(p)! }));
+          .map((p) => {
+            const originalContent = chunkContents.get(p)!;
+            if (!csharpDefineSymbols || getLanguageFromFilename(p) !== SupportedLanguages.CSharp) {
+              return { path: p, content: originalContent };
+            }
+
+            const normalized = normalizeCSharpPreprocessorBranches(originalContent, csharpDefineSymbols);
+            csharpPreprocDiagnostics!.expressionErrors += normalized.diagnostics.expressionErrors;
+            for (const symbol of normalized.diagnostics.undefinedSymbols) {
+              csharpUndefinedSymbols.add(symbol);
+            }
+
+            if (!normalized.changed) {
+              csharpPreprocDiagnostics!.skippedFiles += 1;
+              return { path: p, content: originalContent };
+            }
+
+            csharpPreprocDiagnostics!.normalizedFiles += 1;
+            return {
+              path: p,
+              content: normalized.normalizedText,
+              rawContent: originalContent,
+            };
+          });
 
         // Parse this chunk (workers or sequential fallback)
         const chunkWorkerData = await processParsing(
@@ -257,6 +302,9 @@ export const runPipelineFromRepo = async (
             });
           },
           workerPool,
+          (count) => {
+            if (csharpPreprocDiagnostics) csharpPreprocDiagnostics.fallbackFiles += count;
+          },
         );
 
         const chunkBasePercent = 20 + ((filesParsedSoFar / totalParseable) * 62);
@@ -321,8 +369,19 @@ export const runPipelineFromRepo = async (
             ),
           ]);
         } else {
-          await processImports(graph, chunkFiles, astCache, ctx, undefined, repoPath, allPaths);
-          sequentialChunkPaths.push(chunkPaths);
+          await processImports(
+            graph,
+            chunkFiles,
+            astCache,
+            ctx,
+            undefined,
+            repoPath,
+            allPaths,
+            (count) => {
+              if (csharpPreprocDiagnostics) csharpPreprocDiagnostics.fallbackFiles += count;
+            },
+          );
+          sequentialChunkFiles.push(chunkFiles);
         }
 
         filesParsedSoFar += chunkFiles.length;
@@ -335,15 +394,15 @@ export const runPipelineFromRepo = async (
       await workerPool?.terminate();
     }
 
-    // Sequential fallback chunks: re-read source for call/heritage resolution
-    for (const chunkPaths of sequentialChunkPaths) {
-      const chunkContents = await readFileContents(repoPath, chunkPaths);
-      const chunkFiles = chunkPaths
-        .filter(p => chunkContents.has(p))
-        .map(p => ({ path: p, content: chunkContents.get(p)! }));
+    // Sequential fallback chunks: use the same normalized-or-raw source for call/heritage resolution
+    for (const chunkFiles of sequentialChunkFiles) {
       astCache = createASTCache(chunkFiles.length);
-      const rubyHeritage = await processCalls(graph, chunkFiles, astCache, ctx);
-      await processHeritage(graph, chunkFiles, astCache, ctx);
+      const rubyHeritage = await processCalls(graph, chunkFiles, astCache, ctx, undefined, (count) => {
+        if (csharpPreprocDiagnostics) csharpPreprocDiagnostics.fallbackFiles += count;
+      });
+      await processHeritage(graph, chunkFiles, astCache, ctx, undefined, (count) => {
+        if (csharpPreprocDiagnostics) csharpPreprocDiagnostics.fallbackFiles += count;
+      });
       if (rubyHeritage.length > 0) {
         await processHeritageFromExtracted(graph, rubyHeritage, ctx);
       }
@@ -562,6 +621,10 @@ export const runPipelineFromRepo = async (
 
     astCache.clear();
 
+    if (csharpPreprocDiagnostics) {
+      csharpPreprocDiagnostics.undefinedSymbols = [...csharpUndefinedSymbols].sort();
+    }
+
     return {
       graph,
       repoPath,
@@ -570,6 +633,7 @@ export const runPipelineFromRepo = async (
       processResult,
       unityResult,
       scopeDiagnostics: scopeSelection.diagnostics,
+      csharpPreprocDiagnostics,
     };
   } catch (error) {
     cleanup();

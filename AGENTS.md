@@ -9,12 +9,7 @@
 4. **Follow config/state file rules:** `docs/gitnexus-config-files.md`
 5. **If user asks to release/publish a specific version and this repo has `DISTRIBUTION.md`, execute that workflow in full-release mode by default** (unless user explicitly asks `prepare-only` or `publish-only`).
 
-> If step 1 warns the index is stale, ask user whether to rebuild index via `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` (`cliPackageSpec` first, then `cliVersion`) and run `npx -y @veewo/gitnexus@1.5.0-rc.4 analyze` with that exact package spec (it reuses previous analyze scope/options by default; add `--no-reuse-options` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
-
-> **When you must read `docs/gitnexus-config-files.md`:**
-> 1. Any task touching `gitnexus analyze` options (`--scope-manifest`, `--scope-prefix`, `--extensions`, `--repo-alias`, `--sync-manifest-policy`, `--no-reuse-options`, `--embeddings`)
-> 2. Any task touching `.gitnexus/` config/state files (`sync-manifest.txt`, `meta.json`, `unity-parity-seed.json`, `rules/**`)
-> 3. Any task changing config precedence/ownership semantics (CLI vs manifest vs `meta.json`)
+> If step 1 warns the index is stale, ask user whether to rebuild index via `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` (`cliPackageSpec` first, then `cliVersion`) and run `npx -y <resolved-spec> analyze` (it reuses previous analyze scope/options by default; add `--no-reuse-options` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
 
 ## Skills
 
@@ -27,6 +22,18 @@
 | Tools, resources, schema reference | `.agents/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.agents/skills/gitnexus/gitnexus-cli/SKILL.md` |
 | Create Unity analyze_rules interactively | `.agents/skills/gitnexus/gitnexus-unity-rule-gen/SKILL.md` |
+
+## Dev Workflow (Source Build)
+
+To use a locally built dist instead of the globally installed package (useful when testing unreleased changes):
+
+```bash
+cd /path/to/GitNexus/gitnexus
+npm run build
+npm link   # replaces global install with symlink to local dist/cli/index.js
+```
+
+After `npm link`, `gitnexus` on this machine points to the local dist. All repos using `gitnexus mcp` in their MCP config will pick up the new build after restarting the agent session. To restore the published package: `npm unlink -g @veewo/gitnexus && npm install -g @veewo/gitnexus`.
 
 <!-- gitnexus:end -->
 
@@ -102,3 +109,5 @@
 | 问题 | 参考文档 |
 |------|---------|
 | tree-sitter Unicode 标识符导致 Class 节点缺失、`HAS_METHOD` 边丢失；大文件 `Invalid argument` 崩溃；调用层常见错误 | [`docs/tree-sitter-parsing-pitfalls.md`](docs/tree-sitter-parsing-pitfalls.md) |
+
+> C# 含条件编译分支（`#if/#elif/#else/#endif`）时，执行 analyze 建议显式传入 `--csharp-define-csproj <path>`（Unity 项目优先 `Assembly-CSharp.csproj`；neonspark 使用 `/Volumes/Shuttle/projects/neonspark/Assembly-CSharp.csproj`），以便按 `DefineConstants` 做预处理归一化后再解析。

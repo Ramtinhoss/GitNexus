@@ -30,6 +30,15 @@ npm link
 
 echo "gitnexus path: $(command -v gitnexus)"
 ls -l "$(command -v gitnexus)"
+
+# executable-bit guard:
+# in some environments the linked dist entry may lose +x and `gitnexus` returns "permission denied"
+if ! gitnexus --version >/dev/null 2>&1; then
+  chmod +x "$CLI_PKG_DIR/dist/cli/index.js"
+  hash -r
+fi
+
+gitnexus --version
 ```
 
 Expected result:
@@ -66,6 +75,7 @@ npm install -g @veewo/gitnexus
 ```bash
 command -v gitnexus
 gitnexus --version
+gitnexus setup --help | rg -- '--cli-spec|--cli-version'
 ```
 
 If you just switched versions, restart the agent/editor session so MCP servers pick up the new CLI process.

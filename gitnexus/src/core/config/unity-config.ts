@@ -4,6 +4,7 @@ import { join } from 'node:path';
 export interface UnityConfig {
   maxSyntheticEdgesPerClass: number;
   maxSyntheticEdgesTotal: number;
+  enableContainerNodes: boolean;
   lazyMaxPaths: number;
   lazyBatchSize: number;
   lazyMaxMs: number;
@@ -26,6 +27,7 @@ export interface ResolvedUnityConfig {
 const DEFAULTS: UnityConfig = {
   maxSyntheticEdgesPerClass: 12,
   maxSyntheticEdgesTotal: 256,
+  enableContainerNodes: false,
   lazyMaxPaths: 120,
   lazyBatchSize: 30,
   lazyMaxMs: 5000,

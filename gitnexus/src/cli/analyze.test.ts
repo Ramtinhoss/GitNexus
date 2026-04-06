@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import { buildPipelineRunOptionsForAnalyze } from './analyze.js';
 import { resolveScopeManifestForAnalyze } from './sync-manifest.js';
 
 test('analyze auto-loads .gitnexus/sync-manifest.txt when CLI scope options are omitted', async () => {
@@ -27,4 +28,17 @@ test('explicit --scope-manifest still wins over auto-detected default file', asy
   );
 
   assert.equal(resolved, explicitManifest);
+});
+
+test('buildPipelineRunOptionsForAnalyze passes csharp define csproj option through to pipeline', () => {
+  const out = buildPipelineRunOptionsForAnalyze(
+    { includeExtensions: ['.cs'], scopeRules: ['Assets/**'] },
+    { csharpDefineCsproj: '/tmp/Assembly-CSharp.csproj' },
+  );
+
+  assert.deepEqual(out, {
+    includeExtensions: ['.cs'],
+    scopeRules: ['Assets/**'],
+    csharpDefineCsproj: '/tmp/Assembly-CSharp.csproj',
+  });
 });

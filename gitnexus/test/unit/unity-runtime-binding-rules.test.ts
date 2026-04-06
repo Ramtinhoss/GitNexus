@@ -255,3 +255,74 @@ describe('method_triggers_method binding processor', () => {
     expect(applyUnityRuntimeBindingRules(graph, [rule], {} as any).edgesInjected).toBe(0);
   });
 });
+
+describe('container node gate for runtime bindings', () => {
+  function buildStructTargetGraph() {
+    const graph = createKnowledgeGraph();
+
+    const sourceClassId = generateId('Class', 'PlayerActor.cs:PlayerActor');
+    graph.addNode({
+      id: sourceClassId,
+      label: 'Class',
+      properties: { name: 'PlayerActor', filePath: 'Assets/NEON/Code/Game/Actors/PlayerActor.cs' },
+    });
+    const sourceMethodId = generateId('Method', 'PlayerActor.cs:PlayerActor.ProcessInteractables');
+    graph.addNode({
+      id: sourceMethodId,
+      label: 'Method',
+      properties: { name: 'ProcessInteractables', filePath: 'PlayerActor.cs' },
+    });
+    graph.addRelationship({
+      id: generateId('HAS_METHOD', `${sourceClassId}->${sourceMethodId}`),
+      type: 'HAS_METHOD', sourceId: sourceClassId, targetId: sourceMethodId, confidence: 1, reason: '',
+    });
+
+    const targetStructId = generateId('Struct', 'NetPlayerState.cs:NetPlayerState');
+    graph.addNode({
+      id: targetStructId,
+      label: 'Struct',
+      properties: { name: 'NetPlayerState', filePath: 'Assets/NEON/Code/NetworkCode/NetPlayerState.cs' },
+    });
+    const targetMethodId = generateId('Method', 'NetPlayerState.cs:NetPlayerState.OnClientPickItUp');
+    graph.addNode({
+      id: targetMethodId,
+      label: 'Method',
+      properties: { name: 'OnClientPickItUp', filePath: 'NetPlayerState.cs' },
+    });
+    graph.addRelationship({
+      id: generateId('HAS_METHOD', `${targetStructId}->${targetMethodId}`),
+      type: 'HAS_METHOD', sourceId: targetStructId, targetId: targetMethodId, confidence: 1, reason: '',
+    });
+
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_method',
+        source_class_pattern: '^PlayerActor$',
+        source_method: 'ProcessInteractables',
+        target_class_pattern: '^NetPlayerState$',
+        target_method: 'OnClientPickItUp',
+      }],
+    });
+
+    return { graph, rule, sourceMethodId, targetMethodId };
+  }
+
+  it('keeps baseline behavior when enableContainerNodes=false', () => {
+    const { graph, rule } = buildStructTargetGraph();
+    const result = applyUnityRuntimeBindingRules(graph, [rule], { enableContainerNodes: false } as any);
+    expect(result.edgesInjected).toBe(0);
+  });
+
+  it('matches struct/interface containers when enableContainerNodes=true', () => {
+    const { graph, rule, sourceMethodId, targetMethodId } = buildStructTargetGraph();
+    const result = applyUnityRuntimeBindingRules(graph, [rule], { enableContainerNodes: true } as any);
+    expect(result.edgesInjected).toBe(1);
+
+    const edges = [...graph.iterRelationships()].filter(
+      (edge) => edge.type === 'CALLS' && edge.reason.startsWith('unity-rule-method-bridge:'),
+    );
+    expect(edges.length).toBe(1);
+    expect(edges[0].sourceId).toBe(sourceMethodId);
+    expect(edges[0].targetId).toBe(targetMethodId);
+  });
+});

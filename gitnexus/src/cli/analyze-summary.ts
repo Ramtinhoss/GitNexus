@@ -1,7 +1,35 @@
+import type { CSharpPreprocDiagnostics } from '../types/pipeline.js';
+
 export interface FallbackInsertStats {
   attempted: number;
   succeeded: number;
   failed: number;
+}
+
+export function formatCSharpPreprocDiagnosticsSummary(
+  diagnostics: CSharpPreprocDiagnostics | undefined,
+  previewLimit: number = 5,
+): string[] {
+  if (!diagnostics?.enabled) return [];
+
+  const lines = [
+    `CSharp Preproc: defines=${diagnostics.defineSymbolCount}, normalized=${diagnostics.normalizedFiles}, fallback=${diagnostics.fallbackFiles}, skipped=${diagnostics.skippedFiles}, exprErrors=${diagnostics.expressionErrors}`,
+  ];
+
+  if (diagnostics.sourcePath) {
+    lines.push(`- source: ${diagnostics.sourcePath}`);
+  }
+
+  if (diagnostics.undefinedSymbols.length > 0) {
+    const limit = previewLimit > 0 ? previewLimit : diagnostics.undefinedSymbols.length;
+    const preview = diagnostics.undefinedSymbols.slice(0, limit);
+    lines.push(`- undefined symbols: ${preview.join(', ')}`);
+    if (diagnostics.undefinedSymbols.length > preview.length) {
+      lines.push(`... ${diagnostics.undefinedSymbols.length - preview.length} more`);
+    }
+  }
+
+  return lines;
 }
 
 export function formatUnityDiagnosticsSummary(

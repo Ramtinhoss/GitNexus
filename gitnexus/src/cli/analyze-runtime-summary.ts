@@ -7,5 +7,6 @@ export function toPipelineRuntimeSummary(input: PipelineResult): PipelineRuntime
     processResult: input.processResult,
     unityResult: input.unityResult,
     scopeDiagnostics: input.scopeDiagnostics,
+    csharpPreprocDiagnostics: input.csharpPreprocDiagnostics,
   };
 }

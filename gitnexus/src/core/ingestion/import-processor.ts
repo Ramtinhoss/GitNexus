@@ -311,12 +311,13 @@ function applyImportResult(
 
 export const processImports = async (
   graph: KnowledgeGraph,
-  files: { path: string; content: string }[],
+  files: { path: string; content: string; rawContent?: string }[],
   astCache: ASTCache,
   ctx: ResolutionContext,
   onProgress?: (current: number, total: number) => void,
   repoRoot?: string,
   allPaths?: string[],
+  onRawFallbackParse?: (count: number) => void,
 ) => {
   const importMap = ctx.importMap;
   const packageMap = ctx.packageMap;
@@ -404,8 +405,28 @@ export const processImports = async (
     if (!tree) {
       try {
         tree = parseContent(file.content);
-      } catch (parseError) {
-        continue;
+      } catch {
+        if (file.rawContent && file.rawContent !== file.content) {
+          try {
+            tree = parseContent(file.rawContent);
+            onRawFallbackParse?.(1);
+          } catch {
+            continue;
+          }
+        } else {
+          continue;
+        }
+      }
+      if (file.rawContent && file.rawContent !== file.content && tree.rootNode?.hasError) {
+        try {
+          const rawTree = parseContent(file.rawContent);
+          if (!rawTree.rootNode?.hasError) {
+            tree = rawTree;
+            onRawFallbackParse?.(1);
+          }
+        } catch {
+          // Keep normalized parse result when raw fallback fails
+        }
       }
       wasReparsed = true;
       // Cache re-parsed tree so call/heritage phases get hits

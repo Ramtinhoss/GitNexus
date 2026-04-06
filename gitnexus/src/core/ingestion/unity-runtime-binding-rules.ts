@@ -14,7 +14,7 @@ const RULE_EDGE_CONFIDENCE = 0.75;
 export function applyUnityRuntimeBindingRules(
   graph: KnowledgeGraph,
   rules: RuntimeClaimRule[],
-  _config: UnityConfig,
+  config: UnityConfig,
 ): UnityRuntimeBindingResult {
   const ruleResults: UnityRuntimeBindingResult['ruleResults'] = [];
   let totalEdges = 0;
@@ -42,7 +42,10 @@ export function applyUnityRuntimeBindingRules(
 
   // Pre-build indexes
   const methodsByClassId = new Map<string, GraphNode[]>();
-  const classNodes: GraphNode[] = [];
+  const containerNodes: GraphNode[] = [];
+  const containerLabels = config.enableContainerNodes
+    ? new Set(['Class', 'Struct', 'Interface', 'Record'])
+    : new Set(['Class']);
 
   for (const rel of graph.iterRelationships()) {
     if (rel.type !== 'HAS_METHOD') continue;
@@ -54,7 +57,7 @@ export function applyUnityRuntimeBindingRules(
   }
 
   for (const node of graph.iterNodes()) {
-    if (node.label === 'Class') classNodes.push(node);
+    if (containerLabels.has(node.label)) containerNodes.push(node);
   }
 
   // Collect UNITY_ASSET_GUID_REF and UNITY_COMPONENT_INSTANCE edges
@@ -80,10 +83,10 @@ export function applyUnityRuntimeBindingRules(
   for (const rule of rules) {
     let ruleEdges = 0;
     for (const binding of rule.resource_bindings ?? []) {
-      ruleEdges += processBinding(binding, rule.id, assetGuidRefs, componentInstances, methodsByClassId, classNodes, sceneFilesByName, addSyntheticEdge);
+      ruleEdges += processBinding(binding, rule.id, assetGuidRefs, componentInstances, methodsByClassId, containerNodes, sceneFilesByName, addSyntheticEdge);
     }
     if (rule.lifecycle_overrides?.additional_entry_points?.length) {
-      ruleEdges += processLifecycleOverrides(rule, methodsByClassId, classNodes, addSyntheticEdge);
+      ruleEdges += processLifecycleOverrides(rule, methodsByClassId, containerNodes, addSyntheticEdge);
     }
     totalEdges += ruleEdges;
     ruleResults.push({ ruleId: rule.id, edgesInjected: ruleEdges });
@@ -116,7 +119,7 @@ function processBinding(
   assetGuidRefs: GraphRelationship[],
   componentInstances: GraphRelationship[],
   methodsByClassId: Map<string, GraphNode[]>,
-  classNodes: GraphNode[],
+  containerNodes: GraphNode[],
   sceneFilesByName: Map<string, string[]>,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
@@ -124,13 +127,13 @@ function processBinding(
     return processAssetRefLoadsComponents(binding, ruleId, assetGuidRefs, componentInstances, methodsByClassId, addEdge);
   }
   if (binding.kind === 'method_triggers_field_load') {
-    return processMethodTriggersFieldLoad(binding, ruleId, assetGuidRefs, componentInstances, methodsByClassId, classNodes, addEdge);
+    return processMethodTriggersFieldLoad(binding, ruleId, assetGuidRefs, componentInstances, methodsByClassId, containerNodes, addEdge);
   }
   if (binding.kind === 'method_triggers_scene_load') {
-    return processMethodTriggersSceneLoad(binding, ruleId, componentInstances, methodsByClassId, classNodes, sceneFilesByName, addEdge);
+    return processMethodTriggersSceneLoad(binding, ruleId, componentInstances, methodsByClassId, containerNodes, sceneFilesByName, addEdge);
   }
   if (binding.kind === 'method_triggers_method') {
-    return processMethodTriggersMethod(binding, ruleId, methodsByClassId, classNodes, addEdge);
+    return processMethodTriggersMethod(binding, ruleId, methodsByClassId, containerNodes, addEdge);
   }
   return 0;
 }
@@ -172,7 +175,7 @@ function processMethodTriggersFieldLoad(
   assetGuidRefs: GraphRelationship[],
   componentInstances: GraphRelationship[],
   methodsByClassId: Map<string, GraphNode[]>,
-  classNodes: GraphNode[],
+  containerNodes: GraphNode[],
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   let count = 0;
@@ -191,7 +194,7 @@ function processMethodTriggersFieldLoad(
     refsBySource.set(ref.sourceId, list);
   }
 
-  for (const cls of classNodes) {
+  for (const cls of containerNodes) {
     if (!classPattern.test(cls.properties.name)) continue;
     const methods = methodsByClassId.get(cls.id) ?? [];
     const loaders = methods.filter(m => loaderMethodNames.has(m.properties.name));
@@ -223,7 +226,7 @@ function processMethodTriggersSceneLoad(
   ruleId: string,
   componentInstances: GraphRelationship[],
   methodsByClassId: Map<string, GraphNode[]>,
-  classNodes: GraphNode[],
+  containerNodes: GraphNode[],
   sceneFilesByName: Map<string, string[]>,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
@@ -241,7 +244,7 @@ function processMethodTriggersSceneLoad(
   if (sceneFileIds.length === 0) return 0;
 
   let count = 0;
-  for (const cls of classNodes) {
+  for (const cls of containerNodes) {
     if (!classPattern.test(cls.properties.name)) continue;
     const methods = methodsByClassId.get(cls.id) ?? [];
     const loaders = methods.filter(m => loaderMethodNames.has(m.properties.name));
@@ -263,7 +266,7 @@ function processMethodTriggersMethod(
   binding: UnityResourceBinding,
   ruleId: string,
   methodsByClassId: Map<string, GraphNode[]>,
-  classNodes: GraphNode[],
+  containerNodes: GraphNode[],
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   const { source_class_pattern, source_method, target_class_pattern, target_method } = binding;
@@ -275,7 +278,7 @@ function processMethodTriggersMethod(
   let sourceMethodId: string | undefined;
   let targetMethodId: string | undefined;
 
-  for (const cls of classNodes) {
+  for (const cls of containerNodes) {
     if (!sourceMethodId && srcPattern.test(cls.properties.name)) {
       const match = (methodsByClassId.get(cls.id) ?? []).find(m => m.properties.name === source_method);
       if (match) sourceMethodId = match.id;
@@ -294,7 +297,7 @@ function processMethodTriggersMethod(
 function processLifecycleOverrides(
   rule: RuntimeClaimRule,
   methodsByClassId: Map<string, GraphNode[]>,
-  classNodes: GraphNode[],
+  containerNodes: GraphNode[],
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   const overrides = rule.lifecycle_overrides;
@@ -305,7 +308,7 @@ function processLifecycleOverrides(
 
   const runtimeRootId = generateId('Method', 'unity-runtime-root');
 
-  for (const cls of classNodes) {
+  for (const cls of containerNodes) {
     if (scopePattern && !scopePattern.test(cls.properties.filePath ?? cls.properties.name)) continue;
     for (const method of methodsByClassId.get(cls.id) ?? []) {
       if (!entrySet.has(method.properties.name)) continue;

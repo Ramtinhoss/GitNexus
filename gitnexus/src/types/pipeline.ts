@@ -21,6 +21,18 @@ export interface PipelineProgress {
 export interface PipelineRunOptions {
   includeExtensions?: string[];
   scopeRules?: string[];
+  csharpDefineCsproj?: string;
+}
+
+export interface CSharpPreprocDiagnostics {
+  enabled: boolean;
+  sourcePath?: string;
+  defineSymbolCount: number;
+  normalizedFiles: number;
+  fallbackFiles: number;
+  skippedFiles: number;
+  expressionErrors: number;
+  undefinedSymbols: string[];
 }
 
 // Original result type (used internally in pipeline)
@@ -34,6 +46,7 @@ export interface PipelineResult {
   processResult?: ProcessDetectionResult;
   unityResult?: UnityResourceProcessingResult;
   scopeDiagnostics?: ScopeSelectionDiagnostics;
+  csharpPreprocDiagnostics?: CSharpPreprocDiagnostics;
 }
 
 export interface PipelineRuntimeSummary {
@@ -42,6 +55,7 @@ export interface PipelineRuntimeSummary {
   processResult?: ProcessDetectionResult;
   unityResult?: UnityResourceProcessingResult;
   scopeDiagnostics?: ScopeSelectionDiagnostics;
+  csharpPreprocDiagnostics?: CSharpPreprocDiagnostics;
 }
 
 // Serializable version for Web Worker communication

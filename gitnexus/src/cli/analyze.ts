@@ -20,7 +20,7 @@ import { generateAIContextFiles } from './ai-context.js';
 import { generateSkillFiles, type GeneratedSkillInfo } from './skill-gen.js';
 import fs from 'fs/promises';
 import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
-import { formatFallbackSummary, formatUnityDiagnosticsSummary, resolveFallbackStats } from './analyze-summary.js';
+import { formatCSharpPreprocDiagnosticsSummary, formatFallbackSummary, formatUnityDiagnosticsSummary, resolveFallbackStats } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
 import { enforceSyncManifestConsistency, resolveScopeManifestForAnalyze, type SyncManifestPolicy } from './sync-manifest.js';
@@ -58,6 +58,7 @@ export interface AnalyzeOptions {
   embeddings?: boolean;
   extensions?: string;
   repoAlias?: string;
+  csharpDefineCsproj?: string;
   scopeManifest?: string;
   scopePrefix?: string[];
   syncManifestPolicy?: SyncManifestPolicy;
@@ -293,6 +294,11 @@ export const analyzeCommand = async (
   // ── Phase 1: Full Pipeline (0–60%) ─────────────────────────────────
   let pipelineResult: PipelineResult | undefined;
   try {
+    const pipelineRunOptions = buildPipelineRunOptionsForAnalyze(
+      { includeExtensions, scopeRules },
+      options,
+    );
+
     pipelineResult = await runPipelineFromRepo(
       repoPath,
       (progress) => {
@@ -300,7 +306,7 @@ export const analyzeCommand = async (
         const scaled = Math.round(progress.percent * 0.6);
         updateBar(scaled, phaseLabel);
       },
-      { includeExtensions, scopeRules },
+      pipelineRunOptions,
     );
   } catch (error: any) {
     clearInterval(elapsedTimer);
@@ -508,6 +514,10 @@ export const analyzeCommand = async (
   for (const line of unitySummaryLines) {
     console.log(`  ${line}`);
   }
+  const csharpPreprocSummaryLines = formatCSharpPreprocDiagnosticsSummary(pipelineRuntime.csharpPreprocDiagnostics);
+  for (const line of csharpPreprocSummaryLines) {
+    console.log(`  ${line}`);
+  }
   console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineRuntime.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineRuntime.processResult?.stats.totalProcesses || 0} flows`);
   console.log(`  LadybugDB ${lbugTime}s | FTS ${ftsTime}s | Embeddings ${embeddingSkipped ? embeddingSkipReason : embeddingTime + 's'}`);
   if (includeExtensions.length > 0) {
@@ -543,6 +553,23 @@ export const analyzeCommand = async (
   // platforms (#38, #40). Force-exit to ensure clean termination.
   process.exit(0);
 };
+
+export function buildPipelineRunOptionsForAnalyze(
+  resolvedOptions: { includeExtensions: string[]; scopeRules: string[] },
+  options?: AnalyzeOptions,
+): {
+  includeExtensions: string[];
+  scopeRules: string[];
+  csharpDefineCsproj?: string;
+} {
+  return {
+    includeExtensions: resolvedOptions.includeExtensions,
+    scopeRules: resolvedOptions.scopeRules,
+    ...(options?.csharpDefineCsproj
+      ? { csharpDefineCsproj: options.csharpDefineCsproj }
+      : {}),
+  };
+}
 
 async function persistUnityParitySeed(
   storagePath: string,

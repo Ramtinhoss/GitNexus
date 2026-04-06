@@ -47,6 +47,7 @@ Run from the project root. This parses all source files, builds the knowledge gr
 | `--force`                  | Force full re-index even if up to date                                                    |
 | `--embeddings`             | Enable embedding generation for semantic search (off by default)                          |
 | `--extensions <ext>`       | Limit parsing to specific file types (comma-separated, e.g., `--extensions ".cs,.meta"`) |
+| `--csharp-define-csproj <path>` | Load C# `DefineConstants` from a `.csproj` and normalize `#if/#elif/#else/#endif` before parsing |
 | `--scope-prefix <prefix>`  | Limit analysis to a path prefix (e.g., `--scope-prefix Assets/` for Unity)               |
 | `--scope-manifest <file>`  | Read scope rules from a manifest file (e.g., `.gitnexus/sync-manifest.txt`)              |
 | `--sync-manifest-policy <policy>` | Drift policy when explicit CLI values differ from manifest directives: `ask|update|keep|error` |
@@ -59,6 +60,16 @@ Run from the project root. This parses all source files, builds the knowledge gr
 **When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale. In Claude Code, a PostToolUse hook runs `analyze` automatically after `git commit` and `git merge`, preserving embeddings if previously generated.
 
 **Unity projects:** Add `--extensions ".cs,.meta"` to ensure Unity asset edges (`UNITY_ASSET_GUID_REF`, `UNITY_COMPONENT_INSTANCE`) are parsed. Add `--scope-prefix Assets/` to limit scope if all code lives under `Assets/`.
+
+**C# conditional-compilation projects (recommended):**
+
+- Unity: pass `--csharp-define-csproj /path/to/Assembly-CSharp.csproj` (for neonspark, use `/Volumes/Shuttle/projects/neonspark/Assembly-CSharp.csproj`).
+- Non-Unity: discover candidate project files first, then pass the intended one explicitly:
+
+```bash
+rg --files -g '*.csproj'
+$GN analyze --extensions ".cs" --csharp-define-csproj <picked-project>.csproj
+```
 
 ### status — Check index freshness
 

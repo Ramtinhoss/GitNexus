@@ -172,6 +172,7 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 | --- | --- | --- |
 | `maxSyntheticEdgesPerClass` | 12 | 每个类最多注入合成边数 |
 | `maxSyntheticEdgesTotal` | 256 | 全局合成边上限 |
+| `enableContainerNodes` | false | 规则匹配容器是否扩展到 `Struct/Interface/Record`（默认仅 `Class`） |
 | `lazyMaxPaths` | 120 | lazy hydration 最大路径数 |
 | `lazyBatchSize` | 30 | lazy hydration 批次大小 |
 | `lazyMaxMs` | 5000 | lazy hydration 超时 |
