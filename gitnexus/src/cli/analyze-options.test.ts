@@ -105,3 +105,67 @@ test('resolveEffectiveAnalyzeOptions prefers explicit CLI values over stored set
   assert.equal(resolved.repoAlias, 'new-alias');
   assert.equal(resolved.embeddings, false);
 });
+
+test('resolveEffectiveAnalyzeOptions reads @extensions/@repoAlias/@embeddings from manifest', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-directives-'));
+  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
+  await fs.writeFile(
+    manifestPath,
+    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=neonspark-core', '@embeddings=false'].join('\n'),
+    'utf-8',
+  );
+
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    { scopeManifest: manifestPath },
+    {
+      includeExtensions: ['.ts'],
+      scopeRules: ['src'],
+      repoAlias: 'stored-alias',
+      embeddings: true,
+    },
+  );
+
+  assert.deepEqual(resolved.scopeRules, ['Assets']);
+  assert.deepEqual(resolved.includeExtensions, ['.cs', '.meta']);
+  assert.equal(resolved.repoAlias, 'neonspark-core');
+  assert.equal(resolved.embeddings, false);
+});
+
+test('resolveEffectiveAnalyzeOptions enforces precedence CLI > manifest > meta', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-precedence-'));
+  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
+  await fs.writeFile(
+    manifestPath,
+    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=manifest-alias', '@embeddings=false'].join('\n'),
+    'utf-8',
+  );
+
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    {
+      scopeManifest: manifestPath,
+      extensions: '.ts',
+    },
+    {
+      includeExtensions: ['.js'],
+      scopeRules: ['tools'],
+      repoAlias: 'meta-alias',
+      embeddings: true,
+    },
+  );
+
+  assert.deepEqual(resolved.scopeRules, ['Assets']);
+  assert.deepEqual(resolved.includeExtensions, ['.ts']);
+  assert.equal(resolved.repoAlias, 'manifest-alias');
+  assert.equal(resolved.embeddings, false);
+});
+
+test('resolveEffectiveAnalyzeOptions rejects unknown manifest directives', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-unknown-'));
+  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
+  await fs.writeFile(manifestPath, ['Assets/', '@foo=bar'].join('\n'), 'utf-8');
+
+  await assert.rejects(
+    resolveEffectiveAnalyzeOptions({ scopeManifest: manifestPath }),
+    /unknown manifest directive/i,
+  );
+});
