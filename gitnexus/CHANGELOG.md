@@ -2,6 +2,26 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.5.0] - 2026-04-06
+
+> Stable release notes comparing `v1.4.9` -> `v1.5.0`.
+
+### Added
+- Added a rule-driven Unity runtime process stack built around `analyze_rules`, including `runtime_claim` contracts, readable `process_ref` IDs, derived process resources, anchored runtime-chain verification, and evidence/hydration controls for `query` and `context`.
+- Added Rule Lab authoring and validation workflows, including `gitnexus rule-lab compile --repo-path`, stage-aware rule bundles, curated draft artifacts, topology review payloads, probe-based regression gates, and semantic authenticity checks.
+- Added Unity authoring workflows and shared contracts for agents, including `gitnexus-unity-rule-gen`, `gitnexus-unity-e2e-verify`, distributed `_shared` runtime/hydration/UI-trace contracts, and setup-installed skill guidance.
+- Added new Unity rule binding coverage with `method_triggers_scene_load` and `method_triggers_method`, plus `description` metadata and `scene_name` parsing to model scene-load and callback-driven runtime edges that static analysis misses.
+- Added manifest-driven analyze workflow controls, including unified `scope-manifest` directives, default `sync-manifest` reuse, and interactive drift-guard behavior for keeping scoped indexing configs in sync.
+- Added local-binary MCP setup guidance and C# define-driven preprocessing normalization so generated workflow docs prefer `gitnexus mcp`, and conditional-compilation Unity projects can be indexed with container-aware diagnostics.
+
+### Fixed
+- Fixed multiple rule-driven Unity retrieval failures, including synthetic edge injection bugs, verifier ranking/fallback issues, nested-workspace runtime rule lookup, and lifecycle metadata persistence so runtime-chain results are more complete and stable.
+- Fixed `method_triggers_method` YAML parsing so required source/target method fields are extracted correctly; previously these rules silently emitted zero synthetic `CALLS` edges and caused runtime verification to fail.
+- Fixed schema coverage by restoring the `FROM Method TO Record` relation pair required by the new runtime and parsing paths.
+- Fixed scope-manifest extension handling so scoped analyze runs do not accidentally override explicit extension filters.
+- Fixed build and publish reliability by preserving the executable bit on `dist/cli/index.js` during build output generation.
+- Fixed tree-sitter parsing reliability for newer C# inputs with chunked parse callbacks, Unicode identifier regression coverage, and follow-up diagnostics for conditional-compilation parsing pitfalls.
+
 ## [1.5.0-rc.4] - 2026-04-05
 
 > Release candidate notes comparing `v1.5.0-rc.3` -> `v1.5.0-rc.4`.
