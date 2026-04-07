@@ -351,3 +351,11 @@ mcp__gitnexus__cypher:
 - 注入逻辑：`gitnexus/src/core/ingestion/unity-runtime-binding-rules.ts`
 - 规则类型定义：`gitnexus/src/rule-lab/types.ts:90-114`
 - 编译命令：`gitnexus rule-lab compile --repo-path <path>`
+
+## Runtime-Chain Closure Guard
+
+- Treat runtime-chain outputs as two layers:
+  - `verifier-core`: binary verifier result (`verified_full` | `failed`)
+  - `policy-adjusted`: user-visible result after hydration policy is applied
+- If `hydration_policy=strict` and `hydrationMeta.fallbackToCompact=true`, the result is downgraded policy-adjusted output and is not closure.
+- In that downgraded state, rerun with parity before final conclusions.

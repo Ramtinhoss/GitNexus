@@ -79,8 +79,6 @@ Run from the project root. This parses all source files, builds the knowledge gr
 
 **Unity projects:** Add `--extensions ".cs,.meta"` to ensure Unity asset edges (`UNITY_ASSET_GUID_REF`, `UNITY_COMPONENT_INSTANCE`) are parsed. Add `--scope-prefix Assets/` to limit scope if all code lives under `Assets/`.
 
-**Unity lifecycle metadata persistence:** There is no external env/config toggle for `Process` lifecycle metadata persistence. The pipeline decides automatically from Unity resource-binding flow activation (`Assets/*.cs` detection).
-
 **C# conditional-compilation projects (recommended):**
 
 - Unity: pass `--csharp-define-csproj /path/to/Assembly-CSharp.csproj` (for neonspark, use `/Volumes/Shuttle/projects/neonspark/Assembly-CSharp.csproj`).
@@ -191,3 +189,11 @@ $GN unity-ui-trace "Assets/NEON/VeewoUI/Uxml/BarScreen/Patch/PatchItemPreview.ux
 - **"Not inside a git repository"**: Run from a directory inside a git repo
 - **Index is stale after re-analyzing**: Restart Claude Code to reload the MCP server
 - **Embeddings slow**: Omit `--embeddings` (it's off by default) or set `OPENAI_API_KEY` for faster API-based embedding
+
+## Runtime-Chain Closure Guard
+
+- Treat runtime-chain outputs as two layers:
+  - `verifier-core`: binary verifier result (`verified_full` | `failed`)
+  - `policy-adjusted`: user-visible result after hydration policy is applied
+- If `hydration_policy=strict` and `hydrationMeta.fallbackToCompact=true`, the result is downgraded policy-adjusted output and is not closure.
+- In that downgraded state, rerun with parity before final conclusions.
