@@ -124,11 +124,14 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 ### 4.2 `runtime_chain` 输出条件
 
 1. 请求显式传 `runtime_chain_verify=on-demand`（唯一开关）
-2. 运行时始终通过 `runtime_claim` 统一输出（包括失败分类）
+2. `runtime_claim` 采用两层语义并统一输出（包括失败分类）：
+   - `verifier-core`：二元核心结论（`verified_full` / `failed`）
+   - `policy-adjusted`：`query/context` 侧对外结果；当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，允许降级为 `verified_partial` / `verified_segment`
+3. 运行时失败分类保持不变：
    - 无规则 / 无匹配 → `reason=rule_not_matched`
    - 匹配但证据不足 → `reason=rule_matched_but_evidence_missing`
    - 匹配且验证失败 → `reason=rule_matched_but_verification_failed`
-3. 验证结果携带 `evidence_source: 'analyze_time' | 'query_time'`
+4. 验证结果携带 `evidence_source: 'analyze_time' | 'query_time'`
 
 ### 4.3 `process_ref / runtime_claim / evidence policy` 合约
 
@@ -138,10 +141,13 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 2. 请求 `runtime_chain_verify=on-demand` 时，返回 `runtime_claim`（rule-driven）：
    - `rule_id`, `rule_version`, `scope`
    - `status`, `evidence_level`, `hops`, `gaps`
+   - `verification_core_status`, `verification_core_evidence_level`
+   - `policy_adjusted`, `policy_adjust_reason`
    - `guarantees`, `non_guarantees`
 3. `unity_evidence_mode`: `summary | focused | full`
 4. `hydration_policy`: `fast => compact`; `balanced => 按请求`; `strict => parity`
-5. `resource_path_prefix` / seed contract：类符号 + 资源路径联合检索为主路径
+5. 严格策略回退语义：若 `strict` 因成本/上限回退到 compact（`fallbackToCompact=true`），则对外结果视为 `policy-adjusted`，并要求 parity 重跑后再做 closure 结论。
+6. `resource_path_prefix` / seed contract：类符号 + 资源路径联合检索为主路径
 
 ### 4.4 Phase 5 Offline Rule Lab 合约
 
@@ -186,7 +192,7 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 
 ## 6. 已确认偏差与边界
 
-1. V2 verifier 为二元结果（`verified_full` / `failed`），不再产出 `verified_partial` / `verified_segment` 中间状态。需要中间状态的场景应通过规则覆盖度提升来解决。
+1. `verifier-core` 仍为二元结果（`verified_full` / `failed`）；但 `query/context` 的 `policy-adjusted` 结果在 `strict + fallbackToCompact` 场景下允许表现为 `verified_partial` / `verified_segment`。该降级仅用于防止误闭环，最终结论需 parity 重跑确认。
 2. 方法投影在 query/context 默认启用，无独立开关。
 3. 强验证链路不回写 verified chain 到 Process 持久图（仅请求时计算并返回）。
 4. 强验证链路对仓库文件内容与索引状态一致性敏感；若索引 stale，应先 `gitnexus analyze`。

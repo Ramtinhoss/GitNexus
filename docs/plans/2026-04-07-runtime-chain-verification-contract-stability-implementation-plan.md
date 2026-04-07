@@ -16,7 +16,8 @@ Track execution state here. `executing-plans` updates this section in place.
 
 Task | Status | Facts
 --- | --- | ---
-<!-- executing-plans appends one row per task as execution advances -->
+Task 1 | completed | Created `docs/contracts/runtime-chain-verification-semantics.md`; grep gate `rg -n "verifier-core\|policy-adjusted\|strict\|fallbackToCompact"` passed with all terms matched; committed as `2a4cdf9`.
+Task 2 | completed | Updated SSOT sections 4.2/4.3/6 to `verifier-core` + `policy-adjusted` semantics; grep gate `rg -n "verifier-core\|policy-adjusted\|strict.*fallbackToCompact\|verified_partial\|verified_segment"` passed; pending commit for this task.
 
 ## Design Traceability Matrix
 
