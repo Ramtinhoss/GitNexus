@@ -22,8 +22,49 @@ export interface RuntimeClaim {
   non_guarantees: string[];
   hops: RuntimeChainHop[];
   gaps: RuntimeChainGap[];
+  verification_core_status?: 'verified_full' | 'failed';
+  verification_core_evidence_level?: RuntimeChainEvidenceLevel;
+  policy_adjusted?: boolean;
+  policy_adjust_reason?: string;
   reason?: RuntimeClaimReason;
   next_action?: string;
+}
+
+type HydrationPolicyOption = 'fast' | 'balanced' | 'strict';
+
+export function adjustRuntimeClaimForPolicy(input: {
+  claim: RuntimeClaim;
+  hydrationPolicy: HydrationPolicyOption;
+  fallbackToCompact: boolean;
+}): RuntimeClaim {
+  const base = input.claim;
+  const coreStatus: 'verified_full' | 'failed' = base.status === 'verified_full' ? 'verified_full' : 'failed';
+  const adjusted: RuntimeClaim = {
+    ...base,
+    verification_core_status: coreStatus,
+    verification_core_evidence_level: base.evidence_level,
+    policy_adjusted: false,
+  };
+
+  if (input.hydrationPolicy === 'strict' && input.fallbackToCompact) {
+    let changed = false;
+    if (adjusted.status === 'verified_full') {
+      adjusted.status = 'verified_partial';
+      changed = true;
+    }
+    if (adjusted.evidence_level === 'verified_chain' || adjusted.status === 'verified_partial') {
+      if (adjusted.evidence_level !== 'verified_segment') {
+        adjusted.evidence_level = 'verified_segment';
+        changed = true;
+      }
+    }
+    if (changed) {
+      adjusted.policy_adjusted = true;
+      adjusted.policy_adjust_reason = 'strict_fallback_to_compact';
+    }
+  }
+
+  return adjusted;
 }
 
 function resolveNonGuarantees(rule?: RuntimeClaimRule): string[] {

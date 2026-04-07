@@ -19,7 +19,8 @@ Task | Status | Facts
 Task 1 | completed | Created `docs/contracts/runtime-chain-verification-semantics.md`; grep gate `rg -n "verifier-core\|policy-adjusted\|strict\|fallbackToCompact"` passed with all terms matched; committed as `2a4cdf9`.
 Task 2 | completed | Updated SSOT sections 4.2/4.3/6 to `verifier-core` + `policy-adjusted` semantics; grep gate `rg -n "verifier-core\|policy-adjusted\|strict.*fallbackToCompact\|verified_partial\|verified_segment"` passed; committed as `a24ffda`.
 Task 3 | completed | Updated `UNITY_RUNTIME_PROCESS.md` and `AGENTS.md` with strict fallback downgrade + parity rerun rule; cross-file grep `rg -n "verifier-core\|policy-adjusted\|fallbackToCompact\|parity rerun"` passed; committed as `4d3221b`.
-Task 4 | completed | Added `gitnexus/test/unit/mcp-tools.contract.test.ts`; observed expected pre-update failure and post-update pass; `npm --prefix gitnexus exec vitest run gitnexus/test/unit/mcp-tools.contract.test.ts` now passes; pending commit for this task.
+Task 4 | completed | Added `gitnexus/test/unit/mcp-tools.contract.test.ts`; observed expected pre-update failure and post-update pass; `npm --prefix gitnexus exec vitest run gitnexus/test/unit/mcp-tools.contract.test.ts` now passes; committed as `db1fa5a`.
+Task 5 | completed | Added `adjustRuntimeClaimForPolicy()` and metadata fields (`verification_core_status`, `verification_core_evidence_level`, `policy_adjusted`, `policy_adjust_reason`); wired helper in both query/context paths; `npm --prefix gitnexus exec vitest run gitnexus/test/unit/runtime-claim.policy.test.ts` passes; pending commit for this task.
 
 ## Design Traceability Matrix
 

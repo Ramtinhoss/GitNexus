@@ -25,6 +25,7 @@ import {
   verifyRuntimeClaimOnDemand,
   type RuntimeChainVerifyMode,
 } from './runtime-chain-verify.js';
+import { adjustRuntimeClaimForPolicy } from './runtime-claim.js';
 // Embedding imports are lazy (dynamic import) to avoid loading onnxruntime-node
 // at MCP server startup — crashes on unsupported Node ABI versions (#89)
 // git utilities available if needed
@@ -1858,13 +1859,12 @@ export class LocalBackend {
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
         minimumEvidenceSatisfied: result.evidence_meta?.verifier_minimum_evidence_satisfied !== false,
       });
-      if (hydrationPolicy === 'strict' && result.hydrationMeta?.fallbackToCompact && result.runtime_claim) {
-        if (result.runtime_claim.status === 'verified_full') {
-          result.runtime_claim.status = 'verified_partial';
-        }
-        if (result.runtime_claim.evidence_level === 'verified_chain' || result.runtime_claim.status === 'verified_partial') {
-          result.runtime_claim.evidence_level = 'verified_segment';
-        }
+      if (result.runtime_claim) {
+        result.runtime_claim = adjustRuntimeClaimForPolicy({
+          claim: result.runtime_claim,
+          hydrationPolicy,
+          fallbackToCompact: Boolean(result.hydrationMeta?.fallbackToCompact),
+        });
       }
       if (
         result.runtime_claim?.reason === 'rule_matched_but_evidence_missing'
@@ -2646,13 +2646,12 @@ export class LocalBackend {
         rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
         minimumEvidenceSatisfied: (result as any).evidence_meta?.minimum_evidence_satisfied !== false,
       });
-      if (hydrationPolicy === 'strict' && result.hydrationMeta?.fallbackToCompact && result.runtime_claim) {
-        if (result.runtime_claim.status === 'verified_full') {
-          result.runtime_claim.status = 'verified_partial';
-        }
-        if (result.runtime_claim.evidence_level === 'verified_chain' || result.runtime_claim.status === 'verified_partial') {
-          result.runtime_claim.evidence_level = 'verified_segment';
-        }
+      if (result.runtime_claim) {
+        result.runtime_claim = adjustRuntimeClaimForPolicy({
+          claim: result.runtime_claim,
+          hydrationPolicy,
+          fallbackToCompact: Boolean(result.hydrationMeta?.fallbackToCompact),
+        });
       }
       if (
         result.runtime_claim?.reason === 'rule_matched_but_evidence_missing'
