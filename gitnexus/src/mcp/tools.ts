@@ -73,6 +73,9 @@ Includes optional Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
 - Default unity_hydration_mode=compact (fast path).
 - Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.
+- Runtime-chain semantics are two-layered:
+  - verifier-core: binary (verified_full | failed)
+  - policy-adjusted: query-visible result; under strict policy fallback (hydrationMeta.fallbackToCompact=true) this may downgrade to partial semantics.
 - Returns next_hops[] with ranked follow-up actions when Unity evidence is available.`,
     inputSchema: {
       type: 'object',
@@ -216,6 +219,9 @@ Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
 - Default unity_hydration_mode=compact (fast path).
 - Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.
+- Runtime-chain semantics are two-layered:
+  - verifier-core: binary (verified_full | failed)
+  - policy-adjusted: context-visible result; under strict policy fallback (hydrationMeta.fallbackToCompact=true) this may downgrade to partial semantics.
 - Returns next_hops[] with ranked follow-up actions when Unity evidence is available.`,
     inputSchema: {
       type: 'object',
