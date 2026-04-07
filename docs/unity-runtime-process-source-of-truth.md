@@ -51,7 +51,7 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - 合成边属性：`confidence=0.75`，`reason=unity-rule-{kind}:{ruleId}`
 4. Process 生成（Phase 6）：
    - 基于 CALLS tracing，标注 `processSubtype` 和 `runtimeChainConfidence`：`pipeline.ts:490-525`
-   - 生命周期 metadata 始终持久化：`pipeline.ts:446`
+   - 生命周期 metadata 按 Unity resource-binding flow 条件持久化（Unity 自动检测命中 `Assets/*.cs` 时开启）：`pipeline.ts:446`
 
 ### 2.2 Query/Context 侧（检索与投影）
 
@@ -104,7 +104,7 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 | Phase 1 | Unity summary schema hygiene | 已落地 | `schema.ts:254` |
 | Phase 2 | class→method process 投影 | 已落地（query/context 双侧） | `local-backend.ts:763-793, 1460-1483` |
 | Phase 3 | lifecycle + loader synthetic CALLS | **V2 重构**：lifecycle 始终启用，loader 改为规则驱动 | `unity-lifecycle-synthetic-calls.ts`；`unity-runtime-binding-rules.ts` |
-| Phase 4 | persisted lifecycle process artifact | **V2 变更**：始终持久化 | `pipeline.ts:446,524-525` |
+| Phase 4 | persisted lifecycle process artifact | **V2 变更**：仅在 Unity resource-binding flow 激活时持久化 | `pipeline.ts:446,524-525` |
 | Phase 5 | confidence + verification_hint 合约 | **V2 变更**：扩展字段始终输出 | `process-confidence.ts`；`local-backend.ts` |
 | V1 Reload | on-demand verify + 验收闭环 | **V2 重构**：verifier 简化为图谱查询 | `runtime-chain-verify.ts` (934→297 行) |
 | V2 规则驱动 | 规则定义资源↔代码边界穿越 | 已落地 | `unity-runtime-binding-rules.ts`；`unity-config.ts` |
@@ -160,7 +160,7 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 | --- | --- |
 | Lifecycle 合成边注入 | 对 Unity 项目自动生效（检测 `Assets/*.cs`） |
 | 规则驱动边注入 | `.gitnexus/rules/` 下有 `analyze_rules` 规则即生效 |
-| Process 元数据持久化 | 始终持久化 |
+| Process 元数据持久化 | 与 Unity resource-binding flow 绑定（Unity 自动检测命中 `Assets/*.cs` 时持久化） |
 | 扩展置信度字段输出 | 始终输出 |
 | 运行时链路验证 | 请求参数 `runtime_chain_verify=on-demand` 为唯一开关 |
 

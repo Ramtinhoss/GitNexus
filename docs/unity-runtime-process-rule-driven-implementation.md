@@ -200,7 +200,6 @@ interface UnityConfig {
   lazyBatchSize: number;                // default: 30
   lazyMaxMs: number;                    // default: 5000
   payloadMode: 'compact' | 'full';     // default: 'compact'
-  persistLifecycleProcessMetadata: boolean; // default: true
   parityWarmup: boolean;                // default: false
   parityWarmupMaxParallel: number;      // default: 4
   paritySeedCacheIdleMs: number;        // default: 60000
@@ -208,6 +207,9 @@ interface UnityConfig {
   parityCacheMaxEntries: number;        // default: 500
 }
 ```
+
+`persistLifecycleProcessMetadata` 已从配置契约移除；当前实现由 pipeline 运行时条件自动判定：
+当 Unity resource-binding flow 激活（`Assets/*.cs` 自动检测命中）时持久化 lifecycle process metadata。
 
 ### 6.2 优先级
 
@@ -222,7 +224,7 @@ CLI 参数 > .gitnexus/config.json (unity key) > 内置默认值
 | 原环境变量 | 处置 | 迁移目标 |
 |-----------|------|---------|
 | `GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS` | 删除 | 始终启用 |
-| `GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST` | 删除 | `persistLifecycleProcessMetadata` |
+| `GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST` | 删除 | 无外部开关（改为 pipeline 自动判定 Unity flow） |
 | `GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_MAX_PER_CLASS` | 迁移 | `maxSyntheticEdgesPerClass` |
 | `GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_MAX_TOTAL` | 迁移 | `maxSyntheticEdgesTotal` |
 | `GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS` | 删除 | 始终输出 |
