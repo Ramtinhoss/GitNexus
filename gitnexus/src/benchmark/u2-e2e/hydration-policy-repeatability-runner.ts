@@ -9,6 +9,10 @@ type PolicyName = 'fast' | 'balanced' | 'strict';
 interface PolicyRunSnapshot {
   status: string;
   evidence_level: string;
+  verification_core_status: string;
+  verification_core_evidence_level: string;
+  policy_adjusted: boolean;
+  policy_adjust_reason?: string;
   reason?: string;
   fallbackToCompact: boolean;
 }
@@ -47,6 +51,14 @@ export interface HydrationPolicyRepeatabilityReport {
     strict: { requested: string; effective: string; reason?: string; downgradeOnFallback: 'verified_partial/verified_segment' };
   };
   missing_evidence_contract: { requiresArray: boolean; populatedWhenIncomplete: boolean };
+  semantic_contract: {
+    coreAdjustedDelta: {
+      strictFallbackRuns: number;
+      strictFallbackAdjustedRuns: number;
+      nonStrictAdjustedRuns: number;
+    };
+    downgradeOnlyWhenStrictFallback: boolean;
+  };
   contractCompatibility: { needsParityRetryRetained: boolean };
   warmup_cache_state: { parityWarmupEnabled: boolean; note: string };
 }
@@ -55,6 +67,12 @@ function snapshotFromResponse(out: any): PolicyRunSnapshot {
   return {
     status: String(out?.runtime_claim?.status || 'unknown'),
     evidence_level: String(out?.runtime_claim?.evidence_level || 'none'),
+    verification_core_status: String(out?.runtime_claim?.verification_core_status || 'unknown'),
+    verification_core_evidence_level: String(out?.runtime_claim?.verification_core_evidence_level || 'none'),
+    policy_adjusted: Boolean(out?.runtime_claim?.policy_adjusted),
+    policy_adjust_reason: out?.runtime_claim?.policy_adjust_reason
+      ? String(out.runtime_claim.policy_adjust_reason)
+      : undefined,
     reason: out?.runtime_claim?.reason ? String(out.runtime_claim.reason) : undefined,
     fallbackToCompact: Boolean(out?.hydrationMeta?.fallbackToCompact),
   };
@@ -147,10 +165,17 @@ export async function buildHydrationPolicyRepeatabilityReport(input: {
   const balancedConsistency = classifyConsistency(snapshotsByPolicy.get('balanced') || []);
   const strictConsistency = classifyConsistency(snapshotsByPolicy.get('strict') || []);
   const strictRows = snapshotsByPolicy.get('strict') || [];
+  const fastRows = snapshotsByPolicy.get('fast') || [];
+  const balancedRows = snapshotsByPolicy.get('balanced') || [];
   const strictFallbackDowngraded = strictRows.every((row) => {
     if (!row.fallbackToCompact) return true;
     return row.status === 'verified_partial' && row.evidence_level === 'verified_segment';
   });
+  const strictFallbackRuns = strictRows.filter((row) => row.fallbackToCompact).length;
+  const strictFallbackAdjustedRuns = strictRows.filter((row) => row.fallbackToCompact && row.policy_adjusted).length;
+  const nonStrictAdjustedRuns = [...fastRows, ...balancedRows].filter((row) => row.policy_adjusted).length;
+  const downgradeOnlyWhenStrictFallback = nonStrictAdjustedRuns === 0
+    && strictFallbackAdjustedRuns <= strictFallbackRuns;
 
   const policy_mode_matrix = {} as Record<PolicyName, { compact: PolicyModeObservation; parity: PolicyModeObservation }>;
   for (const policy of policies) {
@@ -202,6 +227,14 @@ export async function buildHydrationPolicyRepeatabilityReport(input: {
     missing_evidence_contract: {
       requiresArray,
       populatedWhenIncomplete,
+    },
+    semantic_contract: {
+      coreAdjustedDelta: {
+        strictFallbackRuns,
+        strictFallbackAdjustedRuns,
+        nonStrictAdjustedRuns,
+      },
+      downgradeOnlyWhenStrictFallback,
     },
     contractCompatibility: {
       needsParityRetryRetained,

@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-04-07T05:49:11.692Z",
+  "repoAlias": "GitNexus",
+  "repeatability": {
+    "fast": {
+      "consistent": true,
+      "runCount": 3,
+      "mismatchCount": 0
+    },
+    "balanced": {
+      "consistent": true,
+      "runCount": 3,
+      "mismatchCount": 0
+    },
+    "strict": {
+      "consistent": true,
+      "runCount": 3,
+      "mismatchCount": 0
+    }
+  },
+  "policy_mode_matrix": {
+    "fast": {
+      "compact": {
+        "reason": "missing_hydration_meta:Symbol 'ReloadBase' not found"
+      },
+      "parity": {
+        "reason": "missing_hydration_meta:Symbol 'ReloadBase' not found"
+      }
+    },
+    "balanced": {
+      "compact": {
+        "reason": "missing_hydration_meta:Symbol 'ReloadBase' not found"
+      },
+      "parity": {
+        "reason": "missing_hydration_meta:Symbol 'ReloadBase' not found"
+      }
+    },
+    "strict": {
+      "compact": {
+        "reason": "missing_hydration_meta:Symbol 'ReloadBase' not found"
+      },
+      "parity": {
+        "reason": "missing_hydration_meta:Symbol 'ReloadBase' not found"
+      }
+    }
+  },
+  "policy_mapping": {
+    "fast": {
+      "requested": "compact",
+      "effective": "compact",
+      "reason": "missing_hydration_meta:Symbol 'ReloadBase' not found"
+    },
+    "balanced": {
+      "compact_requested": "compact",
+      "parity_requested": "compact",
+      "escalation": "parity_on_missing_evidence"
+    },
+    "strict": {
+      "requested": "parity",
+      "effective": "parity",
+      "reason": "missing_hydration_meta:Symbol 'ReloadBase' not found",
+      "downgradeOnFallback": "verified_partial/verified_segment"
+    }
+  },
+  "missing_evidence_contract": {
+    "requiresArray": true,
+    "populatedWhenIncomplete": true
+  },
+  "semantic_contract": {
+    "coreAdjustedDelta": {
+      "strictFallbackRuns": 0,
+      "strictFallbackAdjustedRuns": 0,
+      "nonStrictAdjustedRuns": 0
+    },
+    "downgradeOnlyWhenStrictFallback": true
+  },
+  "contractCompatibility": {
+    "needsParityRetryRetained": true
+  },
+  "warmup_cache_state": {
+    "parityWarmupEnabled": false,
+    "note": "repeatability sampled under current runtime/cache state"
+  }
+}
