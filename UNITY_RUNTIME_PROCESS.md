@@ -199,8 +199,10 @@ lifecycle_overrides:
 请求时传 `runtime_chain_verify=on-demand`，系统会：
 1. 从 `.gitnexus/rules/` 加载规则，按 `trigger_tokens + host_base_type + resource_types + module_scope` 加权匹配最佳规则
 2. 查询图谱中该规则注入的合成边（`reason` 包含规则 ID 且以 `unity-rule-` 开头）
-3. 返回二元结果：`verified_full`（合成边存在）或 `failed`（不存在）
-4. 结果携带 `evidence_source: 'analyze_time'`，表明验证基于索引阶段物化的数据
+3. 生成 `verifier-core` 二元结果：`verified_full`（合成边存在）或 `failed`（不存在）
+4. `query/context` 对外结果为 `policy-adjusted`：当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，可降级为 `verified_partial/verified_segment`
+5. 如果命中 strict fallback 降级，必须执行 parity rerun 后再做 closure 结论
+6. 结果携带 `evidence_source: 'analyze_time'`，表明验证基于索引阶段物化的数据
 
 不再需要全局 gate 环境变量，请求参数为唯一控制开关。
 

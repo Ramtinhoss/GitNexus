@@ -42,6 +42,8 @@ After `npm link`, `gitnexus` on this machine points to the local dist. All repos
 - 统一设计与实现对照文档：`docs/unity-runtime-process-source-of-truth.md`
 - 涉及 Unity runtime process 的任务，先阅读该文档，再执行检索/实现/验收。
 - 若历史设计文档与当前实现不一致，以该真理源文档和对应代码为准，并在变更后同步更新。
+- 运行时链路结论采用两层语义：`verifier-core`（二元）与 `policy-adjusted`（对外结果）。
+- 当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，`policy-adjusted` 可降级为 `verified_partial/verified_segment`；此时必须 parity rerun 后再做 closure 结论。
 
 ## CLI Setup 安装内容索引
 
