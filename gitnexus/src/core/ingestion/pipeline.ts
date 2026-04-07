@@ -502,7 +502,9 @@ export const runPipelineFromRepo = async (
       // ── Phase 5.6: Unity lifecycle synthetic calls (auto-detect) ────────
       const isUnityProject = allPaths.some(p => p.startsWith('Assets/') && p.endsWith('.cs'));
       const unityConfig = resolveUnityConfig();
-      const persistLifecycleProcessMetadata = unityConfig.config.persistLifecycleProcessMetadata ?? false;
+      // Persistence is coupled to the Unity resource-binding indexing flow:
+      // if Unity project auto-detection is active, persist lifecycle metadata.
+      const persistLifecycleProcessMetadata = isUnityProject;
       const unityLifecycleSyntheticResult = isUnityProject
         ? applyUnityLifecycleSyntheticCalls(graph, {
             maxSyntheticEdgesPerClass: unityConfig.config.maxSyntheticEdgesPerClass,

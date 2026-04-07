@@ -9,7 +9,6 @@ export interface UnityConfig {
   lazyBatchSize: number;
   lazyMaxMs: number;
   payloadMode: 'compact' | 'full';
-  persistLifecycleProcessMetadata: boolean;
   parityWarmup: boolean;
   parityWarmupMaxParallel: number;
   paritySeedCacheIdleMs: number;
@@ -32,7 +31,6 @@ const DEFAULTS: UnityConfig = {
   lazyBatchSize: 30,
   lazyMaxMs: 5000,
   payloadMode: 'compact',
-  persistLifecycleProcessMetadata: false,
   parityWarmup: false,
   parityWarmupMaxParallel: 4,
   paritySeedCacheIdleMs: 60000,
