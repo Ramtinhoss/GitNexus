@@ -79,6 +79,8 @@ Run from the project root. This parses all source files, builds the knowledge gr
 
 **Unity projects:** Add `--extensions ".cs,.meta"` to ensure Unity asset edges (`UNITY_ASSET_GUID_REF`, `UNITY_COMPONENT_INSTANCE`) are parsed. Add `--scope-prefix Assets/` to limit scope if all code lives under `Assets/`.
 
+**Unity lifecycle metadata persistence:** There is no external env/config toggle for `Process` lifecycle metadata persistence. The pipeline decides automatically from Unity resource-binding flow activation (`Assets/*.cs` detection).
+
 **C# conditional-compilation projects (recommended):**
 
 - Unity: pass `--csharp-define-csproj /path/to/Assembly-CSharp.csproj` (for neonspark, use `/Volumes/Shuttle/projects/neonspark/Assembly-CSharp.csproj`).

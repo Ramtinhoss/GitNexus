@@ -120,6 +120,11 @@ Rules:
    2. `~/.gitnexus/config.json` (`cliPackageSpec`, then `cliVersion`)
    3. package default dist-tag
 
+### Unity runtime process persistence note
+
+- `Process` lifecycle metadata persistence has no external config/env switch.
+- Behavior is pipeline-derived: persistence is enabled when Unity resource-binding flow is active (Unity auto-detected via `Assets/*.cs`).
+
 ## Why `meta.json` Is Not Merged With `sync-manifest.txt`
 
 - `sync-manifest.txt` is user-authored intent config.
