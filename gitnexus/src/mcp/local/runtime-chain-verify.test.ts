@@ -459,7 +459,9 @@ describe('runtime chain verify', () => {
     });
 
     expect(strict.status).toBe('verified_partial');
+    expect(strict.evidence_level).toBe('verified_segment');
     expect(relaxed.status).toBe('verified_full');
+    expect(relaxed.evidence_level).toBe('verified_chain');
     await fs.rm(repoPath, { recursive: true, force: true });
   });
 

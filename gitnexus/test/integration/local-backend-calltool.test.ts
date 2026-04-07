@@ -375,6 +375,9 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(out.runtime_claim.non_guarantees.length).toBeGreaterThan(0);
       expect(out.runtime_claim.reason).toBe('rule_not_matched');
       expect(out.runtime_claim.next_action).toBeTruthy();
+      expect(['verified_full', 'failed']).toContain(out.runtime_claim.verification_core_status);
+      expect(out.runtime_claim.verification_core_evidence_level).toBeTruthy();
+      expect(typeof out.runtime_claim.policy_adjusted).toBe('boolean');
     });
 
     it('phase5 rule-lab promoted rule is loadable', async () => {
@@ -517,9 +520,14 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       expect(strict.hydrationMeta?.requestedMode).toBe('parity');
       expect(typeof strict.hydrationMeta?.effectiveMode).toBe('string');
       expect(String(strict.hydrationMeta?.reason || '')).toMatch(/strict/i);
+      expect(['verified_full', 'failed']).toContain(strict.runtime_claim?.verification_core_status);
+      expect(strict.runtime_claim?.verification_core_evidence_level).toBeTruthy();
+      expect(typeof strict.runtime_claim?.policy_adjusted).toBe('boolean');
       if (strict.hydrationMeta?.fallbackToCompact && strict.runtime_claim?.status !== 'failed') {
+        expect(strict.runtime_claim?.verification_core_status).toBe('verified_full');
         expect(strict.runtime_claim?.status).toBe('verified_partial');
         expect(strict.runtime_claim?.evidence_level).toBe('verified_segment');
+        expect(strict.runtime_claim?.policy_adjusted).toBe(true);
       }
       expect(Array.isArray(strict.missing_evidence)).toBe(true);
 
@@ -539,6 +547,27 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       });
       expect(fastParity.hydrationMeta?.requestedMode).toBe('compact');
       expect(String(fastParity.hydrationMeta?.reason || '')).toMatch(/fast/i);
+    });
+
+    it('runtime claim core vs adjusted metadata is stable in context()', async () => {
+      const out = await backend.callTool('context', {
+        name: 'ReloadBase',
+        unity_resources: 'on',
+        hydration_policy: 'strict',
+        unity_hydration_mode: 'compact',
+        runtime_chain_verify: 'on-demand',
+      });
+
+      expect(out.runtime_claim).toBeDefined();
+      expect(['verified_full', 'failed']).toContain(out.runtime_claim?.verification_core_status);
+      expect(out.runtime_claim?.verification_core_evidence_level).toBeTruthy();
+      expect(typeof out.runtime_claim?.policy_adjusted).toBe('boolean');
+      if (out.hydrationMeta?.fallbackToCompact && out.runtime_claim?.status !== 'failed') {
+        expect(out.runtime_claim?.verification_core_status).toBe('verified_full');
+        expect(out.runtime_claim?.status).toBe('verified_partial');
+        expect(out.runtime_claim?.evidence_level).toBe('verified_segment');
+        expect(out.runtime_claim?.policy_adjusted).toBe(true);
+      }
     });
 
     it('phase4 missing_evidence and needsParityRetry', async () => {
