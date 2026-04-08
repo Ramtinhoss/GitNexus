@@ -1,8 +1,8 @@
 import type { RuntimeChainEvidenceLevel } from './runtime-chain-evidence.js';
-import { buildRuntimeClaimFromRule, type RuntimeClaim } from './runtime-claim.js';
+import { type RuntimeClaim } from './runtime-claim.js';
 import { extractRuntimeGraphCandidates } from './runtime-chain-graph-candidates.js';
 import { evaluateRuntimeClosure } from './runtime-chain-closure-evaluator.js';
-import { RuleRegistryLoadError, loadRuleRegistry, type RuntimeClaimRule } from './runtime-claim-rule-registry.js';
+import type { RuntimeClaimRule } from './runtime-claim-rule-registry.js';
 
 export type RuntimeChainVerifyMode = 'off' | 'on-demand';
 export type RuntimeChainStatus = 'pending' | 'verified_partial' | 'verified_full' | 'failed';
@@ -110,28 +110,6 @@ function buildDefaultVerifyNextCommand(queryText?: string): string {
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"');
   return `node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "${escapedQuery}"`;
-}
-
-function buildRuntimeMatchHaystack(input: VerifyRuntimeChainInput): string {
-  return [
-    input.queryText,
-    input.resourceSeedPath,
-    input.symbolName,
-    input.symbolFilePath,
-    ...(input.mappedSeedTargets || []),
-    ...(input.resourceBindings || []).map((binding) => binding.resourcePath),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-}
-
-function parseTriggerTokens(triggerFamily: string): string[] {
-  return String(triggerFamily || '')
-    .toLowerCase()
-    .split(/[\s,|/]+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length > 0);
 }
 
 async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Promise<RuntimeChainResult> {
@@ -282,58 +260,6 @@ function buildGraphOnlyRuntimeClaim(input: {
 
   return base;
 }
-
-function scoreRuntimeClaimRule(
-  rule: RuntimeClaimRule,
-  input: VerifyRuntimeClaimInput,
-): number {
-  const haystack = buildRuntimeMatchHaystack(input);
-  const tokens = Array.isArray(rule.match?.trigger_tokens) && rule.match!.trigger_tokens.length > 0
-    ? rule.match!.trigger_tokens
-    : parseTriggerTokens(rule.trigger_family);
-  if (tokens.length === 0) return Number.NEGATIVE_INFINITY;
-
-  let score = 0;
-  let matchedTrigger = false;
-  for (const token of tokens) {
-    const normalized = String(token || '').trim().toLowerCase();
-    if (!normalized) continue;
-    if (haystack.includes(normalized)) {
-      matchedTrigger = true;
-      score += 10 + normalized.length;
-    }
-  }
-  if (!matchedTrigger) return Number.NEGATIVE_INFINITY;
-
-  const boostLists = [
-    ...(Array.isArray(rule.match?.host_base_type) ? [rule.match!.host_base_type!] : []),
-    ...(Array.isArray(rule.host_base_type) ? [rule.host_base_type] : []),
-  ];
-  for (const list of boostLists) {
-    for (const token of list) {
-      const normalized = String(token || '').trim().toLowerCase();
-      if (normalized && haystack.includes(normalized)) score += 20 + normalized.length;
-    }
-  }
-
-  const resourceLists = [
-    ...(Array.isArray(rule.match?.resource_types) ? [rule.match!.resource_types!] : []),
-    ...(Array.isArray(rule.resource_types) ? [rule.resource_types] : []),
-  ];
-  for (const list of resourceLists) {
-    for (const token of list) {
-      const normalized = String(token || '').trim().toLowerCase();
-      if (normalized && haystack.includes(normalized)) score += 4 + normalized.length;
-    }
-  }
-
-  for (const token of rule.match?.module_scope || []) {
-    const normalized = String(token || '').trim().toLowerCase();
-    if (normalized && haystack.includes(normalized)) score += 8 + normalized.length;
-  }
-
-  return score;
-}
 export async function verifyRuntimeClaimOnDemand(
   input: VerifyRuntimeClaimInput,
 ): Promise<RuntimeClaim> {
@@ -357,87 +283,8 @@ export async function verifyRuntimeClaimOnDemand(
       minimumEvidenceSatisfied: input.minimumEvidenceSatisfied,
     });
   }
-
-  let registry;
-  try {
-    registry = await loadRuleRegistry(input.repoPath, input.rulesRoot);
-  } catch (error) {
-    if (error instanceof RuleRegistryLoadError) {
-      if (error.code === 'rule_catalog_missing' || error.code === 'rule_file_missing') {
-        return buildFailureRuntimeClaim({
-          reason: 'rule_not_matched',
-          next_action: buildDefaultVerifyNextCommand(input.queryText),
-        });
-      }
-    }
-    throw error;
-  }
-  const activeRules = registry.activeRules || [];
-
-  if (activeRules.length === 0) {
-    return buildFailureRuntimeClaim({
-      reason: 'rule_not_matched',
-      next_action: fallbackNextAction,
-    });
-  }
-
-  const matchedRule = [...activeRules]
-    .map((rule) => ({ rule, score: scoreRuntimeClaimRule(rule, input) }))
-    .filter((entry) => Number.isFinite(entry.score))
-    .sort((a, b) => (b.score - a.score) || a.rule.id.localeCompare(b.rule.id))[0]?.rule;
-  if (!matchedRule) {
-    return buildFailureRuntimeClaim({
-      reason: 'rule_not_matched',
-      next_action: fallbackNextAction,
-    });
-  }
-
-  const runtimeChain = await verifyRuntimeChainOnDemand({
-    ...input,
-    requiredHops: matchedRule.required_hops,
-    rule: matchedRule,
+  return buildFailureRuntimeClaim({
+    reason: 'rule_not_matched',
+    next_action: fallbackNextAction,
   });
-  if (!runtimeChain) {
-    return buildFailureRuntimeClaim({
-      reason: 'rule_matched_but_evidence_missing',
-      next_action: matchedRule.next_action || buildDefaultVerifyNextCommand(input.queryText),
-      rule: matchedRule,
-    });
-  }
-
-  const normalizedStatus: RuntimeClaim['status'] = (
-    runtimeChain.status === 'pending' ? 'failed' : runtimeChain.status
-  );
-  const verificationFailed = normalizedStatus === 'failed'
-    || (runtimeChain.evidence_level === 'none' && normalizedStatus !== 'verified_full');
-  const resolved: RuntimeClaim = buildRuntimeClaimFromRule({
-    rule: matchedRule,
-    status: verificationFailed ? 'failed' : normalizedStatus,
-    evidence_level: runtimeChain.evidence_level,
-    hops: runtimeChain.hops,
-    gaps: runtimeChain.gaps,
-    ...(verificationFailed
-      ? {
-        reason: 'rule_matched_but_verification_failed' as const,
-        next_action: matchedRule.next_action || buildDefaultVerifyNextCommand(input.queryText),
-      }
-      : {}),
-  });
-
-  const chainClosed = resolved.status === 'verified_full'
-    && resolved.evidence_level === 'verified_chain'
-    && resolved.gaps.length === 0;
-  if (input.minimumEvidenceSatisfied === false && !chainClosed) {
-    return {
-      ...resolved,
-      status: 'failed',
-      evidence_level: 'clue',
-      guarantees: [],
-      non_guarantees: [...resolved.non_guarantees, 'minimum_evidence_contract_not_satisfied'],
-      reason: 'rule_matched_but_evidence_missing',
-      next_action: matchedRule.next_action || buildDefaultVerifyNextCommand(input.queryText),
-    };
-  }
-
-  return resolved;
 }

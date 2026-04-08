@@ -280,6 +280,10 @@ export function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
   };
 }
 
+/**
+ * Runtime claim rule registry remains the source for analyze-time synthetic-edge production
+ * and offline governance/report workflows. Query-time runtime closure verification is graph-only.
+ */
 export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Promise<RuntimeClaimRuleRegistry> {
   const normalizedRepoPath = path.resolve(repoPath);
   const root = rulesRoot

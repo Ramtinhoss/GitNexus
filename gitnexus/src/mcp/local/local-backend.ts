@@ -1881,7 +1881,6 @@ export class LocalBackend {
         resourceSeedPath: seedPath,
         mappedSeedTargets,
         resourceBindings,
-        rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
         minimumEvidenceSatisfied: result.evidence_meta?.verifier_minimum_evidence_satisfied !== false,
       });
       if (result.runtime_claim) {
@@ -2668,7 +2667,6 @@ export class LocalBackend {
         resourceSeedPath: seedPath,
         mappedSeedTargets,
         resourceBindings: Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [],
-        rulesRoot: path.join(repo.repoPath, '.gitnexus', 'rules'),
         minimumEvidenceSatisfied: (result as any).evidence_meta?.minimum_evidence_satisfied !== false,
       });
       if (result.runtime_claim) {

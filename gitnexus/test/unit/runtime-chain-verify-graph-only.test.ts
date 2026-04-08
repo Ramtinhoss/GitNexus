@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { verifyRuntimeChainOnDemand } from '../../src/mcp/local/runtime-chain-verify.js';
+import { verifyRuntimeChainOnDemand, verifyRuntimeClaimOnDemand } from '../../src/mcp/local/runtime-chain-verify.js';
 
 function makeGraphCandidateExecutor() {
   return async (query: string, params?: Record<string, unknown>) => {
@@ -206,5 +206,22 @@ describe('runtime-chain graph-only verifier', () => {
 
     expect(out?.status).toBe('verified_partial');
     expect((out?.gaps || []).some((gap) => String(gap.reason).includes('precision-first policy'))).toBe(true);
+  });
+
+  it('does not require retrieval/verification family for runtime closure in query-time path', async () => {
+    const out = await verifyRuntimeClaimOnDemand({
+      repoPath: '/tmp/no-rules-present',
+      queryText: 'irrelevant query text',
+      symbolName: 'WeaponPowerUp',
+      resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/weapon.asset',
+      mappedSeedTargets: ['Assets/NEON/Graphs/PlayerGun/Gungraph_use/weapon_graph.asset'],
+      resourceBindings: [{ resourcePath: 'Assets/NEON/Graphs/PlayerGun/Gungraph_use/weapon_graph.asset' }],
+      executeParameterized: makeGraphCandidateExecutor(),
+      minimumEvidenceSatisfied: true,
+    });
+
+    expect(out.status).toBe('verified_full');
+    expect(out.evidence_level).toBe('verified_chain');
+    expect(out.reason).toBeUndefined();
   });
 });

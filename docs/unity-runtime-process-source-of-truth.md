@@ -66,16 +66,16 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - `runtime_chain_confidence`、`runtime_chain_evidence_level`、`verification_hint`
    - `process-confidence.ts`；`local-backend.ts`
 
-### 2.3 On-Demand 强验证（简化后的规则驱动验证）
+### 2.3 On-Demand 强验证（Graph-Only Closure）
 
 1. 显式入口：
    - CLI: `--runtime-chain-verify off|on-demand`
    - MCP schema: `runtime_chain_verify`（`tools.ts`）
    - 请求参数为唯一控制开关，无全局 gate
-2. 验证逻辑（`runtime-chain-verify.ts`，297 行）：
-   - `verifyRuntimeClaimOnDemand`：加载规则目录 → 加权匹配（`trigger_tokens + host_base_type + resource_types + module_scope`）→ 分发验证
-   - `verifyRuleDrivenRuntimeChain`：查询图谱中 `unity-rule-*` 合成边 → 二元结果
-   - 无文件系统 I/O、无 regex 启发式、无单跳展开
+2. 验证逻辑（`runtime-chain-verify.ts`）：
+   - `verifyRuntimeClaimOnDemand`：直接走结构化锚点（`symbolName/resourceSeedPath/mappedSeedTargets/resourceBindings`）驱动的 graph-only closure
+   - query-time 不再加载 retrieval/verification 规则目录做匹配；规则仍用于 analyze-time synthetic edge 与离线治理产物
+   - 无文件系统 I/O、无 regex 启发式、无 token family 匹配门槛
 3. 验证结果：
    - `status: 'verified_full'` + `evidence_source: 'analyze_time'`（图谱中存在匹配的合成边）
    - `status: 'failed'` + `evidence_level: 'none'`（无匹配合成边）
@@ -90,11 +90,11 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
    - discover → analyze → review-pack → curate → promote → regress
 2. 规则族区分：
    - `family: 'analyze_rules'`：索引阶段注入合成边（`loadAnalyzeRules`）
-   - `family: 'verification_rules'`：查询阶段验证（`loadRuleRegistry`）
+   - `family: 'verification_rules'`：离线治理与报告用途（Rule Lab / artifact），不再作为 query-time closure 匹配门槛
    - v1 规则（无 family 字段）默认归类为 `verification_rules`
-3. Runtime verifier 装载闭环：
+3. Runtime verifier 治理闭环：
    - promote 写入 `.gitnexus/rules/catalog.json` + `approved/*.yaml`
-   - `verifyRuntimeClaimOnDemand` 通过 `loadRuleRegistry` 读取 repo-local 规则
+   - `verification_rules` 供离线治理与回归对照，不参与 query-time graph-only closure
 
 ## 3. 设计与实现对照（阶段）
 
@@ -138,7 +138,7 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 1. `query/context` 的 `processes[]` 返回：
    - `id`（可读 process id；heuristic 情况下为 `derived:*`）
    - `process_ref`：`id`, `kind`, `readable`, `reader_uri`, `origin`
-2. 请求 `runtime_chain_verify=on-demand` 时，返回 `runtime_claim`（rule-driven）：
+2. 请求 `runtime_chain_verify=on-demand` 时，返回 `runtime_claim`（graph-only）：
    - `rule_id`, `rule_version`, `scope`
    - `status`, `evidence_level`, `hops`, `gaps`
    - `verification_core_status`, `verification_core_evidence_level`
@@ -154,7 +154,7 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 1. Rule Lab 六阶段生命周期：discover → analyze → review_pack → curate → promote → regress
 2. Artifact 路径：`.gitnexus/rules/lab/runs/<run_id>/...`
 3. promote 后即时供 runtime claim verifier 和 analyze pipeline 读取
-4. 规则族区分：`analyze_rules`（索引阶段注入）vs `verification_rules`（查询阶段验证）
+4. 规则族区分：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）
 
 ## 5. 配置方式（V2）
 
@@ -204,7 +204,7 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 2. **Pipeline 重排序**：Unity 资源处理从 Phase 7 提前到 Phase 5.5，lifecycle 始终启用，规则驱动注入插入 Phase 5.7
 3. **规则驱动注入**：`applyUnityRuntimeBindingRules` 实现三种绑定处理器（`asset_ref_loads_components` / `method_triggers_field_load` / `method_triggers_scene_load`）+ `lifecycle_overrides`
 4. **环境变量清除**：15 个 `GITNEXUS_UNITY_*` env var 全部移除，迁移到 `resolveUnityConfig()` 统一配置
-5. **Verifier 简化**：`runtime-chain-verify.ts` 从 934 行缩减到 297 行，移除所有启发式/文件 I/O，改为图谱查询
+5. **Verifier 收口**：`runtime-chain-verify.ts` query-time 路径已切换为 graph-only closure，不再加载 retrieval/verification 规则目录做匹配
 6. **硬编码移除**：`RUNTIME_LOADER_ANCHORS`（8 锚点）、`DETERMINISTIC_LOADER_BRIDGES`（7 桥接）、项目特化评分全部删除
 
 ## 8. Rule Lab 当前边界（2026-04-03 As-Built）
@@ -212,7 +212,7 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 1. `promote.ts` 仍允许从 curated 内容推断 `trigger_family`，但 scope/topology/claims 必须通过 DSL lint。
 2. `analyze.ts` 已升级为多候选 topology 输出（含 coverage/conflict/counter-example 统计）。
 3. Rule Lab 产物写入 `.gitnexus/rules/**`，受仓库 `.gitignore` 影响（默认忽略 `.gitnexus`）。
-4. V2 新增 `analyze_rules` 族规则在索引阶段生效；现有 `verification_rules` 族规则在查询阶段生效。两种规则通过 `family` 字段区分，互不干扰。
+4. V2 新增 `analyze_rules` 族规则在索引阶段生效；`verification_rules` 族规则用于离线治理/报告，不参与 query-time runtime closure 匹配。两种规则通过 `family` 字段区分。
 
 ## 9. 维护规则
 
