@@ -36,6 +36,13 @@ function normalize(value: unknown): string {
   return String(value || '').trim().toLowerCase();
 }
 
+function tokenize(value: unknown): string[] {
+  return normalize(value)
+    .split(/[^a-z0-9]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+}
+
 function evaluateAnchorSegment(input: EvaluateRuntimeClosureInput): boolean {
   const symbolName = normalize(input.symbolName);
   if (!symbolName) return false;
@@ -74,14 +81,41 @@ function evaluateRuntimeSegment(input: EvaluateRuntimeClosureInput): boolean {
   });
 }
 
+function hasAnchorIntersection(input: EvaluateRuntimeClosureInput): boolean {
+  const symbolTokens = new Set(tokenize(input.symbolName));
+  if (symbolTokens.size === 0) return false;
+  const resourceTokens = new Set([
+    ...tokenize(input.resourceSeedPath),
+    ...(input.mappedSeedTargets || []).flatMap((value) => tokenize(value)),
+    ...(input.resourceBindings || []).flatMap((binding) => tokenize(binding.resourcePath)),
+  ]);
+  if (resourceTokens.size === 0) return false;
+  for (const token of symbolTokens) {
+    if (resourceTokens.has(token)) return true;
+  }
+  return false;
+}
+
+function hasUbiquitousRuntimeSignal(input: EvaluateRuntimeClosureInput): boolean {
+  const ubiquitous = new Set(['getcomponent', 'awake', 'start', 'update', 'lateupdate', 'fixedupdate', 'onenable']);
+  return input.candidates.some((candidate) => {
+    const source = normalize(candidate.sourceName);
+    const target = normalize(candidate.targetName);
+    return ubiquitous.has(source) || ubiquitous.has(target);
+  });
+}
+
 export function evaluateRuntimeClosure(input: EvaluateRuntimeClosureInput): RuntimeClosureEvaluation {
   const anchor = evaluateAnchorSegment(input);
   const bind = evaluateBindSegment(input);
   const bridge = evaluateBridgeSegment(input, anchor);
   const runtime = evaluateRuntimeSegment(input);
+  const anchorIntersection = hasAnchorIntersection(input);
+  const ubiquitousRuntimeSignal = hasUbiquitousRuntimeSignal(input);
 
   const segments = { anchor, bind, bridge, runtime };
   const allSatisfied = anchor && bind && bridge && runtime;
+  const precisionPenalty = allSatisfied && !anchorIntersection && ubiquitousRuntimeSignal;
   const anySatisfied = anchor || bind || bridge || runtime;
 
   const gaps: RuntimeChainGap[] = [];
@@ -113,8 +147,15 @@ export function evaluateRuntimeClosure(input: EvaluateRuntimeClosureInput): Runt
       next_command: input.nextCommand,
     });
   }
+  if (precisionPenalty) {
+    gaps.push({
+      segment: 'loader',
+      reason: 'anchor intersection absent; downgraded for precision-first policy',
+      next_command: input.nextCommand,
+    });
+  }
 
-  if (allSatisfied) {
+  if (allSatisfied && !precisionPenalty) {
     return {
       status: 'verified_full',
       evidence_level: 'verified_chain',
