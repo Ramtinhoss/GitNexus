@@ -51,6 +51,19 @@ interface VerifyRuntimeClaimInput extends VerifyRuntimeChainInput {
   minimumEvidenceSatisfied?: boolean;
 }
 
+function hasStructuredVerifierAnchors(input: VerifyRuntimeClaimInput): boolean {
+  const hasValue = (value: unknown): boolean => String(value || '').trim().length > 0;
+  if (hasValue(input.resourceSeedPath)) return true;
+  if (hasValue(input.symbolName)) return true;
+  if (hasValue(input.symbolFilePath)) return true;
+  if (Array.isArray(input.mappedSeedTargets) && input.mappedSeedTargets.some((value) => hasValue(value))) return true;
+  if (
+    Array.isArray(input.resourceBindings)
+    && input.resourceBindings.some((binding) => hasValue(binding?.resourcePath))
+  ) return true;
+  return false;
+}
+
 function buildDefaultVerifyNextCommand(queryText?: string): string {
   const normalizedQuery = String(queryText || '').trim() || 'Reload NEON.Game.Graph.Nodes.Reloads';
   const escapedQuery = normalizedQuery
@@ -210,6 +223,14 @@ function scoreRuntimeClaimRule(
 export async function verifyRuntimeClaimOnDemand(
   input: VerifyRuntimeClaimInput,
 ): Promise<RuntimeClaim> {
+  const fallbackNextAction = buildDefaultVerifyNextCommand(input.queryText);
+  if (!hasStructuredVerifierAnchors(input)) {
+    return buildFailureRuntimeClaim({
+      reason: 'rule_not_matched',
+      next_action: fallbackNextAction,
+    });
+  }
+
   let registry;
   try {
     registry = await loadRuleRegistry(input.repoPath, input.rulesRoot);
@@ -225,7 +246,6 @@ export async function verifyRuntimeClaimOnDemand(
     throw error;
   }
   const activeRules = registry.activeRules || [];
-  const fallbackNextAction = buildDefaultVerifyNextCommand(input.queryText);
 
   if (activeRules.length === 0) {
     return buildFailureRuntimeClaim({
@@ -294,4 +314,3 @@ export async function verifyRuntimeClaimOnDemand(
 
   return resolved;
 }
-

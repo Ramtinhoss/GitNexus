@@ -78,7 +78,7 @@ describe('runtime claim evidence gate', () => {
             id: 'demo.reload.evidence-gate.v2',
             version: '2.0.0',
             trigger_family: 'reload',
-            trigger_tokens: ['reload'],
+            trigger_tokens: ['reload', 'gungraph'],
             resource_types: ['asset'],
             host_base_type: ['GunGraph'],
             required_hops: ['resource', 'guid_map', 'code_loader', 'code_runtime'],
@@ -87,7 +87,7 @@ describe('runtime claim evidence gate', () => {
             next_action: 'gitnexus query "Reload NEON.Game.Graph.Nodes.Reloads"',
             file_path: 'approved/demo.reload.evidence-gate.v2.yaml',
             match: {
-              trigger_tokens: ['reload'],
+              trigger_tokens: ['reload', 'gungraph'],
               symbol_kind: [],
               module_scope: [],
               resource_types: ['asset'],
@@ -126,7 +126,7 @@ describe('runtime claim evidence gate', () => {
 
       const out = await verifyRuntimeClaimOnDemand({
         repoPath: repoRoot,
-        queryText: 'reload GunGraph Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
+        queryText: 'unrelated prompt text',
         symbolName: 'GunGraph',
         resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
         mappedSeedTargets: [graphAsset],
