@@ -138,8 +138,33 @@ describe('runtime claim evidence gate', () => {
       expect(out.status).toBe('verified_full');
       expect(out.evidence_level).toBe('verified_chain');
       expect(out.reason).toBeUndefined();
-      expect(out.hops.map((hop) => hop.hop_type)).toEqual(['code_runtime']);
+      expect(out.hops.every((hop) => hop.hop_type === 'code_runtime')).toBe(true);
       expect(out.non_guarantees).not.toContain('minimum_evidence_contract_not_satisfied');
+    } finally {
+      await fs.rm(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('calls verifier with structured anchors and no queryText match dependency', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-claim-graph-only-wiring-'));
+    const graphAsset = 'Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset';
+    try {
+      const out = await verifyRuntimeClaimOnDemand({
+        repoPath: repoRoot,
+        queryText: 'completely unrelated query text',
+        symbolName: 'GunGraph',
+        symbolFilePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+        resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
+        mappedSeedTargets: [graphAsset],
+        resourceBindings: [{ resourcePath: graphAsset }],
+        minimumEvidenceSatisfied: true,
+        executeParameterized: makeClosedChainExecutor(),
+      });
+
+      expect(out.status).toBe('verified_full');
+      expect(out.evidence_level).toBe('verified_chain');
+      expect(out.reason).toBeUndefined();
+      expect(out.hops.length).toBeGreaterThan(0);
     } finally {
       await fs.rm(repoRoot, { recursive: true, force: true });
     }

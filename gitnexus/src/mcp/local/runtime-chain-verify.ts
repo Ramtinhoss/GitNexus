@@ -224,6 +224,65 @@ function buildFailureRuntimeClaim(input: {
   };
 }
 
+function buildGraphOnlyRuntimeClaim(input: {
+  runtimeChain: RuntimeChainResult;
+  queryText?: string;
+  symbolName?: string;
+  minimumEvidenceSatisfied?: boolean;
+}): RuntimeClaim {
+  const normalizedStatus: RuntimeClaim['status'] = (
+    input.runtimeChain.status === 'pending' ? 'failed' : input.runtimeChain.status
+  );
+  const verificationFailed = normalizedStatus === 'failed'
+    || (input.runtimeChain.evidence_level === 'none' && normalizedStatus !== 'verified_full');
+  const nextAction = buildDefaultVerifyNextCommand(input.queryText);
+
+  const base: RuntimeClaim = {
+    rule_id: 'graph-only.runtime-closure.v1',
+    rule_version: '1.0.0',
+    scope: {
+      resource_types: ['asset', 'prefab', 'unity'],
+      host_base_type: input.symbolName ? [input.symbolName] : [],
+      trigger_family: 'graph_only',
+    },
+    status: verificationFailed ? 'failed' : normalizedStatus,
+    evidence_level: input.runtimeChain.evidence_level,
+    guarantees: (!verificationFailed && normalizedStatus === 'verified_full')
+      ? ['runtime_chain_graph_closure']
+      : [],
+    non_guarantees: [
+      'no_runtime_execution',
+      'no_dynamic_data_flow_proof',
+      'no_state_transition_proof',
+    ],
+    hops: input.runtimeChain.hops,
+    gaps: input.runtimeChain.gaps,
+    ...(verificationFailed
+      ? {
+        reason: 'rule_matched_but_verification_failed' as const,
+        next_action: nextAction,
+      }
+      : {}),
+  };
+
+  const chainClosed = base.status === 'verified_full'
+    && base.evidence_level === 'verified_chain'
+    && base.gaps.length === 0;
+  if (input.minimumEvidenceSatisfied === false && !chainClosed) {
+    return {
+      ...base,
+      status: 'failed',
+      evidence_level: 'clue',
+      guarantees: [],
+      non_guarantees: [...base.non_guarantees, 'minimum_evidence_contract_not_satisfied'],
+      reason: 'rule_matched_but_evidence_missing',
+      next_action: nextAction,
+    };
+  }
+
+  return base;
+}
+
 function scoreRuntimeClaimRule(
   rule: RuntimeClaimRule,
   input: VerifyRuntimeClaimInput,
@@ -283,6 +342,19 @@ export async function verifyRuntimeClaimOnDemand(
     return buildFailureRuntimeClaim({
       reason: 'rule_not_matched',
       next_action: fallbackNextAction,
+    });
+  }
+
+  const graphOnlyRuntimeChain = await verifyRuntimeChainOnDemand({
+    ...input,
+    rule: undefined,
+  });
+  if (graphOnlyRuntimeChain) {
+    return buildGraphOnlyRuntimeClaim({
+      runtimeChain: graphOnlyRuntimeChain,
+      queryText: input.queryText,
+      symbolName: input.symbolName,
+      minimumEvidenceSatisfied: input.minimumEvidenceSatisfied,
     });
   }
 

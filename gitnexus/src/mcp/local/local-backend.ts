@@ -357,6 +357,25 @@ export function pickVerificationTarget(input: {
   return normalizedBindings[0] || input.fallback;
 }
 
+export function pickVerifierSymbolAnchor(input: {
+  queryText?: string;
+  processSymbols: any[];
+  definitions: any[];
+}): { symbolName?: string; symbolFilePath?: string } {
+  const lowerQuery = String(input.queryText || '').toLowerCase();
+  const firstMatchInQuery = [
+    ...input.processSymbols,
+    ...input.definitions,
+  ].find((row: any) => lowerQuery.includes(String(row?.name || '').toLowerCase()));
+  const anchor = firstMatchInQuery || input.processSymbols[0] || input.definitions[0];
+  const symbolName = String(anchor?.name || '').trim();
+  const symbolFilePath = normalizePath(String(anchor?.filePath || '').trim());
+  return {
+    ...(symbolName ? { symbolName } : {}),
+    ...(symbolFilePath ? { symbolFilePath } : {}),
+  };
+}
+
 export function buildNextHops(input: {
   seedPath?: string;
   mappedSeedTargets: string[];
@@ -1765,10 +1784,14 @@ export class LocalBackend {
     if (hydrationMetas.length > 0) {
       result.hydrationMeta = hydrationMetas[0];
     }
-    const lowerQuery = searchQuery.toLowerCase();
+    const verifierAnchor = pickVerifierSymbolAnchor({
+      queryText: searchQuery,
+      processSymbols: dedupedSymbols,
+      definitions,
+    });
     const firstSymbolForHops =
-      dedupedSymbols.find((row: any) => lowerQuery.includes(String(row?.name || '').toLowerCase()))
-      || definitions.find((row: any) => lowerQuery.includes(String(row?.name || '').toLowerCase()))
+      dedupedSymbols.find((row: any) => String(row?.name || '') === verifierAnchor.symbolName)
+      || definitions.find((row: any) => String(row?.name || '') === verifierAnchor.symbolName)
       || dedupedSymbols[0]
       || definitions[0];
     const firstVerificationHint = processes.find((row: any) => row?.verification_hint)?.verification_hint;
@@ -1853,6 +1876,8 @@ export class LocalBackend {
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
         queryText: searchQuery,
+        symbolName: verifierAnchor.symbolName,
+        symbolFilePath: verifierAnchor.symbolFilePath,
         resourceSeedPath: seedPath,
         mappedSeedTargets,
         resourceBindings,

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildNextHops, pickRetrievalRuleHintFromBundle } from '../../src/mcp/local/local-backend.js';
+import {
+  buildNextHops,
+  pickRetrievalRuleHintFromBundle,
+  pickVerifierSymbolAnchor,
+} from '../../src/mcp/local/local-backend.js';
 
 describe('buildNextHops command templates', () => {
   it('includes repo in generated next commands when repoName is provided', () => {
@@ -120,5 +124,22 @@ describe('buildNextHops command templates', () => {
 
     expect(hint?.id).toBe('specific.reloadbase');
     expect(hint?.next_action).toContain('specific');
+  });
+
+  it('prefers structured symbol anchors for verifier wiring over query text fallback', () => {
+    const anchor = pickVerifierSymbolAnchor({
+      queryText: 'completely unrelated user input',
+      processSymbols: [{
+        name: 'GunGraph',
+        filePath: 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs',
+      }],
+      definitions: [{
+        name: 'ReloadBase',
+        filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+      }],
+    });
+
+    expect(anchor.symbolName).toBe('GunGraph');
+    expect(anchor.symbolFilePath).toBe('Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs');
   });
 });
