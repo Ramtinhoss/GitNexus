@@ -145,6 +145,58 @@ jq -e '.negative_cases.neg_03.assumption.hops_empty==true and .negative_cases.ne
 
 ## Refactoring Workflow
 
+Goal: build a safe pre-change map before rename/extract/split operations.
+
+Evidence Ref: workflows.refactoring.query  
+Evidence Ref: workflows.refactoring.context  
+Evidence Ref: workflows.refactoring.cypher
+
+1. `query` for candidate flows and symbol anchors.
+
+```bash
+gitnexus query -r GitNexus -l 3 "rename workflow blast radius"
+```
+
+2. `context` for direct callers/callees and process participation.
+
+```bash
+gitnexus context -r GitNexus -f gitnexus/src/mcp/server.ts getNextStepHint
+```
+
+3. `cypher` for structural proof before edits.
+
+Template A (`CALLS`):
+
+```bash
+gitnexus cypher -r GitNexus "MATCH (a)-[:CodeRelation {type: 'CALLS'}]->(b:Function {name: 'verifyRuntimeClaimOnDemand'}) RETURN a.name AS caller, a.filePath AS file LIMIT 10"
+```
+
+Template B (`HAS_METHOD`):
+
+```bash
+gitnexus cypher -r GitNexus "MATCH (c:Class)-[:CodeRelation {type: 'HAS_METHOD'}]->(m:Method) RETURN c.name AS class, m.name AS method LIMIT 20"
+```
+
+Template C (`STEP_IN_PROCESS`):
+
+```bash
+gitnexus cypher -r GitNexus "MATCH (s)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process) RETURN s.name AS symbol, p.heuristicLabel AS process, r.step AS step ORDER BY r.step LIMIT 10"
+```
+
+Refactor-prep decision rule:
+- If `context.incoming.calls` is high, treat change as high-blast-radius and split refactor into smaller commits.
+- If `STEP_IN_PROCESS` coverage is broad, run targeted regression checks on each affected process path.
+
 ## Unity vs Generic Behavior
 
+- Unity flows often require runtime-oriented interpretation (`runtime_claim`, `hops`, `gaps`) in addition to static call chains.
+- Generic repositories may rely primarily on `CALLS/IMPORTS/HAS_METHOD`, while Unity retrieval can require parity rerun and resource-seeded follow-ups.
+- In strict hydration mode, compact fallback is a stop signal for closure claims; generic static analysis does not carry this specific guardrail.
+
 ## Optimization Metrics
+
+| 指标 | 定义 | 采集方式 | Failure Signal |
+| --- | --- | --- | --- |
+| 可执行率 | 文档中命令可直接执行并返回结构化结果的比例 | 逐条执行命令并记录 exit code 与 JSON 可解析率 | 任一关键命令失败率超过 10% |
+| 收敛率 | 从首条 `query` 到定位可执行下一跳命令的轮次 | 记录每次排查的命令序列长度（query/context/cypher 次数） | 中位轮次持续高于 4，说明流程不收敛 |
+| 收益率 | 通过结构化检索提前发现风险点的比例 | 对比变更前后问题发现来源（检索命中 vs 事后回归） | 回归后才发现的问题比例高于 30% |
