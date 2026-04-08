@@ -43,14 +43,89 @@ function tokenize(value: unknown): string[] {
     .filter((token) => token.length > 0);
 }
 
-function evaluateAnchorSegment(input: EvaluateRuntimeClosureInput): boolean {
+function normalizeLoose(value: unknown): string {
+  return normalize(value).replace(/[^a-z0-9]+/g, '');
+}
+
+function basenameStem(value: unknown): string {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  const parts = text.split(/[\\/]/);
+  const base = parts[parts.length - 1] || '';
+  const stem = base.replace(/\.[^.]+$/, '');
+  return normalize(stem);
+}
+
+function isBridgeCandidate(candidate: RuntimeGraphCandidate): boolean {
+  const reason = normalize(candidate.reason);
+  return reason.includes('bridge') || reason.startsWith('unity-rule-');
+}
+
+function isAnchoredEndpoint(input: EvaluateRuntimeClosureInput, endpoint: {
+  name?: string;
+  id?: string;
+  filePath?: string;
+}): boolean {
   const symbolName = normalize(input.symbolName);
   if (!symbolName) return false;
-  return input.candidates.some((candidate) => {
-    const source = normalize(candidate.sourceName);
-    const target = normalize(candidate.targetName);
-    return source === symbolName || target === symbolName;
-  });
+  const looseSymbol = normalizeLoose(symbolName);
+  if (normalize(endpoint.name) === symbolName) return true;
+  const anchoredNeighborhood = [endpoint.id, endpoint.filePath];
+  return anchoredNeighborhood.some((value) => normalizeLoose(value).includes(looseSymbol));
+}
+
+function candidateNodeKey(endpoint: {
+  id?: string;
+  name?: string;
+  filePath?: string;
+}): string {
+  const id = normalize(endpoint.id);
+  if (id) return `id:${id}`;
+  const name = normalize(endpoint.name);
+  if (!name) return '';
+  const filePath = normalize(endpoint.filePath);
+  return filePath ? `nf:${name}@${filePath}` : `n:${name}`;
+}
+
+function collectAnchorNodeKeys(input: EvaluateRuntimeClosureInput): Set<string> {
+  const anchorKeys = new Set<string>();
+  for (const candidate of input.candidates) {
+    const sourceKey = candidateNodeKey({
+      id: candidate.sourceId,
+      name: candidate.sourceName,
+      filePath: candidate.sourceFilePath,
+    });
+    const targetKey = candidateNodeKey({
+      id: candidate.targetId,
+      name: candidate.targetName,
+      filePath: candidate.targetFilePath,
+    });
+    if (
+      sourceKey
+      && isAnchoredEndpoint(input, {
+        name: candidate.sourceName,
+        id: candidate.sourceId,
+        filePath: candidate.sourceFilePath,
+      })
+    ) {
+      anchorKeys.add(sourceKey);
+    }
+    if (
+      targetKey
+      && isAnchoredEndpoint(input, {
+        name: candidate.targetName,
+        id: candidate.targetId,
+        filePath: candidate.targetFilePath,
+      })
+    ) {
+      anchorKeys.add(targetKey);
+    }
+  }
+  return anchorKeys;
+}
+
+function evaluateAnchorSegment(input: EvaluateRuntimeClosureInput): boolean {
+  return collectAnchorNodeKeys(input).size > 0;
 }
 
 function evaluateBindSegment(input: EvaluateRuntimeClosureInput): boolean {
@@ -58,27 +133,91 @@ function evaluateBindSegment(input: EvaluateRuntimeClosureInput): boolean {
   if (!seedPath) return false;
   const mapped = new Set((input.mappedSeedTargets || []).map((value) => normalize(value)).filter(Boolean));
   const bindings = new Set((input.resourceBindings || []).map((binding) => normalize(binding.resourcePath)).filter(Boolean));
-  if (mapped.size > 0) {
-    for (const target of mapped) {
-      if (bindings.has(target)) return true;
-    }
-    return false;
+  if (bindings.has(seedPath)) return true;
+  if (mapped.size === 0) return false;
+  const mappedStems = new Set(Array.from(mapped).map((value) => basenameStem(value)).filter(Boolean));
+  for (const binding of bindings) {
+    if (mapped.has(binding)) return true;
+    const bindingStem = basenameStem(binding);
+    if (bindingStem && mappedStems.has(bindingStem)) return true;
   }
-  return bindings.has(seedPath);
+  return false;
 }
 
 function evaluateBridgeSegment(input: EvaluateRuntimeClosureInput, anchorSatisfied: boolean): boolean {
   if (!anchorSatisfied) return false;
-  return input.candidates.length > 0;
+  return input.candidates.some((candidate) => isBridgeCandidate(candidate));
 }
 
 function evaluateRuntimeSegment(input: EvaluateRuntimeClosureInput): boolean {
-  const runtimeSignal = /(runtime|start|update|execute|reload|onenable|onstart)/i;
-  return input.candidates.some((candidate) => {
-    if (runtimeSignal.test(String(candidate.reason || ''))) return true;
-    if (runtimeSignal.test(String(candidate.targetName || ''))) return true;
-    return runtimeSignal.test(String(candidate.sourceName || ''));
-  });
+  const anchorKeys = collectAnchorNodeKeys(input);
+  if (anchorKeys.size === 0) return false;
+
+  const adjacency = new Map<string, Set<string>>();
+  const edgeByPair = new Map<string, { bridge: boolean; runtime: boolean }>();
+  for (const candidate of input.candidates) {
+    const sourceKey = candidateNodeKey({
+      id: candidate.sourceId,
+      name: candidate.sourceName,
+      filePath: candidate.sourceFilePath,
+    });
+    const targetKey = candidateNodeKey({
+      id: candidate.targetId,
+      name: candidate.targetName,
+      filePath: candidate.targetFilePath,
+    });
+    if (!sourceKey || !targetKey) continue;
+    const sourceNeighbors = adjacency.get(sourceKey) || new Set<string>();
+    sourceNeighbors.add(targetKey);
+    adjacency.set(sourceKey, sourceNeighbors);
+    const targetNeighbors = adjacency.get(targetKey) || new Set<string>();
+    targetNeighbors.add(sourceKey);
+    adjacency.set(targetKey, targetNeighbors);
+
+    const pair = [sourceKey, targetKey].sort().join('||');
+    const existing = edgeByPair.get(pair) || { bridge: false, runtime: false };
+    const bridge = isBridgeCandidate(candidate);
+    edgeByPair.set(pair, {
+      bridge: existing.bridge || bridge,
+      runtime: existing.runtime || !bridge,
+    });
+  }
+
+  const seenNodes = new Set<string>();
+  for (const node of anchorKeys) {
+    if (seenNodes.has(node)) continue;
+    const queue: string[] = [node];
+    seenNodes.add(node);
+    const componentNodes: string[] = [];
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current) break;
+      componentNodes.push(current);
+      const neighbors = adjacency.get(current) || new Set<string>();
+      for (const neighbor of neighbors) {
+        if (seenNodes.has(neighbor)) continue;
+        seenNodes.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+
+    let hasBridge = false;
+    let hasRuntime = false;
+    for (const componentNode of componentNodes) {
+      const neighbors = adjacency.get(componentNode) || new Set<string>();
+      for (const neighbor of neighbors) {
+        const pair = [componentNode, neighbor].sort().join('||');
+        const edge = edgeByPair.get(pair);
+        if (!edge) continue;
+        if (edge.bridge) hasBridge = true;
+        if (edge.runtime) hasRuntime = true;
+      }
+      if (hasBridge && hasRuntime) return true;
+    }
+  }
+
+  return false;
 }
 
 function hasAnchorIntersection(input: EvaluateRuntimeClosureInput): boolean {

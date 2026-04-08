@@ -149,6 +149,37 @@ export async function extractRuntimeGraphCandidates(
       const candidate = toCandidate(row);
       if (candidate) rawCandidates.push(candidate);
     }
+
+    const incomingClassRows = await input.executeParameterized(
+      `
+      MATCH (caller)-[r:CodeRelation {type: 'CALLS'}]->(s {id: $symbolId})
+      RETURN caller.id AS sourceId, caller.name AS sourceName, caller.filePath AS sourceFilePath, caller.startLine AS sourceStartLine,
+             s.id AS targetId, s.name AS targetName, s.filePath AS targetFilePath, s.startLine AS targetStartLine,
+             r.reason AS reason
+      LIMIT ${maxEdgesPerSymbol}
+    `,
+      { symbolId: symbol.id },
+    );
+    for (const row of Array.isArray(incomingClassRows) ? incomingClassRows : []) {
+      const candidate = toCandidate(row);
+      if (candidate) rawCandidates.push(candidate);
+    }
+
+    const incomingMethodRows = await input.executeParameterized(
+      `
+      MATCH (n {id: $symbolId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)
+      MATCH (caller)-[r:CodeRelation {type: 'CALLS'}]->(m)
+      RETURN caller.id AS sourceId, caller.name AS sourceName, caller.filePath AS sourceFilePath, caller.startLine AS sourceStartLine,
+             m.id AS targetId, m.name AS targetName, m.filePath AS targetFilePath, m.startLine AS targetStartLine,
+             r.reason AS reason
+      LIMIT ${maxEdgesPerSymbol}
+    `,
+      { symbolId: symbol.id },
+    );
+    for (const row of Array.isArray(incomingMethodRows) ? incomingMethodRows : []) {
+      const candidate = toCandidate(row);
+      if (candidate) rawCandidates.push(candidate);
+    }
   }
 
   return dedupeCandidates(rawCandidates);

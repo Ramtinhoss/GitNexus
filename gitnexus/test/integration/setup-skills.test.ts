@@ -81,5 +81,21 @@ describe('setupCommand skills integration', () => {
       'utf-8',
     );
     expect(nestedInstalled).toContain('Directory Nested File');
+
+    const debuggingSkill = await fs.readFile(
+      path.join(cursorSkillsRoot, 'gitnexus-debugging', 'SKILL.md'),
+      'utf-8',
+    );
+    const exploringSkill = await fs.readFile(
+      path.join(cursorSkillsRoot, 'gitnexus-exploring', 'SKILL.md'),
+      'utf-8',
+    );
+    const guideSkill = await fs.readFile(
+      path.join(cursorSkillsRoot, 'gitnexus-guide', 'SKILL.md'),
+      'utf-8',
+    );
+    expect(debuggingSkill).toMatch(/graph-only/i);
+    expect(exploringSkill).toMatch(/graph-only/i);
+    expect(guideSkill).toMatch(/graph-only/i);
   });
 });

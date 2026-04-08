@@ -110,6 +110,7 @@ RETURN [n IN nodes(path) | n.name] AS chain
 
 ## Runtime-Chain Closure Guard
 
+- Query-time runtime closure is **graph-only** and does not require `verification_rules` / `trigger_tokens` matching.
 - Treat runtime-chain outputs as two layers:
   - `verifier-core`: binary verifier result (`verified_full` | `failed`)
   - `policy-adjusted`: user-visible result after hydration policy is applied

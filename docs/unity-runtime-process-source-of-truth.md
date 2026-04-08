@@ -75,6 +75,7 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 2. 验证逻辑（`runtime-chain-verify.ts`）：
    - `verifyRuntimeClaimOnDemand`：直接走结构化锚点（`symbolName/resourceSeedPath/mappedSeedTargets/resourceBindings`）驱动的 graph-only closure
    - query-time 不再加载 retrieval/verification 规则目录做匹配；规则仍用于 analyze-time synthetic edge 与离线治理产物
+   - query-time runtime closure is graph-only and no longer performs rule-catalog matching.
    - 无文件系统 I/O、无 regex 启发式、无 token family 匹配门槛
 3. 验证结果：
    - `status: 'verified_full'` + `evidence_source: 'analyze_time'`（图谱中存在匹配的合成边）

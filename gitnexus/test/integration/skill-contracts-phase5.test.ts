@@ -44,4 +44,20 @@ describe('phase5 confidence-aware skill contracts', () => {
     expect(workflow).toMatch(/chain closure|close the chain|semantically closed/i);
     expect(unityBinding).toMatch(/hop anchor|evidence anchor/i);
   });
+
+  it('graphOnlyRuntimeClosureDocsContract', async () => {
+    const sourceOfTruth = await readRepoFile('docs/unity-runtime-process-source-of-truth.md');
+    const triggerHandoff = await readRepoFile('docs/plans/2026-04-07-trigger-tokens-family-handoff.md');
+    const debuggingSkill = await readRepoFile('gitnexus/skills/gitnexus-debugging.md');
+    const exploringSkill = await readRepoFile('gitnexus/skills/gitnexus-exploring.md');
+    const guideSkill = await readRepoFile('gitnexus/skills/gitnexus-guide.md');
+
+    expect(sourceOfTruth).toMatch(/graph-only closure/i);
+    expect(sourceOfTruth).toMatch(/query-time.*不再加载.*rule|query-time.*no longer/i);
+    expect(triggerHandoff).toMatch(/archived/i);
+    expect(triggerHandoff).toMatch(/no longer depends on .*trigger_tokens/i);
+    expect(debuggingSkill).toMatch(/graph-only/i);
+    expect(exploringSkill).toMatch(/graph-only/i);
+    expect(guideSkill).toMatch(/graph-only/i);
+  });
 });

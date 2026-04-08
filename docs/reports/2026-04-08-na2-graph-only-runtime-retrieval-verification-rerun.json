@@ -1,0 +1,1468 @@
+{
+  "processes": [
+    {
+      "id": "proc_1_unity_runtime_root",
+      "process_ref": {
+        "id": "proc_1_unity_runtime_root",
+        "kind": "persistent",
+        "readable": true,
+        "reader_uri": "gitnexus://repo/neonspark-core/process/proc_1_unity_runtime_root",
+        "origin": "method_projected"
+      },
+      "summary": "Unity-runtime-root → ChangeKnifeBehind",
+      "priority": 0.088,
+      "symbol_count": 3,
+      "process_type": "cross_community",
+      "process_subtype": "unity_lifecycle",
+      "step_count": 4,
+      "evidence_mode": "direct_step",
+      "confidence": "high",
+      "runtime_chain_confidence": "high",
+      "runtime_chain_evidence_level": "none"
+    },
+    {
+      "id": "proc_0_unity_runtime_root",
+      "process_ref": {
+        "id": "proc_0_unity_runtime_root",
+        "kind": "persistent",
+        "readable": true,
+        "reader_uri": "gitnexus://repo/neonspark-core/process/proc_0_unity_runtime_root",
+        "origin": "step_in_process"
+      },
+      "summary": "Unity-runtime-root → OnAddPowerUp",
+      "priority": 0.069,
+      "symbol_count": 2,
+      "process_type": "cross_community",
+      "process_subtype": "unity_lifecycle",
+      "step_count": 4,
+      "evidence_mode": "direct_step",
+      "confidence": "high",
+      "runtime_chain_confidence": "high",
+      "runtime_chain_evidence_level": "none"
+    }
+  ],
+  "process_symbols": [
+    {
+      "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+      "name": "WeaponPowerUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+      "startLine": 15,
+      "endLine": 15,
+      "resourceBindings": [
+        {
+          "resourcePath": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+          "resourceType": "asset",
+          "bindingKind": "prefab-instance",
+          "componentObjectId": "11400000",
+          "lightweight": false,
+          "evidence": {
+            "line": 0,
+            "lineText": "UNITY_COMPONENT_INSTANCE:{\"bindingKind\":\"prefab-instance\",\"componentObjectId\":\"11400000\",\"serializedFields\":{\"scalarFields\":[{\"name\":\"BackGroundPrefab\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"baseColliderOffset\",\"sourceLayer\":\"asset\",\"value\":\"{x: 0, y: 0}\",\"valueType\":\"string\"},{\"name\":\"canChangeGunpointOffset\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"casualModeNoChange\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"ChangeGunGraphics\",\"sourceLayer\":\"asset\",\"value\":\"_key: 05000000\\n_val:\\n- {fileID: 21300000, guid: 12c5da0e6aa98ef4c8aa264821da5c6e, type: 3}\\n_errorList: \\n_keyType: 0\\n_valType: {fileID: 0}\\n_divider: 0\\n_selected: 0\\nreset: 0\",\"valueType\":\"string\"},{\"name\":\"ChangeGunGraphicsHasAni\",\"sourceLayer\":\"asset\",\"value\":\"_key: \\n_val: []\\n_errorList: \\n_keyType: 0\\n_valType: {fileID: 0}\\n_divider: 0\\n_selected: 0\\nreset: 0\",\"valueType\":\"string\"},{\"name\":\"curse\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"damageMultToUps\",\"sourceLayer\":\"asset\",\"value\":\"[]\",\"valueType\":\"string\"},{\"name\":\"Description\",\"sourceLayer\":\"asset\",\"value\":\"mTerm: PuName/1_weapon_orb_keyD\\nmRTL_IgnoreArabicFix: 0\\nmRTL_MaxLineLength: 0\\nmRTL_ConvertNumbers: 0\\nm_DontLocalizeParameters: 0\",\"valueType\":\"string\"},{\"name\":\"equipExtraPrefab\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"extraOffset\",\"sourceLayer\":\"asset\",\"value\":\"{x: 0, y: 0}\",\"valueType\":\"string\"},{\"name\":\"firearmsAimAssistId\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"glassesIsFront\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"GunLevelSpecs\",\"sourceLayer\":\"asset\",\"value\":\"- {fileID: 1122590399181450285}\",\"valueType\":\"string\"},{\"name\":\"gunpointOffset\",\"sourceLayer\":\"asset\",\"value\":\"0.2\",\"valueType\":\"number\"},{\"name\":\"gunpointOffsetY\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"hairResource\",\"sourceLayer\":\"asset\",\"value\":\"_key: \\n_val: []\\n_errorList: \\n_keyType: 0\\n_valType: {fileID: 0}\\n_divider: 0\\n_selected: 0\\nreset: 0\",\"valueType\":\"string\"},{\"name\":\"hairType\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"hatIsFront\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"id\",\"sourceLayer\":\"asset\",\"value\":\"2717\",\"valueType\":\"number\"},{\"name\":\"IgnorePickUpEvent\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"InherentAffixes\",\"sourceLayer\":\"asset\",\"value\":\"- _affixDefRef:\\n  _assetBundleName: default\\n  _relativePath: Assets/NEON/DataAssets/AffixSystem/Affixes/LevelToStat/Affix_10005_LS_WeaponDamage.asset\\n  _guid: 50f351abc296e4a45974d92aed8cfc4c\\n  _meta:\\n    name: \\n    _typeName: \\n    _meta:\\n      rid: -2\\nRarity: 0\\n- _affixDefRef:\\n  _assetBundleName: default\\n  _relativePath: Assets/NEON/DataAssets/AffixSystem/Affixes/ResourceToStat/Affix_10008_RS.asset\\n  _guid: 825a6ebff49d8b74db690045d1486e18\\n  _meta:\\n    name: \\n    _typeName: \\n    _meta:\\n      rid: -2\\nRarity: 0\",\"valueType\":\"string\"},{\"name\":\"internalObjects\",\"sourceLayer\":\"asset\",\"value\":\"- {fileID: 1122590399181450285}\",\"valueType\":\"string\"},{\"name\":\"isAttackSprite\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"isFrenzy\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"isNonEntity\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"isRoleOwn\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"isSpecialDrops\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"isSuit\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"isTestItem\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"joystickCursorRadius\",\"sourceLayer\":\"asset\",\"value\":\"10\",\"valueType\":\"number\"},{\"name\":\"KeyWords\",\"sourceLayer\":\"asset\",\"value\":\"keywords: []\",\"valueType\":\"string\"},{\"name\":\"mainDamageType\",\"sourceLayer\":\"asset\",\"value\":\"8\",\"valueType\":\"number\"},{\"name\":\"maxRotationSpeed\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"Name\",\"sourceLayer\":\"asset\",\"value\":\"mTerm: PuName/1_weapon_orb_key\\nmRTL_IgnoreArabicFix: 0\\nmRTL_MaxLineLength: 0\\nmRTL_ConvertNumbers: 0\\nm_DontLocalizeParameters: 0\",\"valueType\":\"string\"},{\"name\":\"needShowOverheadIcon\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"needUse\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"overrideColliderRadius\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"PickUpPrefabId\",\"sourceLayer\":\"asset\",\"value\":\"488\",\"valueType\":\"number\"},{\"name\":\"PowerUpType\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"quality\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"qualityIsShow\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"range\",\"sourceLayer\":\"asset\",\"value\":\"15\",\"valueType\":\"number\"},{\"name\":\"rangeWeaponType\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"references\",\"sourceLayer\":\"asset\",\"value\":\"version: 2\\nRefIds:\\n- rid: -2\\n  type: {class: , ns: , asm: }\",\"valueType\":\"string\"},{\"name\":\"regenerateDurationTime\",\"sourceLayer\":\"asset\",\"value\":\"3\",\"valueType\":\"number\"},{\"name\":\"showBanner\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"showBannerSprite\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"soulbondTable\",\"sourceLayer\":\"asset\",\"value\":\"[]\",\"valueType\":\"string\"},{\"name\":\"soulName\",\"sourceLayer\":\"asset\",\"value\":\"mTerm: \\nmRTL_IgnoreArabicFix: 0\\nmRTL_MaxLineLength: 0\\nmRTL_ConvertNumbers: 0\\nm_DontLocalizeParameters: 0\",\"valueType\":\"string\"},{\"name\":\"SoundEffect\",\"sourceLayer\":\"asset\",\"value\":\"event:/SFX/Item/Sfx_item_get\",\"valueType\":\"string\"},{\"name\":\"subSuits\",\"sourceLayer\":\"asset\",\"value\":\"[]\",\"valueType\":\"string\"},{\"name\":\"tagDamageMult\",\"sourceLayer\":\"asset\",\"value\":\"\",\"valueType\":\"string\"},{\"name\":\"tagDamageMultRange\",\"sourceLayer\":\"asset\",\"value\":\"{x: 0, y: 999}\",\"valueType\":\"string\"},{\"name\":\"Tags\",\"sourceLayer\":\"asset\",\"value\":\"tags:\\n- tagLevel: 1\\n  tagId: 1\\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\\n  tagBgColor: {r: 0.79607844, g: 0.78039217, b: 0.99607843, a: 1}\\n  tagRelationColor: {r: 0.79607844, g: 0.78039217, b: 0.99607843, a: 1}\\n  chineseName: \\\"\\\\u8FDC\\\\u7A0B\\\\u6B66\\\\u5668\\\"\\n  languageKey: 1\\n- tagLevel: 2\\n  tagId: 207\\n  tagFontColor: {r: 1, g: 0.44313726, b: 0.56078434, a: 1}\\n  tagBgColor: {r: 0.47058824, g: 0.08627451, b: 0.23921569, a: 1}\\n  tagRelationColor: {r: 0, g: 0, b: 0, a: 0}\\n  chineseName: \\\"\\\\u6BD2\\\\u7D20\\\"\\n  languageKey: 207\\n- tagLevel: 3\\n  tagId: 21\\n  tagFontColor: {r: 0.91764706, g: 0.8901961, b: 1, a: 1}\\n  tagBgColor: {r: 0.42745098, g: 0.38431373, b: 0.5686275, a: 1}\\n  tagRelationColor: {r: 0, g: 0, b: 0, a: 0}\\n  chineseName: \\\"\\\\u94A5\\\\u5319\\\"\\n  languageKey: 21\",\"valueType\":\"string\"},{\"name\":\"TagWeights\",\"sourceLayer\":\"asset\",\"value\":\"_key:\\n- KeyValue\\n- super\\n- WeaponProjectileCount\\n- WeaponDamage\\n- DamageBonus\\n- WeaponProjectileRange\\n- WeaponProjectileSize\\n- WeaponAttackSpeed\\n_val:\\n- 1\\n- 0.04040404\\n- 0.317916\\n- 1\\n- 1\\n- 1\\n- 1\\n- 1\\n_errorList: \\n_keyType: \\n_valType: 0\\n_divider: 0\\n_selected: 0\\nreset: 0\",\"valueType\":\"string\"},{\"name\":\"textShowCd\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"UniqueDrop\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"UseNew\",\"sourceLayer\":\"asset\",\"value\":\"0\",\"valueType\":\"number\"},{\"name\":\"values\",\"sourceLayer\":\"asset\",\"value\":\"_key: []\\n_val: []\\n_errorList: \\n_keyType: \\n_valType: 0\\n_divider: 0\\n_selected: 0\\nreset: 0\",\"valueType\":\"string\"},{\"name\":\"weaponDifficultyLevel\",\"sourceLayer\":\"asset\",\"value\":\"1\",\"valueType\":\"number\"},{\"name\":\"weaponStatsDefinitions\",\"sourceLayer\":\"asset\",\"value\":\"[]\",\"valueType\":\"string\"}],\"referenceFields\":[{\"name\":\"arcanePrefab\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"BackgroundSrite\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"bpSprite\",\"guid\":\"4431019b6b10d934681fcefc31189e3c\",\"fileId\":\"21300000\",\"sourceLayer\":\"asset\"},{\"name\":\"ChangeBagHelmetGraphics\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"ChangeBagPrefab\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"ChangeBodyAura\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"ChangeGogglesGraphics\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"changeHair\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"ChangeHats\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"ChangeHeadAura\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"changeHelmetGraphics\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"ChangeMaskGraphics\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"ConversionPowerUp\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"extraBehindPrefab\",\"guid\":\"cc13ea56b2ee5324895e458fb12857cf\",\"fileId\":\"4864212102835634458\",\"sourceLayer\":\"asset\"},{\"name\":\"extraPrefab\",\"guid\":\"158b1a2ec75ccec42a5d145445ad6895\",\"fileId\":\"2363348475446427723\",\"sourceLayer\":\"asset\"},{\"name\":\"GunChargePrefab\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"gungraph\",\"guid\":\"69199acacbf8a7e489ad4aa872efcabd\",\"fileId\":\"11400000\",\"sourceLayer\":\"asset\"},{\"name\":\"MuzzleFlashPrefab\",\"guid\":\"870ef2da5115549ce9ad140436392b8c\",\"fileId\":\"5060332175442239046\",\"sourceLayer\":\"asset\"},{\"name\":\"NewBackGroundPrefab\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"soulIconSprite\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"soulLevelConfigAsset\",\"guid\":\"c9d81cb527062de468b5a78c139f5486\",\"fileId\":\"11400000\",\"sourceLayer\":\"asset\"},{\"name\":\"soulPrefab\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"sprite\",\"guid\":\"a10dec4f95b0d174299279cc9b1c8a7f\",\"fileId\":\"21300000\",\"sourceLayer\":\"asset\"},{\"name\":\"suit\",\"fileId\":\"0\",\"sourceLayer\":\"asset\"},{\"name\":\"upgradeLoot\",\"guid\":\"416f430b2c18d1d46b534a454771b1ec\",\"fileId\":\"11400000\",\"sourceLayer\":\"asset\"}]},\"resolvedReferences\":[{\"fieldName\":\"sprite\",\"sourceLayer\":\"asset\",\"fileId\":\"21300000\",\"guid\":\"a10dec4f95b0d174299279cc9b1c8a7f\",\"fromList\":false,\"resolution\":\"unresolved\"},{\"fieldName\":\"NewBackGroundPrefab\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"BackgroundSrite\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"suit\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"ConversionPowerUp\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"ChangeHeadAura\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"ChangeBodyAura\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"ChangeGogglesGraphics\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"ChangeHats\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"changeHair\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"changeHelmetGraphics\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"ChangeMaskGraphics\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"ChangeBagHelmetGraphics\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"ChangeBagPrefab\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"soulPrefab\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"soulLevelConfigAsset\",\"sourceLayer\":\"asset\",\"fileId\":\"11400000\",\"guid\":\"c9d81cb527062de468b5a78c139f5486\",\"fromList\":false,\"resolution\":\"external-asset\",\"target\":{\"assetPath\":\"Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset\"}},{\"fieldName\":\"upgradeLoot\",\"sourceLayer\":\"asset\",\"fileId\":\"11400000\",\"guid\":\"416f430b2c18d1d46b534a454771b1ec\",\"fromList\":false,\"resolution\":\"external-asset\",\"target\":{\"assetPath\":\"Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset\"}},{\"fieldName\":\"bpSprite\",\"sourceLayer\":\"asset\",\"fileId\":\"21300000\",\"guid\":\"4431019b6b10d934681fcefc31189e3c\",\"fromList\":false,\"resolution\":\"unresolved\"},{\"fieldName\":\"soulIconSprite\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"gungraph\",\"sourceLayer\":\"asset\",\"fileId\":\"11400000\",\"guid\":\"69199acacbf8a7e489ad4aa872efcabd\",\"fromList\":false,\"resolution\":\"external-asset\",\"target\":{\"assetPath\":\"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\"}},{\"fieldName\":\"MuzzleFlashPrefab\",\"sourceLayer\":\"asset\",\"fileId\":\"5060332175442239046\",\"guid\":\"870ef2da5115549ce9ad140436392b8c\",\"fromList\":false,\"resolution\":\"external-asset\",\"target\":{\"assetPath\":\"Assets/NEON/Prefab/FX_weapon/_gunfire/fx_gunfire_1_yellow.prefab\"}},{\"fieldName\":\"GunChargePrefab\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"extraPrefab\",\"sourceLayer\":\"asset\",\"fileId\":\"2363348475446427723\",\"guid\":\"158b1a2ec75ccec42a5d145445ad6895\",\"fromList\":false,\"resolution\":\"external-asset\",\"target\":{\"assetPath\":\"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab\"}},{\"fieldName\":\"extraBehindPrefab\",\"sourceLayer\":\"asset\",\"fileId\":\"4864212102835634458\",\"guid\":\"cc13ea56b2ee5324895e458fb12857cf\",\"fromList\":false,\"resolution\":\"external-asset\",\"target\":{\"assetPath\":\"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab\"}},{\"fieldName\":\"arcanePrefab\",\"sourceLayer\":\"asset\",\"fileId\":\"0\",\"fromList\":false,\"resolution\":\"null\"},{\"fieldName\":\"GunLevelSpecs\",\"sourceLayer\":\"asset\",\"fileId\":\"1122590399181450285\",\"fromList\":true,\"listIndex\":0,\"resolution\":\"local-object\",\"target\":{\"resourcePath\":\"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset\",\"objectId\":\"1122590399181450285\",\"objectType\":\"MonoBehaviour\"}},{\"fieldName\":\"internalObjects\",\"sourceLayer\":\"asset\",\"fileId\":\"1122590399181450285\",\"fromList\":true,\"listIndex\":0,\"resolution\":\"local-object\",\"target\":{\"resourcePath\":\"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset\",\"objectId\":\"1122590399181450285\",\"objectType\":\"MonoBehaviour\"}}],\"assetRefPaths\":[{\"parentFieldName\":\"InherentAffixes\",\"fieldName\":\"InherentAffixes\",\"relativePath\":\"Assets/NEON/DataAssets/AffixSystem/Affixes/LevelToStat/Affix_10005_LS_WeaponDamage.asset\",\"sourceLayer\":\"asset\",\"isEmpty\":false,\"isSprite\":false},{\"parentFieldName\":\"InherentAffixes\",\"fieldName\":\"InherentAffixes\",\"relativePath\":\"Assets/NEON/DataAssets/AffixSystem/Affixes/ResourceToStat/Affix_10008_RS.asset\",\"sourceLayer\":\"asset\",\"isEmpty\":false,\"isSprite\":false}]}"
+          },
+          "serializedFields": {
+            "scalarFields": [
+              {
+                "name": "BackGroundPrefab",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "baseColliderOffset",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 0}",
+                "valueType": "string"
+              },
+              {
+                "name": "canChangeGunpointOffset",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "casualModeNoChange",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "ChangeGunGraphics",
+                "sourceLayer": "asset",
+                "value": "_key: 05000000\n_val:\n- {fileID: 21300000, guid: 12c5da0e6aa98ef4c8aa264821da5c6e, type: 3}\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "ChangeGunGraphicsHasAni",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "curse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "damageMultToUps",
+                "sourceLayer": "asset",
+                "value": "[]",
+                "valueType": "string"
+              },
+              {
+                "name": "Description",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/1_weapon_orb_keyD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "equipExtraPrefab",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "extraOffset",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 0}",
+                "valueType": "string"
+              },
+              {
+                "name": "firearmsAimAssistId",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "glassesIsFront",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "GunLevelSpecs",
+                "sourceLayer": "asset",
+                "value": "- {fileID: 1122590399181450285}",
+                "valueType": "string"
+              },
+              {
+                "name": "gunpointOffset",
+                "sourceLayer": "asset",
+                "value": "0.2",
+                "valueType": "number"
+              },
+              {
+                "name": "gunpointOffsetY",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "hairResource",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "hairType",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "hatIsFront",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "id",
+                "sourceLayer": "asset",
+                "value": "2717",
+                "valueType": "number"
+              },
+              {
+                "name": "IgnorePickUpEvent",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "InherentAffixes",
+                "sourceLayer": "asset",
+                "value": "- _affixDefRef:\n  _assetBundleName: default\n  _relativePath: Assets/NEON/DataAssets/AffixSystem/Affixes/LevelToStat/Affix_10005_LS_WeaponDamage.asset\n  _guid: 50f351abc296e4a45974d92aed8cfc4c\n  _meta:\n    name: \n    _typeName: \n    _meta:\n      rid: -2\nRarity: 0\n- _affixDefRef:\n  _assetBundleName: default\n  _relativePath: Assets/NEON/DataAssets/AffixSystem/Affixes/ResourceToStat/Affix_10008_RS.asset\n  _guid: 825a6ebff49d8b74db690045d1486e18\n  _meta:\n    name: \n    _typeName: \n    _meta:\n      rid: -2\nRarity: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "internalObjects",
+                "sourceLayer": "asset",
+                "value": "- {fileID: 1122590399181450285}",
+                "valueType": "string"
+              },
+              {
+                "name": "isAttackSprite",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isFrenzy",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isNonEntity",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isRoleOwn",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSpecialDrops",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSuit",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isTestItem",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "joystickCursorRadius",
+                "sourceLayer": "asset",
+                "value": "10",
+                "valueType": "number"
+              },
+              {
+                "name": "KeyWords",
+                "sourceLayer": "asset",
+                "value": "keywords: []",
+                "valueType": "string"
+              },
+              {
+                "name": "mainDamageType",
+                "sourceLayer": "asset",
+                "value": "8",
+                "valueType": "number"
+              },
+              {
+                "name": "maxRotationSpeed",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "Name",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/1_weapon_orb_key\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "needShowOverheadIcon",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "needUse",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "overrideColliderRadius",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "PickUpPrefabId",
+                "sourceLayer": "asset",
+                "value": "488",
+                "valueType": "number"
+              },
+              {
+                "name": "PowerUpType",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "quality",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "qualityIsShow",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "range",
+                "sourceLayer": "asset",
+                "value": "15",
+                "valueType": "number"
+              },
+              {
+                "name": "rangeWeaponType",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "references",
+                "sourceLayer": "asset",
+                "value": "version: 2\nRefIds:\n- rid: -2\n  type: {class: , ns: , asm: }",
+                "valueType": "string"
+              },
+              {
+                "name": "regenerateDurationTime",
+                "sourceLayer": "asset",
+                "value": "3",
+                "valueType": "number"
+              },
+              {
+                "name": "showBanner",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "showBannerSprite",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "soulbondTable",
+                "sourceLayer": "asset",
+                "value": "[]",
+                "valueType": "string"
+              },
+              {
+                "name": "soulName",
+                "sourceLayer": "asset",
+                "value": "mTerm: \nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "SoundEffect",
+                "sourceLayer": "asset",
+                "value": "event:/SFX/Item/Sfx_item_get",
+                "valueType": "string"
+              },
+              {
+                "name": "subSuits",
+                "sourceLayer": "asset",
+                "value": "[]",
+                "valueType": "string"
+              },
+              {
+                "name": "tagDamageMult",
+                "sourceLayer": "asset",
+                "value": "",
+                "valueType": "string"
+              },
+              {
+                "name": "tagDamageMultRange",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 999}",
+                "valueType": "string"
+              },
+              {
+                "name": "Tags",
+                "sourceLayer": "asset",
+                "value": "tags:\n- tagLevel: 1\n  tagId: 1\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.79607844, g: 0.78039217, b: 0.99607843, a: 1}\n  tagRelationColor: {r: 0.79607844, g: 0.78039217, b: 0.99607843, a: 1}\n  chineseName: \"\\u8FDC\\u7A0B\\u6B66\\u5668\"\n  languageKey: 1\n- tagLevel: 2\n  tagId: 207\n  tagFontColor: {r: 1, g: 0.44313726, b: 0.56078434, a: 1}\n  tagBgColor: {r: 0.47058824, g: 0.08627451, b: 0.23921569, a: 1}\n  tagRelationColor: {r: 0, g: 0, b: 0, a: 0}\n  chineseName: \"\\u6BD2\\u7D20\"\n  languageKey: 207\n- tagLevel: 3\n  tagId: 21\n  tagFontColor: {r: 0.91764706, g: 0.8901961, b: 1, a: 1}\n  tagBgColor: {r: 0.42745098, g: 0.38431373, b: 0.5686275, a: 1}\n  tagRelationColor: {r: 0, g: 0, b: 0, a: 0}\n  chineseName: \"\\u94A5\\u5319\"\n  languageKey: 21",
+                "valueType": "string"
+              },
+              {
+                "name": "TagWeights",
+                "sourceLayer": "asset",
+                "value": "_key:\n- KeyValue\n- super\n- WeaponProjectileCount\n- WeaponDamage\n- DamageBonus\n- WeaponProjectileRange\n- WeaponProjectileSize\n- WeaponAttackSpeed\n_val:\n- 1\n- 0.04040404\n- 0.317916\n- 1\n- 1\n- 1\n- 1\n- 1\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "textShowCd",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "UniqueDrop",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "UseNew",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "values",
+                "sourceLayer": "asset",
+                "value": "_key: []\n_val: []\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "weaponDifficultyLevel",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "weaponStatsDefinitions",
+                "sourceLayer": "asset",
+                "value": "[]",
+                "valueType": "string"
+              }
+            ],
+            "referenceFields": [
+              {
+                "name": "arcanePrefab",
+                "fileId": "0",
+                "sourceLayer": "asset"
+              }
+            ]
+          },
+          "resolvedReferences": [
+            {
+              "fieldName": "sprite",
+              "sourceLayer": "asset",
+              "fileId": "21300000",
+              "guid": "a10dec4f95b0d174299279cc9b1c8a7f",
+              "fromList": false,
+              "resolution": "unresolved"
+            }
+          ],
+          "assetRefPaths": [
+            {
+              "parentFieldName": "InherentAffixes",
+              "fieldName": "InherentAffixes",
+              "relativePath": "Assets/NEON/DataAssets/AffixSystem/Affixes/LevelToStat/Affix_10005_LS_WeaponDamage.asset",
+              "sourceLayer": "asset",
+              "isEmpty": false,
+              "isSprite": false
+            },
+            {
+              "parentFieldName": "InherentAffixes",
+              "fieldName": "InherentAffixes",
+              "relativePath": "Assets/NEON/DataAssets/AffixSystem/Affixes/ResourceToStat/Affix_10008_RS.asset",
+              "sourceLayer": "asset",
+              "isEmpty": false,
+              "isSprite": false
+            }
+          ]
+        }
+      ],
+      "serializedFields": {
+        "scalarFields": [
+          {
+            "name": "BackGroundPrefab",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "baseColliderOffset",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 0}",
+            "valueType": "string"
+          },
+          {
+            "name": "canChangeGunpointOffset",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "casualModeNoChange",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "ChangeGunGraphics",
+            "sourceLayer": "asset",
+            "value": "_key: 05000000\n_val:\n- {fileID: 21300000, guid: 12c5da0e6aa98ef4c8aa264821da5c6e, type: 3}\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "ChangeGunGraphicsHasAni",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "curse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "damageMultToUps",
+            "sourceLayer": "asset",
+            "value": "[]",
+            "valueType": "string"
+          },
+          {
+            "name": "Description",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/1_weapon_orb_keyD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "equipExtraPrefab",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "extraOffset",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 0}",
+            "valueType": "string"
+          },
+          {
+            "name": "firearmsAimAssistId",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "glassesIsFront",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "GunLevelSpecs",
+            "sourceLayer": "asset",
+            "value": "- {fileID: 1122590399181450285}",
+            "valueType": "string"
+          },
+          {
+            "name": "gunpointOffset",
+            "sourceLayer": "asset",
+            "value": "0.2",
+            "valueType": "number"
+          },
+          {
+            "name": "gunpointOffsetY",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "hairResource",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "hairType",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "hatIsFront",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "id",
+            "sourceLayer": "asset",
+            "value": "2717",
+            "valueType": "number"
+          },
+          {
+            "name": "IgnorePickUpEvent",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "InherentAffixes",
+            "sourceLayer": "asset",
+            "value": "- _affixDefRef:\n  _assetBundleName: default\n  _relativePath: Assets/NEON/DataAssets/AffixSystem/Affixes/LevelToStat/Affix_10005_LS_WeaponDamage.asset\n  _guid: 50f351abc296e4a45974d92aed8cfc4c\n  _meta:\n    name: \n    _typeName: \n    _meta:\n      rid: -2\nRarity: 0\n- _affixDefRef:\n  _assetBundleName: default\n  _relativePath: Assets/NEON/DataAssets/AffixSystem/Affixes/ResourceToStat/Affix_10008_RS.asset\n  _guid: 825a6ebff49d8b74db690045d1486e18\n  _meta:\n    name: \n    _typeName: \n    _meta:\n      rid: -2\nRarity: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "internalObjects",
+            "sourceLayer": "asset",
+            "value": "- {fileID: 1122590399181450285}",
+            "valueType": "string"
+          },
+          {
+            "name": "isAttackSprite",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isFrenzy",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isNonEntity",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isRoleOwn",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSpecialDrops",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSuit",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isTestItem",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "joystickCursorRadius",
+            "sourceLayer": "asset",
+            "value": "10",
+            "valueType": "number"
+          },
+          {
+            "name": "KeyWords",
+            "sourceLayer": "asset",
+            "value": "keywords: []",
+            "valueType": "string"
+          },
+          {
+            "name": "mainDamageType",
+            "sourceLayer": "asset",
+            "value": "8",
+            "valueType": "number"
+          },
+          {
+            "name": "maxRotationSpeed",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "Name",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/1_weapon_orb_key\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "needShowOverheadIcon",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "needUse",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "overrideColliderRadius",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "PickUpPrefabId",
+            "sourceLayer": "asset",
+            "value": "488",
+            "valueType": "number"
+          },
+          {
+            "name": "PowerUpType",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "quality",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "qualityIsShow",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "range",
+            "sourceLayer": "asset",
+            "value": "15",
+            "valueType": "number"
+          },
+          {
+            "name": "rangeWeaponType",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "references",
+            "sourceLayer": "asset",
+            "value": "version: 2\nRefIds:\n- rid: -2\n  type: {class: , ns: , asm: }",
+            "valueType": "string"
+          },
+          {
+            "name": "regenerateDurationTime",
+            "sourceLayer": "asset",
+            "value": "3",
+            "valueType": "number"
+          },
+          {
+            "name": "showBanner",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "showBannerSprite",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "soulbondTable",
+            "sourceLayer": "asset",
+            "value": "[]",
+            "valueType": "string"
+          },
+          {
+            "name": "soulName",
+            "sourceLayer": "asset",
+            "value": "mTerm: \nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "SoundEffect",
+            "sourceLayer": "asset",
+            "value": "event:/SFX/Item/Sfx_item_get",
+            "valueType": "string"
+          },
+          {
+            "name": "subSuits",
+            "sourceLayer": "asset",
+            "value": "[]",
+            "valueType": "string"
+          },
+          {
+            "name": "tagDamageMult",
+            "sourceLayer": "asset",
+            "value": "",
+            "valueType": "string"
+          },
+          {
+            "name": "tagDamageMultRange",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 999}",
+            "valueType": "string"
+          },
+          {
+            "name": "Tags",
+            "sourceLayer": "asset",
+            "value": "tags:\n- tagLevel: 1\n  tagId: 1\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.79607844, g: 0.78039217, b: 0.99607843, a: 1}\n  tagRelationColor: {r: 0.79607844, g: 0.78039217, b: 0.99607843, a: 1}\n  chineseName: \"\\u8FDC\\u7A0B\\u6B66\\u5668\"\n  languageKey: 1\n- tagLevel: 2\n  tagId: 207\n  tagFontColor: {r: 1, g: 0.44313726, b: 0.56078434, a: 1}\n  tagBgColor: {r: 0.47058824, g: 0.08627451, b: 0.23921569, a: 1}\n  tagRelationColor: {r: 0, g: 0, b: 0, a: 0}\n  chineseName: \"\\u6BD2\\u7D20\"\n  languageKey: 207\n- tagLevel: 3\n  tagId: 21\n  tagFontColor: {r: 0.91764706, g: 0.8901961, b: 1, a: 1}\n  tagBgColor: {r: 0.42745098, g: 0.38431373, b: 0.5686275, a: 1}\n  tagRelationColor: {r: 0, g: 0, b: 0, a: 0}\n  chineseName: \"\\u94A5\\u5319\"\n  languageKey: 21",
+            "valueType": "string"
+          },
+          {
+            "name": "TagWeights",
+            "sourceLayer": "asset",
+            "value": "_key:\n- KeyValue\n- super\n- WeaponProjectileCount\n- WeaponDamage\n- DamageBonus\n- WeaponProjectileRange\n- WeaponProjectileSize\n- WeaponAttackSpeed\n_val:\n- 1\n- 0.04040404\n- 0.317916\n- 1\n- 1\n- 1\n- 1\n- 1\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "textShowCd",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "UniqueDrop",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "UseNew",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "values",
+            "sourceLayer": "asset",
+            "value": "_key: []\n_val: []\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "weaponDifficultyLevel",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "weaponStatsDefinitions",
+            "sourceLayer": "asset",
+            "value": "[]",
+            "valueType": "string"
+          }
+        ],
+        "referenceFields": [
+          {
+            "name": "arcanePrefab",
+            "fileId": "0",
+            "sourceLayer": "asset"
+          }
+        ]
+      },
+      "unityDiagnostics": [],
+      "hydrationMeta": {
+        "requestedMode": "parity",
+        "effectiveMode": "parity",
+        "elapsedMs": 21,
+        "fallbackToCompact": false,
+        "resourceBindingCount": 180,
+        "unityDiagnosticsCount": 0,
+        "isComplete": true,
+        "completenessReason": [],
+        "needsParityRetry": false,
+        "reason": "hydration_policy_balanced_respects_unity_hydration_mode"
+      },
+      "missing_evidence": [],
+      "evidence_meta": {
+        "truncated": true,
+        "omitted_count": 24,
+        "next_fetch_hint": "Rerun with unity_evidence_mode=full to fetch complete evidence.",
+        "minimum_evidence_satisfied": false,
+        "verifier_minimum_evidence_satisfied": true
+      },
+      "filter_diagnostics": [],
+      "process_id": "proc_1_unity_runtime_root",
+      "process_ref": {
+        "id": "proc_1_unity_runtime_root",
+        "kind": "persistent",
+        "readable": true,
+        "reader_uri": "gitnexus://repo/neonspark-core/process/proc_1_unity_runtime_root",
+        "origin": "method_projected"
+      },
+      "step_index": 3,
+      "process_subtype": "unity_lifecycle",
+      "process_evidence_mode": "method_projected",
+      "process_confidence": "medium",
+      "runtime_chain_confidence": "medium",
+      "runtime_chain_evidence_level": "none"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
+      "name": "Equip",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+      "startLine": 45,
+      "endLine": 45,
+      "module": "PowerUps",
+      "process_id": "proc_1_unity_runtime_root",
+      "process_ref": {
+        "id": "proc_1_unity_runtime_root",
+        "kind": "persistent",
+        "readable": true,
+        "reader_uri": "gitnexus://repo/neonspark-core/process/proc_1_unity_runtime_root",
+        "origin": "step_in_process"
+      },
+      "step_index": 3,
+      "process_subtype": "unity_lifecycle",
+      "process_evidence_mode": "direct_step",
+      "process_confidence": "high",
+      "runtime_chain_confidence": "high",
+      "runtime_chain_evidence_level": "none"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+      "name": "EquipWithEvent",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+      "startLine": 464,
+      "endLine": 464,
+      "module": "ColdWeapon",
+      "process_id": "proc_1_unity_runtime_root",
+      "process_ref": {
+        "id": "proc_1_unity_runtime_root",
+        "kind": "persistent",
+        "readable": true,
+        "reader_uri": "gitnexus://repo/neonspark-core/process/proc_1_unity_runtime_root",
+        "origin": "step_in_process"
+      },
+      "step_index": 2,
+      "process_subtype": "unity_lifecycle",
+      "process_evidence_mode": "direct_step",
+      "process_confidence": "high",
+      "runtime_chain_confidence": "high",
+      "runtime_chain_evidence_level": "none"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+      "name": "Equip",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+      "startLine": 484,
+      "endLine": 484,
+      "module": "PowerUps",
+      "process_id": "proc_0_unity_runtime_root",
+      "process_ref": {
+        "id": "proc_0_unity_runtime_root",
+        "kind": "persistent",
+        "readable": true,
+        "reader_uri": "gitnexus://repo/neonspark-core/process/proc_0_unity_runtime_root",
+        "origin": "step_in_process"
+      },
+      "step_index": 3,
+      "process_subtype": "unity_lifecycle",
+      "process_evidence_mode": "direct_step",
+      "process_confidence": "high",
+      "runtime_chain_confidence": "high",
+      "runtime_chain_evidence_level": "none"
+    }
+  ],
+  "definitions": [
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:UnEquip",
+      "name": "UnEquip",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+      "startLine": 117,
+      "endLine": 117,
+      "module": "PowerUps"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs:RegisterEquipButtonCallbacks",
+      "name": "RegisterEquipButtonCallbacks",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs",
+      "startLine": 50,
+      "endLine": 50
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs:UnregisterEquipButtonCallbacks",
+      "name": "UnregisterEquipButtonCallbacks",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs",
+      "startLine": 61,
+      "endLine": 61
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs:OnEquipButtonClicked",
+      "name": "OnEquipButtonClicked",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs",
+      "startLine": 71,
+      "endLine": 71
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs:EquipItem",
+      "name": "EquipItem",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs",
+      "startLine": 41,
+      "endLine": 41
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs:GetCurrentEquipped",
+      "name": "GetCurrentEquipped",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs",
+      "startLine": 70,
+      "endLine": 70,
+      "module": "Views"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs:GetEquippedSprite",
+      "name": "GetEquippedSprite",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs",
+      "startLine": 80,
+      "endLine": 80
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:UnEquipWithEvent",
+      "name": "UnEquipWithEvent",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+      "startLine": 476,
+      "endLine": 476,
+      "module": "PlayerState"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/VeewoUI/BarScreen/Illustration/WeaponIllustrations.cs:NEON.VeewoUI",
+      "name": "NEON.VeewoUI",
+      "filePath": "Assets/NEON/Code/VeewoUI/BarScreen/Illustration/WeaponIllustrations.cs",
+      "startLine": 15,
+      "endLine": 15
+    },
+    {
+      "id": "Class:Assets/NEON/Code/VeewoUI/BarScreen/Illustration/WeaponIllustrations.cs:WeaponIllustrations",
+      "name": "WeaponIllustrations",
+      "filePath": "Assets/NEON/Code/VeewoUI/BarScreen/Illustration/WeaponIllustrations.cs",
+      "startLine": 17,
+      "endLine": 17,
+      "resourceBindings": [],
+      "serializedFields": {
+        "scalarFields": [],
+        "referenceFields": []
+      },
+      "unityDiagnostics": [],
+      "hydrationMeta": {
+        "requestedMode": "parity",
+        "effectiveMode": "parity",
+        "elapsedMs": 1,
+        "fallbackToCompact": false,
+        "resourceBindingCount": 1,
+        "unityDiagnosticsCount": 0,
+        "isComplete": true,
+        "completenessReason": [],
+        "needsParityRetry": false,
+        "reason": "hydration_policy_balanced_respects_unity_hydration_mode"
+      },
+      "missing_evidence": [],
+      "evidence_meta": {
+        "truncated": false,
+        "omitted_count": 0,
+        "filter_exhausted": true,
+        "minimum_evidence_satisfied": false,
+        "verifier_minimum_evidence_satisfied": false
+      },
+      "filter_diagnostics": [
+        "filter_exhausted"
+      ]
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/BarScreen/Illustration/WeaponIllustrations.cs:InitRegister",
+      "name": "InitRegister",
+      "filePath": "Assets/NEON/Code/VeewoUI/BarScreen/Illustration/WeaponIllustrations.cs",
+      "startLine": 24,
+      "endLine": 24
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+      "name": "Equip",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+      "startLine": 144,
+      "endLine": 144,
+      "module": "PowerUps"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:UnEquip",
+      "name": "UnEquip",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+      "startLine": 137,
+      "endLine": 137,
+      "module": "Obsolete"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:NEON.Game.PowerUps",
+      "name": "NEON.Game.PowerUps",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+      "startLine": 11,
+      "endLine": 11
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Knife/Manager/KnifeManager.cs:EquipGenericActPrefab",
+      "name": "EquipGenericActPrefab",
+      "filePath": "Assets/NEON/Code/Game/Knife/Manager/KnifeManager.cs",
+      "startLine": 67,
+      "endLine": 67,
+      "module": "Manager"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Knife/Manager/KnifeManager.cs:EquipKnifePowerUp",
+      "name": "EquipKnifePowerUp",
+      "filePath": "Assets/NEON/Code/Game/Knife/Manager/KnifeManager.cs",
+      "startLine": 73,
+      "endLine": 73,
+      "module": "Manager"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Knife/Manager/KnifeManager.cs:EquipSecKnifePowerUp",
+      "name": "EquipSecKnifePowerUp",
+      "filePath": "Assets/NEON/Code/Game/Knife/Manager/KnifeManager.cs",
+      "startLine": 94,
+      "endLine": 94,
+      "module": "Manager"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/BarScreen/AresArsenalScreen.cs:InitEquipButton",
+      "name": "InitEquipButton",
+      "filePath": "Assets/NEON/Code/VeewoUI/BarScreen/AresArsenalScreen.cs",
+      "startLine": 23,
+      "endLine": 23
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/BarScreen/AresArsenalScreen.cs:EquipClickEvent",
+      "name": "EquipClickEvent",
+      "filePath": "Assets/NEON/Code/VeewoUI/BarScreen/AresArsenalScreen.cs",
+      "startLine": 46,
+      "endLine": 46
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/BarScreen/AresArsenalScreen.cs:EquipClick",
+      "name": "EquipClick",
+      "filePath": "Assets/NEON/Code/VeewoUI/BarScreen/AresArsenalScreen.cs",
+      "startLine": 69,
+      "endLine": 69,
+      "module": "BarScreen"
+    }
+  ],
+  "hydrationMeta": {
+    "requestedMode": "parity",
+    "effectiveMode": "parity",
+    "elapsedMs": 21,
+    "fallbackToCompact": false,
+    "resourceBindingCount": 180,
+    "unityDiagnosticsCount": 0,
+    "isComplete": true,
+    "completenessReason": [],
+    "needsParityRetry": false,
+    "reason": "hydration_policy_balanced_respects_unity_hydration_mode"
+  },
+  "next_hops": [
+    {
+      "kind": "resource",
+      "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+      "why": "Unity resource evidence suggests this is the next deterministic hop.",
+      "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"WeaponPowerUp\""
+    },
+    {
+      "kind": "resource",
+      "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+      "why": "Unity resource evidence suggests this is the next deterministic hop.",
+      "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab\" \"WeaponPowerUp\""
+    },
+    {
+      "kind": "resource",
+      "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+      "why": "Unity resource evidence suggests this is the next deterministic hop.",
+      "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab\" \"WeaponPowerUp\""
+    },
+    {
+      "kind": "symbol",
+      "target": "WeaponPowerUp",
+      "why": "Inspect symbol-level context to continue tracing.",
+      "next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"WeaponPowerUp\""
+    }
+  ],
+  "missing_evidence": [],
+  "evidence_meta": {
+    "truncated": true,
+    "omitted_count": 24,
+    "next_fetch_hint": "Rerun with unity_evidence_mode=full to fetch complete evidence.",
+    "filter_exhausted": true,
+    "minimum_evidence_satisfied": false,
+    "verifier_minimum_evidence_satisfied": false
+  },
+  "filter_diagnostics": [
+    "filter_exhausted"
+  ],
+  "runtime_claim": {
+    "rule_id": "graph-only.runtime-closure.v1",
+    "rule_version": "1.0.0",
+    "scope": {
+      "resource_types": [
+        "asset",
+        "prefab",
+        "unity"
+      ],
+      "host_base_type": [
+        "WeaponPowerUp"
+      ],
+      "trigger_family": "graph_only"
+    },
+    "status": "verified_full",
+    "evidence_level": "verified_chain",
+    "guarantees": [
+      "runtime_chain_graph_closure"
+    ],
+    "non_guarantees": [
+      "no_runtime_execution",
+      "no_dynamic_data_flow_proof",
+      "no_state_transition_proof"
+    ],
+    "hops": [
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Knife/Manager/KnifeManager.cs:67",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> EquipGenericActPrefab"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Knife/Manager/KnifeBehindManager.cs:12",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> ChangeKnifeBehind"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Actors/Follower/ArcaneFollowItem.cs:23",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> SetFollowPlayer"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:934",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> SwitchToWeaponAnimator"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Animator.cs:113",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> OnSetNetAnim"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:141->Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:384",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "PickItUp -> PickItUp"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:156->Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:421",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "RevokePickup -> RevokePickup"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:484",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> Equip"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:117->Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:560",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "UnEquip -> UnEquip"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:156->Assets/Plugins/Mirror/Runtime/NetworkServer.cs:1424",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "RevokePickup -> Destroy"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/Plugins/Mirror/Runtime/NetworkServer.cs:1424",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> Destroy"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:156->Assets/NEON/Code/Game/Core/Gun.cs:453",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "RevokePickup -> GetCurGraphVariableKeys"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:117->Assets/NEON/Code/Game/Core/Gun.cs:453",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "UnEquip -> GetCurGraphVariableKeys"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:156->Assets/NEON/Code/Game/Core/Gun.cs:462",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "RevokePickup -> CopyCurGraphVariables"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:117->Assets/NEON/Code/Game/Core/Gun.cs:462",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "UnEquip -> CopyCurGraphVariables"
+      },
+      {
+        "hop_type": "code_loader",
+        "anchor": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:22->Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:141",
+        "confidence": "high",
+        "note": "Synthetic edge observed in graph (unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2).",
+        "snippet": "HoldPickup -> PickItUp"
+      },
+      {
+        "hop_type": "code_loader",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:464->Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45",
+        "confidence": "high",
+        "note": "Synthetic edge observed in graph (unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2).",
+        "snippet": "EquipWithEvent -> Equip"
+      }
+    ],
+    "gaps": [],
+    "verification_core_status": "verified_full",
+    "verification_core_evidence_level": "verified_chain",
+    "policy_adjusted": false
+  },
+  "runtime_chain": {
+    "status": "verified_full",
+    "evidence_level": "verified_chain",
+    "hops": [
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Knife/Manager/KnifeManager.cs:67",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> EquipGenericActPrefab"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Knife/Manager/KnifeBehindManager.cs:12",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> ChangeKnifeBehind"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Actors/Follower/ArcaneFollowItem.cs:23",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> SetFollowPlayer"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:934",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> SwitchToWeaponAnimator"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Animator.cs:113",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> OnSetNetAnim"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:141->Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:384",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "PickItUp -> PickItUp"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:156->Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:421",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "RevokePickup -> RevokePickup"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:484",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> Equip"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:117->Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:560",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "UnEquip -> UnEquip"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:156->Assets/Plugins/Mirror/Runtime/NetworkServer.cs:1424",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "RevokePickup -> Destroy"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45->Assets/Plugins/Mirror/Runtime/NetworkServer.cs:1424",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "Equip -> Destroy"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:156->Assets/NEON/Code/Game/Core/Gun.cs:453",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "RevokePickup -> GetCurGraphVariableKeys"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:117->Assets/NEON/Code/Game/Core/Gun.cs:453",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "UnEquip -> GetCurGraphVariableKeys"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:156->Assets/NEON/Code/Game/Core/Gun.cs:462",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "RevokePickup -> CopyCurGraphVariables"
+      },
+      {
+        "hop_type": "code_runtime",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:117->Assets/NEON/Code/Game/Core/Gun.cs:462",
+        "confidence": "medium",
+        "note": "Graph continuity candidate from structured anchors.",
+        "snippet": "UnEquip -> CopyCurGraphVariables"
+      },
+      {
+        "hop_type": "code_loader",
+        "anchor": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:22->Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:141",
+        "confidence": "high",
+        "note": "Synthetic edge observed in graph (unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2).",
+        "snippet": "HoldPickup -> PickItUp"
+      },
+      {
+        "hop_type": "code_loader",
+        "anchor": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:464->Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:45",
+        "confidence": "high",
+        "note": "Synthetic edge observed in graph (unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2).",
+        "snippet": "EquipWithEvent -> Equip"
+      }
+    ],
+    "gaps": []
+  }
+}

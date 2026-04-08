@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildNextHops,
+  computeVerifierMinimumEvidenceSatisfied,
   pickRetrievalRuleHintFromBundle,
   pickVerifierSymbolAnchor,
 } from '../../src/mcp/local/local-backend.js';
 
 describe('buildNextHops command templates', () => {
+  it('uses all-row conservative semantics for verifier minimum evidence gate', () => {
+    const out = computeVerifierMinimumEvidenceSatisfied({
+      evidenceMetaRows: [
+        { verifier_minimum_evidence_satisfied: true },
+        { verifier_minimum_evidence_satisfied: false },
+      ],
+      truncated: false,
+      filterExhausted: false,
+    });
+    expect(out).toBe(false);
+  });
+
   it('includes repo in generated next commands when repoName is provided', () => {
     const hops = buildNextHops({
       seedPath: 'Assets/Data/Seed.asset',

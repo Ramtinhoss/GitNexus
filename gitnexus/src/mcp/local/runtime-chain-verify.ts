@@ -86,12 +86,15 @@ function toGraphOnlyRuntimeChainResult(input: {
   });
 
   const hops: RuntimeChainHop[] = input.candidates.slice(0, 20).map((candidate) => ({
-    hop_type: 'code_runtime',
+    hop_type: String(candidate.reason || '').startsWith('unity-rule-')
+      || String(candidate.reason || '').toLowerCase().includes('bridge')
+      ? 'code_loader'
+      : 'code_runtime',
     anchor: `${candidate.sourceFilePath || candidate.sourceName}:${candidate.sourceStartLine || 1}->${candidate.targetFilePath || candidate.targetName}:${candidate.targetStartLine || 1}`,
     confidence: String(candidate.reason || '').startsWith('unity-rule-') ? 'high' : 'medium',
     note: String(candidate.reason || '').startsWith('unity-rule-')
       ? `Synthetic edge observed in graph (${candidate.reason}).`
-      : 'Graph CALLS neighborhood candidate from structured anchors.',
+      : 'Graph continuity candidate from structured anchors.',
     snippet: `${candidate.sourceName} -> ${candidate.targetName}`,
   }));
 

@@ -23,6 +23,7 @@ function makeUbiquitousEdgeExecutor() {
         targetName: 'GetComponent',
         targetFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
         targetStartLine: 10,
+        reason: 'unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2',
       }];
     }
     if (
@@ -38,6 +39,7 @@ function makeUbiquitousEdgeExecutor() {
         targetName: 'Start',
         targetFilePath: 'Assets/NEON/Code/Game/Core/EngineHooks.cs',
         targetStartLine: 1,
+        reason: 'static-call',
       }];
     }
     return [];
@@ -58,6 +60,7 @@ describe('runtime graph-only precision matrix', () => {
 
     expect(out?.status).toBe('verified_partial');
     expect(out?.evidence_level).toBe('verified_segment');
+    expect((out?.hops || []).length).toBeGreaterThan(0);
     expect((out?.gaps || []).some((gap) => String(gap.reason).includes('anchor intersection'))).toBe(true);
   });
 });

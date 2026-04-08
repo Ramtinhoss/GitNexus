@@ -6,6 +6,7 @@ Status: Archived after graph-only cutover (2026-04-08)
 > 2026-04-08 update:
 > Query-time runtime closure no longer depends on `verification_rules` / `trigger_tokens` matching.
 > `verification_rules` remains for offline governance/report workflows; `retrieval_rules` remains for next-hop hint selection.
+> This document is historical context only; current implementation semantics are defined by `docs/unity-runtime-process-source-of-truth.md`.
 
 ## 1. Why This Exists
 

@@ -57,6 +57,11 @@ Recommended default workflow:
    - `isComplete: true` → keep compact result
 3. Treat parity as the completeness path for advanced verification.
 
+Runtime claim closure reminder:
+
+- Query-time runtime closure is **graph-only** and does not require `verification_rules` / `trigger_tokens` matching.
+- `verification_rules` remains an offline governance/report artifact family.
+
 When task scope includes Unity runtime process semantics, load and follow:
 
 - `_shared/unity-runtime-process-contract.md`

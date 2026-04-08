@@ -218,6 +218,26 @@ export function extractUnityResourcePaths(text: string): string[] {
   return out;
 }
 
+export function computeVerifierMinimumEvidenceSatisfied(input: {
+  evidenceMetaRows: Array<{
+    verifier_minimum_evidence_satisfied?: boolean;
+    minimum_evidence_satisfied?: boolean;
+    truncated?: boolean;
+    filter_exhausted?: boolean;
+  }>;
+  truncated: boolean;
+  filterExhausted: boolean;
+}): boolean {
+  if (input.truncated || input.filterExhausted) return false;
+  if (!Array.isArray(input.evidenceMetaRows) || input.evidenceMetaRows.length === 0) return false;
+  return input.evidenceMetaRows.every((row) => (
+    row?.truncated !== true
+    && row?.filter_exhausted !== true
+    && row?.minimum_evidence_satisfied !== false
+    && row?.verifier_minimum_evidence_satisfied !== false
+  ));
+}
+
 export function resolveSeedPath(input: { queryText?: string; resourcePathPrefix?: string; filePath?: string }): string | undefined {
   const explicit = normalizePath(String(input.resourcePathPrefix || '').trim());
   if (explicit && isUnityResourcePath(explicit)) {
@@ -1849,9 +1869,11 @@ export class LocalBackend {
         minimum_evidence_satisfied: !explicitTrimRequested
           && extraBindingOmission === 0
           && evidenceMetaRows.every((row: any) => row.minimum_evidence_satisfied !== false),
-        verifier_minimum_evidence_satisfied: evidenceMetaRows.some(
-          (row: any) => row.verifier_minimum_evidence_satisfied !== false,
-        ),
+        verifier_minimum_evidence_satisfied: computeVerifierMinimumEvidenceSatisfied({
+          evidenceMetaRows,
+          truncated,
+          filterExhausted,
+        }),
       };
       if (filterDiagnostics.length > 0) {
         result.filter_diagnostics = [...new Set(filterDiagnostics)];
@@ -1881,7 +1903,7 @@ export class LocalBackend {
         resourceSeedPath: seedPath,
         mappedSeedTargets,
         resourceBindings,
-        minimumEvidenceSatisfied: result.evidence_meta?.verifier_minimum_evidence_satisfied !== false,
+        minimumEvidenceSatisfied: result.evidence_meta?.verifier_minimum_evidence_satisfied === true,
       });
       if (result.runtime_claim) {
         result.runtime_claim = adjustRuntimeClaimForPolicy({
@@ -2667,7 +2689,7 @@ export class LocalBackend {
         resourceSeedPath: seedPath,
         mappedSeedTargets,
         resourceBindings: Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [],
-        minimumEvidenceSatisfied: (result as any).evidence_meta?.minimum_evidence_satisfied !== false,
+        minimumEvidenceSatisfied: (result as any).evidence_meta?.verifier_minimum_evidence_satisfied === true,
       });
       if (result.runtime_claim) {
         result.runtime_claim = adjustRuntimeClaimForPolicy({

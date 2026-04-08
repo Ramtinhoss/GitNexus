@@ -23,6 +23,7 @@ function makeGraphCandidateExecutor() {
         targetName: 'Equip',
         targetFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
         targetStartLine: 20,
+        reason: 'unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2',
       }];
     }
     if (
@@ -38,6 +39,7 @@ function makeGraphCandidateExecutor() {
         targetName: 'StartRoutineWithEvents',
         targetFilePath: 'Assets/NEON/Code/Game/Core/GunGraph.cs',
         targetStartLine: 50,
+        reason: 'static-call',
       }];
     }
     return [];
@@ -45,6 +47,69 @@ function makeGraphCandidateExecutor() {
 }
 
 describe('runtime-chain graph-only verifier', () => {
+  it('continuity: marks runtime segment satisfied via continuous bridge-to-runtime path without runtime keywords', async () => {
+    const out = await verifyRuntimeChainOnDemand({
+      repoPath: '/tmp',
+      queryText: 'weapon continuity check',
+      symbolName: 'WeaponPowerUp',
+      resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/weapon.asset',
+      mappedSeedTargets: ['Assets/NEON/Graphs/PlayerGun/Gungraph_use/weapon_graph.prefab'],
+      resourceBindings: [{ resourcePath: 'Assets/NEON/DataAssets/Powerups/weapon.asset' }],
+      executeParameterized: async (query: string) => {
+        const q = String(query || '');
+        if (q.includes('WHERE n.name IN $symbolNames')) {
+          return [{
+            id: 'Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp',
+            name: 'WeaponPowerUp',
+            type: 'Class',
+            filePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            startLine: 1,
+          }];
+        }
+        if (q.includes("MATCH (s {id: $symbolId})-[r:CodeRelation {type: 'CALLS'}]->(t)")) {
+          return [];
+        }
+        if (
+          q.includes("MATCH (n {id: $symbolId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)")
+          && q.includes("MATCH (m)-[r:CodeRelation {type: 'CALLS'}]->(t)")
+        ) {
+          return [{
+            sourceId: 'Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:PickItUp',
+            sourceName: 'PickItUp',
+            sourceFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            sourceStartLine: 51,
+            targetId: 'Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip',
+            targetName: 'Equip',
+            targetFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            targetStartLine: 78,
+            reason: 'static-call',
+          }];
+        }
+        if (
+          q.includes("MATCH (caller)-[r:CodeRelation {type: 'CALLS'}]->(m)")
+          && q.includes("MATCH (n {id: $symbolId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)")
+        ) {
+          return [{
+            sourceId: 'Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:HoldPickup',
+            sourceName: 'HoldPickup',
+            sourceFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            sourceStartLine: 40,
+            targetId: 'Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:PickItUp',
+            targetName: 'PickItUp',
+            targetFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+            targetStartLine: 51,
+            reason: 'unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2',
+          }];
+        }
+        return [];
+      },
+    });
+
+    expect(out?.status).toBe('verified_full');
+    expect(out?.evidence_level).toBe('verified_chain');
+    expect((out?.gaps || []).some((gap) => String(gap.reason).includes('runtime segment missing'))).toBe(false);
+  });
+
   it('selects candidates from graph anchors without loading retrieval/verification rules', async () => {
     const out = await verifyRuntimeChainOnDemand({
       repoPath: '/tmp',
@@ -183,6 +248,7 @@ describe('runtime-chain graph-only verifier', () => {
             targetName: 'GetComponent',
             targetFilePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
             targetStartLine: 10,
+            reason: 'unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2',
           }];
         }
         if (
@@ -198,6 +264,7 @@ describe('runtime-chain graph-only verifier', () => {
             targetName: 'Start',
             targetFilePath: 'Assets/NEON/Code/Game/Core/EngineHooks.cs',
             targetStartLine: 1,
+            reason: 'static-call',
           }];
         }
         return [];
