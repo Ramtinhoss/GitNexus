@@ -12,7 +12,7 @@ Use this workflow to switch your machine-wide `gitnexus` command between:
 
 ## Preconditions
 
-- Repository path: `/Volumes/Shuttle/projects/agentic/GitNexus`
+- Run inside this GitNexus repository (repo root is resolved at runtime)
 - Node.js + npm available
 - You are allowed to run global npm commands (`npm link`, `npm unlink -g`, `npm install -g`)
 
@@ -21,7 +21,7 @@ Use this workflow to switch your machine-wide `gitnexus` command between:
 ```bash
 set -euo pipefail
 
-REPO_ROOT="/Volumes/Shuttle/projects/agentic/GitNexus"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 CLI_PKG_DIR="$REPO_ROOT/gitnexus"
 
 cd "$CLI_PKG_DIR"
@@ -51,7 +51,7 @@ Expected result:
 ```bash
 set -euo pipefail
 
-REPO_ROOT="/Volumes/Shuttle/projects/agentic/GitNexus"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 CLI_PKG_DIR="$REPO_ROOT/gitnexus"
 
 cd "$CLI_PKG_DIR"
