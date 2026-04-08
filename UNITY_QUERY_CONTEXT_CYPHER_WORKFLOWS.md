@@ -64,6 +64,50 @@ Next action:
 
 ## Debugging Workflow
 
+Goal: diagnose why runtime closure is not achieved, and decide whether to rerun parity hydration or pivot symbols.
+
+Evidence Ref: workflows.debugging.query  
+Evidence Ref: workflows.debugging.context  
+Evidence Ref: workflows.debugging.cypher
+
+1. Run debugging query with explicit verifier switch.
+
+```bash
+gitnexus query -r GitNexus --runtime-chain-verify on-demand --unity-resources on --unity-hydration compact --scope-preset unity-all "verifyRuntimeClaimOnDemand runtime closure"
+```
+
+In CLI/MCP params this is `runtime_chain_verify=on-demand`.
+
+2. Interpret confidence before closure claims.
+
+- If `processes[].evidence_mode` is `resource_heuristic` (or confidence is `low`), treat this as a clue stage and continue retrieval.
+- Do not treat low-confidence process participation as closure completion.
+
+3. Apply dual semantic model.
+
+- `verifier-core`: binary result from verifier internals (`verified_full` or `failed`).
+- `policy-adjusted`: externally presented result after hydration policy constraints are applied.
+- If `needsParityRetry=true`, rerun with parity hydration before closure judgment.
+- If strict mode falls back (`fallbackToCompact=true`), do not conclude closure from compact output; rerun parity first.
+
+4. Use `runtime_claim` reason taxonomy.
+
+- `rule_not_matched`
+- `rule_matched_but_evidence_missing`
+- `rule_matched_but_verification_failed`
+
+5. Drive next action from `hops` and `gaps`.
+
+- If `hops` exist and `gaps` exist: run the `runtime_claim.next_action` or each gap `next_command` to fill missing segments.
+- If `hops` are absent: pivot to `next_hops[]` symbol targets and refresh anchors.
+- Only treat `verified_full` as closure when `hops` is non-empty and `gaps` is empty.
+
+Concrete follow-up from evidence:
+
+```bash
+node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "verifyRuntimeClaimOnDemand runtime closure"
+```
+
 ## Refactoring Workflow
 
 ## Unity vs Generic Behavior
