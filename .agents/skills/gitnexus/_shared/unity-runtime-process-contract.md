@@ -33,6 +33,7 @@ For Reload-focused confirmation, request on-demand verification:
 
 - pass `runtime_chain_verify: "on-demand"` in MCP tools, or
 - use CLI `--runtime-chain-verify on-demand`.
+- `queryText` is not a verifier matching signal in graph-only mode; use structured anchors/resource evidence for closure.
 
 When on-demand verification is used, report `runtime_chain.status`, `evidence_level`, `hops`, and `gaps` before final risk/closure statements.
 
