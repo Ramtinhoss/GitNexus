@@ -4,6 +4,10 @@
 
 This guide explains practical `query/context/cypher` workflows for Unity-oriented retrieval in GitNexus, including runtime-claim handling and follow-up commands.
 
+Related docs:
+- `UNITY_RUNTIME_PROCESS.md` for architecture and implementation narrative
+- `docs/unity-runtime-process-source-of-truth.md` for canonical runtime semantics
+
 Audience:
 - Engineers exploring unfamiliar Unity code paths
 - Engineers debugging runtime-chain confidence and closure outcomes

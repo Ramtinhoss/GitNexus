@@ -2,6 +2,7 @@
 
 > 对外契约与最终语义以 [docs/unity-runtime-process-source-of-truth.md](docs/unity-runtime-process-source-of-truth.md) 为准。
 > 本文为可读性优先的架构说明，已按 2026-04-08 graph-only runtime closure 行为同步。
+> 工作流落地文档参见 [UNITY_QUERY_CONTEXT_CYPHER_WORKFLOWS.md](UNITY_QUERY_CONTEXT_CYPHER_WORKFLOWS.md)。
 
 ## 一、这个功能解决什么问题？
 
