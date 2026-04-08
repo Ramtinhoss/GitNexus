@@ -1,112 +1,110 @@
-# Unity Query/Context/Cypher Workflows
+# Unity Query/Context/Cypher 工作流指南
 
 ## Intro and Audience
 
-This guide explains practical `query/context/cypher` workflows for Unity-oriented retrieval in GitNexus, including runtime-claim handling and follow-up commands.
+本文面向 Unity 场景下的 GitNexus 检索工作，目标是把 `query/context/cypher` 串成可执行闭环，帮助你在探索、调试、重构三类任务里快速收敛。
 
-Related docs:
-- `UNITY_RUNTIME_PROCESS.md` for architecture and implementation narrative
-- `docs/unity-runtime-process-source-of-truth.md` for canonical runtime semantics
+相关文档：
+- `UNITY_RUNTIME_PROCESS.md`：运行时链路架构与实现说明
+- `docs/unity-runtime-process-source-of-truth.md`：Unity runtime process 对外语义真理源
 
-Audience:
-- Engineers exploring unfamiliar Unity code paths
-- Engineers debugging runtime-chain confidence and closure outcomes
-- Engineers preparing safe refactors with graph-backed evidence
+读者对象：
+- 需要快速理解陌生 Unity 代码路径的工程师
+- 需要定位 runtime closure 失败原因的工程师
+- 需要在改名前评估风险面的工程师
 
 ## Exploring Workflow
 
-Goal: from an idea-level query to concrete symbol and process traces with minimal guesswork.
+目标：从概念查询出发，逐步定位到可执行的符号与流程证据。
 
 Evidence Ref: workflows.exploring.query  
 Evidence Ref: workflows.exploring.context  
 Evidence Ref: workflows.exploring.cypher
 
-1. Start with concept-to-process discovery via `query`.
+1. 用 `query` 做概念到流程的第一跳。
 
 ```bash
 gitnexus query -r GitNexus -l 3 "runtime chain verify"
 ```
 
-Read these fields first:
-- `processes[]`: prioritized candidate flows.
-- `processes[].process_ref.reader_uri`: follow-up URI for direct process read.
-- `process_symbols[]`: concrete symbols participating in the selected flow.
-- `definitions[]`: relevant standalone types/functions when flow evidence is sparse.
-- `next_hops[]`: suggested follow-up command targets.
+优先看这些字段：
+- `processes[]`：候选执行流（按优先级排序）
+- `processes[].process_ref.reader_uri`：可直接读取流程详情的 URI
+- `process_symbols[]`：流程里的关键符号锚点
+- `definitions[]`：未入流但相关的结构定义
+- `next_hops[]`：下一条建议命令
 
-2. Deep dive a symbol via `context`.
+2. 用 `context` 深挖单个符号。
 
 ```bash
 gitnexus context -r GitNexus verifyRuntimeClaimOnDemand
 ```
 
-Use `incoming.calls` and `outgoing.calls` to determine caller/callee direction, then select the next inspection target.
+重点关注：
+- `incoming.calls`：谁在调用目标符号
+- `outgoing.calls`：目标符号调用了谁
 
-3. Fill structural gaps with `cypher`.
+3. 用 `cypher` 补结构缺口。
 
 ```bash
 gitnexus cypher -r GitNexus "MATCH (p:Process) RETURN p.heuristicLabel AS process LIMIT 5"
 ```
 
-Use `cypher` when `query/context` gives symbol hints but you still need explicit relationship slices or counts.
+适用时机：
+- `query/context` 给了方向，但你还需要明确关系切片或数量边界。
 
-4. Command -> Field -> Next-Hop walkthrough.
+4. 命令 -> 字段 -> 下一跳（示例）。
 
-Command:
+命令：
 
 ```bash
 gitnexus query -r GitNexus -l 3 "runtime chain verify"
 ```
 
-Field signal:
+字段信号：
 - `processes[0].process_ref.reader_uri = gitnexus://repo/GitNexus/process/proc_46_bm25search`
 - `next_hops[0].next_command = gitnexus context --repo "GitNexus" --unity-resources on --unity-hydration parity "normalizePath"`
 
-Next action:
-- Open `process_ref.reader_uri` for flow-level context.
-- Run the suggested `next_hops[0].next_command` to pivot from process-level to symbol-level evidence.
+下一跳动作：
+- 先读取 `process_ref.reader_uri` 查看流程全貌
+- 再执行 `next_hops[0].next_command` 进入符号级证据
 
 ## Debugging Workflow
 
-Goal: diagnose why runtime closure is not achieved, and decide whether to rerun parity hydration or pivot symbols.
+目标：解释为什么没有达到 runtime closure，并给出下一步可执行动作。
 
 Evidence Ref: workflows.debugging.query  
 Evidence Ref: workflows.debugging.context  
 Evidence Ref: workflows.debugging.cypher
 
-1. Run debugging query with explicit verifier switch.
+1. 显式开启运行时验证。
 
 ```bash
 gitnexus query -r GitNexus --runtime-chain-verify on-demand --unity-resources on --unity-hydration compact --scope-preset unity-all "verifyRuntimeClaimOnDemand runtime closure"
 ```
 
-In CLI/MCP params this is `runtime_chain_verify=on-demand`.
+参数语义：`runtime_chain_verify=on-demand`。
 
-2. Interpret confidence before closure claims.
+2. 先看证据质量，再谈闭环。
+- 当 `evidence_mode=resource_heuristic` 或整体 `confidence=low` 时，只能当作线索，不可直接下闭环结论。
 
-- If `processes[].evidence_mode` is `resource_heuristic` (or confidence is `low`), treat this as a clue stage and continue retrieval.
-- Do not treat low-confidence process participation as closure completion.
+3. 严格使用双层语义。
+- `verifier-core`：验证器内部二元结果（`verified_full` / `failed`）
+- `policy-adjusted`：对外展示结果（受 hydration 策略影响）
+- 若 `needsParityRetry=true`，必须先 parity rerun 再做 closure 结论
+- 若 `fallbackToCompact=true`，不能把 compact 结果当最终闭环结论
 
-3. Apply dual semantic model.
-
-- `verifier-core`: binary result from verifier internals (`verified_full` or `failed`).
-- `policy-adjusted`: externally presented result after hydration policy constraints are applied.
-- If `needsParityRetry=true`, rerun with parity hydration before closure judgment.
-- If strict mode falls back (`fallbackToCompact=true`), do not conclude closure from compact output; rerun parity first.
-
-4. Use `runtime_claim` reason taxonomy.
-
+4. `runtime_claim` 原因分类（taxonomy）。
 - `rule_not_matched`
 - `rule_matched_but_evidence_missing`
 - `rule_matched_but_verification_failed`
 
-5. Drive next action from `hops` and `gaps`.
+5. 用 `hops/gaps` 决策下一条命令。
+- `hops` 有值且 `gaps` 有值：执行 `runtime_claim.next_action` 或各 gap 的 `next_command` 补链
+- `hops` 为空：回到 `next_hops[]` 重新找符号锚点
+- 只有在 `verified_full` 且 `hops>0` 且 `gaps=0` 时，才可判定闭环
 
-- If `hops` exist and `gaps` exist: run the `runtime_claim.next_action` or each gap `next_command` to fill missing segments.
-- If `hops` are absent: pivot to `next_hops[]` symbol targets and refresh anchors.
-- Only treat `verified_full` as closure when `hops` is non-empty and `gaps` is empty.
-
-Concrete follow-up from evidence:
+示例下一跳：
 
 ```bash
 node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "verifyRuntimeClaimOnDemand runtime closure"
@@ -114,10 +112,10 @@ node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration par
 
 ### Negative Semantic Cases
 
-NEG-01: `processes=[]` does not mean runtime chain is disproven.
+NEG-01：`processes=[]` 不等于“运行时链路不存在”。
 
-- Bad interpretation: no process rows means runtime path is impossible.
-- Correct interpretation: evaluate `runtime_claim.verification_core_status` and `runtime_claim.reason` before deciding.
+- Bad interpretation：没有 process 行就表示链路被证伪
+- Correct interpretation：必须结合 `runtime_claim.verification_core_status` 与 `runtime_claim.reason` 判定
 - Evidence Ref: negative_cases.neg_01
 - Verification command:
 
@@ -125,10 +123,10 @@ NEG-01: `processes=[]` does not mean runtime chain is disproven.
 jq -e '.negative_cases.neg_01.assumption.processes_empty==true and .negative_cases.neg_01.runtime_claim.verification_core_status=="failed" and .negative_cases.neg_01.runtime_claim.status!="verified_full" and (.negative_cases.neg_01.runtime_claim.reason=="rule_not_matched" or .negative_cases.neg_01.runtime_claim.reason=="rule_matched_but_evidence_missing" or .negative_cases.neg_01.runtime_claim.reason=="rule_matched_but_verification_failed")' docs/reports/2026-04-08-unity-query-context-cypher-evidence.json
 ```
 
-NEG-02: strict request with fallback cannot conclude closure.
+NEG-02：`strict + fallbackToCompact=true` 不能直接判定闭环。
 
-- Bad interpretation: strict mode was requested, so compact fallback is still trustworthy for closure.
-- Correct interpretation: when strict execution falls back to compact, rerun parity before closure claims.
+- Bad interpretation：既然请求了 strict，就可直接接受 compact fallback 的结果
+- Correct interpretation：发生 fallback 后必须 parity rerun，再判定 closure
 - Evidence Ref: negative_cases.neg_02
 - Verification command:
 
@@ -136,10 +134,10 @@ NEG-02: strict request with fallback cannot conclude closure.
 jq -e '.negative_cases.neg_02.assumption.fallback_to_compact==true and .negative_cases.neg_02.runtime_claim.verification_core_status=="failed" and .negative_cases.neg_02.runtime_claim.status!="verified_full" and (.negative_cases.neg_02.runtime_claim.reason=="rule_not_matched" or .negative_cases.neg_02.runtime_claim.reason=="rule_matched_but_evidence_missing" or .negative_cases.neg_02.runtime_claim.reason=="rule_matched_but_verification_failed")' docs/reports/2026-04-08-unity-query-context-cypher-evidence.json
 ```
 
-NEG-03: missing `hops` and missing `gaps` cannot be labeled verified.
+NEG-03：`hops` 与 `gaps` 同时缺失时，不能标记为 verified。
 
-- Bad interpretation: closure can still be accepted even when chain detail is absent.
-- Correct interpretation: without chain material (`hops/gaps`), keep status non-verified and continue evidence collection.
+- Bad interpretation：即使没有链路细节也可以给 verified
+- Correct interpretation：证据链为空时必须保持 non-verified 并继续采证
 - Evidence Ref: negative_cases.neg_03
 - Verification command:
 
@@ -149,58 +147,58 @@ jq -e '.negative_cases.neg_03.assumption.hops_empty==true and .negative_cases.ne
 
 ## Refactoring Workflow
 
-Goal: build a safe pre-change map before rename/extract/split operations.
+目标：在 rename/extract/split 之前构建可验证的风险面地图。
 
 Evidence Ref: workflows.refactoring.query  
 Evidence Ref: workflows.refactoring.context  
 Evidence Ref: workflows.refactoring.cypher
 
-1. `query` for candidate flows and symbol anchors.
+1. `query` 先找候选流程和符号锚点。
 
 ```bash
 gitnexus query -r GitNexus -l 3 "rename workflow blast radius"
 ```
 
-2. `context` for direct callers/callees and process participation.
+2. `context` 看直接调用关系与流程参与度。
 
 ```bash
 gitnexus context -r GitNexus -f gitnexus/src/mcp/server.ts getNextStepHint
 ```
 
-3. `cypher` for structural proof before edits.
+3. `cypher` 做结构化证明再改代码。
 
-Template A (`CALLS`):
+模板 A（`CALLS`）：
 
 ```bash
 gitnexus cypher -r GitNexus "MATCH (a)-[:CodeRelation {type: 'CALLS'}]->(b:Function {name: 'verifyRuntimeClaimOnDemand'}) RETURN a.name AS caller, a.filePath AS file LIMIT 10"
 ```
 
-Template B (`HAS_METHOD`):
+模板 B（`HAS_METHOD`）：
 
 ```bash
 gitnexus cypher -r GitNexus "MATCH (c:Class)-[:CodeRelation {type: 'HAS_METHOD'}]->(m:Method) RETURN c.name AS class, m.name AS method LIMIT 20"
 ```
 
-Template C (`STEP_IN_PROCESS`):
+模板 C（`STEP_IN_PROCESS`）：
 
 ```bash
 gitnexus cypher -r GitNexus "MATCH (s)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process) RETURN s.name AS symbol, p.heuristicLabel AS process, r.step AS step ORDER BY r.step LIMIT 10"
 ```
 
-Refactor-prep decision rule:
-- If `context.incoming.calls` is high, treat change as high-blast-radius and split refactor into smaller commits.
-- If `STEP_IN_PROCESS` coverage is broad, run targeted regression checks on each affected process path.
+重构前决策建议：
+- 若 `context.incoming.calls` 很多，先拆小改动再提交
+- 若 `STEP_IN_PROCESS` 覆盖面广，先按受影响流程补回归
 
 ## Unity vs Generic Behavior
 
-- Unity flows often require runtime-oriented interpretation (`runtime_claim`, `hops`, `gaps`) in addition to static call chains.
-- Generic repositories may rely primarily on `CALLS/IMPORTS/HAS_METHOD`, while Unity retrieval can require parity rerun and resource-seeded follow-ups.
-- In strict hydration mode, compact fallback is a stop signal for closure claims; generic static analysis does not carry this specific guardrail.
+- Unity 检索除了静态调用链，还必须结合 `runtime_claim`、`hops`、`gaps`。
+- 通用仓库更常依赖 `CALLS/IMPORTS/HAS_METHOD`，Unity 更依赖资源锚点与 hydration 策略。
+- strict 模式发生 fallback 时，Unity 必须先 parity rerun，不能直接给 closure 结论。
 
 ## Optimization Metrics
 
 | 指标 | 定义 | 采集方式 | Failure Signal |
 | --- | --- | --- | --- |
-| 可执行率 | 文档中命令可直接执行并返回结构化结果的比例 | 逐条执行命令并记录 exit code 与 JSON 可解析率 | 任一关键命令失败率超过 10% |
-| 收敛率 | 从首条 `query` 到定位可执行下一跳命令的轮次 | 记录每次排查的命令序列长度（query/context/cypher 次数） | 中位轮次持续高于 4，说明流程不收敛 |
-| 收益率 | 通过结构化检索提前发现风险点的比例 | 对比变更前后问题发现来源（检索命中 vs 事后回归） | 回归后才发现的问题比例高于 30% |
+| 可执行率 | 文档命令可直接执行并返回结构化结果的比例 | 批量执行命令，统计 exit code 与 JSON 可解析率 | 关键命令失败率 > 10% |
+| 收敛率 | 从首条 `query` 到可执行下一跳命令的轮次 | 记录每次排查的 `query/context/cypher` 次数 | 中位轮次持续 > 4 |
+| 收益率 | 通过结构化检索提前发现风险点的比例 | 对比检索阶段发现问题 vs 回归阶段发现问题 | 回归阶段才发现的问题比例 > 30% |
