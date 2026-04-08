@@ -4,11 +4,13 @@ import {
   writeRuntimeProvenanceArtifact,
   type RuntimeProvenanceInputRecord,
 } from '../benchmark/runtime-poc/provenance-artifact.js';
+import { runRuntimePocBenchmark } from '../benchmark/runtime-poc/runner.js';
 
 export interface BenchmarkCommandOptions {
   repo?: string;
   reportDir?: string;
   recordsPath?: string;
+  casesPath?: string;
 }
 
 async function loadRuntimePocRecords(recordsPath?: string): Promise<RuntimeProvenanceInputRecord[]> {
@@ -25,9 +27,13 @@ export async function benchmarkCommand(
   suite: string,
   options: BenchmarkCommandOptions = {},
 ): Promise<{
-  artifactPath: string;
-  indexPath: string;
-  sha256: string;
+  artifactPath?: string;
+  indexPath?: string;
+  sha256?: string;
+  comparisonPath?: string;
+  summaryPath?: string;
+  provenanceArtifactPath?: string;
+  provenanceIndexPath?: string;
 }> {
   const normalizedSuite = String(suite || '').trim().toLowerCase();
   if (normalizedSuite !== 'runtime-poc') {
@@ -36,19 +42,45 @@ export async function benchmarkCommand(
 
   const repo = String(options.repo || 'unknown-repo').trim();
   const reportDir = path.resolve(options.reportDir || 'docs/reports/runtime-poc');
-  const records = await loadRuntimePocRecords(options.recordsPath);
-  const out = await writeRuntimeProvenanceArtifact({
-    reportDir,
-    repo,
-    records,
-  });
+  if (options.recordsPath) {
+    const records = await loadRuntimePocRecords(options.recordsPath);
+    const out = await writeRuntimeProvenanceArtifact({
+      reportDir,
+      repo,
+      records,
+    });
 
-  process.stdout.write(`runtime-poc provenance artifact written: ${out.artifactPath}\n`);
-  process.stdout.write(`runtime-poc provenance index updated: ${out.indexPath}\n`);
+    process.stdout.write(`runtime-poc provenance artifact written: ${out.artifactPath}\n`);
+    process.stdout.write(`runtime-poc provenance index updated: ${out.indexPath}\n`);
+
+    return {
+      artifactPath: out.artifactPath,
+      indexPath: out.indexPath,
+      sha256: out.sha256,
+    };
+  }
+
+  const run = await runRuntimePocBenchmark({
+    repo,
+    reportDir,
+    casesPath: options.casesPath,
+  });
+  process.stdout.write(`runtime-poc comparison report written: ${run.comparisonPath}\n`);
+  process.stdout.write(`runtime-poc markdown summary written: ${run.summaryPath}\n`);
+  process.stdout.write(`runtime-poc provenance artifact written: ${run.provenanceArtifactPath}\n`);
+  process.stdout.write(`runtime-poc provenance index updated: ${run.provenanceIndexPath}\n`);
 
   return {
-    artifactPath: out.artifactPath,
-    indexPath: out.indexPath,
-    sha256: out.sha256,
+    comparisonPath: run.comparisonPath,
+    summaryPath: run.summaryPath,
+    provenanceArtifactPath: run.provenanceArtifactPath,
+    provenanceIndexPath: run.provenanceIndexPath,
   };
+}
+
+export async function benchmarkSuiteCommand(
+  suite: string,
+  options: { repo?: string; reportDir?: string; recordsPath?: string; casesPath?: string },
+) {
+  return await benchmarkCommand(suite, options);
 }

@@ -215,4 +215,13 @@ program
   .option('--report-dir <path>', 'Output directory for reports')
   .action(createLazyAction(() => import('./benchmark-u2-e2e.js'), 'benchmarkU2E2ECommand'));
 
+program
+  .command('benchmark <suite>')
+  .description('Run benchmark suite (currently supports: runtime-poc)')
+  .option('-r, --repo <name>', 'Target indexed repo')
+  .option('--report-dir <path>', 'Output directory for runtime-poc reports', 'docs/reports/runtime-poc')
+  .option('--cases-path <path>', 'Optional JSON cases file for runtime-poc comparison run')
+  .option('--records-path <path>', 'Optional JSON records file to emit provenance artifact only')
+  .action(createLazyAction(() => import('./benchmark.js'), 'benchmarkSuiteCommand'));
+
 program.parse(process.argv);
