@@ -1,5 +1,6 @@
 import type { RuntimeChainEvidenceLevel } from './runtime-chain-evidence.js';
 import { buildRuntimeClaimFromRule, type RuntimeClaim } from './runtime-claim.js';
+import { extractRuntimeGraphCandidates } from './runtime-chain-graph-candidates.js';
 import { RuleRegistryLoadError, loadRuleRegistry, type RuntimeClaimRule } from './runtime-claim-rule-registry.js';
 
 export type RuntimeChainVerifyMode = 'off' | 'on-demand';
@@ -51,7 +52,7 @@ interface VerifyRuntimeClaimInput extends VerifyRuntimeChainInput {
   minimumEvidenceSatisfied?: boolean;
 }
 
-function hasStructuredVerifierAnchors(input: VerifyRuntimeClaimInput): boolean {
+function hasStructuredVerifierAnchors(input: VerifyRuntimeChainInput): boolean {
   const hasValue = (value: unknown): boolean => String(value || '').trim().length > 0;
   if (hasValue(input.resourceSeedPath)) return true;
   if (hasValue(input.symbolName)) return true;
@@ -62,6 +63,45 @@ function hasStructuredVerifierAnchors(input: VerifyRuntimeClaimInput): boolean {
     && input.resourceBindings.some((binding) => hasValue(binding?.resourcePath))
   ) return true;
   return false;
+}
+
+function toGraphOnlyRuntimeChainResult(input: {
+  queryText?: string;
+  candidates: Awaited<ReturnType<typeof extractRuntimeGraphCandidates>>;
+}): RuntimeChainResult {
+  if (input.candidates.length === 0) {
+    return {
+      status: 'failed',
+      evidence_level: 'none',
+      evidence_source: 'query_time',
+      hops: [],
+      gaps: [
+        {
+          segment: 'runtime',
+          reason: 'no graph candidates found for structured anchors',
+          next_command: buildDefaultVerifyNextCommand(input.queryText),
+        },
+      ],
+    };
+  }
+
+  const hops: RuntimeChainHop[] = input.candidates.slice(0, 20).map((candidate) => ({
+    hop_type: 'code_runtime',
+    anchor: `${candidate.sourceFilePath || candidate.sourceName}:${candidate.sourceStartLine || 1}->${candidate.targetFilePath || candidate.targetName}:${candidate.targetStartLine || 1}`,
+    confidence: String(candidate.reason || '').startsWith('unity-rule-') ? 'high' : 'medium',
+    note: String(candidate.reason || '').startsWith('unity-rule-')
+      ? `Synthetic edge observed in graph (${candidate.reason}).`
+      : 'Graph CALLS neighborhood candidate from structured anchors.',
+    snippet: `${candidate.sourceName} -> ${candidate.targetName}`,
+  }));
+
+  return {
+    status: 'verified_partial',
+    evidence_level: 'verified_segment',
+    evidence_source: 'query_time',
+    hops,
+    gaps: [],
+  };
 }
 
 function buildDefaultVerifyNextCommand(queryText?: string): string {
@@ -140,7 +180,18 @@ async function verifyRuleDrivenRuntimeChain(input: VerifyRuntimeChainInput): Pro
 export async function verifyRuntimeChainOnDemand(
   input: VerifyRuntimeChainInput,
 ): Promise<RuntimeChainResult | undefined> {
-  if (!input.rule) return undefined;
+  if (!input.rule) {
+    if (!hasStructuredVerifierAnchors(input) || !String(input.symbolName || '').trim()) return undefined;
+    const candidates = await extractRuntimeGraphCandidates({
+      executeParameterized: input.executeParameterized,
+      symbolName: input.symbolName,
+      symbolFilePath: input.symbolFilePath,
+    });
+    return toGraphOnlyRuntimeChainResult({
+      queryText: input.queryText,
+      candidates,
+    });
+  }
   return await verifyRuleDrivenRuntimeChain(input);
 }
 function buildFailureRuntimeClaim(input: {
