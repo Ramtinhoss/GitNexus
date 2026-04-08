@@ -1,6 +1,7 @@
 import type { RuntimeChainEvidenceLevel } from './runtime-chain-evidence.js';
 import { buildRuntimeClaimFromRule, type RuntimeClaim } from './runtime-claim.js';
 import { extractRuntimeGraphCandidates } from './runtime-chain-graph-candidates.js';
+import { evaluateRuntimeClosure } from './runtime-chain-closure-evaluator.js';
 import { RuleRegistryLoadError, loadRuleRegistry, type RuntimeClaimRule } from './runtime-claim-rule-registry.js';
 
 export type RuntimeChainVerifyMode = 'off' | 'on-demand';
@@ -67,23 +68,22 @@ function hasStructuredVerifierAnchors(input: VerifyRuntimeChainInput): boolean {
 
 function toGraphOnlyRuntimeChainResult(input: {
   queryText?: string;
+  symbolName?: string;
+  resourceSeedPath?: string;
+  mappedSeedTargets?: string[];
+  resourceBindings?: Array<{ resourcePath?: string }>;
   candidates: Awaited<ReturnType<typeof extractRuntimeGraphCandidates>>;
 }): RuntimeChainResult {
-  if (input.candidates.length === 0) {
-    return {
-      status: 'failed',
-      evidence_level: 'none',
-      evidence_source: 'query_time',
-      hops: [],
-      gaps: [
-        {
-          segment: 'runtime',
-          reason: 'no graph candidates found for structured anchors',
-          next_command: buildDefaultVerifyNextCommand(input.queryText),
-        },
-      ],
-    };
-  }
+  const nextCommand = buildDefaultVerifyNextCommand(input.queryText);
+  const closure = evaluateRuntimeClosure({
+    queryText: input.queryText,
+    symbolName: input.symbolName,
+    resourceSeedPath: input.resourceSeedPath,
+    mappedSeedTargets: input.mappedSeedTargets,
+    resourceBindings: input.resourceBindings,
+    candidates: input.candidates,
+    nextCommand,
+  });
 
   const hops: RuntimeChainHop[] = input.candidates.slice(0, 20).map((candidate) => ({
     hop_type: 'code_runtime',
@@ -96,11 +96,11 @@ function toGraphOnlyRuntimeChainResult(input: {
   }));
 
   return {
-    status: 'verified_partial',
-    evidence_level: 'verified_segment',
+    status: closure.status,
+    evidence_level: closure.evidence_level,
     evidence_source: 'query_time',
     hops,
-    gaps: [],
+    gaps: closure.gaps,
   };
 }
 
@@ -189,6 +189,10 @@ export async function verifyRuntimeChainOnDemand(
     });
     return toGraphOnlyRuntimeChainResult({
       queryText: input.queryText,
+      symbolName: input.symbolName,
+      resourceSeedPath: input.resourceSeedPath,
+      mappedSeedTargets: input.mappedSeedTargets,
+      resourceBindings: input.resourceBindings,
       candidates,
     });
   }
