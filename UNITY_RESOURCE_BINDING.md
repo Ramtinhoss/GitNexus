@@ -1,5 +1,8 @@
 # GitNexus Unity 资源绑定分析 — 架构与功能设计说明
 
+> 说明：本文聚焦 Unity 资源绑定与 UI trace。  
+> `runtime_chain_verify=on-demand` 的 graph-only closure 契约请以 [docs/unity-runtime-process-source-of-truth.md](docs/unity-runtime-process-source-of-truth.md) 为准。
+
 ## 一、这个功能解决什么问题？
 
 Unity 游戏项目中，代码（C# 脚本）和资源（界面文件 UXML、样式文件 USS、预制体 Prefab、场景文件等）之间存在大量**隐式关联**。这些关联不是通过代码 `import` 建立的，而是通过 Unity 特有的 **GUID 引用机制**——每个文件都有一个唯一 ID（GUID），资源文件通过这个 ID 来引用其他文件。

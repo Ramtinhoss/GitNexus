@@ -283,15 +283,16 @@ mcp__gitnexus__cypher:
 
 ```
 mcp__gitnexus__query:
-  query: "<trigger_token>"
+  query: "<chain_intent_keyword>"
   runtime_chain_verify: "on-demand"
   repo: <repo-name>
 ```
 
 **PASS**: `runtime_chain.status === 'verified_full'` 且 `evidence_level === 'verified_chain'`。
 **FAIL 诊断**:
-- `rule_not_matched` → 规则的 `trigger_tokens` 未匹配查询文本
-- `verification_failed` → 图谱中无匹配的 `unity-rule-*` 合成边
+- `rule_not_matched` → 缺少可用结构化锚点（或 derived seed 不足），无法形成 graph-only closure 候选
+- `rule_matched_but_evidence_missing` → Anchor/Bind/Bridge/Runtime 某段缺证据，无法闭环
+- `rule_matched_but_verification_failed` → 候选链路存在但闭环校验失败（通常是桥接方向或目标不一致）
 
 ### 验证 3: Process 完整性
 
@@ -336,8 +337,9 @@ mcp__gitnexus__cypher:
 | 验证 1 部分（只有 resource-load） | method_triggers_field_load 参数错误 | 检查 host_class_pattern / loader_methods |
 | 验证 1 部分（无 scene-load） | method_triggers_scene_load 参数错误 | 检查 scene_name 是否匹配 .unity 文件名 |
 | 验证 1 部分（无 method-bridge） | method_triggers_method 类名/方法名不匹配 | 检查 source/target_class_pattern 和 source/target_method 是否与图谱中节点名一致 |
-| 验证 2 失败（rule_not_matched） | trigger_tokens 未匹配查询文本 | 调整 match.trigger_tokens |
-| 验证 2 失败（verification_failed） | 合成边 reason 中的 ruleId 不匹配 | 检查规则 ID 一致性 |
+| 验证 2 失败（rule_not_matched） | 无结构化锚点，且 derived seed 不足以生成候选 | 补充 symbol/resource anchors（不要依赖 queryText token） |
+| 验证 2 失败（rule_matched_but_evidence_missing） | 合成边存在但闭环缺段（Anchor/Bind/Bridge/Runtime） | 对照 hops/gaps 回补对应 binding |
+| 验证 2 失败（rule_matched_but_verification_failed） | 候选路径方向/目标不一致，闭环校验失败 | 检查 bridge 目标类/方法与资源路径映射是否一致 |
 | 验证 3 失败（无 Process） | 合成边 confidence 过低 | 检查 RULE_EDGE_CONFIDENCE（应为 0.75） |
 | 验证 4 链路断裂（中间有动态跳转） | 事件派发/回调/delegate 无静态 CALLS 边 | 添加 `method_triggers_method` binding 桥接动态跳转 |
 | lifecycle_overrides 无效 | scope 值不是文件路径前缀 | scope 应匹配 filePath 而非类名 |

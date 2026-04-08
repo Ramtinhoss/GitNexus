@@ -1,6 +1,6 @@
 # Unity Runtime Process 真理源（Design × As-Built）
 
-Date: 2026-04-04
+Date: 2026-04-08
 Owner: GitNexus
 Status: Active (source of truth) — V2 规则驱动架构
 
@@ -10,6 +10,7 @@ Status: Active (source of truth) — V2 规则驱动架构
 
 1. 设计意图：
    - `docs/plans/2026-04-03-unity-runtime-process-rule-driven-design.md`（V2 规则驱动方案设计）
+   - `docs/plans/2026-04-07-graph-only-runtime-retrieval-design.md`（query-time graph-only closure 设计）
    - `docs/unity-runtime-process-rule-driven-implementation.md`（V2 技术实现手册）
 2. 实际实现（代码与测试）：
    - ingestion / process 生成链路
@@ -74,12 +75,14 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - 请求参数为唯一控制开关，无全局 gate
 2. 验证逻辑（`runtime-chain-verify.ts`）：
    - `verifyRuntimeClaimOnDemand`：直接走结构化锚点（`symbolName/resourceSeedPath/mappedSeedTargets/resourceBindings`）驱动的 graph-only closure
+   - `queryText` 不再作为 verifier 匹配信号；仅用于默认 `next_action` 文案与弱 seed 提取兜底
    - query-time 不再加载 retrieval/verification 规则目录做匹配；规则仍用于 analyze-time synthetic edge 与离线治理产物
    - query-time runtime closure is graph-only and no longer performs rule-catalog matching.
    - 无文件系统 I/O、无 regex 启发式、无 token family 匹配门槛
 3. 验证结果：
-   - `status: 'verified_full'` + `evidence_source: 'analyze_time'`（图谱中存在匹配的合成边）
-   - `status: 'failed'` + `evidence_level: 'none'`（无匹配合成边）
+   - `runtime_claim.rule_id` 固定为 `graph-only.runtime-closure.v1`（兼容字段保留）
+   - `status: 'verified_full'` 仅在四段闭环（Anchor/Bind/Bridge/Runtime）同时满足时成立
+   - `status: 'failed'` 可伴随 `evidence_level: 'none' | 'clue' | 'verified_segment'`（精度优先降级）
    - `runtime_claim` 统一输出失败分类：`rule_not_matched | rule_matched_but_evidence_missing | rule_matched_but_verification_failed`
 
 ### 2.4 Phase 5 Offline Rule Lab（Discover → Analyze → Review → Curate → Promote → Regress）
@@ -132,7 +135,7 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
    - 无规则 / 无匹配 → `reason=rule_not_matched`
    - 匹配但证据不足 → `reason=rule_matched_but_evidence_missing`
    - 匹配且验证失败 → `reason=rule_matched_but_verification_failed`
-4. 验证结果携带 `evidence_source: 'analyze_time' | 'query_time'`
+4. `runtime_claim` 对外返回以 closure 状态/证据级别/hops/gaps 为核心，不暴露 query-time 内部 matcher 细节
 
 ### 4.3 `process_ref / runtime_claim / evidence policy` 合约
 
@@ -154,7 +157,7 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 
 1. Rule Lab 六阶段生命周期：discover → analyze → review_pack → curate → promote → regress
 2. Artifact 路径：`.gitnexus/rules/lab/runs/<run_id>/...`
-3. promote 后即时供 runtime claim verifier 和 analyze pipeline 读取
+3. promote/compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配
 4. 规则族区分：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）
 
 ## 5. 配置方式（V2）

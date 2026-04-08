@@ -9,8 +9,9 @@ This document defines the current configuration and state file rules used by Git
 | `lbug` | `analyze` / MCP runtime | LadybugDB graph index data | `gitnexus analyze` rebuilds it | Query tools and MCP backend |
 | `meta.json` | `analyze` | Index metadata and defaults | Saved at end of `analyze` | `status`, hooks, CLI default repo resolution |
 | `unity-parity-seed.json` | `analyze` | Unity parity seed cache payload | Saved during `analyze` finalize | Unity lazy/parity loaders |
-| `rules/catalog.json` | `rule-lab-promote` | Project rule catalog, activation order, rule versions | Written when promoting approved rules | Runtime verifier rule loader |
-| `rules/approved/*.yaml` | `rule-lab-curate` / `rule-lab-promote` | Approved project runtime verification rules | Written during curation/promotion | Runtime verifier rule loader |
+| `rules/catalog.json` | `rule-lab-promote` | Project rule catalog, activation order, rule versions | Written when promoting approved rules | Rule Lab / compile tooling; analyze rule loading fallback |
+| `rules/approved/*.yaml` | `rule-lab-curate` / `rule-lab-promote` | Approved project rule definitions (analyze/retrieval/verification families) | Written during curation/promotion | Rule compiler and analyze/offline governance fallback loaders |
+| `rules/compiled/*.v2.json` | `rule-lab-compile` | Compiled rule bundles by family (`analyze_rules`, `retrieval_rules`, `verification_rules`) | Written by `gitnexus rule-lab compile` | Analyze pipeline (`analyze_rules`), retrieval next-hop hint resolver (`retrieval_rules`), offline governance/report workflows |
 | `rules/lab/runs/**` | `rule-lab-discover` / `rule-lab-analyze` / `rule-lab-review-pack` / `rule-lab-curate` | Rule Lab intermediate artifacts (`manifest.json`, `slice-plan.json`, `slices/*/slice.json`, `candidates.jsonl`, `review-cards.md`, `curated.json`, `dsl-draft.json`) | Written by Rule Lab execution | Rule Lab follow-up commands and promote compiler input |
 | `rules/reports/*.md` | `rule-lab-regress` | Rule quality and regression reports | Written by regression pass | Human review and CI reports |
 
@@ -85,13 +86,14 @@ Rules:
   - `error`: fail immediately with actionable drift summary
 - In non-interactive mode, `ask` fails with an actionable error requiring explicit policy selection.
 
-### Runtime Claim Bootstrap (current)
+### Runtime Claim Contract (current)
 
-- `rules/catalog.json` ships with an active bootstrap rule entry:
-  - `id`: `unity.gungraph.reload.output-getvalue.v1`
-  - `version`: `1.0.0`
-  - `file`: `approved/unity.gungraph.reload.output-getvalue.v1.yaml`
-- The approved YAML now follows DSL v2 sections (`match/topology/closure/claims`) and preserves runtime-claim compatibility fields (`trigger_family`, `required_hops`, guarantees/non-guarantees, `next_action`).
+- Query-time `runtime_chain_verify=on-demand` uses graph-only closure from structured anchors.
+- Query-time runtime claim closure does **not** load `verification_rules`/`retrieval_rules` for rule matching.
+- Rule artifacts under `.gitnexus/rules/**` remain authoritative for:
+  - analyze-time synthetic edge injection (`analyze_rules`)
+  - retrieval next-hop hint selection (`retrieval_rules`)
+  - offline governance and reports (`verification_rules`)
 
 ## Global (`~/.gitnexus/`)
 
@@ -111,11 +113,14 @@ Rules:
 2. For direct tool commands, when `--repo` is missing:
    1. use `<repo>/.gitnexus/meta.json.repoId`
    2. fallback to `~/.gitnexus/registry.json` path match
-3. Runtime verifier rule loading precedence:
-   1. `<repo>/.gitnexus/rules/approved/*.yaml` + `rules/catalog.json`
-   2. optional `<repo>/.gitnexus/rules/overrides.yaml`
-   3. if no project rule matched: return explicit `rule_not_matched` (no implicit builtin fallback)
-4. For npx package spec resolution:
+3. Query-time runtime claim closure input precedence:
+   1. explicit structured anchors on request (`symbolName`, `resourceSeedPath`, `mappedSeedTargets`, `resourceBindings`)
+   2. derived seed path (`resource_path_prefix`, then `filePath`, then resource path extraction from `queryText`)
+   3. if structured anchors are insufficient: return explicit `rule_not_matched` (no query-time rule-match fallback)
+4. Retrieval next-hop hint rule loading precedence:
+   1. `<repo>/.gitnexus/rules/compiled/retrieval_rules.v2.json`
+   2. no match or no compiled bundle: no retrieval-rule hint
+5. For npx package spec resolution:
    1. explicit setup flags / env
    2. `~/.gitnexus/config.json` (`cliPackageSpec`, then `cliVersion`)
    3. package default dist-tag
