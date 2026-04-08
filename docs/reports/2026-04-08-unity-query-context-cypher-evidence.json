@@ -1,0 +1,2273 @@
+{
+  "meta": {
+    "generated_at": "2026-04-08T06:30:34Z",
+    "repo": "GitNexus",
+    "source": "gitnexus-cli",
+    "index_staleness": "index_1_commit_behind_head_user_chose_continue",
+    "note": "user declined reindex and accepted stale-index risk"
+  },
+  "workflows": {
+    "exploring": {
+      "command_set": {
+        "query": "gitnexus query -r GitNexus -l 3 \"runtime chain verify\"",
+        "context": "gitnexus context -r GitNexus verifyRuntimeClaimOnDemand",
+        "cypher": "gitnexus cypher -r GitNexus \"MATCH (p:Process) RETURN p.heuristicLabel AS process LIMIT 5\""
+      },
+      "query": {
+        "processes": [
+          {
+            "id": "proc_46_bm25search",
+            "process_ref": {
+              "id": "proc_46_bm25search",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_46_bm25search",
+              "origin": "step_in_process"
+            },
+            "summary": "Bm25Search → NormalizePath",
+            "priority": 0.076,
+            "symbol_count": 1,
+            "process_type": "cross_community",
+            "step_count": 5,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "process_symbols": [
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:normalizePath",
+            "name": "normalizePath",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 65,
+            "endLine": 65,
+            "module": "Local",
+            "process_id": "proc_46_bm25search",
+            "process_ref": {
+              "id": "proc_46_bm25search",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_46_bm25search",
+              "origin": "step_in_process"
+            },
+            "step_index": 5,
+            "process_subtype": "",
+            "process_evidence_mode": "direct_step",
+            "process_confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "definitions": [
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:isTestFilePath",
+            "name": "isTestFilePath",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 52,
+            "endLine": 52,
+            "module": "Local"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:isUnityResourcePathLike",
+            "name": "isUnityResourcePathLike",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 69,
+            "endLine": 69,
+            "module": "Local"
+          },
+          {
+            "id": "Interface:gitnexus/src/mcp/local/unity-runtime-hydration.ts:HydrationRuntime",
+            "name": "HydrationRuntime",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 35,
+            "endLine": 35
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/unity-runtime-hydration.ts:resolveRuntime",
+            "name": "resolveRuntime",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 185,
+            "endLine": 185,
+            "module": "Local"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/unity-runtime-hydration.ts:__resetUnityRuntimeHydrationStateForTest",
+            "name": "__resetUnityRuntimeHydrationStateForTest",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 452,
+            "endLine": 452
+          },
+          {
+            "id": "Interface:gitnexus/src/benchmark/runtime-poc/runner.ts:RuntimePocCase",
+            "name": "RuntimePocCase",
+            "filePath": "gitnexus/src/benchmark/runtime-poc/runner.ts",
+            "startLine": 11,
+            "endLine": 11
+          },
+          {
+            "id": "Interface:gitnexus/src/benchmark/runtime-poc/runner.ts:RuntimePocComparisonRow",
+            "name": "RuntimePocComparisonRow",
+            "filePath": "gitnexus/src/benchmark/runtime-poc/runner.ts",
+            "startLine": 29,
+            "endLine": 29
+          },
+          {
+            "id": "Interface:gitnexus/src/benchmark/runtime-poc/runner.ts:RuntimePocReport",
+            "name": "RuntimePocReport",
+            "filePath": "gitnexus/src/benchmark/runtime-poc/runner.ts",
+            "startLine": 40,
+            "endLine": 40
+          },
+          {
+            "id": "Interface:gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts:AnchorValidationRow",
+            "name": "AnchorValidationRow",
+            "filePath": "gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts",
+            "startLine": 11,
+            "endLine": 11
+          },
+          {
+            "id": "Interface:gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts:ReloadAcceptanceArtifact",
+            "name": "ReloadAcceptanceArtifact",
+            "filePath": "gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts",
+            "startLine": 17,
+            "endLine": 17
+          },
+          {
+            "id": "Function:gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts:containsPlaceholderText",
+            "name": "containsPlaceholderText",
+            "filePath": "gitnexus/src/benchmark/u2-e2e/reload-v1-acceptance-runner.ts",
+            "startLine": 35,
+            "endLine": 35,
+            "module": "U2-e2e"
+          },
+          {
+            "id": "Interface:gitnexus/src/mcp/local/runtime-chain-evidence.ts:DeriveRuntimeChainEvidenceLevelInput",
+            "name": "DeriveRuntimeChainEvidenceLevelInput",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-evidence.ts",
+            "startLine": 3,
+            "endLine": 3
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/runtime-chain-evidence.ts:deriveRuntimeChainEvidenceLevel",
+            "name": "deriveRuntimeChainEvidenceLevel",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-evidence.ts",
+            "startLine": 9,
+            "endLine": 9,
+            "module": "Local"
+          },
+          {
+            "id": "File:gitnexus/src/mcp/local/runtime-chain-evidence.ts",
+            "name": "runtime-chain-evidence.ts",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-evidence.ts"
+          },
+          {
+            "id": "File:docs/plans/2026-04-07-graph-only-runtime-retrieval-implementation.md",
+            "name": "2026-04-07-graph-only-runtime-retrieval-implementation.md",
+            "filePath": "docs/plans/2026-04-07-graph-only-runtime-retrieval-implementation.md"
+          },
+          {
+            "id": "File:docs/reports/2026-04-03-m2-topology-verifier-validation.md",
+            "name": "2026-04-03-m2-topology-verifier-validation.md",
+            "filePath": "docs/reports/2026-04-03-m2-topology-verifier-validation.md"
+          },
+          {
+            "id": "File:gitnexus/src/mcp/local/runtime-chain-verify.test.ts",
+            "name": "runtime-chain-verify.test.ts",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/runtime-chain-verify.test.ts:makeTempRepo",
+            "name": "makeTempRepo",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts",
+            "startLine": 8,
+            "endLine": 8
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/runtime-chain-verify.test.ts:fileExists",
+            "name": "fileExists",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts",
+            "startLine": 28,
+            "endLine": 28,
+            "module": "Local"
+          },
+          {
+            "id": "File:docs/plans/2026-04-03-unity-runtime-validation-gap-remediation-plan.md",
+            "name": "2026-04-03-unity-runtime-validation-gap-remediation-plan.md",
+            "filePath": "docs/plans/2026-04-03-unity-runtime-validation-gap-remediation-plan.md"
+          }
+        ],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "normalizePath",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"normalizePath\""
+          }
+        ],
+        "missing_evidence": []
+      },
+      "context": {
+        "status": "found",
+        "symbol": {
+          "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:verifyRuntimeClaimOnDemand",
+          "name": "verifyRuntimeClaimOnDemand",
+          "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts",
+          "startLine": 266,
+          "endLine": 266
+        },
+        "incoming": {
+          "calls": [
+            {
+              "uid": "File:gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts",
+              "name": "runtime-graph-only-na2-regression.test.ts",
+              "filePath": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/integration/reload-v1-current-source-regression.test.ts",
+              "name": "reload-v1-current-source-regression.test.ts",
+              "filePath": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts",
+              "name": "runtime-chain-verify-graph-only.test.ts",
+              "filePath": "gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts",
+              "name": "runtime-chain-verify-graph-only-input.test.ts",
+              "filePath": "gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts",
+              "name": "local-backend-runtime-claim-evidence-gate.test.ts",
+              "filePath": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/src/mcp/local/runtime-chain-verify.test.ts",
+              "name": "runtime-chain-verify.test.ts",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts"
+            },
+            {
+              "uid": "Method:gitnexus/src/mcp/local/local-backend.ts:query",
+              "name": "query",
+              "filePath": "gitnexus/src/mcp/local/local-backend.ts"
+            },
+            {
+              "uid": "Method:gitnexus/src/mcp/local/local-backend.ts:context",
+              "name": "context",
+              "filePath": "gitnexus/src/mcp/local/local-backend.ts"
+            }
+          ]
+        },
+        "outgoing": {
+          "calls": [
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:hasStructuredVerifierAnchors",
+              "name": "hasStructuredVerifierAnchors",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildDefaultVerifyNextCommand",
+              "name": "buildDefaultVerifyNextCommand",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:verifyRuntimeChainOnDemand",
+              "name": "verifyRuntimeChainOnDemand",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildFailureRuntimeClaim",
+              "name": "buildFailureRuntimeClaim",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildGraphOnlyRuntimeClaim",
+              "name": "buildGraphOnlyRuntimeClaim",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            }
+          ]
+        },
+        "directIncoming": {
+          "calls": [
+            {
+              "uid": "File:gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts",
+              "name": "runtime-graph-only-na2-regression.test.ts",
+              "filePath": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/integration/reload-v1-current-source-regression.test.ts",
+              "name": "reload-v1-current-source-regression.test.ts",
+              "filePath": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts",
+              "name": "runtime-chain-verify-graph-only.test.ts",
+              "filePath": "gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts",
+              "name": "runtime-chain-verify-graph-only-input.test.ts",
+              "filePath": "gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts",
+              "name": "local-backend-runtime-claim-evidence-gate.test.ts",
+              "filePath": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/src/mcp/local/runtime-chain-verify.test.ts",
+              "name": "runtime-chain-verify.test.ts",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts"
+            },
+            {
+              "uid": "Method:gitnexus/src/mcp/local/local-backend.ts:query",
+              "name": "query",
+              "filePath": "gitnexus/src/mcp/local/local-backend.ts"
+            },
+            {
+              "uid": "Method:gitnexus/src/mcp/local/local-backend.ts:context",
+              "name": "context",
+              "filePath": "gitnexus/src/mcp/local/local-backend.ts"
+            }
+          ]
+        },
+        "directOutgoing": {
+          "calls": [
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:hasStructuredVerifierAnchors",
+              "name": "hasStructuredVerifierAnchors",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildDefaultVerifyNextCommand",
+              "name": "buildDefaultVerifyNextCommand",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:verifyRuntimeChainOnDemand",
+              "name": "verifyRuntimeChainOnDemand",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildFailureRuntimeClaim",
+              "name": "buildFailureRuntimeClaim",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildGraphOnlyRuntimeClaim",
+              "name": "buildGraphOnlyRuntimeClaim",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            }
+          ]
+        },
+        "processes": [],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "verifyRuntimeClaimOnDemand",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"verifyRuntimeClaimOnDemand\""
+          }
+        ]
+      },
+      "cypher": {
+        "markdown": "| process |\n| --- |\n| CreateServer → RepoId |\n| CreateServer → Current |\n| CreateServer → BuildNpxCommand |\n| CreateServer → Has |\n| CreateServer → Next |",
+        "row_count": 5
+      }
+    },
+    "debugging": {
+      "command_set": {
+        "query": "gitnexus query -r GitNexus --runtime-chain-verify on-demand --unity-resources on --unity-hydration compact --scope-preset unity-all \"verifyRuntimeClaimOnDemand runtime closure\"",
+        "context": "gitnexus context -r GitNexus verifyRuntimeClaimOnDemand --runtime-chain-verify on-demand --unity-resources on",
+        "cypher": "gitnexus cypher -r GitNexus \"MATCH (a)-[:CodeRelation {type: 'CALLS'}]->(b:Function {name: 'verifyRuntimeClaimOnDemand'}) RETURN a.name AS caller, a.filePath AS file LIMIT 10\""
+      },
+      "query": {
+        "processes": [
+          {
+            "id": "proc_46_bm25search",
+            "process_ref": {
+              "id": "proc_46_bm25search",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_46_bm25search",
+              "origin": "step_in_process"
+            },
+            "summary": "Bm25Search → NormalizePath",
+            "priority": 0.073,
+            "symbol_count": 1,
+            "process_type": "cross_community",
+            "step_count": 5,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "process_symbols": [
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:normalizePath",
+            "name": "normalizePath",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 65,
+            "endLine": 65,
+            "module": "Local",
+            "process_id": "proc_46_bm25search",
+            "process_ref": {
+              "id": "proc_46_bm25search",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_46_bm25search",
+              "origin": "step_in_process"
+            },
+            "step_index": 5,
+            "process_subtype": "",
+            "process_evidence_mode": "direct_step",
+            "process_confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "definitions": [
+          {
+            "id": "Interface:gitnexus/src/mcp/local/unity-runtime-hydration.ts:HydrationRuntime",
+            "name": "HydrationRuntime",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 35,
+            "endLine": 35
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/unity-runtime-hydration.ts:resolveRuntime",
+            "name": "resolveRuntime",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 185,
+            "endLine": 185,
+            "module": "Local"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/unity-runtime-hydration.ts:__resetUnityRuntimeHydrationStateForTest",
+            "name": "__resetUnityRuntimeHydrationStateForTest",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 452,
+            "endLine": 452
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:verifyRuntimeClaimOnDemand",
+            "name": "verifyRuntimeClaimOnDemand",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts",
+            "startLine": 266,
+            "endLine": 266,
+            "module": "Local"
+          },
+          {
+            "id": "Interface:gitnexus/src/mcp/local/runtime-chain-verify.ts:RuntimeChainHop",
+            "name": "RuntimeChainHop",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts",
+            "startLine": 11,
+            "endLine": 11
+          },
+          {
+            "id": "Interface:gitnexus/src/mcp/local/runtime-chain-verify.ts:RuntimeChainGap",
+            "name": "RuntimeChainGap",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts",
+            "startLine": 19,
+            "endLine": 19
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/review-pack.ts:ReviewPackInput",
+            "name": "ReviewPackInput",
+            "filePath": "gitnexus/src/rule-lab/review-pack.ts",
+            "startLine": 6,
+            "endLine": 6
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/review-pack.ts:ReviewPackCard",
+            "name": "ReviewPackCard",
+            "filePath": "gitnexus/src/rule-lab/review-pack.ts",
+            "startLine": 13,
+            "endLine": 13
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/review-pack.ts:ReviewPackMeta",
+            "name": "ReviewPackMeta",
+            "filePath": "gitnexus/src/rule-lab/review-pack.ts",
+            "startLine": 25,
+            "endLine": 25
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/promote.ts:CompiledRuntimeRule",
+            "name": "CompiledRuntimeRule",
+            "filePath": "gitnexus/src/rule-lab/promote.ts",
+            "startLine": 39,
+            "endLine": 39
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/promote.ts:PromotableItem",
+            "name": "PromotableItem",
+            "filePath": "gitnexus/src/rule-lab/promote.ts",
+            "startLine": 7,
+            "endLine": 7
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/promote.ts:CatalogEntry",
+            "name": "CatalogEntry",
+            "filePath": "gitnexus/src/rule-lab/promote.ts",
+            "startLine": 26,
+            "endLine": 26
+          },
+          {
+            "id": "File:gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts",
+            "name": "runtime-graph-only-na2-regression.test.ts",
+            "filePath": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts"
+          },
+          {
+            "id": "Function:gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts:makeNa2SeededExecutor",
+            "name": "makeNa2SeededExecutor",
+            "filePath": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts",
+            "startLine": 4,
+            "endLine": 4
+          },
+          {
+            "id": "File:gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts",
+            "name": "local-backend-runtime-claim-evidence-gate.test.ts",
+            "filePath": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts"
+          },
+          {
+            "id": "Function:gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts:makeClosedChainExecutor",
+            "name": "makeClosedChainExecutor",
+            "filePath": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts",
+            "startLine": 9,
+            "endLine": 9
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:isTestFilePath",
+            "name": "isTestFilePath",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 52,
+            "endLine": 52,
+            "module": "Local"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:isUnityResourcePathLike",
+            "name": "isUnityResourcePathLike",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 69,
+            "endLine": 69,
+            "module": "Local"
+          },
+          {
+            "id": "File:docs/unity-runtime-process-source-of-truth.md",
+            "name": "unity-runtime-process-source-of-truth.md",
+            "filePath": "docs/unity-runtime-process-source-of-truth.md"
+          },
+          {
+            "id": "Interface:gitnexus/test/integration/reload-v1-current-source-regression.test.ts:CuratedRuleInput",
+            "name": "CuratedRuleInput",
+            "filePath": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts",
+            "startLine": 8,
+            "endLine": 8
+          }
+        ],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "verifyRuntimeClaimOnDemand",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"verifyRuntimeClaimOnDemand\""
+          }
+        ],
+        "missing_evidence": [],
+        "runtime_claim": {
+          "rule_id": "graph-only.runtime-closure.v1",
+          "rule_version": "1.0.0",
+          "scope": {
+            "resource_types": [
+              "asset",
+              "prefab",
+              "unity"
+            ],
+            "host_base_type": [
+              "verifyRuntimeClaimOnDemand"
+            ],
+            "trigger_family": "graph_only"
+          },
+          "status": "failed",
+          "evidence_level": "clue",
+          "guarantees": [],
+          "non_guarantees": [
+            "no_runtime_execution",
+            "no_dynamic_data_flow_proof",
+            "no_state_transition_proof",
+            "minimum_evidence_contract_not_satisfied"
+          ],
+          "hops": [
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:56",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> hasStructuredVerifierAnchors"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:110",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildDefaultVerifyNextCommand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:161",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> verifyRuntimeChainOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:182",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildFailureRuntimeClaim"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:208",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildGraphOnlyRuntimeClaim"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-graph-only-na2-regression.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "reload-v1-current-source-regression.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify-graph-only.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify-graph-only-input.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "local-backend-runtime-claim-evidence-gate.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/local-backend.ts:1317->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "query -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/local-backend.ts:2242->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "context -> verifyRuntimeClaimOnDemand"
+            }
+          ],
+          "gaps": [
+            {
+              "segment": "guid_map",
+              "reason": "bind segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand runtime closure\""
+            },
+            {
+              "segment": "loader",
+              "reason": "bridge segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand runtime closure\""
+            },
+            {
+              "segment": "runtime",
+              "reason": "runtime segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand runtime closure\""
+            }
+          ],
+          "reason": "rule_matched_but_evidence_missing",
+          "next_action": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand runtime closure\"",
+          "verification_core_status": "failed",
+          "verification_core_evidence_level": "clue",
+          "policy_adjusted": false
+        },
+        "runtime_chain": {
+          "status": "failed",
+          "evidence_level": "clue",
+          "hops": [
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:56",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> hasStructuredVerifierAnchors"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:110",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildDefaultVerifyNextCommand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:161",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> verifyRuntimeChainOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:182",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildFailureRuntimeClaim"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:208",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildGraphOnlyRuntimeClaim"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-graph-only-na2-regression.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "reload-v1-current-source-regression.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify-graph-only.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify-graph-only-input.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "local-backend-runtime-claim-evidence-gate.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/local-backend.ts:1317->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "query -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/local-backend.ts:2242->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "context -> verifyRuntimeClaimOnDemand"
+            }
+          ],
+          "gaps": [
+            {
+              "segment": "guid_map",
+              "reason": "bind segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand runtime closure\""
+            },
+            {
+              "segment": "loader",
+              "reason": "bridge segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand runtime closure\""
+            },
+            {
+              "segment": "runtime",
+              "reason": "runtime segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand runtime closure\""
+            }
+          ]
+        }
+      },
+      "context": {
+        "status": "found",
+        "symbol": {
+          "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:verifyRuntimeClaimOnDemand",
+          "name": "verifyRuntimeClaimOnDemand",
+          "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts",
+          "startLine": 266,
+          "endLine": 266
+        },
+        "incoming": {
+          "calls": [
+            {
+              "uid": "File:gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts",
+              "name": "runtime-graph-only-na2-regression.test.ts",
+              "filePath": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/integration/reload-v1-current-source-regression.test.ts",
+              "name": "reload-v1-current-source-regression.test.ts",
+              "filePath": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts",
+              "name": "runtime-chain-verify-graph-only.test.ts",
+              "filePath": "gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts",
+              "name": "runtime-chain-verify-graph-only-input.test.ts",
+              "filePath": "gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts",
+              "name": "local-backend-runtime-claim-evidence-gate.test.ts",
+              "filePath": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/src/mcp/local/runtime-chain-verify.test.ts",
+              "name": "runtime-chain-verify.test.ts",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts"
+            },
+            {
+              "uid": "Method:gitnexus/src/mcp/local/local-backend.ts:query",
+              "name": "query",
+              "filePath": "gitnexus/src/mcp/local/local-backend.ts"
+            },
+            {
+              "uid": "Method:gitnexus/src/mcp/local/local-backend.ts:context",
+              "name": "context",
+              "filePath": "gitnexus/src/mcp/local/local-backend.ts"
+            }
+          ]
+        },
+        "outgoing": {
+          "calls": [
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:hasStructuredVerifierAnchors",
+              "name": "hasStructuredVerifierAnchors",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildDefaultVerifyNextCommand",
+              "name": "buildDefaultVerifyNextCommand",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:verifyRuntimeChainOnDemand",
+              "name": "verifyRuntimeChainOnDemand",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildFailureRuntimeClaim",
+              "name": "buildFailureRuntimeClaim",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildGraphOnlyRuntimeClaim",
+              "name": "buildGraphOnlyRuntimeClaim",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            }
+          ]
+        },
+        "directIncoming": {
+          "calls": [
+            {
+              "uid": "File:gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts",
+              "name": "runtime-graph-only-na2-regression.test.ts",
+              "filePath": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/integration/reload-v1-current-source-regression.test.ts",
+              "name": "reload-v1-current-source-regression.test.ts",
+              "filePath": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts",
+              "name": "runtime-chain-verify-graph-only.test.ts",
+              "filePath": "gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts",
+              "name": "runtime-chain-verify-graph-only-input.test.ts",
+              "filePath": "gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts",
+              "name": "local-backend-runtime-claim-evidence-gate.test.ts",
+              "filePath": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts"
+            },
+            {
+              "uid": "File:gitnexus/src/mcp/local/runtime-chain-verify.test.ts",
+              "name": "runtime-chain-verify.test.ts",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts"
+            },
+            {
+              "uid": "Method:gitnexus/src/mcp/local/local-backend.ts:query",
+              "name": "query",
+              "filePath": "gitnexus/src/mcp/local/local-backend.ts"
+            },
+            {
+              "uid": "Method:gitnexus/src/mcp/local/local-backend.ts:context",
+              "name": "context",
+              "filePath": "gitnexus/src/mcp/local/local-backend.ts"
+            }
+          ]
+        },
+        "directOutgoing": {
+          "calls": [
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:hasStructuredVerifierAnchors",
+              "name": "hasStructuredVerifierAnchors",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildDefaultVerifyNextCommand",
+              "name": "buildDefaultVerifyNextCommand",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:verifyRuntimeChainOnDemand",
+              "name": "verifyRuntimeChainOnDemand",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildFailureRuntimeClaim",
+              "name": "buildFailureRuntimeClaim",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            },
+            {
+              "uid": "Function:gitnexus/src/mcp/local/runtime-chain-verify.ts:buildGraphOnlyRuntimeClaim",
+              "name": "buildGraphOnlyRuntimeClaim",
+              "filePath": "gitnexus/src/mcp/local/runtime-chain-verify.ts"
+            }
+          ]
+        },
+        "processes": [],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "verifyRuntimeClaimOnDemand",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"verifyRuntimeClaimOnDemand\""
+          }
+        ],
+        "runtime_claim": {
+          "rule_id": "graph-only.runtime-closure.v1",
+          "rule_version": "1.0.0",
+          "scope": {
+            "resource_types": [
+              "asset",
+              "prefab",
+              "unity"
+            ],
+            "host_base_type": [
+              "verifyRuntimeClaimOnDemand"
+            ],
+            "trigger_family": "graph_only"
+          },
+          "status": "failed",
+          "evidence_level": "clue",
+          "guarantees": [],
+          "non_guarantees": [
+            "no_runtime_execution",
+            "no_dynamic_data_flow_proof",
+            "no_state_transition_proof",
+            "minimum_evidence_contract_not_satisfied"
+          ],
+          "hops": [
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:56",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> hasStructuredVerifierAnchors"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:110",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildDefaultVerifyNextCommand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:161",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> verifyRuntimeChainOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:182",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildFailureRuntimeClaim"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:208",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildGraphOnlyRuntimeClaim"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-graph-only-na2-regression.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "reload-v1-current-source-regression.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify-graph-only.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify-graph-only-input.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "local-backend-runtime-claim-evidence-gate.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/local-backend.ts:1317->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "query -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/local-backend.ts:2242->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "context -> verifyRuntimeClaimOnDemand"
+            }
+          ],
+          "gaps": [
+            {
+              "segment": "guid_map",
+              "reason": "bind segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand\""
+            },
+            {
+              "segment": "loader",
+              "reason": "bridge segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand\""
+            },
+            {
+              "segment": "runtime",
+              "reason": "runtime segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand\""
+            }
+          ],
+          "reason": "rule_matched_but_evidence_missing",
+          "next_action": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand\"",
+          "verification_core_status": "failed",
+          "verification_core_evidence_level": "clue",
+          "policy_adjusted": false
+        },
+        "runtime_chain": {
+          "status": "failed",
+          "evidence_level": "clue",
+          "hops": [
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:56",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> hasStructuredVerifierAnchors"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:110",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildDefaultVerifyNextCommand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:161",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> verifyRuntimeChainOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:182",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildFailureRuntimeClaim"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.ts:266->gitnexus/src/mcp/local/runtime-chain-verify.ts:208",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "verifyRuntimeClaimOnDemand -> buildGraphOnlyRuntimeClaim"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-graph-only-na2-regression.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/integration/reload-v1-current-source-regression.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "reload-v1-current-source-regression.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify-graph-only.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify-graph-only-input.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "local-backend-runtime-claim-evidence-gate.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/runtime-chain-verify.test.ts:1->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "runtime-chain-verify.test.ts -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/local-backend.ts:1317->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "query -> verifyRuntimeClaimOnDemand"
+            },
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/mcp/local/local-backend.ts:2242->gitnexus/src/mcp/local/runtime-chain-verify.ts:266",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "context -> verifyRuntimeClaimOnDemand"
+            }
+          ],
+          "gaps": [
+            {
+              "segment": "guid_map",
+              "reason": "bind segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand\""
+            },
+            {
+              "segment": "loader",
+              "reason": "bridge segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand\""
+            },
+            {
+              "segment": "runtime",
+              "reason": "runtime segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"verifyRuntimeClaimOnDemand\""
+            }
+          ]
+        }
+      },
+      "cypher": {
+        "markdown": "| caller | file |\n| --- | --- |\n| runtime-graph-only-na2-regression.test.ts | gitnexus/test/integration/runtime-graph-only-na2-regression.test.ts |\n| reload-v1-current-source-regression.test.ts | gitnexus/test/integration/reload-v1-current-source-regression.test.ts |\n| runtime-chain-verify-graph-only.test.ts | gitnexus/test/unit/runtime-chain-verify-graph-only.test.ts |\n| runtime-chain-verify-graph-only-input.test.ts | gitnexus/test/unit/runtime-chain-verify-graph-only-input.test.ts |\n| local-backend-runtime-claim-evidence-gate.test.ts | gitnexus/test/unit/local-backend-runtime-claim-evidence-gate.test.ts |\n| runtime-chain-verify.test.ts | gitnexus/src/mcp/local/runtime-chain-verify.test.ts |\n| query | gitnexus/src/mcp/local/local-backend.ts |\n| context | gitnexus/src/mcp/local/local-backend.ts |",
+        "row_count": 8
+      }
+    },
+    "refactoring": {
+      "command_set": {
+        "query": "gitnexus query -r GitNexus -l 3 \"rename workflow blast radius\"",
+        "context": "gitnexus context -r GitNexus -f gitnexus/src/mcp/server.ts getNextStepHint",
+        "cypher": "gitnexus cypher -r GitNexus \"MATCH (s)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process) RETURN s.name AS symbol, p.heuristicLabel AS process, r.step AS step ORDER BY r.step LIMIT 10\""
+      },
+      "query": {
+        "processes": [
+          {
+            "id": "proc_133_mcpcommand",
+            "process_ref": {
+              "id": "proc_133_mcpcommand",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_133_mcpcommand",
+              "origin": "step_in_process"
+            },
+            "summary": "McpCommand → GetNextStepHint",
+            "priority": 0.107,
+            "symbol_count": 3,
+            "process_type": "cross_community",
+            "step_count": 4,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "proc_131_mcpcommand",
+            "process_ref": {
+              "id": "proc_131_mcpcommand",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_131_mcpcommand",
+              "origin": "step_in_process"
+            },
+            "summary": "McpCommand → GetResourceDefinitions",
+            "priority": 0.105,
+            "symbol_count": 3,
+            "process_type": "cross_community",
+            "step_count": 4,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "proc_28_createserver",
+            "process_ref": {
+              "id": "proc_28_createserver",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_28_createserver",
+              "origin": "step_in_process"
+            },
+            "summary": "CreateServer → GetNextStepHint",
+            "priority": 0.094,
+            "symbol_count": 2,
+            "process_type": "cross_community",
+            "step_count": 5,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "process_symbols": [
+          {
+            "id": "Function:gitnexus/src/mcp/server.ts:getNextStepHint",
+            "name": "getNextStepHint",
+            "filePath": "gitnexus/src/mcp/server.ts",
+            "startLine": 39,
+            "endLine": 39,
+            "module": "Mcp",
+            "process_id": "proc_133_mcpcommand",
+            "process_ref": {
+              "id": "proc_133_mcpcommand",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_133_mcpcommand",
+              "origin": "step_in_process"
+            },
+            "step_index": 4,
+            "process_subtype": "",
+            "process_evidence_mode": "direct_step",
+            "process_confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/server.ts:createMCPServer",
+            "name": "createMCPServer",
+            "filePath": "gitnexus/src/mcp/server.ts",
+            "startLine": 83,
+            "endLine": 83,
+            "module": "Mcp",
+            "process_id": "proc_133_mcpcommand",
+            "process_ref": {
+              "id": "proc_133_mcpcommand",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_133_mcpcommand",
+              "origin": "step_in_process"
+            },
+            "step_index": 3,
+            "process_subtype": "",
+            "process_evidence_mode": "direct_step",
+            "process_confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/server.ts:startMCPServer",
+            "name": "startMCPServer",
+            "filePath": "gitnexus/src/mcp/server.ts",
+            "startLine": 276,
+            "endLine": 276,
+            "module": "Mcp",
+            "process_id": "proc_133_mcpcommand",
+            "process_ref": {
+              "id": "proc_133_mcpcommand",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_133_mcpcommand",
+              "origin": "step_in_process"
+            },
+            "step_index": 2,
+            "process_subtype": "",
+            "process_evidence_mode": "direct_step",
+            "process_confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/resources.ts:getResourceDefinitions",
+            "name": "getResourceDefinitions",
+            "filePath": "gitnexus/src/mcp/resources.ts",
+            "startLine": 31,
+            "endLine": 31,
+            "module": "Mcp",
+            "process_id": "proc_131_mcpcommand",
+            "process_ref": {
+              "id": "proc_131_mcpcommand",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_131_mcpcommand",
+              "origin": "step_in_process"
+            },
+            "step_index": 4,
+            "process_subtype": "",
+            "process_evidence_mode": "direct_step",
+            "process_confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "definitions": [
+          {
+            "id": "File:gitnexus-claude-plugin/skills/gitnexus-guide/SKILL.md",
+            "name": "SKILL.md",
+            "filePath": "gitnexus-claude-plugin/skills/gitnexus-guide/SKILL.md"
+          },
+          {
+            "id": "File:gitnexus/skills/gitnexus-guide.md",
+            "name": "gitnexus-guide.md",
+            "filePath": "gitnexus/skills/gitnexus-guide.md"
+          },
+          {
+            "id": "File:gitnexus/src/core/unity/__fixtures__/mini-unity/CLAUDE.md",
+            "name": "CLAUDE.md",
+            "filePath": "gitnexus/src/core/unity/__fixtures__/mini-unity/CLAUDE.md"
+          },
+          {
+            "id": "File:gitnexus/src/core/unity/__fixtures__/mini-unity/AGENTS.md",
+            "name": "AGENTS.md",
+            "filePath": "gitnexus/src/core/unity/__fixtures__/mini-unity/AGENTS.md"
+          },
+          {
+            "id": "File:CLAUDE.md",
+            "name": "CLAUDE.md",
+            "filePath": "CLAUDE.md"
+          },
+          {
+            "id": "File:gitnexus/hooks/claude/session-start.sh",
+            "name": "session-start.sh",
+            "filePath": "gitnexus/hooks/claude/session-start.sh"
+          },
+          {
+            "id": "File:gitnexus-cursor-integration/skills/gitnexus-refactoring/SKILL.md",
+            "name": "SKILL.md",
+            "filePath": "gitnexus-cursor-integration/skills/gitnexus-refactoring/SKILL.md"
+          },
+          {
+            "id": "File:AGENTS.md",
+            "name": "AGENTS.md",
+            "filePath": "AGENTS.md"
+          },
+          {
+            "id": "Interface:gitnexus/src/cli/ai-context.ts:RepoStats",
+            "name": "RepoStats",
+            "filePath": "gitnexus/src/cli/ai-context.ts",
+            "startLine": 19,
+            "endLine": 19
+          },
+          {
+            "id": "Function:gitnexus/src/cli/ai-context.ts:generateGitNexusContent",
+            "name": "generateGitNexusContent",
+            "filePath": "gitnexus/src/cli/ai-context.ts",
+            "startLine": 42,
+            "endLine": 42,
+            "module": "Cli"
+          },
+          {
+            "id": "Function:gitnexus/src/cli/ai-context.ts:fileExists",
+            "name": "fileExists",
+            "filePath": "gitnexus/src/cli/ai-context.ts",
+            "startLine": 89,
+            "endLine": 89,
+            "module": "Cli"
+          },
+          {
+            "id": "File:gitnexus/README.md",
+            "name": "README.md",
+            "filePath": "gitnexus/README.md"
+          },
+          {
+            "id": "File:README.md",
+            "name": "README.md",
+            "filePath": "README.md"
+          },
+          {
+            "id": "File:gitnexus-cursor-integration/skills/gitnexus-impact-analysis/SKILL.md",
+            "name": "SKILL.md",
+            "filePath": "gitnexus-cursor-integration/skills/gitnexus-impact-analysis/SKILL.md"
+          },
+          {
+            "id": "File:gitnexus-cursor-integration/skills/gitnexus-pr-review/SKILL.md",
+            "name": "SKILL.md",
+            "filePath": "gitnexus-cursor-integration/skills/gitnexus-pr-review/SKILL.md"
+          },
+          {
+            "id": "File:gitnexus-claude-plugin/skills/gitnexus-pr-review/SKILL.md",
+            "name": "SKILL.md",
+            "filePath": "gitnexus-claude-plugin/skills/gitnexus-pr-review/SKILL.md"
+          },
+          {
+            "id": "File:gitnexus/skills/gitnexus-pr-review.md",
+            "name": "gitnexus-pr-review.md",
+            "filePath": "gitnexus/skills/gitnexus-pr-review.md"
+          },
+          {
+            "id": "File:gitnexus-claude-plugin/skills/gitnexus-impact-analysis/SKILL.md",
+            "name": "SKILL.md",
+            "filePath": "gitnexus-claude-plugin/skills/gitnexus-impact-analysis/SKILL.md"
+          },
+          {
+            "id": "File:eval/prompts/instance_native.jinja",
+            "name": "instance_native.jinja",
+            "filePath": "eval/prompts/instance_native.jinja"
+          },
+          {
+            "id": "File:eval/prompts/instance_native_augment.jinja",
+            "name": "instance_native_augment.jinja",
+            "filePath": "eval/prompts/instance_native_augment.jinja"
+          }
+        ],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "getNextStepHint",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"getNextStepHint\""
+          }
+        ],
+        "missing_evidence": []
+      },
+      "context": {
+        "status": "found",
+        "symbol": {
+          "uid": "Function:gitnexus/src/mcp/server.ts:getNextStepHint",
+          "name": "getNextStepHint",
+          "filePath": "gitnexus/src/mcp/server.ts",
+          "startLine": 39,
+          "endLine": 39
+        },
+        "incoming": {
+          "calls": [
+            {
+              "uid": "Function:gitnexus/src/mcp/server.ts:createMCPServer",
+              "name": "createMCPServer",
+              "filePath": "gitnexus/src/mcp/server.ts"
+            }
+          ]
+        },
+        "outgoing": {},
+        "directIncoming": {
+          "calls": [
+            {
+              "uid": "Function:gitnexus/src/mcp/server.ts:createMCPServer",
+              "name": "createMCPServer",
+              "filePath": "gitnexus/src/mcp/server.ts"
+            }
+          ]
+        },
+        "directOutgoing": {},
+        "processes": [
+          {
+            "id": "proc_28_createserver",
+            "process_ref": {
+              "id": "proc_28_createserver",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_28_createserver",
+              "origin": "step_in_process"
+            },
+            "name": "CreateServer → GetNextStepHint",
+            "step_index": 5,
+            "step_count": 5,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "proc_133_mcpcommand",
+            "process_ref": {
+              "id": "proc_133_mcpcommand",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_133_mcpcommand",
+              "origin": "step_in_process"
+            },
+            "name": "McpCommand → GetNextStepHint",
+            "step_index": 4,
+            "step_count": 4,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "getNextStepHint",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"getNextStepHint\""
+          }
+        ]
+      },
+      "cypher": {
+        "markdown": "| symbol | process | step |\n| --- | --- | --- |\n| readMessage | ReadMessage → Current | 1 |\n| callTool | CallTool → ParseUnityEvidenceMode | 1 |\n| callTool | CallTool → ParseUnityHydrationMode | 1 |\n| callTool | CallTool → ParseUnityResourcesMode | 1 |\n| callTool | CallTool → Next | 1 |\n| callTool | CallTool → Has | 1 |\n| callTool | CallTool → RepoId | 1 |\n| bm25Search | Bm25Search → Has | 1 |\n| bm25Search | Bm25Search → NormalizePath | 1 |\n| executeCypher | ExecuteCypher → RepoId | 1 |",
+        "row_count": 10
+      }
+    }
+  },
+  "negative_cases": {
+    "neg_01": {
+      "command": "gitnexus query -r GitNexus --runtime-chain-verify on-demand --unity-resources on \"a\"",
+      "assumption": {
+        "processes_empty": true
+      },
+      "query": {
+        "processes": [],
+        "process_symbols": [],
+        "definitions": [
+          {
+            "id": "Function:gitnexus-web/src/lib/constants.ts:getCommunityColor",
+            "name": "getCommunityColor",
+            "filePath": "gitnexus-web/src/lib/constants.ts",
+            "startLine": 62,
+            "endLine": 62
+          },
+          {
+            "id": "File:gitnexus-web/src/lib/constants.ts",
+            "name": "constants.ts",
+            "filePath": "gitnexus-web/src/lib/constants.ts"
+          },
+          {
+            "id": "File:gitnexus-web/src/index.css",
+            "name": "index.css",
+            "filePath": "gitnexus-web/src/index.css"
+          },
+          {
+            "id": "File:docs/reports/2026-04-08-na2-graph-only-runtime-retrieval-verification-rerun.json",
+            "name": "2026-04-08-na2-graph-only-runtime-retrieval-verification-rerun.json",
+            "filePath": "docs/reports/2026-04-08-na2-graph-only-runtime-retrieval-verification-rerun.json"
+          }
+        ],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "getCommunityColor",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"getCommunityColor\""
+          }
+        ],
+        "missing_evidence": [],
+        "runtime_claim": {
+          "rule_id": "graph-only.runtime-closure.v1",
+          "rule_version": "1.0.0",
+          "scope": {
+            "resource_types": [
+              "asset",
+              "prefab",
+              "unity"
+            ],
+            "host_base_type": [
+              "getCommunityColor"
+            ],
+            "trigger_family": "graph_only"
+          },
+          "status": "failed",
+          "evidence_level": "clue",
+          "guarantees": [],
+          "non_guarantees": [
+            "no_runtime_execution",
+            "no_dynamic_data_flow_proof",
+            "no_state_transition_proof",
+            "minimum_evidence_contract_not_satisfied"
+          ],
+          "hops": [],
+          "gaps": [
+            {
+              "segment": "loader",
+              "reason": "anchor segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+            },
+            {
+              "segment": "guid_map",
+              "reason": "bind segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+            },
+            {
+              "segment": "loader",
+              "reason": "bridge segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+            },
+            {
+              "segment": "runtime",
+              "reason": "runtime segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+            }
+          ],
+          "reason": "rule_matched_but_evidence_missing",
+          "next_action": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\"",
+          "verification_core_status": "failed",
+          "verification_core_evidence_level": "clue",
+          "policy_adjusted": false
+        },
+        "runtime_chain": {
+          "status": "failed",
+          "evidence_level": "clue",
+          "hops": [],
+          "gaps": [
+            {
+              "segment": "loader",
+              "reason": "anchor segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+            },
+            {
+              "segment": "guid_map",
+              "reason": "bind segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+            },
+            {
+              "segment": "loader",
+              "reason": "bridge segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+            },
+            {
+              "segment": "runtime",
+              "reason": "runtime segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+            }
+          ]
+        }
+      },
+      "runtime_claim": {
+        "rule_id": "graph-only.runtime-closure.v1",
+        "rule_version": "1.0.0",
+        "scope": {
+          "resource_types": [
+            "asset",
+            "prefab",
+            "unity"
+          ],
+          "host_base_type": [
+            "getCommunityColor"
+          ],
+          "trigger_family": "graph_only"
+        },
+        "status": "failed",
+        "evidence_level": "clue",
+        "guarantees": [],
+        "non_guarantees": [
+          "no_runtime_execution",
+          "no_dynamic_data_flow_proof",
+          "no_state_transition_proof",
+          "minimum_evidence_contract_not_satisfied"
+        ],
+        "hops": [],
+        "gaps": [
+          {
+            "segment": "loader",
+            "reason": "anchor segment missing",
+            "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+          },
+          {
+            "segment": "guid_map",
+            "reason": "bind segment missing",
+            "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+          },
+          {
+            "segment": "loader",
+            "reason": "bridge segment missing",
+            "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+          },
+          {
+            "segment": "runtime",
+            "reason": "runtime segment missing",
+            "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\""
+          }
+        ],
+        "reason": "rule_matched_but_evidence_missing",
+        "next_action": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"a\"",
+        "verification_core_status": "failed",
+        "verification_core_evidence_level": "clue",
+        "policy_adjusted": false
+      }
+    },
+    "neg_02": {
+      "command": "gitnexus query -r GitNexus --runtime-chain-verify on-demand --unity-resources on --unity-hydration compact --scope-preset unity-all \"runtime\"",
+      "assumption": {
+        "fallback_to_compact": true
+      },
+      "query": {
+        "processes": [
+          {
+            "id": "proc_93_buildphase5rulelabac",
+            "process_ref": {
+              "id": "proc_93_buildphase5rulelabac",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_93_buildphase5rulelabac",
+              "origin": "step_in_process"
+            },
+            "summary": "BuildPhase5RuleLabAcceptanceReport → BuildCandidateId",
+            "priority": 0.077,
+            "symbol_count": 1,
+            "process_type": "cross_community",
+            "step_count": 4,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "proc_167_rulelabanalyzecomman",
+            "process_ref": {
+              "id": "proc_167_rulelabanalyzecomman",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_167_rulelabanalyzecomman",
+              "origin": "step_in_process"
+            },
+            "summary": "RuleLabAnalyzeCommand → BuildCandidateId",
+            "priority": 0.077,
+            "symbol_count": 1,
+            "process_type": "cross_community",
+            "step_count": 4,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "proc_46_bm25search",
+            "process_ref": {
+              "id": "proc_46_bm25search",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_46_bm25search",
+              "origin": "step_in_process"
+            },
+            "summary": "Bm25Search → NormalizePath",
+            "priority": 0.076,
+            "symbol_count": 1,
+            "process_type": "cross_community",
+            "step_count": 5,
+            "evidence_mode": "direct_step",
+            "confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "process_symbols": [
+          {
+            "id": "Function:gitnexus/src/rule-lab/analyze.ts:buildCandidateId",
+            "name": "buildCandidateId",
+            "filePath": "gitnexus/src/rule-lab/analyze.ts",
+            "startLine": 18,
+            "endLine": 18,
+            "module": "Rule-lab",
+            "process_id": "proc_93_buildphase5rulelabac",
+            "process_ref": {
+              "id": "proc_93_buildphase5rulelabac",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_93_buildphase5rulelabac",
+              "origin": "step_in_process"
+            },
+            "step_index": 4,
+            "process_subtype": "",
+            "process_evidence_mode": "direct_step",
+            "process_confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:normalizePath",
+            "name": "normalizePath",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 65,
+            "endLine": 65,
+            "module": "Local",
+            "process_id": "proc_46_bm25search",
+            "process_ref": {
+              "id": "proc_46_bm25search",
+              "kind": "persistent",
+              "readable": true,
+              "reader_uri": "gitnexus://repo/GitNexus/process/proc_46_bm25search",
+              "origin": "step_in_process"
+            },
+            "step_index": 5,
+            "process_subtype": "",
+            "process_evidence_mode": "direct_step",
+            "process_confidence": "high",
+            "runtime_chain_confidence": "high",
+            "runtime_chain_evidence_level": "none"
+          }
+        ],
+        "definitions": [
+          {
+            "id": "Interface:gitnexus/src/mcp/local/unity-runtime-hydration.ts:HydrationRuntime",
+            "name": "HydrationRuntime",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 35,
+            "endLine": 35
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/unity-runtime-hydration.ts:resolveRuntime",
+            "name": "resolveRuntime",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 185,
+            "endLine": 185,
+            "module": "Local"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/unity-runtime-hydration.ts:__resetUnityRuntimeHydrationStateForTest",
+            "name": "__resetUnityRuntimeHydrationStateForTest",
+            "filePath": "gitnexus/src/mcp/local/unity-runtime-hydration.ts",
+            "startLine": 452,
+            "endLine": 452
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:isTestFilePath",
+            "name": "isTestFilePath",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 52,
+            "endLine": 52,
+            "module": "Local"
+          },
+          {
+            "id": "Function:gitnexus/src/mcp/local/local-backend.ts:isUnityResourcePathLike",
+            "name": "isUnityResourcePathLike",
+            "filePath": "gitnexus/src/mcp/local/local-backend.ts",
+            "startLine": 69,
+            "endLine": 69,
+            "module": "Local"
+          },
+          {
+            "id": "Function:gitnexus/src/core/ingestion/process-processor.ts:capSyntheticRuntimeRootTraces",
+            "name": "capSyntheticRuntimeRootTraces",
+            "filePath": "gitnexus/src/core/ingestion/process-processor.ts",
+            "startLine": 564,
+            "endLine": 564,
+            "module": "Ingestion"
+          },
+          {
+            "id": "Function:gitnexus/src/core/ingestion/process-processor.ts:isSyntheticRuntimeRootTrace",
+            "name": "isSyntheticRuntimeRootTrace",
+            "filePath": "gitnexus/src/core/ingestion/process-processor.ts",
+            "startLine": 579,
+            "endLine": 579,
+            "module": "Ingestion"
+          },
+          {
+            "id": "Function:gitnexus/src/core/ingestion/process-processor.ts:scoreSyntheticRuntimeTrace",
+            "name": "scoreSyntheticRuntimeTrace",
+            "filePath": "gitnexus/src/core/ingestion/process-processor.ts",
+            "startLine": 582,
+            "endLine": 582,
+            "module": "Ingestion"
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/promote.ts:CompiledRuntimeRule",
+            "name": "CompiledRuntimeRule",
+            "filePath": "gitnexus/src/rule-lab/promote.ts",
+            "startLine": 39,
+            "endLine": 39
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/promote.ts:PromotableItem",
+            "name": "PromotableItem",
+            "filePath": "gitnexus/src/rule-lab/promote.ts",
+            "startLine": 7,
+            "endLine": 7
+          },
+          {
+            "id": "Interface:gitnexus/src/rule-lab/promote.ts:CatalogEntry",
+            "name": "CatalogEntry",
+            "filePath": "gitnexus/src/rule-lab/promote.ts",
+            "startLine": 26,
+            "endLine": 26
+          },
+          {
+            "id": "Interface:gitnexus/src/mcp/local/runtime-chain-closure-evaluator.ts:RuntimeChainGap",
+            "name": "RuntimeChainGap",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-closure-evaluator.ts",
+            "startLine": 6,
+            "endLine": 6
+          },
+          {
+            "id": "Interface:gitnexus/src/mcp/local/runtime-chain-closure-evaluator.ts:RuntimeClosureEvaluation",
+            "name": "RuntimeClosureEvaluation",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-closure-evaluator.ts",
+            "startLine": 13,
+            "endLine": 13
+          },
+          {
+            "id": "Interface:gitnexus/src/mcp/local/runtime-chain-closure-evaluator.ts:EvaluateRuntimeClosureInput",
+            "name": "EvaluateRuntimeClosureInput",
+            "filePath": "gitnexus/src/mcp/local/runtime-chain-closure-evaluator.ts",
+            "startLine": 25,
+            "endLine": 25
+          },
+          {
+            "id": "Interface:gitnexus/src/benchmark/u2-e2e/hydration-policy-repeatability-runner.ts:PolicyRunSnapshot",
+            "name": "PolicyRunSnapshot",
+            "filePath": "gitnexus/src/benchmark/u2-e2e/hydration-policy-repeatability-runner.ts",
+            "startLine": 9,
+            "endLine": 9
+          },
+          {
+            "id": "Interface:gitnexus/src/benchmark/u2-e2e/hydration-policy-repeatability-runner.ts:PolicyModeObservation",
+            "name": "PolicyModeObservation",
+            "filePath": "gitnexus/src/benchmark/u2-e2e/hydration-policy-repeatability-runner.ts",
+            "startLine": 20,
+            "endLine": 20
+          },
+          {
+            "id": "Function:gitnexus/src/benchmark/u2-e2e/hydration-policy-repeatability-runner.ts:observeHydrationMeta",
+            "name": "observeHydrationMeta",
+            "filePath": "gitnexus/src/benchmark/u2-e2e/hydration-policy-repeatability-runner.ts",
+            "startLine": 27,
+            "endLine": 27,
+            "module": "U2-e2e"
+          },
+          {
+            "id": "Function:gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.ts:ensureRuntimeRootNode",
+            "name": "ensureRuntimeRootNode",
+            "filePath": "gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.ts",
+            "startLine": 210,
+            "endLine": 210,
+            "module": "Ingestion"
+          },
+          {
+            "id": "Interface:gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.ts:UnityLifecycleSyntheticConfig",
+            "name": "UnityLifecycleSyntheticConfig",
+            "filePath": "gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.ts",
+            "startLine": 22,
+            "endLine": 22
+          },
+          {
+            "id": "Interface:gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.ts:UnityLifecycleHost",
+            "name": "UnityLifecycleHost",
+            "filePath": "gitnexus/src/core/ingestion/unity-lifecycle-synthetic-calls.ts",
+            "startLine": 36,
+            "endLine": 36
+          }
+        ],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "buildCandidateId",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"buildCandidateId\""
+          }
+        ],
+        "missing_evidence": [],
+        "runtime_claim": {
+          "rule_id": "graph-only.runtime-closure.v1",
+          "rule_version": "1.0.0",
+          "scope": {
+            "resource_types": [
+              "asset",
+              "prefab",
+              "unity"
+            ],
+            "host_base_type": [
+              "buildCandidateId"
+            ],
+            "trigger_family": "graph_only"
+          },
+          "status": "failed",
+          "evidence_level": "clue",
+          "guarantees": [],
+          "non_guarantees": [
+            "no_runtime_execution",
+            "no_dynamic_data_flow_proof",
+            "no_state_transition_proof",
+            "minimum_evidence_contract_not_satisfied"
+          ],
+          "hops": [
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/rule-lab/analyze.ts:29->gitnexus/src/rule-lab/analyze.ts:18",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "buildTopologyCandidateSet -> buildCandidateId"
+            }
+          ],
+          "gaps": [
+            {
+              "segment": "guid_map",
+              "reason": "bind segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+            },
+            {
+              "segment": "loader",
+              "reason": "bridge segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+            },
+            {
+              "segment": "runtime",
+              "reason": "runtime segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+            }
+          ],
+          "reason": "rule_matched_but_evidence_missing",
+          "next_action": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\"",
+          "verification_core_status": "failed",
+          "verification_core_evidence_level": "clue",
+          "policy_adjusted": false
+        },
+        "runtime_chain": {
+          "status": "failed",
+          "evidence_level": "clue",
+          "hops": [
+            {
+              "hop_type": "code_runtime",
+              "anchor": "gitnexus/src/rule-lab/analyze.ts:29->gitnexus/src/rule-lab/analyze.ts:18",
+              "confidence": "medium",
+              "note": "Graph continuity candidate from structured anchors.",
+              "snippet": "buildTopologyCandidateSet -> buildCandidateId"
+            }
+          ],
+          "gaps": [
+            {
+              "segment": "guid_map",
+              "reason": "bind segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+            },
+            {
+              "segment": "loader",
+              "reason": "bridge segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+            },
+            {
+              "segment": "runtime",
+              "reason": "runtime segment missing",
+              "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+            }
+          ]
+        }
+      },
+      "runtime_claim": {
+        "rule_id": "graph-only.runtime-closure.v1",
+        "rule_version": "1.0.0",
+        "scope": {
+          "resource_types": [
+            "asset",
+            "prefab",
+            "unity"
+          ],
+          "host_base_type": [
+            "buildCandidateId"
+          ],
+          "trigger_family": "graph_only"
+        },
+        "status": "failed",
+        "evidence_level": "clue",
+        "guarantees": [],
+        "non_guarantees": [
+          "no_runtime_execution",
+          "no_dynamic_data_flow_proof",
+          "no_state_transition_proof",
+          "minimum_evidence_contract_not_satisfied"
+        ],
+        "hops": [
+          {
+            "hop_type": "code_runtime",
+            "anchor": "gitnexus/src/rule-lab/analyze.ts:29->gitnexus/src/rule-lab/analyze.ts:18",
+            "confidence": "medium",
+            "note": "Graph continuity candidate from structured anchors.",
+            "snippet": "buildTopologyCandidateSet -> buildCandidateId"
+          }
+        ],
+        "gaps": [
+          {
+            "segment": "guid_map",
+            "reason": "bind segment missing",
+            "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+          },
+          {
+            "segment": "loader",
+            "reason": "bridge segment missing",
+            "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+          },
+          {
+            "segment": "runtime",
+            "reason": "runtime segment missing",
+            "next_command": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\""
+          }
+        ],
+        "reason": "rule_matched_but_evidence_missing",
+        "next_action": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"runtime\"",
+        "verification_core_status": "failed",
+        "verification_core_evidence_level": "clue",
+        "policy_adjusted": false
+      }
+    },
+    "neg_03": {
+      "command": "gitnexus query -r GitNexus --runtime-chain-verify on-demand --unity-resources on \"zzzz\"",
+      "assumption": {
+        "hops_empty": true,
+        "gaps_empty": true
+      },
+      "query": {
+        "processes": [],
+        "process_symbols": [],
+        "definitions": [],
+        "next_hops": [
+          {
+            "kind": "symbol",
+            "target": "zzzz",
+            "why": "Inspect symbol-level context to continue tracing.",
+            "next_command": "gitnexus context --repo \"GitNexus\" --unity-resources on --unity-hydration parity \"zzzz\""
+          }
+        ],
+        "missing_evidence": [],
+        "runtime_claim": {
+          "rule_id": "none",
+          "rule_version": "0.0.0",
+          "scope": {
+            "resource_types": [],
+            "host_base_type": [],
+            "trigger_family": "none"
+          },
+          "status": "failed",
+          "evidence_level": "none",
+          "guarantees": [],
+          "non_guarantees": [
+            "runtime_chain_verification_not_executed"
+          ],
+          "hops": [],
+          "gaps": [],
+          "reason": "rule_not_matched",
+          "next_action": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"zzzz\"",
+          "verification_core_status": "failed",
+          "verification_core_evidence_level": "none",
+          "policy_adjusted": false
+        },
+        "runtime_chain": {
+          "status": "failed",
+          "evidence_level": "none",
+          "hops": [],
+          "gaps": []
+        }
+      },
+      "runtime_claim": {
+        "rule_id": "none",
+        "rule_version": "0.0.0",
+        "scope": {
+          "resource_types": [],
+          "host_base_type": [],
+          "trigger_family": "none"
+        },
+        "status": "failed",
+        "evidence_level": "none",
+        "guarantees": [],
+        "non_guarantees": [
+          "runtime_chain_verification_not_executed"
+        ],
+        "hops": [],
+        "gaps": [],
+        "reason": "rule_not_matched",
+        "next_action": "node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand \"zzzz\"",
+        "verification_core_status": "failed",
+        "verification_core_evidence_level": "none",
+        "policy_adjusted": false
+      }
+    }
+  }
+}
