@@ -108,6 +108,41 @@ Concrete follow-up from evidence:
 node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "verifyRuntimeClaimOnDemand runtime closure"
 ```
 
+### Negative Semantic Cases
+
+NEG-01: `processes=[]` does not mean runtime chain is disproven.
+
+- Bad interpretation: no process rows means runtime path is impossible.
+- Correct interpretation: evaluate `runtime_claim.verification_core_status` and `runtime_claim.reason` before deciding.
+- Evidence Ref: negative_cases.neg_01
+- Verification command:
+
+```bash
+jq -e '.negative_cases.neg_01.assumption.processes_empty==true and .negative_cases.neg_01.runtime_claim.verification_core_status=="failed" and .negative_cases.neg_01.runtime_claim.status!="verified_full" and (.negative_cases.neg_01.runtime_claim.reason=="rule_not_matched" or .negative_cases.neg_01.runtime_claim.reason=="rule_matched_but_evidence_missing" or .negative_cases.neg_01.runtime_claim.reason=="rule_matched_but_verification_failed")' docs/reports/2026-04-08-unity-query-context-cypher-evidence.json
+```
+
+NEG-02: strict request with fallback cannot conclude closure.
+
+- Bad interpretation: strict mode was requested, so compact fallback is still trustworthy for closure.
+- Correct interpretation: when strict execution falls back to compact, rerun parity before closure claims.
+- Evidence Ref: negative_cases.neg_02
+- Verification command:
+
+```bash
+jq -e '.negative_cases.neg_02.assumption.fallback_to_compact==true and .negative_cases.neg_02.runtime_claim.verification_core_status=="failed" and .negative_cases.neg_02.runtime_claim.status!="verified_full" and (.negative_cases.neg_02.runtime_claim.reason=="rule_not_matched" or .negative_cases.neg_02.runtime_claim.reason=="rule_matched_but_evidence_missing" or .negative_cases.neg_02.runtime_claim.reason=="rule_matched_but_verification_failed")' docs/reports/2026-04-08-unity-query-context-cypher-evidence.json
+```
+
+NEG-03: missing `hops` and missing `gaps` cannot be labeled verified.
+
+- Bad interpretation: closure can still be accepted even when chain detail is absent.
+- Correct interpretation: without chain material (`hops/gaps`), keep status non-verified and continue evidence collection.
+- Evidence Ref: negative_cases.neg_03
+- Verification command:
+
+```bash
+jq -e '.negative_cases.neg_03.assumption.hops_empty==true and .negative_cases.neg_03.assumption.gaps_empty==true and .negative_cases.neg_03.runtime_claim.verification_core_status=="failed" and .negative_cases.neg_03.runtime_claim.status!="verified_full" and (.negative_cases.neg_03.runtime_claim.reason=="rule_not_matched" or .negative_cases.neg_03.runtime_claim.reason=="rule_matched_but_evidence_missing" or .negative_cases.neg_03.runtime_claim.reason=="rule_matched_but_verification_failed")' docs/reports/2026-04-08-unity-query-context-cypher-evidence.json
+```
+
 ## Refactoring Workflow
 
 ## Unity vs Generic Behavior
