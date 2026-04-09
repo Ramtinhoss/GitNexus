@@ -1,6 +1,6 @@
 # Unity Runtime Process 真理源（Design × As-Built）
 
-Date: 2026-04-08
+Date: 2026-04-09
 Owner: GitNexus
 Status: Active (source of truth) — V2 规则驱动架构
 
@@ -71,7 +71,7 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 
 1. 显式入口：
    - CLI: `--runtime-chain-verify off|on-demand`
-   - MCP schema: `runtime_chain_verify`（`tools.ts`）
+   - MCP schema: `runtime_chain_verify`（`gitnexus/src/mcp/tools.ts`）
    - 请求参数为唯一控制开关，无全局 gate
 2. 验证逻辑（`runtime-chain-verify.ts`）：
    - `verifyRuntimeClaimOnDemand`：直接走结构化锚点（`symbolName/resourceSeedPath/mappedSeedTargets/resourceBindings`）驱动的 graph-only closure
@@ -132,7 +132,7 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
    - `verifier-core`：二元核心结论（`verified_full` / `failed`）
    - `policy-adjusted`：`query/context` 侧对外结果；当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，允许降级为 `verified_partial` / `verified_segment`
 3. 运行时失败分类保持不变：
-   - 无规则 / 无匹配 → `reason=rule_not_matched`
+   - 无结构化锚点 / 无有效 seed / 无法建立 graph-only 起点 → `reason=rule_not_matched`
    - 匹配但证据不足 → `reason=rule_matched_but_evidence_missing`
    - 匹配且验证失败 → `reason=rule_matched_but_verification_failed`
 4. `runtime_claim` 对外返回以 closure 状态/证据级别/hops/gaps 为核心，不暴露 query-time 内部 matcher 细节
@@ -149,9 +149,13 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
    - `policy_adjusted`, `policy_adjust_reason`
    - `guarantees`, `non_guarantees`
 3. `unity_evidence_mode`: `summary | focused | full`
-4. `hydration_policy`: `fast => compact`; `balanced => 按请求`; `strict => parity`
-5. 严格策略回退语义：若 `strict` 因成本/上限回退到 compact（`fallbackToCompact=true`），则对外结果视为 `policy-adjusted`，并要求 parity 重跑后再做 closure 结论。
-6. `resource_path_prefix` / seed contract：类符号 + 资源路径联合检索为主路径
+4. Unity full payload 可能返回 `evidence_meta`：
+   - `truncated`, `omitted_count`, `next_fetch_hint`, `filter_exhausted`
+   - `minimum_evidence_satisfied`, `verifier_minimum_evidence_satisfied`
+   - 若 `truncated=true` 或 `filter_exhausted=true`，则 verifier 侧最小证据门槛视为未满足；应优先 `unity_evidence_mode=full` 或放宽过滤条件后再做否定性结论
+5. `hydration_policy`: `fast => compact`; `balanced => 按请求`; `strict => parity`
+6. 严格策略回退语义：若 `strict` 因成本/上限回退到 compact（`fallbackToCompact=true`），则对外结果视为 `policy-adjusted`，并要求 parity 重跑后再做 closure 结论。
+7. `resource_path_prefix` / seed contract：类符号 + 资源路径联合检索为主路径
 
 ### 4.4 Phase 5 Offline Rule Lab 合约
 
@@ -201,6 +205,7 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 3. 强验证链路不回写 verified chain 到 Process 持久图（仅请求时计算并返回）。
 4. 强验证链路对仓库文件内容与索引状态一致性敏感；若索引 stale，应先 `gitnexus analyze`。
 5. 资源锚点优先：seeded 查询（类符号 + 资源路径）是完成运行时链闭环的主路径。无 seed 时返回 gap 而非猜测。
+6. `evidence_meta` 只阻止“证据不足时的误闭环”。若四段闭环（Anchor/Bind/Bridge/Runtime）已经成立，`runtime_claim` 仍可保持 `verified_full`，即使存在与该闭环无关的证据裁剪。
 
 ## 7. V2 迁移回写（2026-04-03）
 

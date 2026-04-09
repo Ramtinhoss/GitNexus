@@ -1,6 +1,6 @@
 # Unity Runtime Process + Rule Lab Agent Context
 
-Date: 2026-04-07
+Date: 2026-04-09
 Owner: GitNexus
 Status: Active
 
@@ -136,7 +136,7 @@ Source:
 Agent rule:
 
 - never conclude "no runtime chain" from empty `processes` alone
-- inspect `resourceBindings`, `hydrationMeta`, `runtime_claim`, and `verification_hint` together
+- inspect `resourceBindings`, `hydrationMeta`, `evidence_meta`, `runtime_claim`, and `verification_hint` together
 
 ## 5. Rule DSL and Binding Semantics
 
@@ -144,7 +144,7 @@ Agent rule:
 
 The DSL has two separate jobs:
 
-- retrieval-side matching and verification metadata: `match`, `topology`, `closure`, `claims`
+- offline governance and retrieval-hint metadata: `match`, `topology`, `closure`, `claims`
 - analyze-side edge injection metadata: `resource_bindings`, `lifecycle_overrides`
 
 Source:
@@ -235,7 +235,8 @@ Reference maintenance contract:
 `verification_rules`
 
 - consumed by `loadRuleRegistry()`
-- used during query/context runtime claim verification
+- used for compiled verification-bundle resolution and offline governance/reporting
+- not used as a query/context runtime-claim matching gate now that verifier closure is graph-only
 
 Source:
 
@@ -244,6 +245,7 @@ Source:
 Agent rule:
 
 - do not put analyze-only behavior into a `verification_rules` rule and expect process quality to improve
+- do not expect editing `verification_rules` alone to change query-time `runtime_claim` closure behavior
 - do not put runtime-claim-only matching logic into an `analyze_rules` rule and expect verifier behavior to change by itself
 
 ### 6.3 Bundle and Catalog Precedence
@@ -264,6 +266,7 @@ Agent rule:
 
 - after writing or promoting rules, compile bundles if the target workflow expects compiled artifacts
 - if a rule exists in YAML but behavior does not change, inspect compiled bundle freshness before debugging graph logic
+- for query-time `runtime_claim`, debug graph anchors/evidence first; for analyze-time injection or retrieval hints, debug compiled bundle freshness first
 
 ## 7. Rule Lab Lifecycle and Artifact Ownership
 
@@ -409,14 +412,15 @@ Agent rule:
 A rule is not done when YAML parses. It is done when four gates hold.
 
 1. Synthetic edges exist with the expected `unity-rule-*:{ruleId}` reasons.
-2. `runtime_claim` can match the rule and return a closure outcome appropriate to hydration policy.
+2. `runtime_claim` returns a graph-only closure outcome appropriate to hydration policy; it no longer depends on matching `verification_rules` at query time.
 3. Query/context can expose process evidence that crosses the intended runtime boundary.
 4. Edge distribution matches the intended bridge types.
 
 Recommended commands are already encoded in the skill, but interpretation matters:
 
-- `rule_not_matched` usually means bad `match.trigger_tokens` or bad query phrasing
-- `rule_matched_but_verification_failed` usually means graph edges were never injected or rule ID/reason alignment is broken
+- `rule_not_matched` usually means missing structured anchors, missing resource seed, or no viable graph-only closure start; it is no longer primarily about `match.trigger_tokens`
+- `rule_matched_but_verification_failed` usually means graph-only closure could not complete anchor/bind/bridge/runtime segments
+- `rule_matched_but_evidence_missing` usually means evidence was trimmed, filtered away, or otherwise failed the verifier minimum-evidence contract
 - `verified_partial` under strict policy may still require parity rerun before final acceptance
 
 ## 11. Failure Patterns
@@ -445,6 +449,7 @@ When exploring Unity runtime behavior, use this retrieval discipline:
 3. if `hydrationMeta.needsParityRetry === true`, rerun with parity before closure statements
 4. use `runtime_chain_verify: "on-demand"` only when the question is about actual closure, not broad exploration
 5. treat low-confidence `resource_heuristic` rows as incomplete evidence, not as proof
+6. if `evidence_meta.truncated === true` or `evidence_meta.filter_exhausted === true`, rerun with `unity_evidence_mode=full` or relax filters before treating non-closure as final
 
 Source:
 
