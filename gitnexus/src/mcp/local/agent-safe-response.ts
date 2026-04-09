@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 export type ResponseProfile = 'slim' | 'full';
 
 export function resolveResponseProfile(value: unknown): ResponseProfile {
@@ -8,18 +10,21 @@ export function buildSlimQueryResult(
   full: Record<string, any>,
   input: { repoName?: string; queryText: string },
 ): Record<string, unknown> {
-  const candidates = buildCandidates(full);
+  const candidates = buildCandidates(full, {
+    queryText: input.queryText,
+  });
   const processHints = buildProcessHints(full.processes);
   const resourceHints = buildResourceHints(full.next_hops);
+  const suggestedContextTargets = buildSuggestedContextTargets({
+    candidates,
+    processHints,
+  });
   const upgradeHints = buildUpgradeHints({
     mode: 'query',
     nextHops: full.next_hops,
     repoName: input.repoName,
     subject: input.queryText,
-  });
-  const suggestedContextTargets = buildSuggestedContextTargets({
-    candidates,
-    processHints,
+    suggestedContextTargets,
   });
   const missingProofTargets = buildMissingProofTargets({
     resourceHints,
@@ -54,20 +59,22 @@ export function buildSlimContextResult(
 ): Record<string, unknown> {
   const processHints = buildProcessHints(full.processes);
   const resourceHints = buildResourceHints(full.next_hops);
+  const suggestedContextTargets = buildSuggestedContextTargets({
+    processHints,
+    symbolName: input.symbolName,
+    symbol: full.symbol,
+  });
   const upgradeHints = buildUpgradeHints({
     mode: 'context',
     nextHops: full.next_hops,
     repoName: input.repoName,
     subject: input.symbolName,
+    suggestedContextTargets,
   });
   const missingProofTargets = buildMissingProofTargets({
     resourceHints,
     processHints,
     runtimeClaim: full.runtime_claim,
-  });
-  const suggestedContextTargets = buildSuggestedContextTargets({
-    processHints,
-    symbolName: input.symbolName,
   });
 
   return {
@@ -87,27 +94,124 @@ export function buildSlimContextResult(
   };
 }
 
-function buildCandidates(full: Record<string, any>): Array<Record<string, unknown>> {
+function buildCandidates(
+  full: Record<string, any>,
+  input: { queryText: string },
+): Array<Record<string, unknown>> {
   const rows = [
     ...(Array.isArray(full.process_symbols) ? full.process_symbols : []),
     ...(Array.isArray(full.definitions) ? full.definitions : []),
   ];
+  const preferredResourceTargets = extractPreferredResourceTargets(full.next_hops);
   const seen = new Set<string>();
-  const out: Array<Record<string, unknown>> = [];
-  for (const row of rows) {
+  const out: Array<{ score: number; index: number; candidate: Record<string, unknown> }> = [];
+  for (const [index, row] of rows.entries()) {
     const key = String(row?.id || `${row?.name}:${row?.filePath || ''}`);
     if (!key || seen.has(key)) continue;
     seen.add(key);
     out.push({
-      id: row?.id,
-      name: row?.name,
-      kind: row?.type,
-      filePath: row?.filePath,
-      module: row?.module,
+      score: scoreCandidateRow(row, {
+        queryText: input.queryText,
+        preferredResourceTargets,
+      }),
+      index,
+      candidate: {
+        id: row?.id,
+        name: row?.name,
+        kind: resolveCandidateKind(row),
+        filePath: row?.filePath,
+        module: row?.module,
+      },
     });
-    if (out.length >= 5) break;
   }
-  return out;
+  return out
+    .sort((a, b) => (b.score - a.score) || (a.index - b.index))
+    .slice(0, 5)
+    .map((entry) => entry.candidate);
+}
+
+function scoreCandidateRow(
+  row: Record<string, any>,
+  input: { queryText: string; preferredResourceTargets: string[] },
+): number {
+  const name = String(row?.name || '').trim();
+  const filePath = String(row?.filePath || '').trim();
+  const nameLower = name.toLowerCase();
+  const queryLower = String(input.queryText || '').trim().toLowerCase();
+  const fileBase = path.basename(filePath, path.extname(filePath)).toLowerCase();
+  const kind = resolveCandidateKind(row);
+  const exactLexicalMatch = Boolean(nameLower && queryLower.includes(nameLower));
+  const fileBaseMatch = Boolean(fileBase && fileBase === nameLower);
+  const kindBonus = (kind === 'Class' || kind === 'Interface' || kind === 'Struct') ? 8 : 0;
+  const classAnchorBonus = (kind === 'Class' && exactLexicalMatch) ? 18 : 0;
+  const lexicalBonus = exactLexicalMatch ? 80 : 0;
+  const fileAffinityBonus = (exactLexicalMatch && fileBaseMatch) ? 14 : 0;
+  const evidenceBonus = scoreEvidenceMode(String(row?.process_evidence_mode || ''));
+  const confidenceBonus = scoreConfidence(String(row?.process_confidence || ''));
+  const resourceAffinityBonus = hasPreferredResourceAffinity(row, input.preferredResourceTargets) ? 35 : 0;
+  const heuristicLowPenalty = isLowConfidenceHeuristic(row) && !exactLexicalMatch ? 25 : 0;
+
+  return lexicalBonus
+    + fileAffinityBonus
+    + kindBonus
+    + classAnchorBonus
+    + resourceAffinityBonus
+    + evidenceBonus
+    + confidenceBonus
+    - heuristicLowPenalty;
+}
+
+function extractPreferredResourceTargets(nextHops: unknown): string[] {
+  if (!Array.isArray(nextHops)) return [];
+  const targets = new Set<string>();
+  for (const hop of nextHops) {
+    if (!hop || typeof hop !== 'object') continue;
+    const kind = String((hop as Record<string, unknown>)?.kind || '').trim();
+    if (kind !== 'resource' && kind !== 'verify') continue;
+    const target = String((hop as Record<string, unknown>)?.target || '').trim();
+    if (target) targets.add(target);
+  }
+  return [...targets];
+}
+
+function hasPreferredResourceAffinity(row: Record<string, any>, preferredResourceTargets: string[]): boolean {
+  if (preferredResourceTargets.length === 0) return false;
+  const bindings = Array.isArray(row?.resourceBindings) ? row.resourceBindings : [];
+  const bindingSet = new Set(
+    bindings
+      .map((binding: any) => String(binding?.resourcePath || '').trim())
+      .filter(Boolean),
+  );
+  return preferredResourceTargets.some((target) => bindingSet.has(target));
+}
+
+function isLowConfidenceHeuristic(row: Record<string, any>): boolean {
+  return String(row?.process_evidence_mode || '').trim() === 'resource_heuristic'
+    && String(row?.process_confidence || '').trim() === 'low';
+}
+
+function scoreEvidenceMode(value: string): number {
+  const normalized = String(value || '').trim();
+  if (normalized === 'direct_step') return 18;
+  if (normalized === 'method_projected') return 10;
+  if (normalized === 'resource_heuristic') return -12;
+  return 0;
+}
+
+function scoreConfidence(value: string): number {
+  const normalized = String(value || '').trim();
+  if (normalized === 'high') return 18;
+  if (normalized === 'medium') return 8;
+  if (normalized === 'low') return -8;
+  return 0;
+}
+
+function resolveCandidateKind(row: Record<string, any>): string | undefined {
+  const explicit = String(row?.type || row?.kind || '').trim();
+  if (explicit) return explicit;
+  const id = String(row?.id || '').trim();
+  if (!id.includes(':')) return undefined;
+  return id.split(':', 1)[0] || undefined;
 }
 
 function buildProcessHints(processes: any): Array<Record<string, unknown>> {
@@ -139,6 +243,7 @@ function buildUpgradeHints(input: {
   nextHops: any;
   repoName?: string;
   subject: string;
+  suggestedContextTargets?: Array<Record<string, unknown>>;
 }): Array<Record<string, unknown>> {
   const repoArg = input.repoName ? ` --repo "${input.repoName}"` : '';
   const subject = String(input.subject || '').trim();
@@ -163,6 +268,21 @@ function buildUpgradeHints(input: {
           hop,
           paramDelta,
         }),
+      });
+    }
+  }
+
+  if (Array.isArray(input.suggestedContextTargets)) {
+    for (const target of input.suggestedContextTargets.slice(0, 3)) {
+      const uid = String(target?.uid || '').trim();
+      if (!uid) continue;
+      const filePath = String(target?.filePath || '').trim();
+      hints.push({
+        kind: 'symbol',
+        target: target?.name,
+        why: target?.why || 'Use the exact symbol UID to avoid same-name ambiguity.',
+        param_delta: `uid=${uid}`,
+        next_command: `gitnexus context${repoArg} --uid "${uid}"${filePath ? ` --file "${filePath}"` : ''}`,
       });
     }
   }
@@ -212,11 +332,31 @@ function chooseRecommendedFollowUp(upgradeHints: Array<Record<string, unknown>>)
   if (!Array.isArray(upgradeHints) || upgradeHints.length === 0) {
     return null;
   }
-  const nonFullHint = upgradeHints.find((hint) => hint?.kind !== 'full');
-  if (!nonFullHint) {
-    return String(upgradeHints[0]?.next_command || upgradeHints[0]?.param_delta || '') || null;
+  const ranked = upgradeHints
+    .filter((hint) => hint?.kind !== 'full')
+    .map((hint, index) => ({
+      hint,
+      index,
+      score: scoreRecommendedFollowUpHint(hint),
+    }))
+    .filter((entry) => entry.score > Number.NEGATIVE_INFINITY)
+    .sort((a, b) => (b.score - a.score) || (a.index - b.index));
+  const selected = ranked[0]?.hint;
+  if (selected) {
+    return String(selected.param_delta || selected.next_command || '') || null;
   }
-  return String(nonFullHint.param_delta || nonFullHint.next_command || '') || null;
+  return String(upgradeHints[0]?.next_command || upgradeHints[0]?.param_delta || '') || null;
+}
+
+function scoreRecommendedFollowUpHint(hint: Record<string, unknown>): number {
+  const paramDelta = String(hint?.param_delta || '').trim();
+  const nextCommand = String(hint?.next_command || '').trim();
+  if (paramDelta.startsWith('resource_path_prefix=')) return 40;
+  if (paramDelta.startsWith('uid=')) return 30;
+  if (paramDelta.startsWith('name=')) return 20;
+  if (paramDelta === 'follow_next_hop') return Number.NEGATIVE_INFINITY;
+  if (nextCommand) return 5;
+  return Number.NEGATIVE_INFINITY;
 }
 
 function buildMissingProofTargets(input: {
@@ -248,26 +388,58 @@ function buildSuggestedContextTargets(input: {
   candidates?: Array<Record<string, unknown>>;
   processHints: Array<Record<string, unknown>>;
   symbolName?: string;
-}): string[] {
-  const targets = new Set<string>();
+  symbol?: Record<string, unknown>;
+}): Array<Record<string, unknown>> {
+  const targets = new Map<string, Record<string, unknown>>();
+  const addTarget = (target: Record<string, unknown>) => {
+    const name = String(target.name || '').trim();
+    if (!name) return;
+    const uid = String(target.uid || '').trim();
+    const filePath = String(target.filePath || '').trim();
+    const key = uid || `${name}:${filePath}`;
+    if (!key || targets.has(key)) return;
+    targets.set(key, {
+      name,
+      ...(uid ? { uid } : {}),
+      ...(filePath ? { filePath } : {}),
+      why: target.why,
+    });
+  };
   if (Array.isArray(input.candidates)) {
     for (const candidate of input.candidates) {
-      if (typeof candidate?.name === 'string' && candidate.name.trim()) {
-        targets.add(candidate.name.trim());
-      }
+      addTarget({
+        name: candidate?.name,
+        uid: candidate?.id,
+        filePath: candidate?.filePath,
+        why: 'Query returned this ranked symbol candidate for direct context disambiguation.',
+      });
     }
+  }
+  if (input.symbol && typeof input.symbol === 'object') {
+    addTarget({
+      name: input.symbol.name,
+      uid: input.symbol.uid,
+      filePath: input.symbol.filePath,
+      why: 'Current context symbol can be revisited via exact UID to avoid same-name ambiguity.',
+    });
   }
   for (const process of input.processHints) {
     const verification = process?.verification_hint as Record<string, unknown> | undefined;
     const target = typeof verification?.target === 'string' ? verification.target.trim() : '';
     if (target) {
-      targets.add(target);
+      addTarget({
+        name: target,
+        why: 'Verification guidance references this symbol as the next disambiguation target.',
+      });
     }
   }
   if (input.symbolName?.trim()) {
-    targets.add(input.symbolName.trim());
+    addTarget({
+      name: input.symbolName.trim(),
+      why: 'Current symbol name remains available as a fallback context target.',
+    });
   }
-  return [...targets].slice(0, 5);
+  return [...targets.values()].slice(0, 5);
 }
 
 function buildRuntimePreview(runtimeClaim: any): Record<string, unknown> | undefined {

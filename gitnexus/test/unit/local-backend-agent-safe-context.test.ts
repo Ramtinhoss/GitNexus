@@ -55,6 +55,15 @@ describe('slim context response shaping', () => {
     expect(out).toHaveProperty('upgrade_hints');
     expect(out).toHaveProperty('missing_proof_targets');
     expect(out).toHaveProperty('suggested_context_targets');
+    expect((out as any).suggested_context_targets[0]).toMatchObject({
+      name: 'ReloadBase',
+      uid: 'Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase',
+      filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+    });
+    expect(typeof (out as any).suggested_context_targets[0].why).toBe('string');
+    const uidHint = (out as any).upgrade_hints.find((hint: any) => hint.param_delta?.includes('uid='));
+    expect(uidHint?.param_delta).toContain('uid=Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase');
+    expect(uidHint?.next_command).toContain('--uid "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase"');
     expect((out as any).serializedFields).toBeUndefined();
     expect((out as any).resourceBindings).toBeUndefined();
     expect((out as any).directIncoming).toBeUndefined();
