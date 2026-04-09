@@ -247,21 +247,19 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       }
     });
 
-    it('phase5 emits low confidence heuristic runtime clues', async () => {
+    it('query no longer injects heuristic rows when processRows is empty', async () => {
       const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
       process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';
       try {
         const result = await backend.callTool('query', {
           query: 'Reload',
+          response_profile: 'full',
           unity_resources: 'on',
           unity_hydration_mode: 'compact',
         });
 
-        expect(result.processes.some((p: any) => p.confidence === 'low')).toBe(true);
-        expect(result.processes.some((p: any) => p.evidence_mode === 'resource_heuristic')).toBe(true);
-        expect(
-          result.processes.some((p: any) => /asset|meta|parity/i.test(JSON.stringify(p.verification_hint || ''))),
-        ).toBe(true);
+        expect(result.processes.some((p: any) => p.evidence_mode === 'resource_heuristic')).toBe(false);
+        expect(Array.isArray(result.resource_hints || result.next_hops || [])).toBe(true);
       } finally {
         if (original === undefined) {
           delete process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;

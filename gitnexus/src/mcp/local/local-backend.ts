@@ -1714,39 +1714,6 @@ export class LocalBackend {
         (symbolEntry as any).filter_diagnostics = evidenceView.filter_diagnostics;
       }
 
-      if (processRows.length === 0 && unityResourcesMode !== 'off') {
-        const resourceBindings = Array.isArray((symbolEntry as any).resourceBindings)
-          ? (symbolEntry as any).resourceBindings
-          : [];
-        const needsParityRetry = Boolean((symbolEntry as any).hydrationMeta?.needsParityRetry);
-        const hasPartialUnityEvidence = resourceBindings.length > 0 || needsParityRetry;
-
-        if (hasPartialUnityEvidence) {
-          const verificationTarget = pickVerificationTarget({
-            seedMode: resourceSeedMode,
-            seedPath,
-            mappedSeedTargets,
-            resourceBindings,
-            fallback: String(sym.filePath || sym.name || sym.nodeId || ''),
-          });
-          processRows = mergeProcessEvidence({
-            directRows: [],
-            projectedRows: [],
-            heuristicRows: [{
-              pid: `proc:heuristic:${String(sym.nodeId || '').replace(/\s+/g, '_')}`,
-              label: `${String(sym.name || 'Symbol')} runtime heuristic clue`,
-              processType: 'unity_resource_heuristic',
-              processSubtype: 'unity_lifecycle',
-              runtimeChainConfidence: 'low',
-              step: 1,
-              stepCount: 1,
-              needsParityRetry,
-              verificationTarget,
-            }],
-          });
-        }
-      }
-      
       if (processRows.length === 0) {
         // Symbol not in any process — goes to definitions
         definitions.push(symbolEntry);
