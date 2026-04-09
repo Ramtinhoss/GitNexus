@@ -26,6 +26,8 @@ export interface SemanticDriftMetrics {
   post_narrowing_anchor_pass: boolean;
   post_narrowing_follow_up_hit: boolean;
   ambiguity_detour_count: number;
+  placeholder_leak_detected: boolean;
+  heuristic_top_summary_detected: boolean;
 }
 
 export interface AgentSafeLiveTask {

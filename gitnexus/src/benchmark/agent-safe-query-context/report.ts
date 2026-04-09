@@ -103,7 +103,9 @@ export async function runAgentSafeQueryContextBenchmark(
       subagentLiveCases[key] = subagentLive;
       acceptanceCases[key] = workflowReplaySlim.semantic_tuple_pass
         && workflowReplaySlim.post_narrowing_anchor_pass
-        && workflowReplaySlim.post_narrowing_follow_up_hit;
+        && workflowReplaySlim.post_narrowing_follow_up_hit
+        && !workflowReplaySlim.placeholder_leak_detected
+        && !workflowReplaySlim.heuristic_top_summary_detected;
       semanticEquivalenceCases[key] = sameScriptSlim.semantic_tuple_pass && subagentLive.semantic_tuple_pass;
 
       const tokenSaved = sameScriptFull.tokens_to_completion - sameScriptSlim.tokens_to_completion;
@@ -165,7 +167,7 @@ export async function writeAgentSafeQueryContextReports(
     '## Cases',
     ...(['weapon_powerup', 'reload'] as CaseKey[]).map(
       (key) =>
-        `- ${key}: live_pass=${report.subagent_live[key].semantic_tuple_pass}, token_saved=${report.token_summary[key].saved}, call_saved=${report.call_summary[key].saved}, anchor_top1_pass=${report.workflow_replay_slim[key].anchor_top1_pass}, recommended_follow_up_hit=${report.workflow_replay_slim[key].recommended_follow_up_hit}, post_narrowing_anchor_pass=${report.workflow_replay_slim[key].post_narrowing_anchor_pass}, post_narrowing_follow_up_hit=${report.workflow_replay_slim[key].post_narrowing_follow_up_hit}, ambiguity_detour_count=${report.workflow_replay_slim[key].ambiguity_detour_count}`,
+        `- ${key}: live_pass=${report.subagent_live[key].semantic_tuple_pass}, token_saved=${report.token_summary[key].saved}, call_saved=${report.call_summary[key].saved}, anchor_top1_pass=${report.workflow_replay_slim[key].anchor_top1_pass}, recommended_follow_up_hit=${report.workflow_replay_slim[key].recommended_follow_up_hit}, post_narrowing_anchor_pass=${report.workflow_replay_slim[key].post_narrowing_anchor_pass}, post_narrowing_follow_up_hit=${report.workflow_replay_slim[key].post_narrowing_follow_up_hit}, ambiguity_detour_count=${report.workflow_replay_slim[key].ambiguity_detour_count}, placeholder_leak_detected=${report.workflow_replay_slim[key].placeholder_leak_detected}, heuristic_top_summary_detected=${report.workflow_replay_slim[key].heuristic_top_summary_detected}`,
     ),
   ].join('\n');
 

@@ -56,6 +56,12 @@ export async function benchmarkAgentSafeQueryContextCommand(
 
   await writeReports(reportDir, report);
   writeLine(`${report.acceptance.pass ? 'PASS' : 'FAIL'}`);
+  for (const key of ['weapon_powerup', 'reload'] as const) {
+    const row = report.workflow_replay_slim[key];
+    writeLine(
+      `${key}: placeholder_leak_detected=${row.placeholder_leak_detected}, heuristic_top_summary_detected=${row.heuristic_top_summary_detected}`,
+    );
+  }
   writeLine(`Report: ${reportDir}`);
 
   if (!report.acceptance.pass) {

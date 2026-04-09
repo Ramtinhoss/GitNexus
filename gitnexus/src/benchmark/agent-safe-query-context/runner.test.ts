@@ -219,3 +219,83 @@ test('workflow replay tracks post-narrowing convergence separately from first-ho
   assert.equal(result.post_narrowing_anchor_pass, true);
   assert.equal(result.post_narrowing_follow_up_hit, true);
 });
+
+test('workflow replay flags unrelated placeholder follow-up leakage', async () => {
+  const fakeRunner = {
+    async query() {
+      return {
+        decision: {
+          primary_candidate: 'WeaponPowerUp',
+          recommended_follow_up: 'resource_path_prefix=Reload NEON.Game.Graph.Nodes.Reloads',
+        },
+        summary: 'WeaponPowerUp flow',
+        candidates: [{ name: 'WeaponPowerUp' }],
+        resource_hints: [{ target: fakeCase.semantic_tuple.resource_anchor }],
+      };
+    },
+    async context() {
+      return {
+        symbol: { name: 'WeaponPowerUp' },
+      };
+    },
+    async cypher() {
+      return {
+        row_count: 2,
+        rows: [
+          { src: 'HoldPickup', dst: 'PickItUp' },
+          { src: 'EquipWithEvent', dst: 'Equip' },
+        ],
+      };
+    },
+  };
+
+  const result = await runWorkflowReplay(fakeCase, fakeRunner, { maxSteps: 4, responseProfile: 'slim' });
+  assert.equal(result.semantic_tuple_pass, true);
+  assert.equal(result.placeholder_leak_detected, true);
+});
+
+test('workflow replay surfaces heuristic first-screen drift separately from semantic tuple pass', async () => {
+  const fakeRunner = {
+    async query() {
+      return {
+        summary: 'runtime heuristic clue',
+        decision: {
+          primary_candidate: 'WeaponPowerUp',
+          recommended_follow_up: `resource_path_prefix=${fakeCase.semantic_tuple.resource_anchor}`,
+        },
+        process_hints: [
+          {
+            summary: 'runtime heuristic clue',
+            confidence: 'low',
+            evidence_mode: 'resource_heuristic',
+          },
+          {
+            summary: 'Unity-runtime-root -> WeaponPowerUp',
+            confidence: 'high',
+            evidence_mode: 'direct_step',
+          },
+        ],
+        candidates: [{ name: 'WeaponPowerUp' }],
+        resource_hints: [{ target: fakeCase.semantic_tuple.resource_anchor }],
+      };
+    },
+    async context() {
+      return {
+        symbol: { name: 'WeaponPowerUp' },
+      };
+    },
+    async cypher() {
+      return {
+        row_count: 2,
+        rows: [
+          { src: 'HoldPickup', dst: 'PickItUp' },
+          { src: 'EquipWithEvent', dst: 'Equip' },
+        ],
+      };
+    },
+  };
+
+  const result = await runWorkflowReplay(fakeCase, fakeRunner, { maxSteps: 4, responseProfile: 'slim' });
+  assert.equal(result.semantic_tuple_pass, true);
+  assert.equal(result.heuristic_top_summary_detected, true);
+});

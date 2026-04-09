@@ -5,6 +5,8 @@ import { createAgentContextToolRunner } from '../agent-context/tool-runner.js';
 import { deriveSemanticTuple, semanticTuplePass } from './semantic-tuple.js';
 import type { AgentSafeBenchmarkCase, SemanticDriftMetrics, SemanticTuple } from './types.js';
 
+const PLACEHOLDER_FOLLOW_UP = 'Reload NEON.Game.Graph.Nodes.Reloads';
+
 export interface WorkflowReplayStep {
   tool: 'query' | 'context' | 'cypher';
   input: Record<string, unknown>;
@@ -182,6 +184,12 @@ function computeSemanticDriftMetrics(
   const recommendedFollowUp = extractRecommendedFollowUp(firstOutput);
   const postNarrowingPrimaryCandidate = extractPrimaryCandidate(postNarrowingOutput);
   const postNarrowingRecommendedFollowUp = extractRecommendedFollowUp(postNarrowingOutput);
+  const placeholderLeakDetected = detectPlaceholderLeak({
+    benchmarkCase,
+    firstOutput,
+    postNarrowingOutput,
+  });
+  const heuristicTopSummaryDetected = detectHeuristicTopSummary(firstOutput);
 
   return {
     anchor_top1_pass: stringsEqual(primaryCandidate, benchmarkCase.semantic_tuple.symbol_anchor),
@@ -196,7 +204,75 @@ function computeSemanticDriftMetrics(
       (count, step) => count + (isAmbiguousOutput(step.output) ? 1 : 0),
       0,
     ),
+    placeholder_leak_detected: placeholderLeakDetected,
+    heuristic_top_summary_detected: heuristicTopSummaryDetected,
   };
+}
+
+function detectPlaceholderLeak(input: {
+  benchmarkCase: AgentSafeBenchmarkCase;
+  firstOutput: Record<string, unknown> | undefined;
+  postNarrowingOutput: Record<string, unknown> | undefined;
+}): boolean {
+  const intentText = `${input.benchmarkCase.start_query} ${input.benchmarkCase.semantic_tuple.symbol_anchor}`.toLowerCase();
+  if (intentText.includes('reload')) return false;
+
+  const signals = collectSignalTexts([input.firstOutput, input.postNarrowingOutput]);
+  return signals.some((text) => text.includes(PLACEHOLDER_FOLLOW_UP.toLowerCase()));
+}
+
+function detectHeuristicTopSummary(output: Record<string, unknown> | undefined): boolean {
+  if (!output) return false;
+  const summary = String(output.summary || '').trim().toLowerCase();
+  const processHints = Array.isArray(output.process_hints)
+    ? output.process_hints
+    : (Array.isArray(output.processes) ? output.processes : []);
+  const topHint = processHints[0] as Record<string, unknown> | undefined;
+  const topEvidenceMode = String(topHint?.evidence_mode || topHint?.process_evidence_mode || '').trim().toLowerCase();
+  const topConfidence = String(topHint?.confidence || topHint?.process_confidence || '').trim().toLowerCase();
+  const summaryLooksHeuristic = summary.includes('heuristic clue')
+    || (topEvidenceMode === 'resource_heuristic' && topConfidence === 'low');
+  if (!summaryLooksHeuristic) return false;
+
+  const hasStrongerProcessLead = processHints.some((hint) => {
+    const row = hint as Record<string, unknown>;
+    const evidenceMode = String(row?.evidence_mode || row?.process_evidence_mode || '').trim().toLowerCase();
+    const confidence = String(row?.confidence || row?.process_confidence || '').trim().toLowerCase();
+    return (confidence === 'high' || confidence === 'medium') && evidenceMode !== 'resource_heuristic';
+  });
+  const hasStrongPrimaryCandidate = String(extractPrimaryCandidate(output) || '').trim().length > 0;
+  return hasStrongerProcessLead || hasStrongPrimaryCandidate;
+}
+
+function collectSignalTexts(outputs: Array<Record<string, unknown> | undefined>): string[] {
+  const texts: string[] = [];
+  for (const output of outputs) {
+    if (!output) continue;
+    const summary = String(output.summary || '').trim();
+    if (summary) texts.push(summary.toLowerCase());
+
+    const decision = output.decision as Record<string, unknown> | undefined;
+    const followUp = String(decision?.recommended_follow_up || '').trim();
+    if (followUp) texts.push(followUp.toLowerCase());
+
+    const runtimePreview = output.runtime_preview as Record<string, unknown> | undefined;
+    const runtimePreviewNext = String(runtimePreview?.next_action || '').trim();
+    if (runtimePreviewNext) texts.push(runtimePreviewNext.toLowerCase());
+
+    const runtimeClaim = output.runtime_claim as Record<string, unknown> | undefined;
+    const runtimeClaimNext = String(runtimeClaim?.next_action || '').trim();
+    if (runtimeClaimNext) texts.push(runtimeClaimNext.toLowerCase());
+
+    const upgradeHints = Array.isArray(output.upgrade_hints) ? output.upgrade_hints : [];
+    for (const hint of upgradeHints) {
+      const row = hint as Record<string, unknown>;
+      const nextCommand = String(row.next_command || '').trim();
+      const paramDelta = String(row.param_delta || '').trim();
+      if (nextCommand) texts.push(nextCommand.toLowerCase());
+      if (paramDelta) texts.push(paramDelta.toLowerCase());
+    }
+  }
+  return texts;
 }
 
 function pickPostNarrowingQueryOutput(

@@ -9,7 +9,7 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
   const output: string[] = [];
   const calls: Array<{ repo?: string }> = [];
 
-  await benchmarkAgentSafeQueryContextCommand('../benchmarks/agent-safe-query-context/neonspark-v1', {
+  const report = await benchmarkAgentSafeQueryContextCommand('../benchmarks/agent-safe-query-context/neonspark-v1', {
     repo: 'neonspark-core',
     reportDir: '.gitnexus/benchmark-agent-safe-query-context-test',
     subagentRunsDir: '.gitnexus/subagent-runs',
@@ -81,6 +81,8 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
           post_narrowing_anchor_pass: true,
           post_narrowing_follow_up_hit: true,
           ambiguity_detour_count: 0,
+          placeholder_leak_detected: false,
+          heuristic_top_summary_detected: false,
           tool_calls_to_completion: 1,
           tokens_to_completion: 1,
           retry_breakdown: { query_retry_count: 0, context_retry_count: 0, cypher_retry_count: 0 },
@@ -103,6 +105,8 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
           post_narrowing_anchor_pass: true,
           post_narrowing_follow_up_hit: true,
           ambiguity_detour_count: 0,
+          placeholder_leak_detected: false,
+          heuristic_top_summary_detected: false,
           tool_calls_to_completion: 1,
           tokens_to_completion: 1,
           retry_breakdown: { query_retry_count: 0, context_retry_count: 0, cypher_retry_count: 0 },
@@ -212,7 +216,10 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
 
   assert.equal(calls[0].repo, 'neonspark-core');
   assert.ok(output.some((line) => line.includes('PASS')));
+  assert.ok(output.some((line) => line.includes('weapon_powerup: placeholder_leak_detected=false')));
   assert.ok(output.some((line) => line.includes('Report:')));
+  assert.equal(report.workflow_replay_slim.weapon_powerup.placeholder_leak_detected, false);
+  assert.equal(report.workflow_replay_slim.weapon_powerup.heuristic_top_summary_detected, false);
 });
 
 test('runtime retrieval contract docs describe seed-first workflow and clue-tier semantics', async () => {
