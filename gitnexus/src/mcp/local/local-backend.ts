@@ -387,16 +387,40 @@ export function pickVerifierSymbolAnchor(input: {
   processSymbols: any[];
   definitions: any[];
 }): { symbolName?: string; symbolFilePath?: string } {
-  const resourceAnchoredSymbol = [
+  const rows = [
     ...input.processSymbols,
     ...input.definitions,
-  ].find((row: any) => Array.isArray(row?.resourceBindings) && row.resourceBindings.length > 0);
+  ];
+  const evidenceModeRank = (row: any): number => {
+    const mode = String(row?.process_evidence_mode || row?.evidence_mode || '').trim().toLowerCase();
+    if (mode === 'direct_step') return 3;
+    if (mode === 'method_projected') return 2;
+    if (mode === 'resource_heuristic') return 1;
+    return 0;
+  };
+  const confidenceRank = (row: any): number => {
+    const confidence = String(row?.process_confidence || row?.confidence || '').trim().toLowerCase();
+    if (confidence === 'high') return 3;
+    if (confidence === 'medium') return 2;
+    if (confidence === 'low') return 1;
+    return 0;
+  };
+  const preferredStructuredSymbol = rows
+    .map((row: any, index: number) => ({ row, index }))
+    .filter(({ row }) => evidenceModeRank(row) >= 2 && confidenceRank(row) >= 2)
+    .sort((a, b) => {
+      const modeDiff = evidenceModeRank(b.row) - evidenceModeRank(a.row);
+      if (modeDiff !== 0) return modeDiff;
+      const confidenceDiff = confidenceRank(b.row) - confidenceRank(a.row);
+      if (confidenceDiff !== 0) return confidenceDiff;
+      return a.index - b.index;
+    })[0]?.row;
+  const resourceAnchoredSymbol = rows.find(
+    (row: any) => Array.isArray(row?.resourceBindings) && row.resourceBindings.length > 0,
+  );
   const lowerQuery = String(input.queryText || '').toLowerCase();
-  const firstMatchInQuery = [
-    ...input.processSymbols,
-    ...input.definitions,
-  ].find((row: any) => lowerQuery.includes(String(row?.name || '').toLowerCase()));
-  const anchor = resourceAnchoredSymbol || input.processSymbols[0] || firstMatchInQuery || input.definitions[0];
+  const firstMatchInQuery = rows.find((row: any) => lowerQuery.includes(String(row?.name || '').toLowerCase()));
+  const anchor = preferredStructuredSymbol || resourceAnchoredSymbol || input.processSymbols[0] || firstMatchInQuery || input.definitions[0];
   const symbolName = String(anchor?.name || '').trim();
   const symbolFilePath = normalizePath(String(anchor?.filePath || '').trim());
   return {
@@ -442,12 +466,12 @@ export function buildNextHops(input: {
     && mappedIntersectBindings.length === 0
     && currentSymbolMatchesRetrievalScope === false;
 
-  const candidateResources = shouldSuppressRawResourceHops ? [] : [
-    ...mappedIntersectBindings,
-    ...mappedRemainder,
-    ...(input.seedPath ? [normalizePath(input.seedPath)] : []),
-    ...bindingPaths,
-  ].filter(Boolean);
+  const candidateResources = shouldSuppressRawResourceHops ? [] : rankCandidateResources([
+    ...(input.seedPath ? [{ target: normalizePath(input.seedPath), bucket: 0 }] : []),
+    ...mappedIntersectBindings.map((target) => ({ target, bucket: 1 })),
+    ...mappedRemainder.map((target) => ({ target, bucket: 2 })),
+    ...bindingPaths.map((target) => ({ target, bucket: 3 })),
+  ]);
   const repoArg = input.repoName ? ` --repo "${input.repoName}"` : '';
   const withRepoInCommand = (command: string): string => {
     const trimmed = String(command || '').trim();
@@ -497,6 +521,47 @@ export function buildNextHops(input: {
   return hops.slice(0, 5);
 }
 
+function rankCandidateResources(candidates: Array<{ target: string; bucket: number }>): string[] {
+  const deduped = new Map<string, { target: string; bucket: number; noisePenalty: number }>();
+  for (const candidate of candidates) {
+    const target = normalizePath(String(candidate.target || '').trim());
+    if (!target) continue;
+    const next = {
+      target,
+      bucket: candidate.bucket,
+      noisePenalty: scoreResourcePathNoise(target),
+    };
+    const existing = deduped.get(target);
+    if (!existing) {
+      deduped.set(target, next);
+      continue;
+    }
+    if (next.bucket < existing.bucket) existing.bucket = next.bucket;
+    if (next.noisePenalty < existing.noisePenalty) existing.noisePenalty = next.noisePenalty;
+  }
+
+  return [...deduped.values()]
+    .sort((a, b) => {
+      const bucketDiff = a.bucket - b.bucket;
+      if (bucketDiff !== 0) return bucketDiff;
+      const noiseDiff = a.noisePenalty - b.noisePenalty;
+      if (noiseDiff !== 0) return noiseDiff;
+      return a.target.localeCompare(b.target);
+    })
+    .map((entry) => entry.target);
+}
+
+function scoreResourcePathNoise(resourcePath: string): number {
+  const haystack = normalizePath(String(resourcePath || '').trim()).toLowerCase();
+  let penalty = 0;
+  if (!haystack) return penalty;
+  if (haystack.includes('/test') || haystack.includes('testgraphs')) penalty += 5;
+  if (haystack.includes('debug')) penalty += 4;
+  if (haystack.includes('测试')) penalty += 6;
+  if (haystack.includes('标记')) penalty += 6;
+  return penalty;
+}
+
 async function resolveRetrievalRuleHint(input: {
   repoPath: string;
   queryText?: string;
@@ -538,23 +603,32 @@ export function pickRetrievalRuleHintFromBundle(input: {
   }): number => {
     let score = 0;
     let matchedTrigger = false;
+    let matchedEvidence = false;
     for (const token of rule.trigger_tokens || []) {
       const normalized = String(token || '').trim().toLowerCase();
       if (!normalized) continue;
       if (haystack.includes(normalized)) {
         matchedTrigger = true;
+        matchedEvidence = true;
         score += 10 + normalized.length;
       }
     }
-    if (!matchedTrigger) return Number.NEGATIVE_INFINITY;
     for (const token of rule.host_base_type || []) {
       const normalized = String(token || '').trim().toLowerCase();
-      if (normalized && haystack.includes(normalized)) score += 20 + normalized.length;
+      if (normalized && haystack.includes(normalized)) {
+        matchedEvidence = true;
+        score += 20 + normalized.length;
+      }
     }
     for (const token of rule.resource_types || []) {
       const normalized = String(token || '').trim().toLowerCase();
-      if (normalized && haystack.includes(normalized)) score += 4 + normalized.length;
+      if (normalized && haystack.includes(normalized)) {
+        matchedEvidence = true;
+        score += 4 + normalized.length;
+      }
     }
+    if (!matchedEvidence) return Number.NEGATIVE_INFINITY;
+    if (!matchedTrigger) score -= 3;
     return score;
   };
 
