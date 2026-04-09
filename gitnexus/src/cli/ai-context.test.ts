@@ -34,6 +34,8 @@ test('generateAIContextFiles installs repo skills under .agents/skills/gitnexus'
     await fs.access(skillPath);
     await fs.access(sharedRuntimeContractPath);
 
+    assert.match(agentsContent, /slim guidance is narrowing-first/);
+    assert.match(agentsContent, /Query-time runtime closure is graph-only/);
     assert.match(agentsContent, /\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
     assert.match(claudeContent, /\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
     assert.doesNotMatch(agentsContent, /## Unity Runtime Process 真理源/);
@@ -69,6 +71,8 @@ test('generateAIContextFiles with global scope skips repo skill install', async 
     const agentsContent = await fs.readFile(agentsPath, 'utf-8');
     const claudeContent = await fs.readFile(claudePath, 'utf-8');
 
+    assert.match(agentsContent, /slim guidance is narrowing-first/);
+    assert.match(agentsContent, /Query-time runtime closure is graph-only/);
     assert.match(agentsContent, /~\/\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
     assert.match(claudeContent, /~\/\.agents\/skills\/gitnexus\/gitnexus-exploring\/SKILL\.md/);
     assert.doesNotMatch(agentsContent, /## Unity Runtime Process 真理源/);

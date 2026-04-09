@@ -66,6 +66,8 @@ function generateGitNexusContent(
 5. **If user asks to release/publish a specific version and this repo has \`DISTRIBUTION.md\`, execute that workflow in full-release mode by default** (unless user explicitly asks \`prepare-only\` or \`publish-only\`).
 
 > If step 1 warns the index is stale, ask user whether to rebuild index via \`gitnexus analyze\` when local CLI exists; otherwise resolve the pinned npx package spec from \`~/.gitnexus/config.json\` (\`cliPackageSpec\` first, then \`cliVersion\`) and run \`npx -y <resolved-spec> analyze\` (it reuses previous analyze scope/options by default; add \`--no-reuse-options\` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
+> \`query/context\` slim guidance is narrowing-first: inspect \`decision.recommended_follow_up\`, \`missing_proof_targets\`, and \`suggested_context_targets\` before upgrading to \`response_profile=full\`.
+> Query-time runtime closure is graph-only and does not require \`verification_rules\` / \`trigger_tokens\`; if you need hydration diagnostics such as \`needsParityRetry\` or strict fallback state, rerun with \`response_profile=full\` and then use parity before closure claims.
 
 ## Skills
 
