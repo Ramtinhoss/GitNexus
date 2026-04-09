@@ -60,9 +60,10 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 2. 类符号方法投影：
    - `HAS_METHOD -> STEP_IN_PROCESS` 合并：`local-backend.ts:763-793, 1460-1483`
    - 证据模式合并：`process-evidence.ts:46-114`
-3. empty-process + Unity evidence fallback：
-   - 触发：`processRows.length===0` 且 `resourceBindings>0` 或 `needsParityRetry`
-   - 注入 `resource_heuristic` + low clue
+3. empty-process 行为（无 heuristic 注入）：
+   - `query`: `processRows.length===0` 时，符号归入 `definitions`
+   - `context`: `processRows.length===0` 时，`processes=[]`
+   - 资源收敛线索通过 `resource_hints` / `next_hops` 提供，不再通过 process 注入
 4. 扩展字段始终输出（不再需要 flag）：
    - `runtime_chain_confidence`、`runtime_chain_evidence_level`、`verification_hint`
    - `process-confidence.ts`；`local-backend.ts`
@@ -117,7 +118,7 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 
 ### 4.1 `query/context` 常驻字段（始终输出）
 
-1. `processes[].evidence_mode`: `direct_step | method_projected | resource_heuristic`
+1. `processes[].evidence_mode`: `direct_step | method_projected`
 2. `processes[].confidence`: `high | medium | low`
 3. `process_symbols[].process_evidence_mode`
 4. `process_symbols[].process_confidence`
@@ -125,9 +126,9 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 6. `runtime_chain_evidence_level`: `none | clue | verified_segment | verified_chain`
 7. `verification_hint`（low confidence 时应可行动）
 8. `response_profile=slim` 语义分层：
-   - `facts`：图谱事实与非启发式主证据
+   - `facts`：图谱事实与 process/candidate 主证据
    - `closure`：runtime claim/preview 与缺口
-   - `clues`：`resource_heuristic` 等线索层证据
+   - `clues`：资源线索（`resource_hints`）等收敛提示
    - `tier_envelope`：`facts_present/closure_present/clues_present/semantic_order_pass/summary_source`
    - strict-anchor 默认阅读顺序：`facts -> closure -> clues`
 
@@ -146,7 +147,7 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 ### 4.3 `process_ref / runtime_claim / evidence policy` 合约
 
 1. `query/context` 的 `processes[]` 返回：
-   - `id`（可读 process id；heuristic 情况下为 `derived:*`）
+   - `id`（可读 process id；无法映射持久 process 时为 `derived:*`）
    - `process_ref`：`id`, `kind`, `readable`, `reader_uri`, `origin`
 2. 请求 `runtime_chain_verify=on-demand` 时，返回 `runtime_claim`（graph-only）：
    - `rule_id`, `rule_version`, `scope`

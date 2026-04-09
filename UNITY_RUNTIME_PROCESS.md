@@ -193,7 +193,7 @@ lifecycle_overrides:
 
 | 字段 | 含义 |
 |------|------|
-| `evidence_mode` | `direct_step`（直接参与）/ `method_projected`（方法投影）/ `resource_heuristic`（资源推断） |
+| `evidence_mode` | `direct_step`（直接参与）/ `method_projected`（方法投影） |
 | `confidence` | `high` / `medium` / `low` |
 | `runtime_chain_confidence` | 运行时链路置信度（始终输出） |
 | `runtime_chain_evidence_level` | `none` / `clue` / `verified_segment` / `verified_chain`（始终输出） |
