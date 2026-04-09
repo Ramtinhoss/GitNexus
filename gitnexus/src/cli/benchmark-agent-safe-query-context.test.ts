@@ -60,6 +60,36 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
     }),
     runBenchmark: async (_suite, options) => {
       calls.push({ repo: options.repo });
+      const workflowReplayCases = {
+        weapon_powerup: {
+          steps: [],
+          semantic_tuple: {
+            resource_anchor: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
+            symbol_anchor: 'WeaponPowerUp',
+            proof_edges: ['HoldPickup -> WeaponPowerUp.PickItUp'],
+            closure_status: 'not_verified_full' as const,
+          },
+          semantic_tuple_pass: true,
+          tool_calls_to_completion: 1,
+          tokens_to_completion: 1,
+          retry_breakdown: { query_retry_count: 0, context_retry_count: 0, cypher_retry_count: 0 },
+          stop_reason: 'semantic_tuple_satisfied' as const,
+        },
+        reload: {
+          steps: [],
+          semantic_tuple: {
+            resource_anchor: 'Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset',
+            symbol_anchor: 'ReloadBase',
+            proof_edge: 'ReloadBase.GetValue -> ReloadBase.CheckReload',
+            closure_status: 'not_verified_full' as const,
+          },
+          semantic_tuple_pass: true,
+          tool_calls_to_completion: 1,
+          tokens_to_completion: 1,
+          retry_breakdown: { query_retry_count: 0, context_retry_count: 0, cypher_retry_count: 0 },
+          stop_reason: 'semantic_tuple_satisfied' as const,
+        },
+      };
       const sameScriptCases = {
         weapon_powerup: {
           tool_plan: [],
@@ -128,8 +158,8 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
       };
       return {
         generatedAt: '2026-04-08T00:00:00.000Z',
-        workflow_replay_full: sameScriptCases,
-        workflow_replay_slim: sameScriptCases,
+        workflow_replay_full: workflowReplayCases,
+        workflow_replay_slim: workflowReplayCases,
         same_script_full: sameScriptCases,
         same_script_slim: sameScriptCases,
         cases: subagentLive,
@@ -138,7 +168,8 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
           cases: sameScriptCases,
         },
         subagent_live: subagentLive,
-        semantic_equivalence: { pass: true, cases: { weapon_powerup: true, reload: true } },
+        acceptance: { pass: true, cases: { weapon_powerup: true, reload: true } },
+        semantic_equivalence: { pass: false, cases: { weapon_powerup: false, reload: false } },
         token_summary: {
           weapon_powerup: { before: 1, after: 1, saved: 0, reduction: 0 },
           reload: { before: 1, after: 1, saved: 0, reduction: 0 },
@@ -155,5 +186,6 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
   });
 
   assert.equal(calls[0].repo, 'neonspark-core');
+  assert.ok(output.some((line) => line.includes('PASS')));
   assert.ok(output.some((line) => line.includes('Report:')));
 });

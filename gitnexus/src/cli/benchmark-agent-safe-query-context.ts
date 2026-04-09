@@ -55,10 +55,10 @@ export async function benchmarkAgentSafeQueryContextCommand(
   });
 
   await writeReports(reportDir, report);
-  writeLine(`${report.semantic_equivalence.pass ? 'PASS' : 'FAIL'}`);
+  writeLine(`${report.acceptance.pass ? 'PASS' : 'FAIL'}`);
   writeLine(`Report: ${reportDir}`);
 
-  if (!report.semantic_equivalence.pass) {
+  if (!report.acceptance.pass) {
     process.exitCode = 1;
   }
 

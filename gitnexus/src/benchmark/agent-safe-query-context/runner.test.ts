@@ -86,3 +86,46 @@ test('workflow replay narrows query only when retry triggers fire', async () => 
   assert.equal(result.stop_reason, 'semantic_tuple_satisfied');
   assert.equal(calls.map((entry) => entry.tool).join(','), 'query,query,context,cypher');
 });
+
+test('workflow replay applies response_profile to query and context calls', async () => {
+  const calls: Array<{ tool: string; input: Record<string, unknown> }> = [];
+
+  const fakeRunner = {
+    async query(input: Record<string, unknown>) {
+      calls.push({ tool: 'query', input });
+      return {
+        candidates: [{ name: 'WeaponPowerUp' }],
+        resource_hints: [{ path: fakeCase.semantic_tuple.resource_anchor }],
+      };
+    },
+    async context(input: Record<string, unknown>) {
+      calls.push({ tool: 'context', input });
+      return {
+        symbol: { name: 'WeaponPowerUp' },
+        incoming: {
+          CALLS: [{ name: 'HoldPickup' }, { name: 'EquipWithEvent' }],
+        },
+        outgoing: {
+          CALLS: [{ name: 'PickItUp' }, { name: 'Equip' }],
+        },
+      };
+    },
+    async cypher(input: Record<string, unknown>) {
+      calls.push({ tool: 'cypher', input });
+      return {
+        row_count: 2,
+        rows: [
+          { src: 'HoldPickup', dst: 'PickItUp' },
+          { src: 'EquipWithEvent', dst: 'Equip' },
+        ],
+      };
+    },
+  };
+
+  await runWorkflowReplay(fakeCase, fakeRunner, { responseProfile: 'slim' });
+
+  const queryCalls = calls.filter((entry) => entry.tool === 'query');
+  const contextCalls = calls.filter((entry) => entry.tool === 'context');
+  assert.equal(queryCalls.every((entry) => entry.input.response_profile === 'slim'), true);
+  assert.equal(contextCalls.every((entry) => entry.input.response_profile === 'slim'), true);
+});

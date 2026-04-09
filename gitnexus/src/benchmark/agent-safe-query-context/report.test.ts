@@ -62,13 +62,34 @@ test('benchmark report includes explicit benchmark tracks', async () => {
     subagentRunsDir: '/tmp/subagent-runs',
   }, {
     runner: {
-      query: async () => ({
-        candidates: [{ name: 'WeaponPowerUp' }],
-        resource_hints: [{ path: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
-      }),
-      context: async () => ({ symbol: { name: 'WeaponPowerUp' } }),
+      query: async (input) => {
+        const queryText = String(input?.query || '');
+        if (/reload|ReloadBase|CheckReload/.test(queryText)) {
+          return {
+            candidates: [{ name: 'ReloadBase' }],
+            resource_hints: [{ path: 'Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset' }],
+          };
+        }
+        return {
+          candidates: [{ name: 'WeaponPowerUp' }],
+          resource_hints: [{ path: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
+        };
+      },
+      context: async (input) => ({ symbol: { name: String(input?.name || 'WeaponPowerUp') } }),
       impact: async () => ({ impactedCount: 0 }),
-      cypher: async () => ({ row_count: 1, rows: [{ src: 'HoldPickup', dst: 'PickItUp' }] }),
+      cypher: async (input) => {
+        const queryText = String(input?.query || '');
+        if (queryText.includes('CheckReload') || queryText.includes('GetValue')) {
+          return { row_count: 1, rows: [{ src: 'GetValue', dst: 'CheckReload' }] };
+        }
+        return {
+          row_count: 2,
+          rows: [
+            { src: 'HoldPickup', dst: 'PickItUp' },
+            { src: 'EquipWithEvent', dst: 'Equip' },
+          ],
+        };
+      },
       close: async () => {},
     },
     executeToolPlan: async (plan) =>
@@ -113,4 +134,9 @@ test('benchmark report includes explicit benchmark tracks', async () => {
   assert.ok(report.same_script_full.reload);
   assert.ok(report.same_script_slim.reload);
   assert.ok(report.subagent_live.weapon_powerup);
+  assert.equal(report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass, true);
+  assert.equal(
+    report.acceptance.pass,
+    report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass && report.workflow_replay_slim.reload.semantic_tuple_pass,
+  );
 });

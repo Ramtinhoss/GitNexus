@@ -26,10 +26,12 @@ export interface WorkflowReplayResult {
   stop_reason: 'semantic_tuple_satisfied' | 'max_steps_reached';
 }
 
+export type WorkflowReplayResponseProfile = 'full' | 'slim';
+
 export async function runWorkflowReplay(
   benchmarkCase: AgentSafeBenchmarkCase,
   runner: Pick<AgentContextToolRunner, 'query' | 'context' | 'cypher'>,
-  options: { repo?: string; maxSteps?: number } = {},
+  options: { repo?: string; maxSteps?: number; responseProfile?: WorkflowReplayResponseProfile } = {},
 ): Promise<WorkflowReplayResult> {
   const maxSteps = options.maxSteps ?? 5;
   const steps: WorkflowReplayStep[] = [];
@@ -37,7 +39,12 @@ export async function runWorkflowReplay(
   await pushStep(
     steps,
     'query',
-    withRepo(benchmarkCase.start_query_input || { query: benchmarkCase.start_query }, options.repo),
+    withReplayInput(
+      benchmarkCase.start_query_input || { query: benchmarkCase.start_query },
+      options.repo,
+      options.responseProfile,
+      'query',
+    ),
     runner.query,
   );
 
@@ -51,7 +58,12 @@ export async function runWorkflowReplay(
     await pushStep(
       steps,
       'query',
-      withRepo(benchmarkCase.retry_query_input || { query: benchmarkCase.retry_query }, options.repo),
+      withReplayInput(
+        benchmarkCase.retry_query_input || { query: benchmarkCase.retry_query },
+        options.repo,
+        options.responseProfile,
+        'query',
+      ),
       runner.query,
     );
     semanticTuple = deriveSemanticTuple(
@@ -65,7 +77,12 @@ export async function runWorkflowReplay(
     if (passed || steps.length >= maxSteps) {
       break;
     }
-    await pushStep(steps, 'context', withRepo({ name: contextName }, options.repo), runner.context);
+    await pushStep(
+      steps,
+      'context',
+      withReplayInput({ name: contextName }, options.repo, options.responseProfile, 'context'),
+      runner.context,
+    );
     semanticTuple = deriveSemanticTuple(
       benchmarkCase.semantic_tuple,
       steps.map((step) => step.output),
@@ -74,7 +91,12 @@ export async function runWorkflowReplay(
   }
 
   if (!passed && steps.length < maxSteps) {
-    await pushStep(steps, 'cypher', withRepo({ query: benchmarkCase.proof_cypher }, options.repo), runner.cypher);
+    await pushStep(
+      steps,
+      'cypher',
+      withReplayInput({ query: benchmarkCase.proof_cypher }, options.repo, options.responseProfile, 'cypher'),
+      runner.cypher,
+    );
     semanticTuple = deriveSemanticTuple(
       benchmarkCase.semantic_tuple,
       steps.map((step) => step.output),
@@ -99,7 +121,7 @@ export async function runWorkflowReplay(
 
 export async function runWorkflowReplayWithDefaultRunner(
   benchmarkCase: AgentSafeBenchmarkCase,
-  options: { repo?: string; maxSteps?: number } = {},
+  options: { repo?: string; maxSteps?: number; responseProfile?: WorkflowReplayResponseProfile } = {},
 ): Promise<WorkflowReplayResult> {
   const runner = await createAgentContextToolRunner();
   try {
@@ -132,9 +154,18 @@ function shouldRetryQuery(tuple: SemanticTuple): boolean {
   return !tuple.resource_anchor || !tuple.symbol_anchor;
 }
 
-function withRepo(input: Record<string, unknown>, repo?: string): Record<string, unknown> {
-  if (!repo) {
-    return input;
+function withReplayInput(
+  input: Record<string, unknown>,
+  repo: string | undefined,
+  responseProfile: WorkflowReplayResponseProfile | undefined,
+  tool: WorkflowReplayStep['tool'],
+): Record<string, unknown> {
+  const withRepo = repo ? { ...input, repo } : { ...input };
+  if (!responseProfile) {
+    return withRepo;
   }
-  return { ...input, repo };
+  if (tool === 'query' || tool === 'context') {
+    return { ...withRepo, response_profile: responseProfile };
+  }
+  return withRepo;
 }

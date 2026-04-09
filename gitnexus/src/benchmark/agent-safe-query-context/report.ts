@@ -4,7 +4,9 @@ import { writeReports } from '../report.js';
 import { executeToolPlan } from '../agent-context/runner.js';
 import { createAgentContextToolRunner, type AgentContextToolRunner } from '../agent-context/tool-runner.js';
 import { deriveSemanticTuple, semanticTuplePass } from './semantic-tuple.js';
+import { runWorkflowReplay, type WorkflowReplayResult } from './runner.js';
 import { loadSubagentLiveCaseResult, type SubagentLiveResult, type TelemetryStep } from './subagent-live.js';
+import type { AgentContextToolStep } from '../agent-context/types.js';
 import type { AgentSafeBenchmarkCase, AgentSafeBenchmarkSuite, AgentSafeCaseKey, SemanticTuple } from './types.js';
 
 type CaseKey = AgentSafeCaseKey;
@@ -20,11 +22,15 @@ export interface SameScriptCaseResult {
 
 export interface AgentSafeQueryContextBenchmarkReport {
   generatedAt: string;
-  workflow_replay_full: Record<CaseKey, SameScriptCaseResult>;
-  workflow_replay_slim: Record<CaseKey, SameScriptCaseResult>;
+  workflow_replay_full: Record<CaseKey, WorkflowReplayResult>;
+  workflow_replay_slim: Record<CaseKey, WorkflowReplayResult>;
   same_script_full: Record<CaseKey, SameScriptCaseResult>;
   same_script_slim: Record<CaseKey, SameScriptCaseResult>;
   subagent_live: Record<CaseKey, SubagentLiveResult>;
+  acceptance: {
+    pass: boolean;
+    cases: Record<CaseKey, boolean>;
+  };
   // Legacy aliases kept for downstream compatibility while the benchmark contract migrates.
   cases: Record<CaseKey, SubagentLiveResult>;
   same_script: {
@@ -53,8 +59,12 @@ export async function runAgentSafeQueryContextBenchmark(
   const executeToolPlanImpl = deps.executeToolPlan || executeToolPlan;
   const loadSubagentLiveCaseResultImpl = deps.loadSubagentLiveCaseResult || loadSubagentLiveCaseResult;
 
-  const sameScriptCases = {} as Record<CaseKey, SameScriptCaseResult>;
+  const workflowReplayFullCases = {} as Record<CaseKey, WorkflowReplayResult>;
+  const workflowReplaySlimCases = {} as Record<CaseKey, WorkflowReplayResult>;
+  const sameScriptFullCases = {} as Record<CaseKey, SameScriptCaseResult>;
+  const sameScriptSlimCases = {} as Record<CaseKey, SameScriptCaseResult>;
   const subagentLiveCases = {} as Record<CaseKey, SubagentLiveResult>;
+  const acceptanceCases = {} as Record<CaseKey, boolean>;
   const semanticEquivalenceCases = {} as Record<CaseKey, boolean>;
   const tokenSummary = {} as Record<CaseKey, { before: number; after: number; saved: number; reduction: number }>;
   const callSummary = {} as Record<CaseKey, { before: number; after: number; saved: number }>;
@@ -66,24 +76,45 @@ export async function runAgentSafeQueryContextBenchmark(
   try {
     for (const key of Object.keys(suite.cases) as CaseKey[]) {
       const benchmarkCase = suite.cases[key];
-      const sameScript = await runSameScriptCase(benchmarkCase, runner, executeToolPlanImpl, options.repo);
+      const workflowReplayFull = await runWorkflowReplay(benchmarkCase, runner, {
+        repo: options.repo,
+        maxSteps: suite.thresholds.workflowReplay.maxSteps,
+        responseProfile: 'full',
+      });
+      const workflowReplaySlim = await runWorkflowReplay(benchmarkCase, runner, {
+        repo: options.repo,
+        maxSteps: suite.thresholds.workflowReplay.maxSteps,
+        responseProfile: 'slim',
+      });
+      const sameScriptFull = await runSameScriptCase(benchmarkCase, runner, executeToolPlanImpl, {
+        repo: options.repo,
+        responseProfile: 'full',
+      });
+      const sameScriptSlim = await runSameScriptCase(benchmarkCase, runner, executeToolPlanImpl, {
+        repo: options.repo,
+        responseProfile: 'slim',
+      });
       const subagentLive = await loadSubagentLiveCaseResultImpl(path.join(options.subagentRunsDir, key), benchmarkCase);
 
-      sameScriptCases[key] = sameScript;
+      workflowReplayFullCases[key] = workflowReplayFull;
+      workflowReplaySlimCases[key] = workflowReplaySlim;
+      sameScriptFullCases[key] = sameScriptFull;
+      sameScriptSlimCases[key] = sameScriptSlim;
       subagentLiveCases[key] = subagentLive;
-      semanticEquivalenceCases[key] = sameScript.semantic_tuple_pass && subagentLive.semantic_tuple_pass;
+      acceptanceCases[key] = workflowReplaySlim.semantic_tuple_pass;
+      semanticEquivalenceCases[key] = sameScriptSlim.semantic_tuple_pass && subagentLive.semantic_tuple_pass;
 
-      const tokenSaved = sameScript.tokens_to_completion - subagentLive.tokens_to_completion;
+      const tokenSaved = sameScriptFull.tokens_to_completion - sameScriptSlim.tokens_to_completion;
       tokenSummary[key] = {
-        before: sameScript.tokens_to_completion,
-        after: subagentLive.tokens_to_completion,
+        before: sameScriptFull.tokens_to_completion,
+        after: sameScriptSlim.tokens_to_completion,
         saved: tokenSaved,
-        reduction: sameScript.tokens_to_completion > 0 ? Number((tokenSaved / sameScript.tokens_to_completion).toFixed(3)) : 0,
+        reduction: sameScriptFull.tokens_to_completion > 0 ? Number((tokenSaved / sameScriptFull.tokens_to_completion).toFixed(3)) : 0,
       };
       callSummary[key] = {
-        before: sameScript.tool_calls_to_completion,
-        after: subagentLive.tool_calls_to_completion,
-        saved: sameScript.tool_calls_to_completion - subagentLive.tool_calls_to_completion,
+        before: sameScriptFull.tool_calls_to_completion,
+        after: sameScriptSlim.tool_calls_to_completion,
+        saved: sameScriptFull.tool_calls_to_completion - sameScriptSlim.tool_calls_to_completion,
       };
     }
   } finally {
@@ -94,18 +125,22 @@ export async function runAgentSafeQueryContextBenchmark(
 
   return {
     generatedAt: new Date().toISOString(),
-    workflow_replay_full: sameScriptCases,
-    workflow_replay_slim: sameScriptCases,
-    same_script_full: sameScriptCases,
-    same_script_slim: sameScriptCases,
+    workflow_replay_full: workflowReplayFullCases,
+    workflow_replay_slim: workflowReplaySlimCases,
+    same_script_full: sameScriptFullCases,
+    same_script_slim: sameScriptSlimCases,
     subagent_live: subagentLiveCases,
+    acceptance: {
+      pass: Object.values(acceptanceCases).every(Boolean),
+      cases: acceptanceCases,
+    },
     cases: subagentLiveCases,
     same_script: {
       tool_plan: {
         weapon_powerup: suite.cases.weapon_powerup.tool_plan,
         reload: suite.cases.reload.tool_plan,
       },
-      cases: sameScriptCases,
+      cases: sameScriptSlimCases,
     },
     semantic_equivalence: {
       pass: Object.values(semanticEquivalenceCases).every(Boolean),
@@ -123,7 +158,7 @@ export async function writeAgentSafeQueryContextReports(
   const markdown = [
     '# Agent-Safe Query/Context Benchmark Summary',
     '',
-    `- Pass: ${report.semantic_equivalence.pass ? 'YES' : 'NO'}`,
+    `- Pass: ${report.acceptance.pass ? 'YES' : 'NO'}`,
     '',
     '## Cases',
     ...(['weapon_powerup', 'reload'] as CaseKey[]).map(
@@ -139,9 +174,10 @@ async function runSameScriptCase(
   benchmarkCase: AgentSafeBenchmarkCase,
   runner: AgentContextToolRunner,
   executeToolPlanImpl: typeof executeToolPlan,
-  repo?: string,
+  options: { repo?: string; responseProfile: 'full' | 'slim' },
 ): Promise<SameScriptCaseResult> {
-  const outputs = await executeToolPlanImpl(benchmarkCase.tool_plan, runner, repo);
+  const toolPlan = applyResponseProfileToToolPlan(benchmarkCase.tool_plan, options.responseProfile);
+  const outputs = await executeToolPlanImpl(toolPlan, runner, options.repo);
   const steps = outputs.map((step) => ({
     tool: step.tool as TelemetryStep['tool'],
     input: step.input,
@@ -156,11 +192,29 @@ async function runSameScriptCase(
   );
 
   return {
-    tool_plan: benchmarkCase.tool_plan,
+    tool_plan: toolPlan,
     steps,
     semantic_tuple: semanticTuple,
     semantic_tuple_pass: semanticTuplePass(semanticTuple, benchmarkCase.semantic_tuple),
     tool_calls_to_completion: steps.length,
     tokens_to_completion: steps.reduce((sum, step) => sum + step.totalTokensEst, 0),
   };
+}
+
+function applyResponseProfileToToolPlan(
+  toolPlan: AgentContextToolStep[],
+  responseProfile: 'full' | 'slim',
+): AgentContextToolStep[] {
+  return toolPlan.map((step) => {
+    if (step.tool !== 'query' && step.tool !== 'context') {
+      return step;
+    }
+    return {
+      ...step,
+      input: {
+        ...step.input,
+        response_profile: responseProfile,
+      },
+    };
+  });
 }
