@@ -16,6 +16,8 @@ Load this contract when any of the following is true:
 Use this order: `discovery -> seed narrowing -> closure verification`.
 
 1. Run `query/context` with `unity_resources: "on"` and `unity_hydration_mode: "compact"` first.
+   - For `response_profile=slim`, read semantic tiers in order: `facts -> closure -> clues`.
+   - In strict-anchor mode, never let `clues` become the first-screen default when `facts` has high/medium non-heuristic leads.
 2. If `hydrationMeta.needsParityRetry === true`, rerun with `unity_hydration_mode: "parity"` before conclusions.
 3. Do not conclude "no runtime chain" from empty `processes` alone.
 4. If Unity evidence exists, continue stitching:

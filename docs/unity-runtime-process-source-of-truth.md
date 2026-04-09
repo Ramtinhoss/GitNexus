@@ -124,6 +124,12 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 5. `runtime_chain_confidence`（V2：始终输出，不再需要 flag）
 6. `runtime_chain_evidence_level`: `none | clue | verified_segment | verified_chain`
 7. `verification_hint`（low confidence 时应可行动）
+8. `response_profile=slim` 语义分层：
+   - `facts`：图谱事实与非启发式主证据
+   - `closure`：runtime claim/preview 与缺口
+   - `clues`：`resource_heuristic` 等线索层证据
+   - `tier_envelope`：`facts_present/closure_present/clues_present/semantic_order_pass/summary_source`
+   - strict-anchor 默认阅读顺序：`facts -> closure -> clues`
 
 ### 4.2 `runtime_chain` 输出条件
 

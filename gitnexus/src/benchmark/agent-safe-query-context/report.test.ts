@@ -143,19 +143,36 @@ test('benchmark report includes explicit benchmark tracks', async () => {
   assert.equal(typeof report.workflow_replay_slim.weapon_powerup.post_narrowing_anchor_pass, 'boolean');
   assert.equal(typeof report.workflow_replay_slim.weapon_powerup.post_narrowing_follow_up_hit, 'boolean');
   assert.equal(typeof report.workflow_replay_slim.weapon_powerup.ambiguity_detour_count, 'number');
+  assert.equal(report.workflow_replay_slim.reload.guid_invariance_pass, true);
+  assert.equal(report.workflow_replay_slim.weapon_powerup.live_tool_evidence_pass, true);
   assert.equal(
     report.acceptance.pass,
     report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass
       && report.workflow_replay_slim.weapon_powerup.post_narrowing_anchor_pass
       && report.workflow_replay_slim.weapon_powerup.post_narrowing_follow_up_hit
+      && report.workflow_replay_slim.weapon_powerup.guid_invariance_pass
+      && report.workflow_replay_slim.weapon_powerup.live_tool_evidence_pass
+      && report.workflow_replay_slim.weapon_powerup.freeze_ready
+      && report.workflow_replay_slim.weapon_powerup.tier_envelope.facts_present
+      && report.workflow_replay_slim.weapon_powerup.tier_envelope.closure_present
+      && report.workflow_replay_slim.weapon_powerup.tier_envelope.clues_present
+      && report.workflow_replay_slim.weapon_powerup.tier_envelope.semantic_order_pass
       && !report.workflow_replay_slim.weapon_powerup.placeholder_leak_detected
       && !report.workflow_replay_slim.weapon_powerup.heuristic_top_summary_detected
       && report.workflow_replay_slim.reload.semantic_tuple_pass
       && report.workflow_replay_slim.reload.post_narrowing_anchor_pass
       && report.workflow_replay_slim.reload.post_narrowing_follow_up_hit
+      && report.workflow_replay_slim.reload.guid_invariance_pass
+      && report.workflow_replay_slim.reload.live_tool_evidence_pass
+      && report.workflow_replay_slim.reload.freeze_ready
+      && report.workflow_replay_slim.reload.tier_envelope.facts_present
+      && report.workflow_replay_slim.reload.tier_envelope.closure_present
+      && report.workflow_replay_slim.reload.tier_envelope.clues_present
+      && report.workflow_replay_slim.reload.tier_envelope.semantic_order_pass
       && !report.workflow_replay_slim.reload.placeholder_leak_detected
       && !report.workflow_replay_slim.reload.heuristic_top_summary_detected,
   );
+  assert.equal(report.pass, report.acceptance.pass);
 });
 
 test('benchmark report enforces track split, acceptance source, prompt secrecy, and live scoring taxonomy', async () => {
@@ -240,12 +257,26 @@ test('benchmark report enforces track split, acceptance source, prompt secrecy, 
       report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass
       && report.workflow_replay_slim.weapon_powerup.post_narrowing_anchor_pass
       && report.workflow_replay_slim.weapon_powerup.post_narrowing_follow_up_hit
+      && report.workflow_replay_slim.weapon_powerup.guid_invariance_pass
+      && report.workflow_replay_slim.weapon_powerup.live_tool_evidence_pass
+      && report.workflow_replay_slim.weapon_powerup.freeze_ready
+      && report.workflow_replay_slim.weapon_powerup.tier_envelope.facts_present
+      && report.workflow_replay_slim.weapon_powerup.tier_envelope.closure_present
+      && report.workflow_replay_slim.weapon_powerup.tier_envelope.clues_present
+      && report.workflow_replay_slim.weapon_powerup.tier_envelope.semantic_order_pass
       && !report.workflow_replay_slim.weapon_powerup.placeholder_leak_detected
       && !report.workflow_replay_slim.weapon_powerup.heuristic_top_summary_detected,
     reload:
       report.workflow_replay_slim.reload.semantic_tuple_pass
       && report.workflow_replay_slim.reload.post_narrowing_anchor_pass
       && report.workflow_replay_slim.reload.post_narrowing_follow_up_hit
+      && report.workflow_replay_slim.reload.guid_invariance_pass
+      && report.workflow_replay_slim.reload.live_tool_evidence_pass
+      && report.workflow_replay_slim.reload.freeze_ready
+      && report.workflow_replay_slim.reload.tier_envelope.facts_present
+      && report.workflow_replay_slim.reload.tier_envelope.closure_present
+      && report.workflow_replay_slim.reload.tier_envelope.clues_present
+      && report.workflow_replay_slim.reload.tier_envelope.semantic_order_pass
       && !report.workflow_replay_slim.reload.placeholder_leak_detected
       && !report.workflow_replay_slim.reload.heuristic_top_summary_detected,
   });

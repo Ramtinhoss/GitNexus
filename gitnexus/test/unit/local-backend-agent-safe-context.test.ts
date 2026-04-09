@@ -113,4 +113,79 @@ describe('slim context response shaping', () => {
     expect((out as any).summary).not.toContain('runtime heuristic clue');
     expect((out as any).processes.some((row: any) => row.summary === 'runtime heuristic clue')).toBe(true);
   });
+
+  it('strict anchor keeps clue-tier process rows but anchors first-screen summary to the symbol', () => {
+    const out = buildSlimContextResult({
+      status: 'found',
+      symbol: {
+        uid: 'Class:Assets/NEON/Code/Game/PowerUps/SoulBringerIceCoreMgrPu.cs:SoulBringerIceCoreMgrPu',
+        name: 'SoulBringerIceCoreMgrPu',
+        kind: 'Class',
+        filePath: 'Assets/NEON/Code/Game/PowerUps/SoulBringerIceCoreMgrPu.cs',
+      },
+      incoming: {},
+      outgoing: {},
+      processes: [
+        {
+          id: 'proc-low',
+          name: 'runtime heuristic clue',
+          confidence: 'low',
+          evidence_mode: 'resource_heuristic',
+        },
+      ],
+      decision_context: {
+        strict_anchor_mode: true,
+        anchor_symbol_name: 'SoulBringerIceCoreMgrPu',
+        anchor_resource_path: 'Assets/NEON/DataAssets/Powerups/Boss/SoulBringerIceCoreMgrPu.asset',
+      },
+    } as any, {
+      repoName: 'neonspark-core',
+      symbolName: 'SoulBringerIceCoreMgrPu',
+    });
+
+    expect((out as any).summary).toBe('SoulBringerIceCoreMgrPu');
+    expect((out as any).processes[0].evidence_mode).toBe('resource_heuristic');
+    expect((out as any).summary).not.toContain('runtime heuristic clue');
+  });
+
+  it('tier envelope exposes facts, closure, and clues in slim context output', () => {
+    const out = buildSlimContextResult({
+      status: 'found',
+      symbol: {
+        uid: 'Class:Assets/NEON/Code/Game/Core/GameBootstrap.cs:GameBootstrap',
+        name: 'GameBootstrap',
+        kind: 'Class',
+        filePath: 'Assets/NEON/Code/Game/Core/GameBootstrap.cs',
+      },
+      incoming: {},
+      outgoing: {},
+      processes: [
+        {
+          id: 'proc-low',
+          name: 'runtime heuristic clue',
+          confidence: 'low',
+          evidence_mode: 'resource_heuristic',
+        },
+      ],
+      next_hops: [
+        {
+          kind: 'resource',
+          target: 'Assets/NEON/DataAssets/Powerups/Startup/init_global.asset',
+          next_command: 'gitnexus query "InitGlobal"',
+          why: 'seeded resource',
+        },
+      ],
+    } as any, {
+      repoName: 'neonspark-core',
+      symbolName: 'GameBootstrap',
+    });
+
+    // facts: graph-backed symbol and relation buckets
+    // closure: runtime preview + missing proof targets
+    // clues: heuristic hints + manual verification
+    expect((out as any).facts).toBeDefined();
+    expect((out as any).closure).toBeDefined();
+    expect((out as any).clues).toBeDefined();
+    expect((out as any).clues.process_hints[0].evidence_mode).toBe('resource_heuristic');
+  });
 });

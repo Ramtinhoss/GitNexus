@@ -122,12 +122,15 @@ test('workflow replay applies response_profile to query and context calls', asyn
     },
   };
 
-  await runWorkflowReplay(fakeCase, fakeRunner, { responseProfile: 'slim' });
+  const result = await runWorkflowReplay(fakeCase, fakeRunner, { responseProfile: 'slim' });
 
   const queryCalls = calls.filter((entry) => entry.tool === 'query');
   const contextCalls = calls.filter((entry) => entry.tool === 'context');
   assert.equal(queryCalls.every((entry) => entry.input.response_profile === 'slim'), true);
   assert.equal(contextCalls.every((entry) => entry.input.response_profile === 'slim'), true);
+  assert.equal(result.guid_invariance_pass, true);
+  assert.equal(result.guid_variant?.primary_candidate, result.base?.primary_candidate);
+  assert.equal(result.guid_variant?.recommended_follow_up, result.base?.recommended_follow_up);
 });
 
 test('workflow replay exposes drift-sensitive metrics from the first-hop output and ambiguity detours', async () => {
@@ -252,6 +255,15 @@ test('workflow replay flags unrelated placeholder follow-up leakage', async () =
   const result = await runWorkflowReplay(fakeCase, fakeRunner, { maxSteps: 4, responseProfile: 'slim' });
   assert.equal(result.semantic_tuple_pass, true);
   assert.equal(result.placeholder_leak_detected, true);
+  assert.equal(result.live_tool_evidence_pass, true);
+  assert.equal(
+    result.freeze_ready,
+    (result.confirmed_chain?.steps.length ?? 0) > 0
+      && !result.placeholder_leak_detected
+      && Boolean(result.live_tool_evidence_pass)
+      && result.guid_invariance_pass,
+  );
+  assert.equal((result.confirmed_chain?.steps.length ?? 0) > 0, false);
 });
 
 test('workflow replay surfaces heuristic first-screen drift separately from semantic tuple pass', async () => {

@@ -17,6 +17,17 @@ export interface WorkflowReplayStep {
 
 export interface WorkflowReplayResult extends SemanticDriftMetrics {
   steps: WorkflowReplayStep[];
+  base: {
+    primary_candidate: string;
+    recommended_follow_up: string;
+  };
+  guid_variant: {
+    primary_candidate: string;
+    recommended_follow_up: string;
+  };
+  confirmed_chain: {
+    steps: string[];
+  };
   semantic_tuple: SemanticTuple;
   semantic_tuple_pass: boolean;
   tool_calls_to_completion: number;
@@ -107,11 +118,30 @@ export async function runWorkflowReplay(
     passed = semanticTuplePass(semanticTuple, benchmarkCase.semantic_tuple);
   }
 
+  const guidInvariance = computeGuidInvariance(benchmarkCase, steps);
+  const driftMetrics = computeSemanticDriftMetrics(benchmarkCase, steps);
+  const confirmedChainSteps = deriveConfirmedChainSteps({
+    steps,
+    semanticTuple,
+    placeholderLeakDetected: driftMetrics.placeholder_leak_detected,
+  });
+  const liveToolEvidencePass = countLiveToolEvidence(steps) > 0;
+  const freezeReady = confirmedChainSteps.length > 0
+    && !driftMetrics.placeholder_leak_detected
+    && liveToolEvidencePass
+    && guidInvariance.guid_invariance_pass;
+
   return {
     steps,
+    ...driftMetrics,
+    base: guidInvariance.base,
+    guid_variant: guidInvariance.guid_variant,
+    guid_invariance_pass: guidInvariance.guid_invariance_pass,
+    confirmed_chain: { steps: confirmedChainSteps },
+    live_tool_evidence_pass: liveToolEvidencePass,
+    freeze_ready: freezeReady,
     semantic_tuple: semanticTuple,
     semantic_tuple_pass: passed,
-    ...computeSemanticDriftMetrics(benchmarkCase, steps),
     tool_calls_to_completion: steps.length,
     tokens_to_completion: steps.reduce((sum, step) => sum + step.totalTokensEst, 0),
     retry_breakdown: {
@@ -193,6 +223,7 @@ function computeSemanticDriftMetrics(
     benchmarkCase,
     output: firstOutput,
   });
+  const tierEnvelope = readTierEnvelopeMetrics(firstOutput);
 
   return {
     anchor_top1_pass: stringsEqual(primaryCandidate, benchmarkCase.semantic_tuple.symbol_anchor),
@@ -209,6 +240,149 @@ function computeSemanticDriftMetrics(
     ),
     placeholder_leak_detected: placeholderLeakDetected,
     heuristic_top_summary_detected: heuristicTopSummaryDetected,
+    live_tool_evidence_pass: false,
+    freeze_ready: false,
+    guid_invariance_pass: false,
+    tier_envelope: tierEnvelope,
+  };
+}
+
+function readTierEnvelopeMetrics(output: Record<string, unknown> | undefined): {
+  facts_present: boolean;
+  closure_present: boolean;
+  clues_present: boolean;
+  semantic_order_pass: boolean;
+  summary_source: string;
+} {
+  const envelope = output?.tier_envelope as Record<string, unknown> | undefined;
+  const summarySource = String(envelope?.summary_source || '').trim()
+    || inferSummarySourceFromOutput(output);
+  const factsPresent = envelope?.facts_present === true
+    || Boolean(output && typeof output.facts === 'object');
+  const closurePresent = envelope?.closure_present === true
+    || Boolean(output && typeof output.closure === 'object');
+  const cluesPresent = envelope?.clues_present === true
+    || Boolean(output && typeof output.clues === 'object');
+  const semanticOrderPass = typeof envelope?.semantic_order_pass === 'boolean'
+    ? Boolean(envelope.semantic_order_pass)
+    : summarySource !== 'clues'
+      || !hasStrongLeadOutsideClues(output);
+  return {
+    facts_present: factsPresent,
+    closure_present: closurePresent,
+    clues_present: cluesPresent,
+    semantic_order_pass: semanticOrderPass,
+    summary_source: summarySource || 'fallback',
+  };
+}
+
+function inferSummarySourceFromOutput(output: Record<string, unknown> | undefined): string {
+  if (!output) return 'fallback';
+  const summary = String(output.summary || '').trim();
+  const facts = output.facts as Record<string, unknown> | undefined;
+  const clues = output.clues as Record<string, unknown> | undefined;
+  const closure = output.closure as Record<string, unknown> | undefined;
+  const factCandidates = Array.isArray(facts?.candidates) ? facts.candidates : [];
+  const factProcessHints = Array.isArray(facts?.process_hints) ? facts.process_hints : [];
+  const clueProcessHints = Array.isArray(clues?.process_hints) ? clues.process_hints : [];
+  const runtimePreview = closure?.runtime_preview as Record<string, unknown> | undefined;
+  const runtimeStatus = String(runtimePreview?.status || '').trim();
+  if (factCandidates.some((row) => String((row as Record<string, unknown>)?.name || '').trim() === summary)) return 'facts';
+  if (factProcessHints.some((row) => String((row as Record<string, unknown>)?.summary || '').trim() === summary)) return 'facts';
+  if (runtimeStatus && runtimeStatus === summary) return 'closure';
+  if (clueProcessHints.some((row) => String((row as Record<string, unknown>)?.summary || '').trim() === summary)) return 'clues';
+  return 'fallback';
+}
+
+function hasStrongLeadOutsideClues(output: Record<string, unknown> | undefined): boolean {
+  if (!output) return false;
+  const facts = output.facts as Record<string, unknown> | undefined;
+  const factCandidates = Array.isArray(facts?.candidates) ? facts.candidates : [];
+  if (factCandidates.length > 0) return true;
+  const factProcessHints = Array.isArray(facts?.process_hints) ? facts.process_hints : [];
+  return factProcessHints.some((row) => {
+    const confidence = String((row as Record<string, unknown>)?.confidence || '').trim().toLowerCase();
+    const evidenceMode = String((row as Record<string, unknown>)?.evidence_mode || '').trim().toLowerCase();
+    return (confidence === 'high' || confidence === 'medium') && evidenceMode !== 'resource_heuristic';
+  });
+}
+
+function deriveConfirmedChainSteps(input: {
+  steps: WorkflowReplayStep[];
+  semanticTuple: SemanticTuple;
+  placeholderLeakDetected: boolean;
+}): string[] {
+  if (input.placeholderLeakDetected) return [];
+  const chain = new Set<string>();
+  for (const step of input.steps) {
+    if (step.tool !== 'cypher') continue;
+    const output = step.output as Record<string, unknown> | undefined;
+    const rows = Array.isArray(output?.rows) ? output.rows : [];
+    for (const row of rows) {
+      const src = String((row as Record<string, unknown>)?.src || '').trim();
+      const dst = String((row as Record<string, unknown>)?.dst || '').trim();
+      if (!src || !dst) continue;
+      chain.add(`${src} -> ${dst}`);
+    }
+  }
+  if (chain.size > 0) return [...chain].slice(0, 8);
+  const fallback = [
+    ...(Array.isArray(input.semanticTuple.proof_edges) ? input.semanticTuple.proof_edges : []),
+    String(input.semanticTuple.proof_edge || '').trim(),
+  ]
+    .map((step) => String(step || '').trim())
+    .filter(Boolean);
+  return [...new Set(fallback)].slice(0, 8);
+}
+
+function countLiveToolEvidence(steps: WorkflowReplayStep[]): number {
+  let score = 0;
+  for (const step of steps) {
+    const output = step.output as Record<string, unknown> | undefined;
+    if (!output || typeof output !== 'object') continue;
+    if (Number(output.row_count || 0) > 0) score += 1;
+    if (Array.isArray(output.rows) && output.rows.length > 0) score += 1;
+    if (Array.isArray(output.candidates) && output.candidates.length > 0) score += 1;
+    if (Array.isArray(output.process_hints) && output.process_hints.length > 0) score += 1;
+    if (Array.isArray(output.processes) && output.processes.length > 0) score += 1;
+    if (Array.isArray(output.resource_hints) && output.resource_hints.length > 0) score += 1;
+    if (output.symbol && typeof output.symbol === 'object') score += 1;
+  }
+  return score;
+}
+
+function computeGuidInvariance(
+  benchmarkCase: AgentSafeBenchmarkCase,
+  steps: WorkflowReplayStep[],
+): {
+  base: { primary_candidate: string; recommended_follow_up: string };
+  guid_variant: { primary_candidate: string; recommended_follow_up: string };
+  guid_invariance_pass: boolean;
+} {
+  const queryOutputs = steps
+    .filter((step) => step.tool === 'query')
+    .map((step) => step.output as Record<string, unknown> | undefined)
+    .filter(Boolean) as Array<Record<string, unknown>>;
+
+  const baseOutput = pickPostNarrowingQueryOutput(benchmarkCase, steps) || queryOutputs[0];
+  const guidVariantOutput = queryOutputs.find((output) => output !== baseOutput && isGuidVariantOutput(output))
+    || baseOutput;
+  const base = {
+    primary_candidate: extractPrimaryCandidate(baseOutput),
+    recommended_follow_up: extractRecommendedFollowUp(baseOutput),
+  };
+  const guidVariant = {
+    primary_candidate: extractPrimaryCandidate(guidVariantOutput),
+    recommended_follow_up: extractRecommendedFollowUp(guidVariantOutput),
+  };
+
+  const guidInvariancePass = stringsEqual(base.primary_candidate, guidVariant.primary_candidate)
+    && stringsEqual(normalizeAssetPath(base.recommended_follow_up), normalizeAssetPath(guidVariant.recommended_follow_up));
+
+  return {
+    base,
+    guid_variant: guidVariant,
+    guid_invariance_pass: guidInvariancePass,
   };
 }
 
@@ -351,6 +525,12 @@ function matchesResourceAnchor(candidate: string, canonical: string): boolean {
 
   const canonicalDir = path.posix.dirname(normalizedCanonical);
   return normalizedCandidate.includes(canonicalDir);
+}
+
+function isGuidVariantOutput(output: Record<string, unknown>): boolean {
+  const signals = collectSignalTexts([output]);
+  if (signals.some((text) => text.includes('guid'))) return true;
+  return signals.some((text) => /[a-f0-9]{32}/.test(text));
 }
 
 function normalizeAssetPath(value: string): string {

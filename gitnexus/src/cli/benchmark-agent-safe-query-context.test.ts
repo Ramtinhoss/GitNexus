@@ -80,6 +80,25 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
           recommended_follow_up_hit: true,
           post_narrowing_anchor_pass: true,
           post_narrowing_follow_up_hit: true,
+          guid_invariance_pass: true,
+          base: {
+            primary_candidate: 'WeaponPowerUp',
+            recommended_follow_up: 'resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
+          },
+          guid_variant: {
+            primary_candidate: 'WeaponPowerUp',
+            recommended_follow_up: 'resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
+          },
+          confirmed_chain: { steps: ['HoldPickup -> PickItUp'] },
+          live_tool_evidence_pass: true,
+          freeze_ready: true,
+          tier_envelope: {
+            facts_present: true,
+            closure_present: true,
+            clues_present: true,
+            semantic_order_pass: true,
+            summary_source: 'facts',
+          },
           ambiguity_detour_count: 0,
           placeholder_leak_detected: false,
           heuristic_top_summary_detected: false,
@@ -104,6 +123,25 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
           recommended_follow_up_hit: true,
           post_narrowing_anchor_pass: true,
           post_narrowing_follow_up_hit: true,
+          guid_invariance_pass: true,
+          base: {
+            primary_candidate: 'ReloadBase',
+            recommended_follow_up: 'resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset',
+          },
+          guid_variant: {
+            primary_candidate: 'ReloadBase',
+            recommended_follow_up: 'resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset',
+          },
+          confirmed_chain: { steps: ['GetValue -> CheckReload'] },
+          live_tool_evidence_pass: true,
+          freeze_ready: true,
+          tier_envelope: {
+            facts_present: true,
+            closure_present: true,
+            clues_present: true,
+            semantic_order_pass: true,
+            summary_source: 'facts',
+          },
           ambiguity_detour_count: 0,
           placeholder_leak_detected: false,
           heuristic_top_summary_detected: false,
@@ -198,6 +236,7 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
         },
         subagent_live: subagentLive,
         acceptance: { pass: true, cases: { weapon_powerup: true, reload: true } },
+        pass: true,
         semantic_equivalence: { pass: false, cases: { weapon_powerup: false, reload: false } },
         token_summary: {
           weapon_powerup: { before: 1, after: 1, saved: 0, reduction: 0 },
@@ -216,7 +255,7 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
 
   assert.equal(calls[0].repo, 'neonspark-core');
   assert.ok(output.some((line) => line.includes('PASS')));
-  assert.ok(output.some((line) => line.includes('weapon_powerup: placeholder_leak_detected=false')));
+  assert.ok(output.some((line) => line.includes('weapon_powerup: guid_invariance_pass=true, live_tool_evidence_pass=true, freeze_ready')));
   assert.ok(output.some((line) => line.includes('Report:')));
   assert.equal(report.workflow_replay_slim.weapon_powerup.placeholder_leak_detected, false);
   assert.equal(report.workflow_replay_slim.weapon_powerup.heuristic_top_summary_detected, false);

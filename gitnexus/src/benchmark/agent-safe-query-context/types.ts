@@ -28,6 +28,16 @@ export interface SemanticDriftMetrics {
   ambiguity_detour_count: number;
   placeholder_leak_detected: boolean;
   heuristic_top_summary_detected: boolean;
+  live_tool_evidence_pass: boolean;
+  freeze_ready: boolean;
+  guid_invariance_pass: boolean;
+  tier_envelope: {
+    facts_present: boolean;
+    closure_present: boolean;
+    clues_present: boolean;
+    semantic_order_pass: boolean;
+    summary_source: string;
+  };
 }
 
 export interface AgentSafeLiveTask {

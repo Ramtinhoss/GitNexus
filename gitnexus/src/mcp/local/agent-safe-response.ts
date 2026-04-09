@@ -10,6 +10,8 @@ export function buildSlimQueryResult(
   full: Record<string, any>,
   input: { repoName?: string; queryText: string },
 ): Record<string, unknown> {
+  const strictAnchorMode = Boolean(full?.decision_context?.strict_anchor_mode);
+  const strictAnchorResourcePath = String(full?.decision_context?.anchor_resource_path || '').trim();
   const candidates = buildCandidates(full, {
     queryText: input.queryText,
   });
@@ -32,20 +34,59 @@ export function buildSlimQueryResult(
     processHints,
     runtimeClaim: full.runtime_claim,
   });
+  const processHintTiers = splitProcessHintsByTier(processHints);
+  const facts = {
+    candidates,
+    process_hints: processHintTiers.facts,
+  };
+  const closure = {
+    runtime_preview: runtimePreview,
+    missing_proof_targets: missingProofTargets,
+  };
+  const clues = {
+    process_hints: processHintTiers.clues,
+    resource_hints: resourceHints,
+  };
+  const summary = chooseTopSummary({
+    candidates,
+    processHints,
+    runtimePreview,
+    fallback: String(candidates[0]?.name || 'no_match'),
+    strictAnchorMode,
+  });
+  const summarySource = inferSummarySource({
+    summary,
+    facts,
+    closure,
+    clues,
+  });
+  const semanticOrderPass = validateTierSemanticOrder({
+    summarySource,
+    facts,
+  });
 
   return {
-    summary: chooseTopSummary({
-      candidates,
-      processHints,
-      runtimePreview,
-      fallback: String(candidates[0]?.name || 'no_match'),
-    }),
+    summary,
     candidates,
     process_hints: processHints,
     resource_hints: resourceHints,
+    facts,
+    closure,
+    clues,
+    tier_envelope: {
+      facts_present: true,
+      closure_present: true,
+      clues_present: true,
+      summary_source: summarySource,
+      semantic_order_pass: semanticOrderPass,
+    },
     decision: {
       primary_candidate: candidates[0]?.name || null,
-      recommended_follow_up: chooseRecommendedFollowUp(upgradeHints),
+      recommended_follow_up: chooseRecommendedFollowUp({
+        upgradeHints,
+        strictAnchorMode,
+        strictAnchorResourcePath,
+      }),
       response_profile: 'slim',
     },
     missing_proof_targets: missingProofTargets,
@@ -60,6 +101,7 @@ export function buildSlimContextResult(
   full: Record<string, any>,
   input: { repoName?: string; symbolName: string },
 ): Record<string, unknown> {
+  const strictAnchorMode = Boolean(full?.decision_context?.strict_anchor_mode);
   const processHints = buildProcessHints(full.processes);
   const resourceHints = buildResourceHints(full.next_hops);
   const runtimePreview = buildRuntimePreview(full.runtime_claim);
@@ -80,27 +122,127 @@ export function buildSlimContextResult(
     processHints,
     runtimeClaim: full.runtime_claim,
   });
-
-  return {
-    summary: chooseTopSummary({
-      processHints,
-      runtimePreview,
-      fallback: String(full?.symbol?.name || input.symbolName || 'no_match'),
-    }),
-    status: full.status,
+  const processHintTiers = splitProcessHintsByTier(processHints);
+  const facts = {
     symbol: full.symbol,
     incoming: trimRelationBuckets(full.incoming),
     outgoing: trimRelationBuckets(full.outgoing),
-    processes: processHints,
-    resource_hints: resourceHints,
+    process_hints: processHintTiers.facts,
+  };
+  const closure = {
+    runtime_preview: runtimePreview,
     missing_proof_targets: missingProofTargets,
-    suggested_context_targets: suggestedContextTargets,
     verification_hint: Array.isArray(full.processes)
       ? full.processes.find((row: any) => row?.verification_hint)?.verification_hint
       : undefined,
+  };
+  const clues = {
+    process_hints: processHintTiers.clues,
+    resource_hints: resourceHints,
+  };
+  const summary = chooseTopSummary({
+    processHints,
+    runtimePreview,
+    fallback: String(full?.symbol?.name || input.symbolName || 'no_match'),
+    strictAnchorMode,
+  });
+  const summarySource = inferSummarySource({
+    summary,
+    facts,
+    closure,
+    clues,
+  });
+  const semanticOrderPass = validateTierSemanticOrder({
+    summarySource,
+    facts,
+  });
+
+  return {
+    summary,
+    status: full.status,
+    symbol: full.symbol,
+    incoming: facts.incoming,
+    outgoing: facts.outgoing,
+    processes: processHints,
+    resource_hints: resourceHints,
+    facts,
+    closure,
+    clues,
+    tier_envelope: {
+      facts_present: true,
+      closure_present: true,
+      clues_present: true,
+      summary_source: summarySource,
+      semantic_order_pass: semanticOrderPass,
+    },
+    missing_proof_targets: missingProofTargets,
+    suggested_context_targets: suggestedContextTargets,
+    verification_hint: closure.verification_hint,
     upgrade_hints: upgradeHints,
     runtime_preview: runtimePreview,
   };
+}
+
+function splitProcessHintsByTier(processHints: Array<Record<string, unknown>>): {
+  facts: Array<Record<string, unknown>>;
+  clues: Array<Record<string, unknown>>;
+} {
+  const facts: Array<Record<string, unknown>> = [];
+  const clues: Array<Record<string, unknown>> = [];
+  for (const hint of processHints) {
+    const evidenceMode = String(hint?.evidence_mode || '').trim();
+    if (evidenceMode === 'resource_heuristic') {
+      clues.push(hint);
+      continue;
+    }
+    facts.push(hint);
+  }
+  return { facts, clues };
+}
+
+function inferSummarySource(input: {
+  summary: string;
+  facts: Record<string, unknown>;
+  closure: Record<string, unknown>;
+  clues: Record<string, unknown>;
+}): 'facts' | 'closure' | 'clues' | 'fallback' {
+  const summary = String(input.summary || '').trim();
+  if (!summary) return 'fallback';
+  const factCandidates = Array.isArray(input.facts.candidates) ? input.facts.candidates : [];
+  const factProcessHints = Array.isArray(input.facts.process_hints) ? input.facts.process_hints : [];
+  const clueProcessHints = Array.isArray(input.clues.process_hints) ? input.clues.process_hints : [];
+  const runtimePreview = input.closure.runtime_preview as Record<string, unknown> | undefined;
+  const runtimeStatus = String(runtimePreview?.status || '').trim();
+
+  if (factCandidates.some((row) => String((row as Record<string, unknown>)?.name || '').trim() === summary)) {
+    return 'facts';
+  }
+  if (factProcessHints.some((row) => String((row as Record<string, unknown>)?.summary || '').trim() === summary)) {
+    return 'facts';
+  }
+  if (runtimeStatus && runtimeStatus === summary) {
+    return 'closure';
+  }
+  if (clueProcessHints.some((row) => String((row as Record<string, unknown>)?.summary || '').trim() === summary)) {
+    return 'clues';
+  }
+  return 'fallback';
+}
+
+function validateTierSemanticOrder(input: {
+  summarySource: 'facts' | 'closure' | 'clues' | 'fallback';
+  facts: Record<string, unknown>;
+}): boolean {
+  if (input.summarySource !== 'clues') return true;
+  const factCandidates = Array.isArray(input.facts.candidates) ? input.facts.candidates : [];
+  if (factCandidates.length > 0) return false;
+  const factProcessHints = Array.isArray(input.facts.process_hints) ? input.facts.process_hints : [];
+  if (factProcessHints.length === 0) return true;
+  return !factProcessHints.some((row) => {
+    const confidence = String((row as Record<string, unknown>)?.confidence || '').trim().toLowerCase();
+    const evidenceMode = String((row as Record<string, unknown>)?.evidence_mode || '').trim().toLowerCase();
+    return (confidence === 'high' || confidence === 'medium') && evidenceMode !== 'resource_heuristic';
+  });
 }
 
 function buildCandidates(
@@ -276,6 +418,7 @@ function chooseTopSummary(input: {
   processHints?: Array<Record<string, unknown>>;
   runtimePreview?: Record<string, unknown>;
   fallback: string;
+  strictAnchorMode?: boolean;
 }): string {
   const processHints = Array.isArray(input.processHints) ? input.processHints : [];
   const topProcess = processHints[0];
@@ -283,6 +426,11 @@ function chooseTopSummary(input: {
   const topProcessScore = scoreProcessHint(topProcess);
   const candidateName = String(input.candidates?.[0]?.name || '').trim();
   const candidateScore = candidateName ? 45 : Number.NEGATIVE_INFINITY;
+
+  if (input.strictAnchorMode && isLowConfidenceHeuristicProcessHint(topProcess)) {
+    if (candidateName) return candidateName;
+    return input.fallback;
+  }
 
   if (topProcessSummary && !isLowConfidenceHeuristicProcessHint(topProcess) && topProcessScore >= candidateScore) {
     return topProcessSummary;
@@ -403,7 +551,19 @@ function resolveNarrowNextCommand(input: {
   return input.hop?.next_command || null;
 }
 
-function chooseRecommendedFollowUp(upgradeHints: Array<Record<string, unknown>>): string | null {
+function chooseRecommendedFollowUp(
+  input: {
+    upgradeHints: Array<Record<string, unknown>>;
+    strictAnchorMode?: boolean;
+    strictAnchorResourcePath?: string;
+  },
+): string | null {
+  const strictAnchorMode = Boolean(input.strictAnchorMode);
+  const strictAnchorResourcePath = String(input.strictAnchorResourcePath || '').trim();
+  if (strictAnchorMode && strictAnchorResourcePath) {
+    return `resource_path_prefix=${strictAnchorResourcePath}`;
+  }
+  const upgradeHints = input.upgradeHints;
   if (!Array.isArray(upgradeHints) || upgradeHints.length === 0) {
     return null;
   }
@@ -412,7 +572,10 @@ function chooseRecommendedFollowUp(upgradeHints: Array<Record<string, unknown>>)
     .map((hint, index) => ({
       hint,
       index,
-      score: scoreRecommendedFollowUpHint(hint),
+      score: scoreRecommendedFollowUpHint({
+        hint,
+        strictAnchorMode,
+      }),
     }))
     .filter((entry) => entry.score > Number.NEGATIVE_INFINITY)
     .sort((a, b) => (b.score - a.score) || (a.index - b.index));
@@ -423,9 +586,14 @@ function chooseRecommendedFollowUp(upgradeHints: Array<Record<string, unknown>>)
   return String(upgradeHints[0]?.next_command || upgradeHints[0]?.param_delta || '') || null;
 }
 
-function scoreRecommendedFollowUpHint(hint: Record<string, unknown>): number {
+function scoreRecommendedFollowUpHint(input: {
+  hint: Record<string, unknown>;
+  strictAnchorMode?: boolean;
+}): number {
+  const hint = input.hint;
   const paramDelta = String(hint?.param_delta || '').trim();
   const nextCommand = String(hint?.next_command || '').trim();
+  if (input.strictAnchorMode && paramDelta === 'follow_next_hop') return Number.NEGATIVE_INFINITY;
   if (paramDelta.startsWith('resource_path_prefix=')) return 40;
   if (paramDelta.startsWith('uid=')) return 30;
   if (paramDelta.startsWith('name=')) return 20;

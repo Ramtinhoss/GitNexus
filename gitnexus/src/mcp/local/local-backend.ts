@@ -1919,6 +1919,12 @@ export class LocalBackend {
       symbolName: String(firstSymbolForHops?.name || searchQuery),
       queryForSymbol: String(firstSymbolForHops?.name || searchQuery),
     });
+    const queryStrictAnchorMode = Boolean(evidenceResourcePathPrefix);
+    result.decision_context = {
+      strict_anchor_mode: queryStrictAnchorMode,
+      anchor_symbol_name: String(firstSymbolForHops?.name || verifierAnchor.symbolName || searchQuery),
+      anchor_resource_path: evidenceResourcePathPrefix || seedPath || mappedSeedTargets[0] || null,
+    };
     const missingEvidenceRows = [...dedupedSymbols, ...definitions]
       .flatMap((row: any) => (Array.isArray(row?.missing_evidence) ? row.missing_evidence : []));
     result.missing_evidence = [...new Set(missingEvidenceRows)];
@@ -2771,6 +2777,12 @@ export class LocalBackend {
       symbolName: symName || String(name || uid || ''),
       queryForSymbol: symName || String(name || uid || ''),
     });
+    const contextStrictAnchorMode = Boolean(uid || file_path || evidenceResourcePathPrefix);
+    result.decision_context = {
+      strict_anchor_mode: contextStrictAnchorMode,
+      anchor_symbol_name: symName || String(name || uid || ''),
+      anchor_resource_path: evidenceResourcePathPrefix || seedPath || mappedSeedTargets[0] || null,
+    };
 
     if (runtimeChainVerifyMode === 'on-demand') {
       result.runtime_claim = await verifyRuntimeClaimOnDemand({

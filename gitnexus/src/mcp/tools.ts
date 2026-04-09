@@ -66,7 +66,9 @@ Returns results grouped by process (execution flow):
 
 Default response_profile=slim shape:
 - summary, candidates, process_hints, resource_hints, decision, upgrade_hints, runtime_preview
+- facts, closure, clues, tier_envelope
 - missing_proof_targets, suggested_context_targets
+- read order in strict-anchor mode: facts -> closure -> clues
 - suggested_context_targets[]: { name, uid?, filePath?, why } for direct context disambiguation
 - upgrade_hints may include exact \`context --uid\` follow-ups when same-name symbols are ambiguous
 - decision.recommended_follow_up prefers narrowing hints (for example resource_path_prefix/name) before response_profile=full fallback
@@ -233,7 +235,9 @@ Process participation metadata:
 
 Default response_profile=slim shape:
 - summary, symbol, incoming, outgoing, processes, resource_hints, verification_hint, upgrade_hints, runtime_preview
+- facts, closure, clues, tier_envelope
 - missing_proof_targets, suggested_context_targets
+- read order in strict-anchor mode: facts -> closure -> clues
 - suggested_context_targets[]: { name, uid?, filePath?, why } for direct context disambiguation
 - upgrade_hints may include exact \`context --uid\` follow-ups when same-name symbols are ambiguous
 - recommended runtime retrieval sequence: discovery -> seed narrowing -> closure verification

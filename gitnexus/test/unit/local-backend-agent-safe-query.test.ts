@@ -241,4 +241,93 @@ describe('slim query response shaping', () => {
     expect((out as any).decision.recommended_follow_up).toContain('resource_path_prefix=');
     expect((out as any).summary).not.toContain('runtime heuristic clue');
   });
+
+  it('strict anchor locks anchored primary candidate and deterministic follow-up when strict anchor metadata is present', () => {
+    const out = buildSlimQueryResult({
+      processes: [
+        {
+          id: 'proc-low',
+          summary: 'runtime heuristic clue',
+          confidence: 'low',
+          evidence_mode: 'resource_heuristic',
+        },
+      ],
+      process_symbols: [
+        {
+          id: 'Class:Assets/NEON/Code/Game/PowerUps/SoulBringerIceCoreMgrPu.cs:SoulBringerIceCoreMgrPu',
+          name: 'SoulBringerIceCoreMgrPu',
+          type: 'Class',
+          filePath: 'Assets/NEON/Code/Game/PowerUps/SoulBringerIceCoreMgrPu.cs',
+          process_evidence_mode: 'resource_heuristic',
+          process_confidence: 'low',
+        },
+      ],
+      definitions: [],
+      next_hops: [
+        {
+          kind: 'symbol',
+          target: 'SoulBringerIceCoreMgrPu',
+          why: 'inspect symbol',
+          next_command: 'gitnexus context "SoulBringerIceCoreMgrPu"',
+        },
+      ],
+      decision_context: {
+        strict_anchor_mode: true,
+        anchor_symbol_name: 'SoulBringerIceCoreMgrPu',
+        anchor_resource_path: 'Assets/NEON/DataAssets/Powerups/Boss/SoulBringerIceCoreMgrPu.asset',
+      },
+    } as any, {
+      repoName: 'neonspark-core',
+      queryText: 'SoulBringerIceCoreMgrPu',
+    });
+
+    expect((out as any).decision.primary_candidate).toBe('SoulBringerIceCoreMgrPu');
+    expect((out as any).decision.recommended_follow_up).toContain('resource_path_prefix=');
+    expect((out as any).clues?.process_hints?.[0]?.evidence_mode).toBe('resource_heuristic');
+    expect((out as any).summary).toBe('SoulBringerIceCoreMgrPu');
+    expect((out as any).summary).not.toContain('runtime heuristic clue');
+  });
+
+  it('tier envelope exposes facts, closure, and clues with clue-tier heuristic process hints', () => {
+    const out = buildSlimQueryResult({
+      processes: [
+        {
+          id: 'proc-low',
+          summary: 'runtime heuristic clue',
+          confidence: 'low',
+          evidence_mode: 'resource_heuristic',
+        },
+      ],
+      process_symbols: [
+        {
+          id: 'Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp',
+          name: 'WeaponPowerUp',
+          type: 'Class',
+          filePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+          process_evidence_mode: 'resource_heuristic',
+          process_confidence: 'low',
+        },
+      ],
+      definitions: [],
+      next_hops: [
+        {
+          kind: 'resource',
+          target: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
+          why: 'seeded resource',
+          next_command: 'gitnexus query "WeaponPowerUp"',
+        },
+      ],
+    } as any, {
+      repoName: 'neonspark-core',
+      queryText: 'WeaponPowerUp',
+    });
+
+    // facts: graph-backed candidates/processes
+    // closure: runtime preview + missing proof targets
+    // clues: heuristic hints + manual verification
+    expect((out as any).facts).toBeDefined();
+    expect((out as any).closure).toBeDefined();
+    expect((out as any).clues).toBeDefined();
+    expect((out as any).clues.process_hints[0].evidence_mode).toBe('resource_heuristic');
+  });
 });

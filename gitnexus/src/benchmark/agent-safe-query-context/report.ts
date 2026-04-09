@@ -31,6 +31,7 @@ export interface AgentSafeQueryContextBenchmarkReport {
     pass: boolean;
     cases: Record<CaseKey, boolean>;
   };
+  pass: boolean;
   // Legacy aliases kept for downstream compatibility while the benchmark contract migrates.
   cases: Record<CaseKey, SubagentLiveResult>;
   same_script: {
@@ -104,6 +105,13 @@ export async function runAgentSafeQueryContextBenchmark(
       acceptanceCases[key] = workflowReplaySlim.semantic_tuple_pass
         && workflowReplaySlim.post_narrowing_anchor_pass
         && workflowReplaySlim.post_narrowing_follow_up_hit
+        && workflowReplaySlim.guid_invariance_pass
+        && workflowReplaySlim.live_tool_evidence_pass
+        && workflowReplaySlim.freeze_ready
+        && workflowReplaySlim.tier_envelope.facts_present
+        && workflowReplaySlim.tier_envelope.closure_present
+        && workflowReplaySlim.tier_envelope.clues_present
+        && workflowReplaySlim.tier_envelope.semantic_order_pass
         && !workflowReplaySlim.placeholder_leak_detected
         && !workflowReplaySlim.heuristic_top_summary_detected;
       semanticEquivalenceCases[key] = sameScriptSlim.semantic_tuple_pass && subagentLive.semantic_tuple_pass;
@@ -127,6 +135,7 @@ export async function runAgentSafeQueryContextBenchmark(
     }
   }
 
+  const pass = Object.values(acceptanceCases).every(Boolean);
   return {
     generatedAt: new Date().toISOString(),
     workflow_replay_full: workflowReplayFullCases,
@@ -135,9 +144,10 @@ export async function runAgentSafeQueryContextBenchmark(
     same_script_slim: sameScriptSlimCases,
     subagent_live: subagentLiveCases,
     acceptance: {
-      pass: Object.values(acceptanceCases).every(Boolean),
+      pass,
       cases: acceptanceCases,
     },
+    pass,
     cases: subagentLiveCases,
     same_script: {
       tool_plan: {
@@ -167,7 +177,7 @@ export async function writeAgentSafeQueryContextReports(
     '## Cases',
     ...(['weapon_powerup', 'reload'] as CaseKey[]).map(
       (key) =>
-        `- ${key}: live_pass=${report.subagent_live[key].semantic_tuple_pass}, token_saved=${report.token_summary[key].saved}, call_saved=${report.call_summary[key].saved}, anchor_top1_pass=${report.workflow_replay_slim[key].anchor_top1_pass}, recommended_follow_up_hit=${report.workflow_replay_slim[key].recommended_follow_up_hit}, post_narrowing_anchor_pass=${report.workflow_replay_slim[key].post_narrowing_anchor_pass}, post_narrowing_follow_up_hit=${report.workflow_replay_slim[key].post_narrowing_follow_up_hit}, ambiguity_detour_count=${report.workflow_replay_slim[key].ambiguity_detour_count}, placeholder_leak_detected=${report.workflow_replay_slim[key].placeholder_leak_detected}, heuristic_top_summary_detected=${report.workflow_replay_slim[key].heuristic_top_summary_detected}`,
+        `- ${key}: live_pass=${report.subagent_live[key].semantic_tuple_pass}, token_saved=${report.token_summary[key].saved}, call_saved=${report.call_summary[key].saved}, anchor_top1_pass=${report.workflow_replay_slim[key].anchor_top1_pass}, recommended_follow_up_hit=${report.workflow_replay_slim[key].recommended_follow_up_hit}, post_narrowing_anchor_pass=${report.workflow_replay_slim[key].post_narrowing_anchor_pass}, post_narrowing_follow_up_hit=${report.workflow_replay_slim[key].post_narrowing_follow_up_hit}, guid_invariance_pass=${report.workflow_replay_slim[key].guid_invariance_pass}, live_tool_evidence_pass=${report.workflow_replay_slim[key].live_tool_evidence_pass}, freeze_ready=${report.workflow_replay_slim[key].freeze_ready}, confirmed_chain_steps=${report.workflow_replay_slim[key].confirmed_chain.steps.length}, tier_facts=${report.workflow_replay_slim[key].tier_envelope.facts_present}, tier_closure=${report.workflow_replay_slim[key].tier_envelope.closure_present}, tier_clues=${report.workflow_replay_slim[key].tier_envelope.clues_present}, tier_semantic_order=${report.workflow_replay_slim[key].tier_envelope.semantic_order_pass}, tier_summary_source=${report.workflow_replay_slim[key].tier_envelope.summary_source}, ambiguity_detour_count=${report.workflow_replay_slim[key].ambiguity_detour_count}, placeholder_leak_detected=${report.workflow_replay_slim[key].placeholder_leak_detected}, heuristic_top_summary_detected=${report.workflow_replay_slim[key].heuristic_top_summary_detected}`,
     ),
   ].join('\n');
 
