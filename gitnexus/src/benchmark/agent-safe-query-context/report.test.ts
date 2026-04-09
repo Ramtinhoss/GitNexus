@@ -143,3 +143,97 @@ test('benchmark report includes explicit benchmark tracks', async () => {
     report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass && report.workflow_replay_slim.reload.semantic_tuple_pass,
   );
 });
+
+test('benchmark report enforces track split, acceptance source, prompt secrecy, and live scoring taxonomy', async () => {
+  const report = await runAgentSafeQueryContextBenchmark(fakeSuite, {
+    repo: 'neonspark-core',
+    subagentRunsDir: '/tmp/subagent-runs',
+  }, {
+    runner: {
+      query: async (input) => {
+        const queryText = String(input?.query || '');
+        if (/reload|ReloadBase|CheckReload/.test(queryText)) {
+          return {
+            candidates: [{ name: 'ReloadBase' }],
+            resource_hints: [{ path: 'Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset' }],
+          };
+        }
+        return {
+          candidates: [{ name: 'WeaponPowerUp' }],
+          resource_hints: [{ path: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
+        };
+      },
+      context: async (input) => ({ symbol: { name: String(input?.name || 'WeaponPowerUp') } }),
+      impact: async () => ({ impactedCount: 0 }),
+      cypher: async (input) => {
+        const queryText = String(input?.query || '');
+        if (queryText.includes('CheckReload') || queryText.includes('GetValue')) {
+          return { row_count: 1, rows: [{ src: 'GetValue', dst: 'CheckReload' }] };
+        }
+        return {
+          row_count: 2,
+          rows: [
+            { src: 'HoldPickup', dst: 'PickItUp' },
+            { src: 'EquipWithEvent', dst: 'Equip' },
+          ],
+        };
+      },
+      close: async () => {},
+    },
+    executeToolPlan: async (plan) =>
+      plan.map((step) => ({
+        tool: step.tool,
+        input: step.input,
+        output: {
+          anchor: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
+          symbol: 'WeaponPowerUp',
+          proof: 'HoldPickup -> WeaponPowerUp.PickItUp',
+        },
+      })),
+    loadSubagentLiveCaseResult: async (_runDir, benchmarkCase) => ({
+      prompt: 'Use only telemetry-tool.js\nFinal JSON schema:',
+      prompt_path: '/tmp/prompt.txt',
+      result_path: '/tmp/result.json',
+      telemetry_path: '/tmp/telemetry.jsonl',
+      final_result: {},
+      steps: [{
+        tool: 'query',
+        input: { query: benchmarkCase.start_query },
+        output: { value: benchmarkCase.semantic_tuple.resource_anchor },
+        durationMs: 1,
+        totalTokensEst: 10,
+        timestamp: '2026-04-08T00:00:00.000Z',
+      }],
+      semantic_tuple: benchmarkCase.semantic_tuple,
+      normalized_tuple_pass: true,
+      evidence_validation_pass: true,
+      failure_class: undefined,
+      semantic_tuple_pass: true,
+      tool_calls_to_completion: 1,
+      tokens_to_completion: 10,
+      stop_reason: 'semantic_tuple_satisfied' as const,
+    }),
+  });
+
+  assert.equal(Object.keys(report.workflow_replay_full).length > 0, true);
+  assert.equal(Object.keys(report.workflow_replay_slim).length > 0, true);
+  assert.equal(Object.keys(report.same_script_full).length > 0, true);
+  assert.equal(Object.keys(report.same_script_slim).length > 0, true);
+  assert.equal(Object.keys(report.subagent_live).length > 0, true);
+
+  assert.deepEqual(report.acceptance.cases, {
+    weapon_powerup: report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass,
+    reload: report.workflow_replay_slim.reload.semantic_tuple_pass,
+  });
+
+  assert.equal(report.subagent_live.weapon_powerup.prompt.includes('HoldPickup -> WeaponPowerUp.PickItUp'), false);
+  assert.equal(report.subagent_live.reload.prompt.includes('ReloadBase.GetValue -> ReloadBase.CheckReload'), false);
+
+  for (const row of Object.values(report.subagent_live)) {
+    assert.equal(typeof row.normalized_tuple_pass, 'boolean');
+    assert.equal(typeof row.evidence_validation_pass, 'boolean');
+    if (!row.semantic_tuple_pass) {
+      assert.ok(row.failure_class);
+    }
+  }
+});
