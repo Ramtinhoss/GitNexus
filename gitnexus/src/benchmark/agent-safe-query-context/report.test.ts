@@ -56,7 +56,7 @@ const fakeSuite: AgentSafeBenchmarkSuite = {
   },
 };
 
-test('benchmark report includes cases, same_script, subagent_live, token_summary, and call_summary', async () => {
+test('benchmark report includes explicit benchmark tracks', async () => {
   const report = await runAgentSafeQueryContextBenchmark(fakeSuite, {
     repo: 'neonspark-core',
     subagentRunsDir: '/tmp/subagent-runs',
@@ -108,4 +108,9 @@ test('benchmark report includes cases, same_script, subagent_live, token_summary
   assert.ok(report.subagent_live.reload.steps);
   assert.ok(report.token_summary.weapon_powerup);
   assert.ok(report.call_summary.reload);
+  assert.ok(report.workflow_replay_full.weapon_powerup);
+  assert.ok(report.workflow_replay_slim.weapon_powerup);
+  assert.ok(report.same_script_full.reload);
+  assert.ok(report.same_script_slim.reload);
+  assert.ok(report.subagent_live.weapon_powerup);
 });

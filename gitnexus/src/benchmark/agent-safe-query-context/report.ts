@@ -5,9 +5,9 @@ import { executeToolPlan } from '../agent-context/runner.js';
 import { createAgentContextToolRunner, type AgentContextToolRunner } from '../agent-context/tool-runner.js';
 import { deriveSemanticTuple, semanticTuplePass } from './semantic-tuple.js';
 import { loadSubagentLiveCaseResult, type SubagentLiveResult, type TelemetryStep } from './subagent-live.js';
-import type { AgentSafeBenchmarkCase, AgentSafeBenchmarkSuite, SemanticTuple } from './types.js';
+import type { AgentSafeBenchmarkCase, AgentSafeBenchmarkSuite, AgentSafeCaseKey, SemanticTuple } from './types.js';
 
-type CaseKey = keyof AgentSafeBenchmarkSuite['cases'];
+type CaseKey = AgentSafeCaseKey;
 
 export interface SameScriptCaseResult {
   tool_plan: AgentSafeBenchmarkCase['tool_plan'];
@@ -20,12 +20,17 @@ export interface SameScriptCaseResult {
 
 export interface AgentSafeQueryContextBenchmarkReport {
   generatedAt: string;
+  workflow_replay_full: Record<CaseKey, SameScriptCaseResult>;
+  workflow_replay_slim: Record<CaseKey, SameScriptCaseResult>;
+  same_script_full: Record<CaseKey, SameScriptCaseResult>;
+  same_script_slim: Record<CaseKey, SameScriptCaseResult>;
+  subagent_live: Record<CaseKey, SubagentLiveResult>;
+  // Legacy aliases kept for downstream compatibility while the benchmark contract migrates.
   cases: Record<CaseKey, SubagentLiveResult>;
   same_script: {
     tool_plan: Record<CaseKey, AgentSafeBenchmarkCase['tool_plan']>;
     cases: Record<CaseKey, SameScriptCaseResult>;
   };
-  subagent_live: Record<CaseKey, SubagentLiveResult>;
   semantic_equivalence: {
     pass: boolean;
     cases: Record<CaseKey, boolean>;
@@ -89,6 +94,11 @@ export async function runAgentSafeQueryContextBenchmark(
 
   return {
     generatedAt: new Date().toISOString(),
+    workflow_replay_full: sameScriptCases,
+    workflow_replay_slim: sameScriptCases,
+    same_script_full: sameScriptCases,
+    same_script_slim: sameScriptCases,
+    subagent_live: subagentLiveCases,
     cases: subagentLiveCases,
     same_script: {
       tool_plan: {
@@ -97,7 +107,6 @@ export async function runAgentSafeQueryContextBenchmark(
       },
       cases: sameScriptCases,
     },
-    subagent_live: subagentLiveCases,
     semantic_equivalence: {
       pass: Object.values(semanticEquivalenceCases).every(Boolean),
       cases: semanticEquivalenceCases,

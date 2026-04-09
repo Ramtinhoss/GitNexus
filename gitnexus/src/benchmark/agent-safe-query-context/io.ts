@@ -2,11 +2,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type {
   AgentSafeLiveTask,
+  AgentSafeCaseKey,
   AgentSafeBenchmarkCase,
   AgentSafeBenchmarkSuite,
   AgentSafeBenchmarkThresholds,
   SemanticTuple,
 } from './types.js';
+import { AGENT_SAFE_CASE_KEYS } from './types.js';
 
 const PLACEHOLDER_RE = /TODO|TBD|placeholder|<resource>|<symbol>/i;
 
@@ -18,13 +20,14 @@ export async function loadAgentSafeQueryContextSuite(root: string): Promise<Agen
     await fs.readFile(path.join(root, 'cases.json'), 'utf-8'),
   ) as AgentSafeBenchmarkSuite['cases'];
 
-  assertCase('weapon_powerup', cases.weapon_powerup);
-  assertCase('reload', cases.reload);
+  for (const key of AGENT_SAFE_CASE_KEYS) {
+    assertCase(key, cases[key]);
+  }
 
   return { thresholds, cases };
 }
 
-function assertCase(name: string, value: AgentSafeBenchmarkCase | undefined): asserts value is AgentSafeBenchmarkCase {
+function assertCase(name: AgentSafeCaseKey, value: AgentSafeBenchmarkCase | undefined): asserts value is AgentSafeBenchmarkCase {
   if (!value) {
     throw new Error(`missing required case: ${name}`);
   }

@@ -2,6 +2,14 @@
 
 Canonical benchmark suite for the slim default `query/context` response work.
 
+Report tracks are split explicitly into:
+
+- `workflow_replay_full`
+- `workflow_replay_slim`
+- `same_script_full`
+- `same_script_slim`
+- `subagent_live`
+
 ## Files
 
 - `cases.json`: frozen WeaponPowerUp and Reload benchmark cases.

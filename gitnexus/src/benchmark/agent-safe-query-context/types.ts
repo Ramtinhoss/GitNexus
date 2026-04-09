@@ -1,5 +1,17 @@
 import type { AgentContextToolStep } from '../agent-context/types.js';
 
+export const AGENT_SAFE_CASE_KEYS = ['weapon_powerup', 'reload'] as const;
+export type AgentSafeCaseKey = (typeof AGENT_SAFE_CASE_KEYS)[number];
+
+export const AGENT_SAFE_TRACK_KEYS = [
+  'workflow_replay_full',
+  'workflow_replay_slim',
+  'same_script_full',
+  'same_script_slim',
+  'subagent_live',
+] as const;
+export type AgentSafeTrackKey = (typeof AGENT_SAFE_TRACK_KEYS)[number];
+
 export interface SemanticTuple {
   resource_anchor: string;
   symbol_anchor: string;
@@ -39,8 +51,5 @@ export interface AgentSafeBenchmarkThresholds {
 
 export interface AgentSafeBenchmarkSuite {
   thresholds: AgentSafeBenchmarkThresholds;
-  cases: {
-    weapon_powerup: AgentSafeBenchmarkCase;
-    reload: AgentSafeBenchmarkCase;
-  };
+  cases: Record<AgentSafeCaseKey, AgentSafeBenchmarkCase>;
 }

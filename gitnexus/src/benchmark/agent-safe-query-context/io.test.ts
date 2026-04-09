@@ -8,6 +8,7 @@ test('loads canonical benchmark cases without placeholders', async () => {
     path.resolve('../benchmarks/agent-safe-query-context/neonspark-v1'),
   );
 
+  assert.deepEqual(Object.keys(suite.cases).sort(), ['reload', 'weapon_powerup']);
   assert.equal(
     suite.cases.weapon_powerup.semantic_tuple.resource_anchor,
     'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
