@@ -76,13 +76,13 @@ Agent-safe upgrade path:
 - use `decision.recommended_follow_up` as the default narrow-first next step
 - inspect `missing_proof_targets[]` and structured `suggested_context_targets[]` before considering payload expansion
 - when `suggested_context_targets[]` includes `uid`, prefer the matching `upgrade_hints[]` `context --uid` command over same-name `context(name=...)`
-- rerun with `response_profile: "full"` only when narrowing cannot close the proof gap
+- `response_profile=slim` is the default and sufficient for normal workflows
+- use `response_profile: "full"` only for debugging/deep evidence inspection when narrowing cannot close the proof gap
 
 Runtime claim closure reminder:
 
 - Query-time runtime closure is **graph-only** and does not require `verification_rules` / `trigger_tokens` matching.
 - `verification_rules` remains an offline governance/report artifact family.
-- Treat `resource_heuristic` as clue-tier (`clue`) evidence, not closure proof.
 - Strong graph hops can coexist with failed closure when verifier-core stays `failed`; report as partial bridge evidence.
 
 When task scope includes Unity runtime process semantics, load and follow:

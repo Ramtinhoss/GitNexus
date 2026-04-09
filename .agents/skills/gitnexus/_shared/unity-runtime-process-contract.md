@@ -17,7 +17,7 @@ Use this order: `discovery -> seed narrowing -> closure verification`.
 
 1. Run `query/context` with `unity_resources: "on"` and `unity_hydration_mode: "compact"` first.
    - For `response_profile=slim`, read semantic tiers in order: `facts -> closure -> clues`.
-   - In strict-anchor mode, never let `clues` become the first-screen default when `facts` has high/medium non-heuristic leads.
+   - In strict-anchor mode, never let `clues` become the first-screen default when `facts` has high/medium leads.
 2. If `hydrationMeta.needsParityRetry === true`, rerun with `unity_hydration_mode: "parity"` before conclusions.
 3. Do not conclude "no runtime chain" from empty `processes` alone.
 4. If Unity evidence exists, continue stitching:
@@ -30,7 +30,7 @@ Use this order: `discovery -> seed narrowing -> closure verification`.
    - `target`
    - `next_command`
 6. Semantic closure requires hop anchors/evidence anchors for each stitched step.
-7. Treat `resource_heuristic` as clue-tier (`clue`) evidence and never as standalone closure proof.
+7. Treat `clues` as narrowing evidence (`clue`) and never as standalone closure proof.
 8. Strong graph hops can coexist with failed closure; report as partial bridge evidence until verifier-core reaches `verified_full`.
 
 ## Optional Strong Verification

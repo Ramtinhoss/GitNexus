@@ -136,8 +136,8 @@ Unity runtime example:
 
 - Query-time runtime closure is **graph-only** and does not require `verification_rules` / `trigger_tokens` matching.
 - For Unity runtime retrieval, prefer symbol/resource anchors over business-description phrasing; use natural-language `query` only to discover the first anchor.
-- In default slim mode, use `runtime_preview` as a fast status summary; rerun with `response_profile: "full"` when you need `runtime_claim.hops`, `runtime_claim.gaps`, or hydration diagnostics.
-- Treat `resource_heuristic` as clue-tier evidence (`clue`), not closure proof.
+- `response_profile=slim` is sufficient for normal workflows; use `runtime_preview` as the default status summary.
+- `response_profile=full` is for debugging and deep evidence inspection (`runtime_claim.hops`, `runtime_claim.gaps`, hydration diagnostics).
 - Strong graph hops can coexist with failed closure when verifier-core still reports `failed`; this is partial bridge evidence, not contradiction.
 - Treat runtime-chain outputs as two layers:
   - `verifier-core`: binary verifier result (`verified_full` | `failed`)
