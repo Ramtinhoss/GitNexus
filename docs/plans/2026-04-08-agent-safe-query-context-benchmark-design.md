@@ -4,6 +4,8 @@ Date: 2026-04-08
 Owner: GitNexus
 Status: Approved for planning
 
+Post-implementation note: see `docs/reports/2026-04-09-agent-safe-query-context-benchmark-deviation-and-test-results.md` for the recorded implementation deviation and current benchmark results that were merged for follow-up requirement discussion.
+
 ## 1. Goal
 
 Optimize agent-facing `query/context` usage for Unity retrieval workflows with two hard constraints:

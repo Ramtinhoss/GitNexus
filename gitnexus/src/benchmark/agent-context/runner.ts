@@ -46,6 +46,10 @@ function buildToolInput(step: AgentContextToolStep, repo?: string): Record<strin
     input.repo = repo;
   }
 
+  if ((step.tool === 'query' || step.tool === 'context') && !('response_profile' in input)) {
+    input.response_profile = 'full';
+  }
+
   // LocalBackend impact contract uses `target_uid`, while dataset rows may carry `uid`.
   if (step.tool === 'impact') {
     const uid = input.uid;

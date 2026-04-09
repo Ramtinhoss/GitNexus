@@ -280,16 +280,17 @@ function assertScenario(
 }
 
 async function invokeTool(runner: ToolRunner, tool: SymbolScenario['deepDivePlan'][number]['tool'], input: Record<string, unknown>): Promise<any> {
+  const params = withLegacyFullProfile(tool, input);
   if (tool === 'query') {
-    return runner.query(input);
+    return runner.query(params);
   }
   if (tool === 'context') {
-    return runner.context(input);
+    return runner.context(params);
   }
   if (tool === 'impact') {
-    return runner.impact(input);
+    return runner.impact(params);
   }
-  return runner.cypher(input);
+  return runner.cypher(params);
 }
 
 function selectDisambiguationUid(symbol: string, output: any): string | undefined {
@@ -314,14 +315,15 @@ async function runContextWithDisambiguation(
   scenario: SymbolScenario,
   input: Record<string, unknown>,
 ): Promise<any> {
-  const first = await runner.context(input);
+  const normalizedInput = withLegacyFullProfile('context', input);
+  const first = await runner.context(normalizedInput);
   if (first?.status !== 'ambiguous') {
     return first;
   }
 
   const hint = typeof scenario.contextFileHint === 'string' ? scenario.contextFileHint.trim() : '';
   if (hint) {
-    const hinted = await runner.context({ ...input, file_path: hint });
+    const hinted = await runner.context(withLegacyFullProfile('context', { ...input, file_path: hint }));
     if (hinted?.status !== 'ambiguous') {
       return hinted;
     }
@@ -329,7 +331,7 @@ async function runContextWithDisambiguation(
 
   const uid = selectDisambiguationUid(scenario.symbol, first);
   if (uid) {
-    return runner.context({ ...input, uid });
+    return runner.context(withLegacyFullProfile('context', { ...input, uid }));
   }
   return first;
 }
@@ -378,4 +380,14 @@ export async function runSymbolScenario(
     steps,
     assertions: assertScenario(scenario, contextOn, deepDiveExecutions, contextUnityHydration),
   };
+}
+
+function withLegacyFullProfile(
+  tool: SymbolScenario['deepDivePlan'][number]['tool'] | 'context',
+  input: Record<string, unknown>,
+): Record<string, unknown> {
+  if ((tool === 'query' || tool === 'context') && !('response_profile' in input)) {
+    return { ...input, response_profile: 'full' };
+  }
+  return input;
 }

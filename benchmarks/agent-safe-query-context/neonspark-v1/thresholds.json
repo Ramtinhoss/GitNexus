@@ -1,0 +1,9 @@
+{
+  "workflowReplay": {
+    "maxSteps": 5
+  },
+  "tokenReduction": {
+    "weapon_powerup": 0.5,
+    "reload": 0.4
+  }
+}

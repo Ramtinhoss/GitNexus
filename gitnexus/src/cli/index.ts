@@ -110,6 +110,7 @@ program
   .option('-g, --goal <text>', 'What you want to find')
   .option('-l, --limit <n>', 'Max processes to return (default: 5)')
   .option('--content', 'Include full symbol source code')
+  .option('--response-profile <profile>', 'Response payload profile: slim|full', 'slim')
   .option('--scope-preset <preset>', 'Scope preset for retrieval: unity-gameplay|unity-all')
   .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
@@ -126,6 +127,7 @@ program
   .option('-u, --uid <uid>', 'Direct symbol UID (zero-ambiguity lookup)')
   .option('-f, --file <path>', 'File path to disambiguate common names')
   .option('--content', 'Include full symbol source code')
+  .option('--response-profile <profile>', 'Response payload profile: slim|full', 'slim')
   .option('--unity-resources <mode>', 'Unity resource retrieval mode: off|on|auto', 'off')
   .option('--unity-hydration <mode>', 'Unity hydration mode when resources are enabled: parity|compact', 'compact')
   .option('--unity-evidence <mode>', 'Unity evidence payload mode: summary|focused|full', 'summary')
@@ -207,6 +209,24 @@ program
   .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
   .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
   .action(createLazyAction(() => import('./benchmark-agent-context.js'), 'benchmarkAgentContextCommand'));
+
+program
+  .command('benchmark-agent-safe-query-context <dataset>')
+  .description('Run the agent-safe Unity query/context benchmark')
+  .option('-r, --repo <name>', 'Target indexed repo')
+  .option('--repo-alias <name>', 'Analyze-time repo alias and default evaluation repo when --repo is omitted')
+  .option('--target-path <path>', 'Path to analyze before evaluation (required unless --skip-analyze)')
+  .option('--subagent-runs-dir <path>', 'Directory containing session-generated subagent run artifacts')
+  .option(
+    '--report-dir <path>',
+    'Output directory for benchmark-report.json and benchmark-summary.md',
+    '.gitnexus/benchmark-agent-safe-query-context',
+  )
+  .option('--extensions <list>', 'Analyze extension filter (comma-separated, optional)')
+  .option('--scope-manifest <path>', 'Analyze scope manifest file')
+  .option('--scope-prefix <pathPrefix>', 'Analyze scope path prefix (repeatable)', collectValues, [])
+  .option('--skip-analyze', 'Skip analyze stage and evaluate current index only')
+  .action(createLazyAction(() => import('./benchmark-agent-safe-query-context.js'), 'benchmarkAgentSafeQueryContextCommand'));
 
 program
   .command('benchmark-u2-e2e')

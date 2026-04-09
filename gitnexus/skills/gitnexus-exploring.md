@@ -33,6 +33,8 @@ description: "Use when the user asks how code works, wants to understand archite
 - [ ] gitnexus_query for the concept you want to understand
 - [ ] Review returned processes (execution flows)
 - [ ] gitnexus_context on key symbols for callers/callees
+- [ ] Default `query/context` now return slim agent-safe payloads (`candidates`, `process_hints`, `resource_hints`, `upgrade_hints`, `runtime_preview`)
+- [ ] If you need legacy heavy fields (`processes`, `process_symbols`, `definitions`, `resourceBindings`, `serializedFields`, `next_hops`), rerun with `response_profile: "full"`
 - [ ] For Unity evidence, call context/query with `unity_resources: "on"` and `unity_hydration_mode: "compact"`
 - [ ] If `hydrationMeta.needsParityRetry === true`, rerun with `unity_hydration_mode: "parity"`
 - [ ] READ process resource for full execution traces
@@ -60,17 +62,16 @@ When exploration touches Unity runtime process semantics (runtime chain closure,
 
 ```
 gitnexus_query({query: "payment processing"})
-→ Processes: CheckoutFlow, RefundFlow, WebhookHandler
-→ Symbols grouped by flow with file locations
+→ Slim response: candidates + process_hints + upgrade_hints
+→ Rerun with response_profile: "full" if you need grouped process rows and symbol payloads
 ```
 
 **gitnexus_context** — 360-degree view of a symbol:
 
 ```
 gitnexus_context({name: "validateUser"})
-→ Incoming calls: loginHandler, apiMiddleware
-→ Outgoing calls: checkToken, getUserById
-→ Processes: LoginFlow (step 2/5), TokenRefresh (step 1/3)
+→ Slim response: incoming/outgoing refs, process hints, resource hints, upgrade hints
+→ Rerun with response_profile: "full" for full categorized refs plus Unity-heavy payloads
 ```
 
 **Unity-focused context/query** — use compact first, parity only when needed:

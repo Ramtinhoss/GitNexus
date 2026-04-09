@@ -12,7 +12,7 @@ export interface UnityEvidenceMeta {
 
 export interface UnityEvidenceViewResult {
   resourceBindings: ResolvedUnityBinding[];
-  serializedFields: UnitySerializedFields;
+  serializedFields?: UnitySerializedFields;
   evidence_meta: UnityEvidenceMeta;
   filter_diagnostics: string[];
 }
@@ -130,7 +130,7 @@ export function buildUnityEvidenceView(input: UnityEvidenceViewInput): UnityEvid
 
   return {
     resourceBindings: filtered,
-    serializedFields: aggregateSerializedFields(filtered),
+    serializedFields: input.mode === 'full' ? aggregateSerializedFields(filtered) : undefined,
     evidence_meta,
     filter_diagnostics: diagnostics,
   };
