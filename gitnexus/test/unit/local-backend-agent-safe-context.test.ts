@@ -53,6 +53,8 @@ describe('slim context response shaping', () => {
     expect(out).toHaveProperty('resource_hints');
     expect(out).toHaveProperty('verification_hint');
     expect(out).toHaveProperty('upgrade_hints');
+    expect(out).toHaveProperty('missing_proof_targets');
+    expect(out).toHaveProperty('suggested_context_targets');
     expect((out as any).serializedFields).toBeUndefined();
     expect((out as any).resourceBindings).toBeUndefined();
     expect((out as any).directIncoming).toBeUndefined();

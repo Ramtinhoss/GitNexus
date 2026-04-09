@@ -46,8 +46,8 @@ For any task involving code understanding, debugging, impact analysis, or refact
 
 Default `query/context` responses are now slim for agent use:
 
-- `query`: `summary`, `candidates`, `process_hints`, `resource_hints`, `decision`, `upgrade_hints`, `runtime_preview`
-- `context`: `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `upgrade_hints`, `runtime_preview`
+- `query`: `summary`, `candidates`, `process_hints`, `resource_hints`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- `context`: `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
 
 When you need the legacy heavy payloads (`processes`, `process_symbols`, `definitions`, `resourceBindings`, `serializedFields`, `next_hops`), pass:
 
@@ -69,9 +69,10 @@ Recommended default workflow:
 
 Agent-safe upgrade path:
 
-- inspect `upgrade_hints[]` first for deterministic next commands
-- inspect `process_hints[]` / `resource_hints[]` for the slim summary
-- rerun with `response_profile: "full"` only when you need the full heavy payload
+- inspect `resource_hints[]` / `process_hints[]` first and narrow with `resource_path_prefix=` or symbol-targeted context
+- use `decision.recommended_follow_up` as the default narrow-first next step
+- inspect `missing_proof_targets[]` and `suggested_context_targets[]` before considering payload expansion
+- rerun with `response_profile: "full"` only when narrowing cannot close the proof gap
 
 Runtime claim closure reminder:
 

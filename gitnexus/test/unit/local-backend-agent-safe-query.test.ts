@@ -48,6 +48,10 @@ describe('slim query response shaping', () => {
     expect(out).toHaveProperty('decision');
     expect(out).toHaveProperty('upgrade_hints');
     expect(out).toHaveProperty('runtime_preview');
+    expect((out as any).decision.recommended_follow_up).toContain('resource_path_prefix=');
+    expect((out as any).decision.recommended_follow_up).not.toContain('response_profile=full');
+    expect(out).toHaveProperty('missing_proof_targets');
+    expect(out).toHaveProperty('suggested_context_targets');
     expect((out as any).processes).toBeUndefined();
     expect((out as any).process_symbols).toBeUndefined();
     expect((out as any).definitions).toBeUndefined();

@@ -44,6 +44,16 @@ For any task involving code understanding, debugging, impact analysis, or refact
 
 ### Unity Retrieval Contract (query/context)
 
+Default `query/context` responses are now slim for agent use:
+
+- `query`: `summary`, `candidates`, `process_hints`, `resource_hints`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- `context`: `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+
+When you need the legacy heavy payloads (`processes`, `process_symbols`, `definitions`, `resourceBindings`, `serializedFields`, `next_hops`), pass:
+
+- `response_profile: "full"` in MCP calls
+- `--response-profile full` in CLI calls
+
 When you need Unity resource evidence, pass:
 
 - `unity_resources: "on"` (or `"auto"` when you want adaptive behavior)
@@ -56,6 +66,13 @@ Recommended default workflow:
    - `needsParityRetry: true` → rerun same call with `unity_hydration_mode: "parity"`
    - `isComplete: true` → keep compact result
 3. Treat parity as the completeness path for advanced verification.
+
+Agent-safe upgrade path:
+
+- inspect `resource_hints[]` / `process_hints[]` first and narrow with `resource_path_prefix=` or symbol-targeted context
+- use `decision.recommended_follow_up` as the default narrow-first next step
+- inspect `missing_proof_targets[]` and `suggested_context_targets[]` before considering payload expansion
+- rerun with `response_profile: "full"` only when narrowing cannot close the proof gap
 
 Runtime claim closure reminder:
 

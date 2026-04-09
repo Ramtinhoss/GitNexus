@@ -64,6 +64,11 @@ Returns results grouped by process (execution flow):
 - process_symbols[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
 - process_symbols[].verification_hint: { action, target, next_command }
 
+Default `response_profile=slim` shape:
+- summary, candidates, process_hints, resource_hints, decision, upgrade_hints, runtime_preview
+- missing_proof_targets, suggested_context_targets
+- decision.recommended_follow_up prefers narrowing hints (for example resource_path_prefix/name) before response_profile=full fallback
+
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
 Supports optional scope controls for noisy codebases:
 - scope_preset=unity-gameplay to prioritize project gameplay code and suppress plugin-heavy paths.
@@ -220,6 +225,10 @@ Process participation metadata:
 - processes[].runtime_chain_confidence: high | medium | low
 - processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
 - processes[].verification_hint: { action, target, next_command } (required when confidence=low)
+
+Default `response_profile=slim` shape:
+- symbol, incoming, outgoing, processes, resource_hints, verification_hint, upgrade_hints, runtime_preview
+- missing_proof_targets, suggested_context_targets
 
 Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
