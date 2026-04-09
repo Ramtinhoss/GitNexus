@@ -51,13 +51,13 @@ Returns results grouped by process (execution flow):
 - processes: ranked execution flows with relevance priority
 - process_symbols: all symbols in those flows with file locations and module (functional area)
 - definitions: standalone types/interfaces not in any process
-- processes[].evidence_mode: direct_step | method_projected | resource_heuristic
+- processes[].evidence_mode: direct_step | method_projected
 - processes[].confidence: high | medium | low
 - processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
 - processes[].runtime_chain_confidence: high | medium | low
 - processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
 - processes[].verification_hint: { action, target, next_command } (required when confidence=low)
-- process_symbols[].process_evidence_mode: direct_step | method_projected | resource_heuristic
+- process_symbols[].process_evidence_mode: direct_step | method_projected
 - process_symbols[].process_confidence: high | medium | low
 - process_symbols[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
 - process_symbols[].runtime_chain_confidence: high | medium | low
@@ -72,8 +72,9 @@ Default response_profile=slim shape:
 - suggested_context_targets[]: { name, uid?, filePath?, why } for direct context disambiguation
 - upgrade_hints may include exact \`context --uid\` follow-ups when same-name symbols are ambiguous
 - decision.recommended_follow_up prefers narrowing hints (for example resource_path_prefix/name) before response_profile=full fallback
+- response_profile=slim is the default and sufficient for all normal agent workflows
+- response_profile=full is for debugging and deep evidence inspection only
 - recommended runtime retrieval sequence: discovery -> seed narrowing -> closure verification
-- treat evidence_mode=resource_heuristic as clue-tier evidence (not closure proof)
 - strong graph hops can coexist with failed closure when verifier-core remains failed
 
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
@@ -101,7 +102,7 @@ Includes optional Unity retrieval contract:
         response_profile: {
           type: 'string',
           enum: ['slim', 'full'],
-          description: 'Response payload profile: slim (default) or full for legacy heavy payloads.',
+          description: 'Response payload profile: slim (default, sufficient for normal workflows) or full (debug-only for deep evidence inspection).',
           default: 'slim',
         },
         scope_preset: {
@@ -226,7 +227,7 @@ AFTER THIS: Use impact() if planning changes, or READ gitnexus://repo/{name}/pro
 Handles disambiguation: if multiple symbols share the same name, returns candidates for you to pick from. Use uid param for zero-ambiguity lookup from prior results.
 
 Process participation metadata:
-- processes[].evidence_mode: direct_step | method_projected | resource_heuristic
+- processes[].evidence_mode: direct_step | method_projected
 - processes[].confidence: high | medium | low
 - processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
 - processes[].runtime_chain_confidence: high | medium | low
@@ -240,8 +241,9 @@ Default response_profile=slim shape:
 - read order in strict-anchor mode: facts -> closure -> clues
 - suggested_context_targets[]: { name, uid?, filePath?, why } for direct context disambiguation
 - upgrade_hints may include exact \`context --uid\` follow-ups when same-name symbols are ambiguous
+- response_profile=slim is the default and sufficient for all normal agent workflows
+- response_profile=full is for debugging and deep evidence inspection only
 - recommended runtime retrieval sequence: discovery -> seed narrowing -> closure verification
-- treat evidence_mode=resource_heuristic as clue-tier evidence (not closure proof)
 - strong graph hops can coexist with failed closure when verifier-core remains failed
 
 Unity retrieval contract:
@@ -262,7 +264,7 @@ Unity retrieval contract:
         response_profile: {
           type: 'string',
           enum: ['slim', 'full'],
-          description: 'Response payload profile: slim (default) or full for legacy heavy payloads.',
+          description: 'Response payload profile: slim (default, sufficient for normal workflows) or full (debug-only for deep evidence inspection).',
           default: 'slim',
         },
         unity_resources: {

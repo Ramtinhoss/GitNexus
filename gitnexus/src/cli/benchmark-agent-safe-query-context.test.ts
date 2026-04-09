@@ -261,23 +261,17 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
   assert.equal(report.workflow_replay_slim.weapon_powerup.heuristic_top_summary_detected, false);
 });
 
-test('runtime retrieval contract docs describe seed-first workflow and clue-tier semantics', async () => {
+test('runtime retrieval contract docs remove heuristic mode and pin full as debug-only', async () => {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
   const docPaths = [
     'gitnexus/src/mcp/tools.ts',
-    'gitnexus/skills/gitnexus-exploring.md',
-    '.agents/skills/gitnexus/gitnexus-exploring/SKILL.md',
-    'gitnexus/skills/_shared/unity-runtime-process-contract.md',
-    '.agents/skills/gitnexus/_shared/unity-runtime-process-contract.md',
-    'gitnexus/skills/gitnexus-guide.md',
-    '.agents/skills/gitnexus/gitnexus-guide/SKILL.md',
-    'AGENTS.md',
   ].map((relativePath) => path.join(repoRoot, relativePath));
 
   const text = (await Promise.all(docPaths.map((filePath) => fs.readFile(filePath, 'utf-8')))).join('\n');
 
   assert.ok(text.includes('discovery -> seed narrowing -> closure verification'));
-  assert.ok(text.includes('resource_heuristic'));
-  assert.ok(text.includes('clue'));
+  assert.ok(!text.includes('resource_heuristic'));
+  assert.ok(text.includes('response_profile=slim is the default and sufficient'));
+  assert.ok(text.includes('response_profile=full is for debugging'));
   assert.ok(text.includes('strong graph hops can coexist with failed closure'));
 });
