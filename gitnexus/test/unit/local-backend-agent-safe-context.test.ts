@@ -114,7 +114,7 @@ describe('slim context response shaping', () => {
     expect((out as any).processes.some((row: any) => row.summary === 'runtime heuristic clue')).toBe(true);
   });
 
-  it('strict anchor keeps clue-tier process rows but anchors first-screen summary to the symbol', () => {
+  it('strict anchor keeps process summary selection based on process score', () => {
     const out = buildSlimContextResult({
       status: 'found',
       symbol: {
@@ -143,9 +143,9 @@ describe('slim context response shaping', () => {
       symbolName: 'SoulBringerIceCoreMgrPu',
     });
 
-    expect((out as any).summary).toBe('SoulBringerIceCoreMgrPu');
+    expect((out as any).summary).toBe('runtime heuristic clue');
     expect((out as any).processes[0].evidence_mode).toBe('resource_heuristic');
-    expect((out as any).summary).not.toContain('runtime heuristic clue');
+    expect((out as any).clues.process_hints).toEqual([]);
   });
 
   it('tier envelope exposes facts, closure, and clues in slim context output', () => {
@@ -182,10 +182,32 @@ describe('slim context response shaping', () => {
 
     // facts: graph-backed symbol and relation buckets
     // closure: runtime preview + missing proof targets
-    // clues: heuristic hints + manual verification
+    // clues: resource hints + manual verification
     expect((out as any).facts).toBeDefined();
     expect((out as any).closure).toBeDefined();
     expect((out as any).clues).toBeDefined();
-    expect((out as any).clues.process_hints[0].evidence_mode).toBe('resource_heuristic');
+    expect((out as any).clues.process_hints).toEqual([]);
+  });
+
+  it('slim context clues.process_hints is always empty after heuristic removal', () => {
+    const out = buildSlimContextResult({
+      status: 'found',
+      symbol: {
+        uid: 'Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase',
+        name: 'ReloadBase',
+        kind: 'Class',
+        filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+      },
+      incoming: {},
+      outgoing: {},
+      processes: [{ name: 'legacy clue', confidence: 'low', evidence_mode: 'resource_heuristic' }],
+      next_hops: [],
+    } as any, {
+      repoName: 'neonspark-core',
+      symbolName: 'ReloadBase',
+    });
+
+    expect((out as any).facts.process_hints.length).toBeGreaterThanOrEqual(0);
+    expect((out as any).clues.process_hints).toEqual([]);
   });
 });

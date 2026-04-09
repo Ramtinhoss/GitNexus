@@ -283,12 +283,12 @@ describe('slim query response shaping', () => {
 
     expect((out as any).decision.primary_candidate).toBe('SoulBringerIceCoreMgrPu');
     expect((out as any).decision.recommended_follow_up).toContain('resource_path_prefix=');
-    expect((out as any).clues?.process_hints?.[0]?.evidence_mode).toBe('resource_heuristic');
+    expect((out as any).clues?.process_hints).toEqual([]);
     expect((out as any).summary).toBe('SoulBringerIceCoreMgrPu');
     expect((out as any).summary).not.toContain('runtime heuristic clue');
   });
 
-  it('tier envelope exposes facts, closure, and clues with clue-tier heuristic process hints', () => {
+  it('tier envelope exposes facts, closure, and clues with empty clue-tier process hints', () => {
     const out = buildSlimQueryResult({
       processes: [
         {
@@ -328,6 +328,21 @@ describe('slim query response shaping', () => {
     expect((out as any).facts).toBeDefined();
     expect((out as any).closure).toBeDefined();
     expect((out as any).clues).toBeDefined();
-    expect((out as any).clues.process_hints[0].evidence_mode).toBe('resource_heuristic');
+    expect((out as any).clues.process_hints).toEqual([]);
+  });
+
+  it('slim clues.process_hints is always empty after heuristic removal', () => {
+    const out = buildSlimQueryResult({
+      processes: [{ summary: 'legacy clue', confidence: 'low', evidence_mode: 'resource_heuristic' }],
+      process_symbols: [],
+      definitions: [],
+      next_hops: [],
+    } as any, {
+      repoName: 'neonspark-core',
+      queryText: 'Reload',
+    });
+
+    expect((out as any).facts.process_hints.length).toBeGreaterThanOrEqual(0);
+    expect((out as any).clues.process_hints).toEqual([]);
   });
 });

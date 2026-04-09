@@ -34,17 +34,16 @@ export function buildSlimQueryResult(
     processHints,
     runtimeClaim: full.runtime_claim,
   });
-  const processHintTiers = splitProcessHintsByTier(processHints);
   const facts = {
     candidates,
-    process_hints: processHintTiers.facts,
+    process_hints: processHints,
   };
   const closure = {
     runtime_preview: runtimePreview,
     missing_proof_targets: missingProofTargets,
   };
   const clues = {
-    process_hints: processHintTiers.clues,
+    process_hints: [],
     resource_hints: resourceHints,
   };
   const summary = chooseTopSummary({
@@ -122,12 +121,11 @@ export function buildSlimContextResult(
     processHints,
     runtimeClaim: full.runtime_claim,
   });
-  const processHintTiers = splitProcessHintsByTier(processHints);
   const facts = {
     symbol: full.symbol,
     incoming: trimRelationBuckets(full.incoming),
     outgoing: trimRelationBuckets(full.outgoing),
-    process_hints: processHintTiers.facts,
+    process_hints: processHints,
   };
   const closure = {
     runtime_preview: runtimePreview,
@@ -137,7 +135,7 @@ export function buildSlimContextResult(
       : undefined,
   };
   const clues = {
-    process_hints: processHintTiers.clues,
+    process_hints: [],
     resource_hints: resourceHints,
   };
   const summary = chooseTopSummary({
@@ -183,23 +181,6 @@ export function buildSlimContextResult(
   };
 }
 
-function splitProcessHintsByTier(processHints: Array<Record<string, unknown>>): {
-  facts: Array<Record<string, unknown>>;
-  clues: Array<Record<string, unknown>>;
-} {
-  const facts: Array<Record<string, unknown>> = [];
-  const clues: Array<Record<string, unknown>> = [];
-  for (const hint of processHints) {
-    const evidenceMode = String(hint?.evidence_mode || '').trim();
-    if (evidenceMode === 'resource_heuristic') {
-      clues.push(hint);
-      continue;
-    }
-    facts.push(hint);
-  }
-  return { facts, clues };
-}
-
 function inferSummarySource(input: {
   summary: string;
   facts: Record<string, unknown>;
@@ -240,8 +221,7 @@ function validateTierSemanticOrder(input: {
   if (factProcessHints.length === 0) return true;
   return !factProcessHints.some((row) => {
     const confidence = String((row as Record<string, unknown>)?.confidence || '').trim().toLowerCase();
-    const evidenceMode = String((row as Record<string, unknown>)?.evidence_mode || '').trim().toLowerCase();
-    return (confidence === 'high' || confidence === 'medium') && evidenceMode !== 'resource_heuristic';
+    return confidence === 'high' || confidence === 'medium';
   });
 }
 
@@ -300,16 +280,13 @@ function scoreCandidateRow(
   const evidenceBonus = scoreEvidenceMode(String(row?.process_evidence_mode || ''));
   const confidenceBonus = scoreConfidence(String(row?.process_confidence || ''));
   const resourceAffinityBonus = hasPreferredResourceAffinity(row, input.preferredResourceTargets) ? 35 : 0;
-  const heuristicLowPenalty = isLowConfidenceHeuristic(row) && !exactLexicalMatch ? 25 : 0;
-
   return lexicalBonus
     + fileAffinityBonus
     + kindBonus
     + classAnchorBonus
     + resourceAffinityBonus
     + evidenceBonus
-    + confidenceBonus
-    - heuristicLowPenalty;
+    + confidenceBonus;
 }
 
 function extractPreferredResourceTargets(nextHops: unknown): string[] {
@@ -336,16 +313,10 @@ function hasPreferredResourceAffinity(row: Record<string, any>, preferredResourc
   return preferredResourceTargets.some((target) => bindingSet.has(target));
 }
 
-function isLowConfidenceHeuristic(row: Record<string, any>): boolean {
-  return String(row?.process_evidence_mode || '').trim() === 'resource_heuristic'
-    && String(row?.process_confidence || '').trim() === 'low';
-}
-
 function scoreEvidenceMode(value: string): number {
   const normalized = String(value || '').trim();
   if (normalized === 'direct_step') return 18;
   if (normalized === 'method_projected') return 10;
-  if (normalized === 'resource_heuristic') return -12;
   return 0;
 }
 
@@ -388,12 +359,6 @@ function buildProcessHints(processes: any): Array<Record<string, unknown>> {
     .map((entry) => entry.hint);
 }
 
-function isLowConfidenceHeuristicProcessHint(hint: Record<string, unknown> | undefined): boolean {
-  if (!hint) return false;
-  return String(hint?.evidence_mode || '').trim() === 'resource_heuristic'
-    && String(hint?.confidence || '').trim() === 'low';
-}
-
 function scoreProcessHint(hint: Record<string, unknown> | undefined): number {
   if (!hint) return Number.NEGATIVE_INFINITY;
   const evidenceMode = String(hint?.evidence_mode || '').trim();
@@ -402,14 +367,12 @@ function scoreProcessHint(hint: Record<string, unknown> | undefined): number {
 
   if (evidenceMode === 'direct_step') score += 60;
   else if (evidenceMode === 'method_projected') score += 40;
-  else if (evidenceMode === 'resource_heuristic') score += 5;
   else score += 20;
 
   if (confidence === 'high') score += 20;
   else if (confidence === 'medium') score += 10;
   else if (confidence === 'low') score -= 10;
 
-  if (evidenceMode === 'resource_heuristic' && confidence === 'low') score -= 20;
   return score;
 }
 
@@ -427,12 +390,7 @@ function chooseTopSummary(input: {
   const candidateName = String(input.candidates?.[0]?.name || '').trim();
   const candidateScore = candidateName ? 45 : Number.NEGATIVE_INFINITY;
 
-  if (input.strictAnchorMode && isLowConfidenceHeuristicProcessHint(topProcess)) {
-    if (candidateName) return candidateName;
-    return input.fallback;
-  }
-
-  if (topProcessSummary && !isLowConfidenceHeuristicProcessHint(topProcess) && topProcessScore >= candidateScore) {
+  if (topProcessSummary && topProcessScore >= candidateScore) {
     return topProcessSummary;
   }
   if (candidateName && candidateScore > topProcessScore) {
