@@ -103,7 +103,12 @@
         "properties": {
           "kind": {
             "type": "string",
-            "enum": ["asset_ref_loads_components", "method_triggers_field_load"]
+            "enum": [
+              "asset_ref_loads_components",
+              "method_triggers_field_load",
+              "method_triggers_scene_load",
+              "method_triggers_method"
+            ]
           },
           "ref_field_pattern": { "type": "string" },
           "target_entry_points": {
@@ -115,8 +120,60 @@
           "loader_methods": {
             "type": "array",
             "items": { "type": "string" }
+          },
+          "scene_name": { "type": "string" },
+          "source_class_pattern": { "type": "string" },
+          "source_method": { "type": "string" },
+          "target_class_pattern": { "type": "string" },
+          "target_method": { "type": "string" }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": { "const": "asset_ref_loads_components" }
+              }
+            },
+            "then": {
+              "required": ["ref_field_pattern", "target_entry_points"]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": { "const": "method_triggers_field_load" }
+              }
+            },
+            "then": {
+              "required": ["host_class_pattern", "field_name", "loader_methods"]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": { "const": "method_triggers_scene_load" }
+              }
+            },
+            "then": {
+              "required": ["host_class_pattern", "loader_methods", "scene_name"]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": { "const": "method_triggers_method" }
+              }
+            },
+            "then": {
+              "required": [
+                "source_class_pattern",
+                "source_method",
+                "target_class_pattern",
+                "target_method"
+              ]
+            }
           }
-        }
+        ]
       }
     },
     "lifecycle_overrides": {
