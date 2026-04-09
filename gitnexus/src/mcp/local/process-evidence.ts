@@ -1,9 +1,7 @@
 import {
-  buildVerificationHint,
   deriveConfidence,
   type ProcessConfidence,
   type ProcessEvidenceMode,
-  type VerificationHint,
 } from './process-confidence.js';
 import {
   deriveRuntimeChainEvidenceLevel,
@@ -22,17 +20,10 @@ export interface ProjectedProcessEvidenceRow extends ProcessEvidenceRow {
   viaMethodId?: string;
 }
 
-export interface HeuristicProcessEvidenceRow extends ProcessEvidenceRow {
-  processSubtype?: string;
-  needsParityRetry?: boolean;
-  verificationTarget?: string;
-}
-
 export interface MergedProcessEvidenceRow extends ProcessEvidenceRow {
   evidence_mode: ProcessEvidenceMode;
   confidence: ProcessConfidence;
   runtime_chain_evidence_level: RuntimeChainEvidenceLevel;
-  verification_hint?: VerificationHint;
 }
 
 function asFingerprintToken(value: unknown): string {
@@ -69,32 +60,8 @@ const normalizeProcessConfidence = (
 export function mergeProcessEvidence(input: {
   directRows: ProcessEvidenceRow[];
   projectedRows: ProjectedProcessEvidenceRow[];
-  heuristicRows?: HeuristicProcessEvidenceRow[];
 }): MergedProcessEvidenceRow[] {
   const byPid = new Map<string, MergedProcessEvidenceRow>();
-
-  for (const row of input.heuristicRows || []) {
-    const confidence = deriveConfidence({
-      evidenceMode: 'resource_heuristic',
-      processSubtype: String((row as any).processSubtype || ''),
-      hasPartialUnityEvidence: true,
-    });
-    byPid.set(row.pid, {
-      ...row,
-      pid: row.pid,
-      label: row.label,
-      step: row.step,
-      stepCount: row.stepCount,
-      evidence_mode: 'resource_heuristic',
-      confidence,
-      runtime_chain_evidence_level: deriveRuntimeChainEvidenceLevel({ mode: 'heuristic_clue' }),
-      verification_hint: buildVerificationHint({
-        confidence,
-        needsParityRetry: Boolean(row.needsParityRetry),
-        target: row.verificationTarget || row.label || row.pid,
-      }),
-    });
-  }
 
   for (const row of input.projectedRows) {
     byPid.set(row.pid, {

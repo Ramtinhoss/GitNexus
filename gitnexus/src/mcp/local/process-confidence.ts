@@ -1,4 +1,4 @@
-export type ProcessEvidenceMode = 'direct_step' | 'method_projected' | 'resource_heuristic';
+export type ProcessEvidenceMode = 'direct_step' | 'method_projected';
 export type ProcessConfidence = 'high' | 'medium' | 'low';
 
 export interface VerificationHint {
@@ -10,7 +10,6 @@ export interface VerificationHint {
 export interface DeriveConfidenceInput {
   evidenceMode: ProcessEvidenceMode;
   processSubtype?: string;
-  hasPartialUnityEvidence?: boolean;
 }
 
 export interface BuildVerificationHintInput {
@@ -20,9 +19,6 @@ export interface BuildVerificationHintInput {
 }
 
 export function deriveConfidence(input: DeriveConfidenceInput): ProcessConfidence {
-  if (input.evidenceMode === 'resource_heuristic') {
-    return 'low';
-  }
   if (input.evidenceMode === 'method_projected') {
     return 'medium';
   }

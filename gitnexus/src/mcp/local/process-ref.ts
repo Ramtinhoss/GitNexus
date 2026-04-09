@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 export type ProcessRefKind = 'persistent' | 'derived';
-export type ProcessRefOrigin = 'step_in_process' | 'method_projected' | 'resource_heuristic';
+export type ProcessRefOrigin = 'step_in_process' | 'method_projected';
 
 export interface ProcessRef {
   id: string;

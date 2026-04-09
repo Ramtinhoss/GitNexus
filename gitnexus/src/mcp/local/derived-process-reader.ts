@@ -13,7 +13,7 @@ export async function getDerivedProcessDetailResource(
   const lines: string[] = [
     `id: "${normalizedId}"`,
     'kind: derived',
-    'origin: resource_heuristic',
+    'origin: method_projected',
     `reader_uri: "gitnexus://repo/${encodeURIComponent(String(repoName || ''))}/derived-process/${encodeURIComponent(normalizedId)}"`,
     'readable: true',
     'note: "Derived process references are synthesized at query/context runtime from symbol + evidence fingerprints."',

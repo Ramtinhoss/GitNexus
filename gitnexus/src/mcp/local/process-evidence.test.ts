@@ -38,27 +38,13 @@ test('direct rows dominate projected rows for same process id', () => {
   assert.equal(out[0].confidence, 'high');
 });
 
-test('heuristic-only rows emit low confidence with verification hint', () => {
+test('mergeProcessEvidence never emits resource_heuristic rows', () => {
   const out = mergeProcessEvidence({
     directRows: [],
     projectedRows: [],
-    heuristicRows: [
-      {
-        pid: 'proc:reload-clue',
-        label: 'Reload runtime clue',
-        step: 0,
-        stepCount: 0,
-        processSubtype: 'unity_lifecycle',
-        needsParityRetry: true,
-        verificationTarget: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
-      },
-    ],
   });
 
-  assert.equal(out[0].evidence_mode, 'resource_heuristic');
-  assert.equal(out[0].confidence, 'low');
-  assert.equal(out[0].verification_hint?.action, 'rerun_parity_hydration');
-  assert.match(out[0].verification_hint?.next_command || '', /parity/i);
+  assert.equal(out.some((row) => String((row as any).evidence_mode) === 'resource_heuristic'), false);
 });
 
 test('deriveEvidenceFingerprint is stable for same input ordering', () => {

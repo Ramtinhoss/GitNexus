@@ -21,10 +21,12 @@ describe('process confidence', () => {
     ).toBe('medium');
   });
 
-  it('deriveConfidence returns low for resource heuristic rows', () => {
+  it('rejects legacy heuristic evidence mode at type/runtime boundary', () => {
     expect(
-      deriveConfidence({ evidenceMode: 'resource_heuristic', hasPartialUnityEvidence: true }),
-    ).toBe('low');
+      deriveConfidence({ evidenceMode: 'method_projected' }),
+    ).toBe('medium');
+    // @ts-expect-error legacy mode removed
+    deriveConfidence({ evidenceMode: 'resource_heuristic' });
   });
 
   it('buildVerificationHint includes parity retry guidance for low confidence rows', () => {
