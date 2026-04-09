@@ -69,4 +69,48 @@ describe('slim context response shaping', () => {
     expect((out as any).directIncoming).toBeUndefined();
     expect((out as any).next_hops).toBeUndefined();
   });
+
+  it('keeps clue-tier process rows but does not promote them to top summary/default reading', () => {
+    const out = buildSlimContextResult({
+      status: 'found',
+      symbol: {
+        uid: 'Class:Assets/NEON/Code/Game/Core/GameBootstrap.cs:GameBootstrap',
+        name: 'GameBootstrap',
+        kind: 'Class',
+        filePath: 'Assets/NEON/Code/Game/Core/GameBootstrap.cs',
+      },
+      incoming: {},
+      outgoing: {},
+      processes: [
+        {
+          id: 'proc-low',
+          name: 'runtime heuristic clue',
+          confidence: 'low',
+          evidence_mode: 'resource_heuristic',
+        },
+        {
+          id: 'proc-high',
+          name: 'Unity-runtime-root → InitGlobal',
+          confidence: 'high',
+          evidence_mode: 'direct_step',
+        },
+      ],
+      next_hops: [
+        {
+          kind: 'resource',
+          target: 'Assets/NEON/DataAssets/Powerups/Startup/init_global.asset',
+          next_command: 'gitnexus query "InitGlobal"',
+          why: 'seeded resource',
+        },
+      ],
+    } as any, {
+      repoName: 'neonspark-core',
+      symbolName: 'GameBootstrap',
+    });
+
+    expect((out as any).summary).toBe('Unity-runtime-root → InitGlobal');
+    expect((out as any).processes[0].confidence).toBe('high');
+    expect((out as any).summary).not.toContain('runtime heuristic clue');
+    expect((out as any).processes.some((row: any) => row.summary === 'runtime heuristic clue')).toBe(true);
+  });
 });

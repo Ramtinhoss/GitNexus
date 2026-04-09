@@ -194,4 +194,51 @@ describe('slim query response shaping', () => {
     expect((out as any).decision.primary_candidate).toBe('ReloadBase');
     expect((out as any).candidates[0].name).toBe('ReloadBase');
   });
+
+  it('prefers a high-confidence graph-backed process hint over low-confidence heuristic clue in first-screen summary', () => {
+    const out = buildSlimQueryResult({
+      processes: [
+        {
+          id: 'proc-low',
+          summary: 'runtime heuristic clue',
+          confidence: 'low',
+          evidence_mode: 'resource_heuristic',
+        },
+        {
+          id: 'proc-high',
+          summary: 'Unity-runtime-root → OnAddPowerUp',
+          confidence: 'high',
+          evidence_mode: 'direct_step',
+        },
+      ],
+      process_symbols: [
+        {
+          id: 'Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip',
+          name: 'Equip',
+          type: 'Method',
+          filePath: 'Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs',
+          process_evidence_mode: 'direct_step',
+          process_confidence: 'high',
+        },
+      ],
+      definitions: [],
+      next_hops: [
+        {
+          kind: 'resource',
+          target: 'Assets/NEON/DataAssets/Powerups/Startup/init_global.asset',
+          next_command: 'gitnexus query "init global"',
+          why: 'seeded resource',
+        },
+      ],
+    } as any, {
+      repoName: 'neonspark-core',
+      queryText: 'Equip InitGlobal OnAddPowerUp',
+    });
+
+    expect((out as any).summary).toBe('Unity-runtime-root → OnAddPowerUp');
+    expect((out as any).decision.primary_candidate).toBe('Equip');
+    expect((out as any).process_hints[0].confidence).toBe('high');
+    expect((out as any).decision.recommended_follow_up).toContain('resource_path_prefix=');
+    expect((out as any).summary).not.toContain('runtime heuristic clue');
+  });
 });
