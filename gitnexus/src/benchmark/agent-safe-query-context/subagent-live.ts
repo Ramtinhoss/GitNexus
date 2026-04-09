@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { deriveSemanticTuple, semanticTuplePass } from './semantic-tuple.js';
+import { scoreLiveTuple, type LiveFailureClass } from './semantic-tuple.js';
 import type { AgentSafeBenchmarkCase, SemanticTuple } from './types.js';
 
 export interface TelemetryStep {
@@ -15,8 +15,8 @@ export interface TelemetryStep {
 export interface SubagentFinalResult {
   resource_anchor?: string;
   symbol_anchor?: string;
-  proof_edge?: string;
-  proof_edges?: string[];
+  proof_edge?: unknown;
+  proof_edges?: unknown;
   closure_status?: SemanticTuple['closure_status'];
   summary?: string;
 }
@@ -29,6 +29,9 @@ export interface SubagentLiveResult {
   final_result: SubagentFinalResult;
   steps: TelemetryStep[];
   semantic_tuple: SemanticTuple;
+  normalized_tuple_pass: boolean;
+  evidence_validation_pass: boolean;
+  failure_class?: LiveFailureClass;
   semantic_tuple_pass: boolean;
   tool_calls_to_completion: number;
   tokens_to_completion: number;
@@ -124,11 +127,13 @@ export async function loadSubagentLiveCaseResult(
   }
 
   const finalResult = JSON.parse(await fs.readFile(resultPath, 'utf-8')) as SubagentFinalResult;
-  const semanticTuple = deriveSemanticTuple(
+  const scoring = scoreLiveTuple(
     benchmarkCase.semantic_tuple,
+    finalResult,
     steps.map((step) => step.output),
+    { toolCalls: steps.length },
   );
-  const passed = semanticTuplePass(semanticTuple, benchmarkCase.semantic_tuple);
+  const passed = scoring.normalized_tuple_pass && scoring.evidence_validation_pass;
 
   return {
     prompt,
@@ -137,7 +142,10 @@ export async function loadSubagentLiveCaseResult(
     telemetry_path: telemetryPath,
     final_result: finalResult,
     steps,
-    semantic_tuple: semanticTuple,
+    semantic_tuple: scoring.normalized_tuple,
+    normalized_tuple_pass: scoring.normalized_tuple_pass,
+    evidence_validation_pass: scoring.evidence_validation_pass,
+    failure_class: scoring.failure_class,
     semantic_tuple_pass: passed,
     tool_calls_to_completion: steps.length,
     tokens_to_completion: steps.reduce((sum, step) => sum + step.totalTokensEst, 0),

@@ -102,9 +102,56 @@ test('loadSubagentLiveCaseResult validates telemetry rows and derives semantic t
   );
 
   const result = await loadSubagentLiveCaseResult(runDir, fakeCase);
+  assert.equal(result.normalized_tuple_pass, true);
+  assert.equal(result.evidence_validation_pass, true);
+  assert.equal(result.failure_class, undefined);
   assert.equal(result.semantic_tuple_pass, true);
   assert.equal(result.tool_calls_to_completion, 2);
   assert.equal(result.tokens_to_completion, 200);
+});
+
+test('loadSubagentLiveCaseResult keeps case non-passing when evidence validation fails', async () => {
+  const runDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-safe-run-'));
+  const promptPath = path.join(runDir, 'prompt.txt');
+  const resultPath = path.join(runDir, 'result.json');
+  const telemetryPath = path.join(runDir, 'telemetry.jsonl');
+
+  await fs.writeFile(promptPath, buildSubagentPrompt(fakeCase, {
+    repo: 'neonspark-core',
+    runDir,
+    resultPath,
+  }), 'utf-8');
+  await fs.writeFile(resultPath, JSON.stringify({
+    resource_anchor: fakeCase.semantic_tuple.resource_anchor,
+    symbol_anchor: 'Game.Runtime.WeaponPowerUp',
+    proof_edges: [
+      { caller: 'HoldPickup', callee: 'WeaponPowerUp.PickItUp' },
+      { caller: 'EquipWithEvent', callee: 'WeaponPowerUp.Equip' },
+    ],
+    closure_status: 'not_verified_full',
+    summary: 'Normalized tuple inferred from final response.',
+  }, null, 2));
+  await fs.writeFile(
+    telemetryPath,
+    JSON.stringify({
+      tool: 'query',
+      input: { query: 'WeaponPowerUp', repo: 'neonspark-core' },
+      output: {
+        candidates: [{ name: 'WeaponPowerUp' }],
+        resource_hints: [{ target: fakeCase.semantic_tuple.resource_anchor }],
+      },
+      durationMs: 12,
+      totalTokensEst: 120,
+      timestamp: '2026-04-08T00:00:00.000Z',
+    }),
+    'utf-8',
+  );
+
+  const result = await loadSubagentLiveCaseResult(runDir, fakeCase);
+  assert.equal(result.normalized_tuple_pass, true);
+  assert.equal(result.evidence_validation_pass, false);
+  assert.equal(result.semantic_tuple_pass, false);
+  assert.equal(result.failure_class, 'evidence_missing');
 });
 
 test('loadSubagentLiveCaseResult rejects non-allowlisted tools', async () => {
