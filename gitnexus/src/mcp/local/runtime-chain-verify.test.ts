@@ -280,6 +280,37 @@ describe('runtime chain verify', () => {
     expect(out?.gaps.every((gap) => !!gap.next_command)).toBe(true);
   });
 
+  it('builds graph-only follow-up command from symbol anchor when query text is missing', async () => {
+    const out = await verifyRuntimeClaimOnDemand({
+      repoPath: await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-anchor-symbol-')),
+      executeParameterized: async () => [],
+      queryText: '',
+      symbolName: 'InitGlobal',
+      symbolFilePath: 'Assets/NEON/Code/Game/Core/GameBootstrap.cs',
+      resourceBindings: [],
+    });
+    expect(out.next_action).toContain('InitGlobal');
+    expect(out.next_action).not.toContain('Reload NEON.Game.Graph.Nodes.Reloads');
+    expect(out.gaps.every((gap) => !gap.next_command.includes('Reload NEON.Game.Graph.Nodes.Reloads'))).toBe(true);
+    expect(out.gaps.every((gap) => gap.next_command.includes('InitGlobal'))).toBe(true);
+  });
+
+  it('prefers resource seed path in follow-up command subject when seed is present', async () => {
+    const seedPath = 'Assets/NEON/DataAssets/Powerups/Startup/init_global.asset';
+    const out = await verifyRuntimeClaimOnDemand({
+      repoPath: await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-anchor-seed-')),
+      executeParameterized: async () => [],
+      queryText: '',
+      symbolName: 'InitGlobal',
+      symbolFilePath: 'Assets/NEON/Code/Game/Core/GameBootstrap.cs',
+      resourceSeedPath: seedPath,
+      resourceBindings: [],
+    });
+    expect(out.next_action).toContain(seedPath);
+    expect(out.next_action).not.toContain('Reload NEON.Game.Graph.Nodes.Reloads');
+    expect(out.gaps.every((gap) => !gap.next_command.includes('Reload NEON.Game.Graph.Nodes.Reloads'))).toBe(true);
+  });
+
   it('accepts seed-to-mapped resource equivalence for resource hop verification', async () => {
     const repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-mapped-resource-'));
     const out = await verifyRuntimeChainOnDemand({

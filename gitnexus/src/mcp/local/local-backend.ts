@@ -1982,7 +1982,7 @@ export class LocalBackend {
       result.runtime_claim = await verifyRuntimeClaimOnDemand({
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
-        queryText: searchQuery,
+        queryText: searchQuery || verifierAnchor.symbolName || seedPath,
         symbolName: verifierAnchor.symbolName,
         symbolFilePath: verifierAnchor.symbolFilePath,
         resourceSeedPath: seedPath,
@@ -2776,7 +2776,7 @@ export class LocalBackend {
       result.runtime_claim = await verifyRuntimeClaimOnDemand({
         repoPath: repo.repoPath,
         executeParameterized: (query, queryParams) => executeParameterized(repo.id, query, queryParams || {}),
-        queryText: name,
+        queryText: name || symName || uid || seedPath,
         symbolName: symName,
         symbolFilePath: symFilePath,
         resourceSeedPath: seedPath,

@@ -74,7 +74,11 @@ function toGraphOnlyRuntimeChainResult(input: {
   resourceBindings?: Array<{ resourcePath?: string }>;
   candidates: Awaited<ReturnType<typeof extractRuntimeGraphCandidates>>;
 }): RuntimeChainResult {
-  const nextCommand = buildDefaultVerifyNextCommand(input.queryText);
+  const nextCommand = buildDefaultVerifyNextCommand({
+    queryText: input.queryText,
+    symbolName: input.symbolName,
+    resourceSeedPath: input.resourceSeedPath,
+  });
   const closure = evaluateRuntimeClosure({
     queryText: input.queryText,
     symbolName: input.symbolName,
@@ -107,9 +111,26 @@ function toGraphOnlyRuntimeChainResult(input: {
   };
 }
 
-function buildDefaultVerifyNextCommand(queryText?: string): string {
-  const normalizedQuery = String(queryText || '').trim() || 'Reload NEON.Game.Graph.Nodes.Reloads';
-  const escapedQuery = normalizedQuery
+function resolveFollowUpSubject(input: {
+  queryText?: string;
+  symbolName?: string;
+  resourceSeedPath?: string;
+}): string {
+  const seedPath = String(input.resourceSeedPath || '').trim();
+  if (seedPath) return seedPath;
+  const symbolName = String(input.symbolName || '').trim();
+  if (symbolName) return symbolName;
+  const queryText = String(input.queryText || '').trim();
+  if (queryText) return queryText;
+  return 'unity-runtime-chain';
+}
+
+function buildDefaultVerifyNextCommand(input: {
+  queryText?: string;
+  symbolName?: string;
+  resourceSeedPath?: string;
+}): string {
+  const escapedQuery = resolveFollowUpSubject(input)
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"');
   return `node gitnexus/dist/cli/index.js query --unity-resources on --unity-hydration parity --runtime-chain-verify on-demand "${escapedQuery}"`;
@@ -209,6 +230,7 @@ function buildGraphOnlyRuntimeClaim(input: {
   runtimeChain: RuntimeChainResult;
   queryText?: string;
   symbolName?: string;
+  resourceSeedPath?: string;
   minimumEvidenceSatisfied?: boolean;
 }): RuntimeClaim {
   const normalizedStatus: RuntimeClaim['status'] = (
@@ -216,7 +238,11 @@ function buildGraphOnlyRuntimeClaim(input: {
   );
   const verificationFailed = normalizedStatus === 'failed'
     || (input.runtimeChain.evidence_level === 'none' && normalizedStatus !== 'verified_full');
-  const nextAction = buildDefaultVerifyNextCommand(input.queryText);
+  const nextAction = buildDefaultVerifyNextCommand({
+    queryText: input.queryText,
+    symbolName: input.symbolName,
+    resourceSeedPath: input.resourceSeedPath,
+  });
 
   const base: RuntimeClaim = {
     rule_id: 'graph-only.runtime-closure.v1',
@@ -266,7 +292,11 @@ function buildGraphOnlyRuntimeClaim(input: {
 export async function verifyRuntimeClaimOnDemand(
   input: VerifyRuntimeClaimInput,
 ): Promise<RuntimeClaim> {
-  const fallbackNextAction = buildDefaultVerifyNextCommand(input.queryText);
+  const fallbackNextAction = buildDefaultVerifyNextCommand({
+    queryText: input.queryText,
+    symbolName: input.symbolName,
+    resourceSeedPath: input.resourceSeedPath,
+  });
   if (!hasStructuredVerifierAnchors(input)) {
     return buildFailureRuntimeClaim({
       reason: 'rule_not_matched',
@@ -283,6 +313,7 @@ export async function verifyRuntimeClaimOnDemand(
       runtimeChain: graphOnlyRuntimeChain,
       queryText: input.queryText,
       symbolName: input.symbolName,
+      resourceSeedPath: input.resourceSeedPath,
       minimumEvidenceSatisfied: input.minimumEvidenceSatisfied,
     });
   }
