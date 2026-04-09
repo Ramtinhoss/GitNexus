@@ -192,8 +192,7 @@ function aggregateProcessEvidenceMode(
   rows: Array<{ process_evidence_mode?: ProcessEvidenceMode }>,
 ): ProcessEvidenceMode {
   if (rows.some((row) => row.process_evidence_mode === 'direct_step')) return 'direct_step';
-  if (rows.some((row) => row.process_evidence_mode === 'method_projected')) return 'method_projected';
-  return 'resource_heuristic';
+  return 'method_projected';
 }
 
 function selectVerificationHint(rows: Array<{ verification_hint?: VerificationHint }>): VerificationHint | undefined {
@@ -676,8 +675,7 @@ function aggregateRuntimeChainEvidenceLevel(
 
 function toProcessRefOrigin(mode: unknown): ProcessRefOrigin {
   if (mode === 'direct_step') return 'step_in_process';
-  if (mode === 'method_projected') return 'method_projected';
-  return 'resource_heuristic';
+  return 'method_projected';
 }
 
 function confidenceRank(confidence: unknown): number {
@@ -2651,36 +2649,6 @@ export class LocalBackend {
         }
       }
 
-      if (processRows.length === 0) {
-        const resourceBindings = Array.isArray((result as any).resourceBindings)
-          ? (result as any).resourceBindings
-          : [];
-        const needsParityRetry = Boolean((result as any).hydrationMeta?.needsParityRetry);
-        if (resourceBindings.length > 0 || needsParityRetry) {
-          const verificationTarget = pickVerificationTarget({
-            seedMode: resourceSeedMode,
-            seedPath,
-            mappedSeedTargets,
-            resourceBindings,
-            fallback: symFilePath || symName || symNodeId,
-          });
-          processRows = mergeProcessEvidence({
-            directRows: [],
-            projectedRows: [],
-            heuristicRows: [{
-              pid: `proc:heuristic:${String(symNodeId || '').replace(/\s+/g, '_')}`,
-              label: `${String(symName || 'Symbol')} runtime heuristic clue`,
-              processType: 'unity_resource_heuristic',
-              processSubtype: 'unity_lifecycle',
-              runtimeChainConfidence: 'low',
-              step: 1,
-              stepCount: 1,
-              needsParityRetry,
-              verificationTarget,
-            }],
-          });
-        }
-      }
     }
 
     result.processes = processRows.map((r: any) => {

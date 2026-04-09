@@ -269,20 +269,20 @@ withTestLbugDB('local-backend-calltool', (handle) => {
       }
     });
 
-    it('v1 context fallback clue parity', async () => {
+    it('context no longer injects heuristic rows when processRows is empty', async () => {
       const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
       process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';
       try {
         const out = await backend.callTool('context', {
           name: 'ReloadBase',
           file_path: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+          response_profile: 'full',
           unity_resources: 'on',
           unity_hydration_mode: 'parity',
         });
 
-        expect(out.resourceBindings.length).toBeGreaterThan(0);
-        expect(out.processes.some((p: any) => p.evidence_mode === 'resource_heuristic')).toBe(true);
-        expect(out.processes.some((p: any) => p.runtime_chain_confidence === 'low')).toBe(true);
+        expect(out.processes.some((p: any) => p.evidence_mode === 'resource_heuristic')).toBe(false);
+        expect(Array.isArray(out.resource_hints || out.next_hops || [])).toBe(true);
       } finally {
         if (original === undefined) {
           delete process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
