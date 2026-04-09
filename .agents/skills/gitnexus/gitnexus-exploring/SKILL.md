@@ -33,7 +33,7 @@ description: "Use when the user asks how code works, wants to understand archite
 - [ ] gitnexus_query for the concept you want to understand
 - [ ] Review returned processes (execution flows)
 - [ ] gitnexus_context on key symbols for callers/callees
-- [ ] Default `query/context` now return slim agent-safe payloads (`candidates`, `process_hints`, `resource_hints`, `upgrade_hints`, `runtime_preview`)
+- [ ] Default `query/context` now return slim agent-safe payloads (`candidates`, `process_hints`, `resource_hints`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`)
 - [ ] If you need legacy heavy fields (`processes`, `process_symbols`, `definitions`, `resourceBindings`, `serializedFields`, `next_hops`), rerun with `response_profile: "full"`
 - [ ] For Unity evidence, call context/query with `unity_resources: "on"` and `unity_hydration_mode: "compact"`
 - [ ] If `hydrationMeta.needsParityRetry === true`, rerun with `unity_hydration_mode: "parity"`
@@ -63,6 +63,7 @@ When exploration touches Unity runtime process semantics (runtime chain closure,
 ```
 gitnexus_query({query: "payment processing"})
 → Slim response: candidates + process_hints + upgrade_hints
+→ If `suggested_context_targets[]` includes `uid`, prefer the matching `context --uid` upgrade hint
 → Rerun with response_profile: "full" if you need grouped process rows and symbol payloads
 ```
 
@@ -71,6 +72,7 @@ gitnexus_query({query: "payment processing"})
 ```
 gitnexus_context({name: "validateUser"})
 → Slim response: incoming/outgoing refs, process hints, resource hints, upgrade hints
+→ Use structured `suggested_context_targets[]` for same-name disambiguation before rerunning full
 → Rerun with response_profile: "full" for full categorized refs plus Unity-heavy payloads
 ```
 

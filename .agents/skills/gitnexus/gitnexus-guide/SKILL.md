@@ -48,6 +48,8 @@ Default `query/context` responses are now slim for agent use:
 
 - `query`: `summary`, `candidates`, `process_hints`, `resource_hints`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
 - `context`: `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- `suggested_context_targets[]` now returns structured objects: `{ name, uid?, filePath?, why }`
+- `upgrade_hints[]` may include exact `gitnexus context --uid <uid>` commands for same-name disambiguation
 
 When you need the legacy heavy payloads (`processes`, `process_symbols`, `definitions`, `resourceBindings`, `serializedFields`, `next_hops`), pass:
 
@@ -71,7 +73,8 @@ Agent-safe upgrade path:
 
 - inspect `resource_hints[]` / `process_hints[]` first and narrow with `resource_path_prefix=` or symbol-targeted context
 - use `decision.recommended_follow_up` as the default narrow-first next step
-- inspect `missing_proof_targets[]` and `suggested_context_targets[]` before considering payload expansion
+- inspect `missing_proof_targets[]` and structured `suggested_context_targets[]` before considering payload expansion
+- when `suggested_context_targets[]` includes `uid`, prefer the matching `upgrade_hints[]` `context --uid` command over same-name `context(name=...)`
 - rerun with `response_profile: "full"` only when narrowing cannot close the proof gap
 
 Runtime claim closure reminder:
