@@ -38,7 +38,7 @@ export function buildSlimQueryResult(
       candidates,
       processHints,
       runtimePreview,
-      fallback: candidates[0]?.name || 'no_match',
+      fallback: String(candidates[0]?.name || 'no_match'),
     }),
     candidates,
     process_hints: processHints,

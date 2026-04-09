@@ -189,7 +189,10 @@ function computeSemanticDriftMetrics(
     firstOutput,
     postNarrowingOutput,
   });
-  const heuristicTopSummaryDetected = detectHeuristicTopSummary(firstOutput);
+  const heuristicTopSummaryDetected = detectHeuristicTopSummary({
+    benchmarkCase,
+    output: firstOutput,
+  });
 
   return {
     anchor_top1_pass: stringsEqual(primaryCandidate, benchmarkCase.semantic_tuple.symbol_anchor),
@@ -221,7 +224,11 @@ function detectPlaceholderLeak(input: {
   return signals.some((text) => text.includes(PLACEHOLDER_FOLLOW_UP.toLowerCase()));
 }
 
-function detectHeuristicTopSummary(output: Record<string, unknown> | undefined): boolean {
+function detectHeuristicTopSummary(input: {
+  benchmarkCase: AgentSafeBenchmarkCase;
+  output: Record<string, unknown> | undefined;
+}): boolean {
+  const output = input.output;
   if (!output) return false;
   const summary = String(output.summary || '').trim().toLowerCase();
   const processHints = Array.isArray(output.process_hints)
@@ -240,8 +247,12 @@ function detectHeuristicTopSummary(output: Record<string, unknown> | undefined):
     const confidence = String(row?.confidence || row?.process_confidence || '').trim().toLowerCase();
     return (confidence === 'high' || confidence === 'medium') && evidenceMode !== 'resource_heuristic';
   });
-  const hasStrongPrimaryCandidate = String(extractPrimaryCandidate(output) || '').trim().length > 0;
-  return hasStrongerProcessLead || hasStrongPrimaryCandidate;
+  const anchorSymbol = input.benchmarkCase.semantic_tuple.symbol_anchor;
+  const primaryCandidate = extractPrimaryCandidate(output);
+  const candidates = Array.isArray(output.candidates) ? output.candidates : [];
+  const hasStrongAnchorCandidate = stringsEqual(primaryCandidate, anchorSymbol)
+    || candidates.some((candidate) => stringsEqual(String((candidate as Record<string, unknown>)?.name || ''), anchorSymbol));
+  return hasStrongerProcessLead || hasStrongAnchorCandidate;
 }
 
 function collectSignalTexts(outputs: Array<Record<string, unknown> | undefined>): string[] {
