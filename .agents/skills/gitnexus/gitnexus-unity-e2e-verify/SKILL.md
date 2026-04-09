@@ -289,7 +289,7 @@ mcp__gitnexus__query:
 
 **PASS 条件**：`runtime_claim.status === 'verified_full'` 且 `runtime_claim.evidence_level === 'verified_chain'`。
 **FAIL 诊断**：
-- `rule_not_matched` → 规则的 `trigger_tokens` 未匹配查询文本
+- `rule_not_matched` → 缺少可用结构化锚点，或 symbol/resource seed 不足以建立 graph-only closure 起点
 - `rule_matched_but_verification_failed` → 图谱中无匹配的 `unity-rule-*` 合成边
 
 ### 验证 3: Process 完整性
@@ -342,7 +342,7 @@ mcp__gitnexus__cypher:
 | 症状 | 可能原因 | 修复方向 |
 |------|---------|---------|
 | 验证 1 失败（无合成边） | 规则未加载或 `family` 不是 `analyze_rules` | 检查 catalog.json 和规则 YAML |
-| 验证 2 失败（rule_not_matched） | `trigger_tokens` 未匹配 | 调整规则的 `match.trigger_tokens` |
+| 验证 2 失败（rule_not_matched） | 缺少结构化锚点，或 seed 不足以形成 graph-only closure 起点 | 补充 symbol/resource anchors，优先使用 `resource_path_prefix`、`uid`、精确类名 |
 | 验证 2 失败（verification_failed） | 合成边存在但 ruleId 不匹配 | 检查规则 ID 一致性 |
 | 验证 3 失败（无 Process） | 合成边 confidence 过低 | 检查 `RULE_EDGE_CONFIDENCE`（应为 0.75） |
 | 验证 4 失败（链路断裂，中间有动态跳转） | 事件派发/回调/delegate 无静态 CALLS 边 | 添加 `method_triggers_method` binding 桥接动态跳转 |

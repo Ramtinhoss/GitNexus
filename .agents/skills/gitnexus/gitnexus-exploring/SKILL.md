@@ -27,6 +27,12 @@ description: "Use when the user asks how code works, wants to understand archite
 
 Runtime retrieval mnemonic: `discovery -> seed narrowing -> closure verification`.
 
+Unity runtime retrieval rule of thumb:
+
+- natural-language `query` is discovery-only;
+- do not treat it as the primary retrieval anchor;
+- once you have a symbol or resource seed, switch to `uid` / `resource_path_prefix` narrowing immediately.
+
 > If step 2 says "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` (`cliPackageSpec` first, then `cliVersion`) and run `npx -y <resolved-spec> analyze` (it reuses previous analyze scope/options by default; add `--no-reuse-options` to reset). If the user declines, explicitly warn that retrieval may not reflect the current codebase.
 
 ## Checklist
@@ -86,14 +92,31 @@ gitnexus_context({name: "validateUser"})
 **Unity-focused context/query** — use compact first, inspect slim hints, then parity/full only when needed:
 
 ```
-gitnexus_context({
-  name: "DoorObj",
+gitnexus_query({
+  query: "ReloadBase",
+  resource_path_prefix: "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
   unity_resources: "on",
   unity_hydration_mode: "compact"
 })
+→ Use symbol/resource anchors for Unity runtime retrieval; do not rely on broad natural-language phrasing
 → Slim output gives resource/process narrowing hints first
 → If you need hydration diagnostics, rerun with response_profile: "full"
 → hydrationMeta.needsParityRetry ? rerun with unity_hydration_mode: "parity" : continue
+```
+
+Unity runtime example:
+
+```
+1. READ gitnexus://repo/neonspark-core/context
+2. gitnexus_query({
+     query: "ReloadBase",
+     resource_path_prefix: "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+     unity_resources: "on",
+     unity_hydration_mode: "compact"
+   })
+3. Follow `decision.recommended_follow_up` immediately
+4. gitnexus_context({uid: "<exact uid>", unity_resources: "on", runtime_chain_verify: "on-demand"})
+5. READ process resource or use cypher if you need graph proof
 ```
 
 ## Example: "How does payment processing work?"
@@ -112,6 +135,7 @@ gitnexus_context({
 ## Runtime-Chain Closure Guard
 
 - Query-time runtime closure is **graph-only** and does not require `verification_rules` / `trigger_tokens` matching.
+- For Unity runtime retrieval, prefer symbol/resource anchors over business-description phrasing; use natural-language `query` only to discover the first anchor.
 - In default slim mode, use `runtime_preview` as a fast status summary; rerun with `response_profile: "full"` when you need `runtime_claim.hops`, `runtime_claim.gaps`, or hydration diagnostics.
 - Treat `resource_heuristic` as clue-tier evidence (`clue`), not closure proof.
 - Strong graph hops can coexist with failed closure when verifier-core still reports `failed`; this is partial bridge evidence, not contradiction.
