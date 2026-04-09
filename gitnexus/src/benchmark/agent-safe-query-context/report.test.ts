@@ -138,9 +138,19 @@ test('benchmark report includes explicit benchmark tracks', async () => {
   assert.ok(report.same_script_slim.reload);
   assert.ok(report.subagent_live.weapon_powerup);
   assert.equal(report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass, true);
+  assert.equal(typeof report.workflow_replay_slim.weapon_powerup.anchor_top1_pass, 'boolean');
+  assert.equal(typeof report.workflow_replay_slim.weapon_powerup.recommended_follow_up_hit, 'boolean');
+  assert.equal(typeof report.workflow_replay_slim.weapon_powerup.post_narrowing_anchor_pass, 'boolean');
+  assert.equal(typeof report.workflow_replay_slim.weapon_powerup.post_narrowing_follow_up_hit, 'boolean');
+  assert.equal(typeof report.workflow_replay_slim.weapon_powerup.ambiguity_detour_count, 'number');
   assert.equal(
     report.acceptance.pass,
-    report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass && report.workflow_replay_slim.reload.semantic_tuple_pass,
+    report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass
+      && report.workflow_replay_slim.weapon_powerup.post_narrowing_anchor_pass
+      && report.workflow_replay_slim.weapon_powerup.post_narrowing_follow_up_hit
+      && report.workflow_replay_slim.reload.semantic_tuple_pass
+      && report.workflow_replay_slim.reload.post_narrowing_anchor_pass
+      && report.workflow_replay_slim.reload.post_narrowing_follow_up_hit,
   );
 });
 
@@ -222,8 +232,14 @@ test('benchmark report enforces track split, acceptance source, prompt secrecy, 
   assert.equal(Object.keys(report.subagent_live).length > 0, true);
 
   assert.deepEqual(report.acceptance.cases, {
-    weapon_powerup: report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass,
-    reload: report.workflow_replay_slim.reload.semantic_tuple_pass,
+    weapon_powerup:
+      report.workflow_replay_slim.weapon_powerup.semantic_tuple_pass
+      && report.workflow_replay_slim.weapon_powerup.post_narrowing_anchor_pass
+      && report.workflow_replay_slim.weapon_powerup.post_narrowing_follow_up_hit,
+    reload:
+      report.workflow_replay_slim.reload.semantic_tuple_pass
+      && report.workflow_replay_slim.reload.post_narrowing_anchor_pass
+      && report.workflow_replay_slim.reload.post_narrowing_follow_up_hit,
   });
 
   assert.equal(report.subagent_live.weapon_powerup.prompt.includes('HoldPickup -> WeaponPowerUp.PickItUp'), false);

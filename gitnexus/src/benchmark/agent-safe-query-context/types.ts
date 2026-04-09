@@ -20,6 +20,14 @@ export interface SemanticTuple {
   closure_status: 'not_verified_full' | 'verified_partial' | 'verified_full' | 'failed';
 }
 
+export interface SemanticDriftMetrics {
+  anchor_top1_pass: boolean;
+  recommended_follow_up_hit: boolean;
+  post_narrowing_anchor_pass: boolean;
+  post_narrowing_follow_up_hit: boolean;
+  ambiguity_detour_count: number;
+}
+
 export interface AgentSafeLiveTask {
   objective: string;
   symbol_seed: string;

@@ -129,3 +129,93 @@ test('workflow replay applies response_profile to query and context calls', asyn
   assert.equal(queryCalls.every((entry) => entry.input.response_profile === 'slim'), true);
   assert.equal(contextCalls.every((entry) => entry.input.response_profile === 'slim'), true);
 });
+
+test('workflow replay exposes drift-sensitive metrics from the first-hop output and ambiguity detours', async () => {
+  const fakeRunner = {
+    async query() {
+      return {
+        decision: {
+          primary_candidate: 'FallbackCandidate',
+          recommended_follow_up: 'resource_path_prefix=Assets/Other/OffTarget.asset',
+        },
+        candidates: [{ name: 'FallbackCandidate' }],
+        resource_hints: [{ target: 'Assets/Other/OffTarget.asset' }],
+      };
+    },
+    async context() {
+      return {
+        status: 'ambiguous',
+        candidates: [
+          { name: 'WeaponPowerUp', uid: 'Class:A' },
+          { name: 'WeaponPowerUp', uid: 'Class:B' },
+        ],
+      };
+    },
+    async cypher() {
+      return {
+        row_count: 2,
+        rows: [
+          { src: 'HoldPickup', dst: 'PickItUp' },
+          { src: 'EquipWithEvent', dst: 'Equip' },
+        ],
+      };
+    },
+  };
+
+  const result = await runWorkflowReplay(fakeCase, fakeRunner, { maxSteps: 3, responseProfile: 'slim' });
+
+  assert.equal(result.anchor_top1_pass, false);
+  assert.equal(result.recommended_follow_up_hit, false);
+  assert.equal(result.post_narrowing_anchor_pass, false);
+  assert.equal(result.post_narrowing_follow_up_hit, false);
+  assert.equal(result.ambiguity_detour_count, 1);
+});
+
+test('workflow replay tracks post-narrowing convergence separately from first-hop drift', async () => {
+  let queryCount = 0;
+  const fakeRunner = {
+    async query() {
+      queryCount += 1;
+      if (queryCount === 1) {
+        return {
+          decision: {
+            primary_candidate: 'FallbackCandidate',
+            recommended_follow_up: 'resource_path_prefix=Assets/Other/OffTarget.asset',
+          },
+          candidates: [{ name: 'FallbackCandidate' }],
+          resource_hints: [{ target: 'Assets/Other/OffTarget.asset' }],
+        };
+      }
+      return {
+        decision: {
+          primary_candidate: 'WeaponPowerUp',
+          recommended_follow_up: `resource_path_prefix=${fakeCase.semantic_tuple.resource_anchor}`,
+        },
+        candidates: [{ name: 'WeaponPowerUp' }],
+        resource_hints: [{ target: fakeCase.semantic_tuple.resource_anchor }],
+      };
+    },
+    async context() {
+      return {
+        status: 'ambiguous',
+        candidates: [{ name: 'WeaponPowerUp', uid: 'Class:A' }],
+      };
+    },
+    async cypher() {
+      return {
+        row_count: 2,
+        rows: [
+          { src: 'HoldPickup', dst: 'PickItUp' },
+          { src: 'EquipWithEvent', dst: 'Equip' },
+        ],
+      };
+    },
+  };
+
+  const result = await runWorkflowReplay(fakeCase, fakeRunner, { maxSteps: 4, responseProfile: 'slim' });
+
+  assert.equal(result.anchor_top1_pass, false);
+  assert.equal(result.recommended_follow_up_hit, false);
+  assert.equal(result.post_narrowing_anchor_pass, true);
+  assert.equal(result.post_narrowing_follow_up_hit, true);
+});

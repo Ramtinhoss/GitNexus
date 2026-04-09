@@ -1,8 +1,9 @@
+import path from 'node:path';
 import { estimateTokens } from '../u2-e2e/metrics.js';
 import type { AgentContextToolRunner } from '../agent-context/tool-runner.js';
 import { createAgentContextToolRunner } from '../agent-context/tool-runner.js';
 import { deriveSemanticTuple, semanticTuplePass } from './semantic-tuple.js';
-import type { AgentSafeBenchmarkCase, SemanticTuple } from './types.js';
+import type { AgentSafeBenchmarkCase, SemanticDriftMetrics, SemanticTuple } from './types.js';
 
 export interface WorkflowReplayStep {
   tool: 'query' | 'context' | 'cypher';
@@ -12,7 +13,7 @@ export interface WorkflowReplayStep {
   totalTokensEst: number;
 }
 
-export interface WorkflowReplayResult {
+export interface WorkflowReplayResult extends SemanticDriftMetrics {
   steps: WorkflowReplayStep[];
   semantic_tuple: SemanticTuple;
   semantic_tuple_pass: boolean;
@@ -108,6 +109,7 @@ export async function runWorkflowReplay(
     steps,
     semantic_tuple: semanticTuple,
     semantic_tuple_pass: passed,
+    ...computeSemanticDriftMetrics(benchmarkCase, steps),
     tool_calls_to_completion: steps.length,
     tokens_to_completion: steps.reduce((sum, step) => sum + step.totalTokensEst, 0),
     retry_breakdown: {
@@ -168,4 +170,110 @@ function withReplayInput(
     return { ...withRepo, response_profile: responseProfile };
   }
   return withRepo;
+}
+
+function computeSemanticDriftMetrics(
+  benchmarkCase: AgentSafeBenchmarkCase,
+  steps: WorkflowReplayStep[],
+): SemanticDriftMetrics {
+  const firstOutput = steps[0]?.output as Record<string, unknown> | undefined;
+  const postNarrowingOutput = pickPostNarrowingQueryOutput(benchmarkCase, steps);
+  const primaryCandidate = extractPrimaryCandidate(firstOutput);
+  const recommendedFollowUp = extractRecommendedFollowUp(firstOutput);
+  const postNarrowingPrimaryCandidate = extractPrimaryCandidate(postNarrowingOutput);
+  const postNarrowingRecommendedFollowUp = extractRecommendedFollowUp(postNarrowingOutput);
+
+  return {
+    anchor_top1_pass: stringsEqual(primaryCandidate, benchmarkCase.semantic_tuple.symbol_anchor),
+    recommended_follow_up_hit: recommendedFollowUp
+      ? matchesResourceAnchor(recommendedFollowUp, benchmarkCase.semantic_tuple.resource_anchor)
+      : extractResourceTargets(firstOutput).some((target) => matchesResourceAnchor(target, benchmarkCase.semantic_tuple.resource_anchor)),
+    post_narrowing_anchor_pass: stringsEqual(postNarrowingPrimaryCandidate, benchmarkCase.semantic_tuple.symbol_anchor),
+    post_narrowing_follow_up_hit: postNarrowingRecommendedFollowUp
+      ? matchesResourceAnchor(postNarrowingRecommendedFollowUp, benchmarkCase.semantic_tuple.resource_anchor)
+      : extractResourceTargets(postNarrowingOutput).some((target) => matchesResourceAnchor(target, benchmarkCase.semantic_tuple.resource_anchor)),
+    ambiguity_detour_count: steps.reduce(
+      (count, step) => count + (isAmbiguousOutput(step.output) ? 1 : 0),
+      0,
+    ),
+  };
+}
+
+function pickPostNarrowingQueryOutput(
+  benchmarkCase: AgentSafeBenchmarkCase,
+  steps: WorkflowReplayStep[],
+): Record<string, unknown> | undefined {
+  const queryOutputs = steps
+    .filter((step) => step.tool === 'query')
+    .map((step) => step.output as Record<string, unknown> | undefined);
+
+  return queryOutputs.find((output) => {
+    const primaryCandidate = extractPrimaryCandidate(output);
+    if (stringsEqual(primaryCandidate, benchmarkCase.semantic_tuple.symbol_anchor)) {
+      return true;
+    }
+    const resourceTargets = extractResourceTargets(output);
+    if (resourceTargets.some((target) => matchesResourceAnchor(target, benchmarkCase.semantic_tuple.resource_anchor))) {
+      return true;
+    }
+    return matchesResourceAnchor(extractRecommendedFollowUp(output), benchmarkCase.semantic_tuple.resource_anchor);
+  });
+}
+
+function extractPrimaryCandidate(output: Record<string, unknown> | undefined): string {
+  const decision = output?.decision as Record<string, unknown> | undefined;
+  const candidates = Array.isArray(output?.candidates) ? output.candidates : [];
+  const symbol = output?.symbol as Record<string, unknown> | undefined;
+  return String(
+    decision?.primary_candidate
+    || (candidates[0] as Record<string, unknown> | undefined)?.name
+    || symbol?.name
+    || '',
+  ).trim();
+}
+
+function extractRecommendedFollowUp(output: Record<string, unknown> | undefined): string {
+  const decision = output?.decision as Record<string, unknown> | undefined;
+  return String(decision?.recommended_follow_up || '').trim();
+}
+
+function extractResourceTargets(output: Record<string, unknown> | undefined): string[] {
+  const targets = new Set<string>();
+  const resourceHints = Array.isArray(output?.resource_hints) ? output.resource_hints : [];
+  const nextHops = Array.isArray(output?.next_hops) ? output.next_hops : [];
+  for (const row of [...resourceHints, ...nextHops]) {
+    const target = String((row as Record<string, unknown>)?.target || (row as Record<string, unknown>)?.path || '').trim();
+    if (target) targets.add(target);
+  }
+  return [...targets];
+}
+
+function isAmbiguousOutput(output: unknown): boolean {
+  if (!output || typeof output !== 'object') return false;
+  const row = output as Record<string, unknown>;
+  const status = String(row.status || '').trim().toLowerCase();
+  const message = String(row.message || '').trim().toLowerCase();
+  return status === 'ambiguous' || message.includes('disambiguate');
+}
+
+function matchesResourceAnchor(candidate: string, canonical: string): boolean {
+  const normalizedCandidate = normalizeAssetPath(candidate);
+  const normalizedCanonical = normalizeAssetPath(canonical);
+  if (!normalizedCandidate || !normalizedCanonical) return false;
+  if (normalizedCandidate.includes(normalizedCanonical)) return true;
+
+  const canonicalDir = path.posix.dirname(normalizedCanonical);
+  return normalizedCandidate.includes(canonicalDir);
+}
+
+function normalizeAssetPath(value: string): string {
+  return String(value || '')
+    .trim()
+    .replace(/^resource_path_prefix=/, '')
+    .replace(/^"+|"+$/g, '')
+    .replace(/\\/g, '/');
+}
+
+function stringsEqual(left: string, right: string): boolean {
+  return String(left || '').trim().toLowerCase() === String(right || '').trim().toLowerCase();
 }

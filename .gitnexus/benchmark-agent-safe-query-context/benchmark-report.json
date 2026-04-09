@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-09T02:52:28.735Z",
+  "generatedAt": "2026-04-09T04:46:22.778Z",
   "workflow_replay_full": {
     "weapon_powerup": {
       "steps": [
@@ -1085,7 +1085,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 12,
+                  "elapsedMs": 11,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 112,
                   "unityDiagnosticsCount": 0,
@@ -1881,7 +1881,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 0,
+                  "elapsedMs": 1,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 2,
                   "unityDiagnosticsCount": 0,
@@ -2119,12 +2119,6 @@
             },
             "next_hops": [
               {
-                "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset\" \"HybridWeaponPowerUp\""
-              },
-              {
                 "kind": "verify",
                 "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset",
                 "why": "Low-confidence evidence requires a verification follow-up.",
@@ -2132,9 +2126,9 @@
               },
               {
                 "kind": "symbol",
-                "target": "HybridWeaponPowerUp",
+                "target": "Equip",
                 "why": "Inspect symbol-level context to continue tracing.",
-                "next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"HybridWeaponPowerUp\""
+                "next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"Equip\""
               }
             ],
             "missing_evidence": [],
@@ -2146,8 +2140,8 @@
               "verifier_minimum_evidence_satisfied": false
             }
           },
-          "durationMs": 1116,
-          "totalTokensEst": 12286
+          "durationMs": 837.4,
+          "totalTokensEst": 12165
         },
         {
           "tool": "query",
@@ -2685,7 +2679,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 23,
+                  "elapsedMs": 30,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 360,
                   "unityDiagnosticsCount": 0,
@@ -2896,7 +2890,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 0,
+                  "elapsedMs": 1,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 2,
                   "unityDiagnosticsCount": 0,
@@ -2921,7 +2915,7 @@
             "hydrationMeta": {
               "requestedMode": "compact",
               "effectiveMode": "compact",
-              "elapsedMs": 23,
+              "elapsedMs": 30,
               "fallbackToCompact": false,
               "resourceBindingCount": 360,
               "unityDiagnosticsCount": 0,
@@ -2933,21 +2927,21 @@
             "next_hops": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+                "target": "Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+                "target": "Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "verify",
@@ -2957,9 +2951,9 @@
               },
               {
                 "kind": "symbol",
-                "target": "WeaponPowerUp",
+                "target": "EquipWithEvent",
                 "why": "Inspect symbol-level context to continue tracing.",
-                "next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"WeaponPowerUp\""
+                "next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"EquipWithEvent\""
               }
             ],
             "missing_evidence": [],
@@ -2975,8 +2969,8 @@
               "filter_exhausted"
             ]
           },
-          "durationMs": 556,
-          "totalTokensEst": 5161
+          "durationMs": 555.7,
+          "totalTokensEst": 5177
         },
         {
           "tool": "context",
@@ -3108,7 +3102,7 @@
               }
             ]
           },
-          "durationMs": 19.1,
+          "durationMs": 17.7,
           "totalTokensEst": 845
         },
         {
@@ -3250,7 +3244,7 @@
               }
             ]
           },
-          "durationMs": 13.6,
+          "durationMs": 14.8,
           "totalTokensEst": 930
         },
         {
@@ -3263,7 +3257,7 @@
             "markdown": "| src.name | dst.name |\n| --- | --- |\n| EquipWithEvent | Equip |\n| HoldPickup | PickItUp |\n| EquipWithEvent | Equip |",
             "row_count": 3
           },
-          "durationMs": 32.2,
+          "durationMs": 32.1,
           "totalTokensEst": 95
         }
       ],
@@ -3277,8 +3271,13 @@
         "closure_status": "not_verified_full"
       },
       "semantic_tuple_pass": true,
+      "anchor_top1_pass": false,
+      "recommended_follow_up_hit": false,
+      "post_narrowing_anchor_pass": false,
+      "post_narrowing_follow_up_hit": true,
+      "ambiguity_detour_count": 0,
       "tool_calls_to_completion": 5,
-      "tokens_to_completion": 19317,
+      "tokens_to_completion": 19212,
       "retry_breakdown": {
         "query_retry_count": 1,
         "context_retry_count": 1,
@@ -3528,7 +3527,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 4,
+                  "elapsedMs": 6,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 48,
                   "unityDiagnosticsCount": 0,
@@ -3846,7 +3845,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 0,
+                  "elapsedMs": 1,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 4,
                   "unityDiagnosticsCount": 0,
@@ -3987,7 +3986,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 1,
+                  "elapsedMs": 0,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 4,
                   "unityDiagnosticsCount": 0,
@@ -4116,7 +4115,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 0,
+                  "elapsedMs": 1,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 4,
                   "unityDiagnosticsCount": 0,
@@ -4325,7 +4324,7 @@
             "hydrationMeta": {
               "requestedMode": "compact",
               "effectiveMode": "compact",
-              "elapsedMs": 4,
+              "elapsedMs": 6,
               "fallbackToCompact": false,
               "resourceBindingCount": 48,
               "unityDiagnosticsCount": 0,
@@ -4363,7 +4362,7 @@
               "verifier_minimum_evidence_satisfied": false
             }
           },
-          "durationMs": 616.1,
+          "durationMs": 635.5,
           "totalTokensEst": 10596
         },
         {
@@ -4558,7 +4557,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 16,
+                  "elapsedMs": 22,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 396,
                   "unityDiagnosticsCount": 0,
@@ -4675,7 +4674,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 23,
+                  "elapsedMs": 29,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 1014,
                   "unityDiagnosticsCount": 0,
@@ -4810,7 +4809,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 20,
+                  "elapsedMs": 23,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 814,
                   "unityDiagnosticsCount": 0,
@@ -4915,7 +4914,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 20,
+                  "elapsedMs": 23,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 630,
                   "unityDiagnosticsCount": 0,
@@ -5059,7 +5058,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 1,
+                  "elapsedMs": 0,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 4,
                   "unityDiagnosticsCount": 0,
@@ -5119,7 +5118,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 24,
+                  "elapsedMs": 32,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 1272,
                   "unityDiagnosticsCount": 0,
@@ -5165,7 +5164,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 4,
+                  "elapsedMs": 6,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 98,
                   "unityDiagnosticsCount": 0,
@@ -5197,7 +5196,7 @@
             "hydrationMeta": {
               "requestedMode": "compact",
               "effectiveMode": "compact",
-              "elapsedMs": 16,
+              "elapsedMs": 22,
               "fallbackToCompact": false,
               "resourceBindingCount": 396,
               "unityDiagnosticsCount": 0,
@@ -5209,15 +5208,15 @@
             "next_hops": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
-              },
-              {
-                "kind": "resource",
                 "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
                 "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"Divide\""
+              },
+              {
+                "kind": "resource",
+                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
+                "why": "Unity resource evidence suggests this is the next deterministic hop.",
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
               },
               {
                 "kind": "verify",
@@ -5245,7 +5244,7 @@
               "filter_exhausted"
             ]
           },
-          "durationMs": 703.4,
+          "durationMs": 809.3,
           "totalTokensEst": 8269
         },
         {
@@ -5655,7 +5654,7 @@
               }
             ]
           },
-          "durationMs": 9261.8,
+          "durationMs": 9327.4,
           "totalTokensEst": 3216
         },
         {
@@ -5668,7 +5667,7 @@
             "markdown": "| src.name | dst.name |\n| --- | --- |\n| GetValue | CheckReload |",
             "row_count": 1
           },
-          "durationMs": 6.2,
+          "durationMs": 6.4,
           "totalTokensEst": 67
         }
       ],
@@ -5679,6 +5678,11 @@
         "closure_status": "not_verified_full"
       },
       "semantic_tuple_pass": true,
+      "anchor_top1_pass": false,
+      "recommended_follow_up_hit": false,
+      "post_narrowing_anchor_pass": false,
+      "post_narrowing_follow_up_hit": true,
+      "ambiguity_detour_count": 0,
       "tool_calls_to_completion": 4,
       "tokens_to_completion": 22148,
       "retry_breakdown": {
@@ -5704,34 +5708,37 @@
             "summary": "HybridWeaponPowerUp runtime heuristic clue",
             "candidates": [
               {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:HybridWeaponPowerUp",
-                "name": "HybridWeaponPowerUp",
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                "name": "Equip",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "module": "NeonPlayer"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                "name": "Equip",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+                "module": "PowerUps"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:Equip",
+                "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs",
                 "module": "ColdWeapon"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/ColdWeapon/ColdWeaponPowerUp.cs:ColdWeaponPowerUp",
-                "name": "ColdWeaponPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/ColdWeaponPowerUp.cs",
-                "module": "ColdWeapon"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/ColdWeapon/DualColdWeaponPowerUp.cs:DualColdWeaponPowerUp",
-                "name": "DualColdWeaponPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/DualColdWeaponPowerUp.cs",
-                "module": "ColdWeapon"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/GunParts/HatchmonConnectGunPowerUp.cs:HatchmonConnectGunPowerUp",
-                "name": "HatchmonConnectGunPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/GunParts/HatchmonConnectGunPowerUp.cs",
-                "module": "GunParts"
-              },
-              {
-                "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
                 "name": "Equip",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
-                "module": "NeonPlayer"
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
+              },
+              {
+                "id": "Struct:Assets/NEON/Code/Game/SimpleChain.cs:ChainNode",
+                "name": "ChainNode",
+                "kind": "Struct",
+                "filePath": "Assets/NEON/Code/Game/SimpleChain.cs"
               }
             ],
             "process_hints": [
@@ -5788,12 +5795,6 @@
             ],
             "resource_hints": [
               {
-                "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset\" \"HybridWeaponPowerUp\""
-              },
-              {
                 "kind": "verify",
                 "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset",
                 "why": "Low-confidence evidence requires a verification follow-up.",
@@ -5801,8 +5802,8 @@
               }
             ],
             "decision": {
-              "primary_candidate": "HybridWeaponPowerUp",
-              "recommended_follow_up": "resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset",
+              "primary_candidate": "Equip",
+              "recommended_follow_up": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
               "response_profile": "slim"
             },
             "missing_proof_targets": [
@@ -5813,40 +5814,60 @@
               "symbol:Assets/NEON/DataAssets/Powerups/3_武器道具/3_3_item_weapon_hatchmon_connect.asset"
             ],
             "suggested_context_targets": [
-              "HybridWeaponPowerUp",
-              "ColdWeaponPowerUp",
-              "DualColdWeaponPowerUp",
-              "HatchmonConnectGunPowerUp",
-              "Equip"
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "ChainNode",
+                "uid": "Struct:Assets/NEON/Code/Game/SimpleChain.cs:ChainNode",
+                "filePath": "Assets/NEON/Code/Game/SimpleChain.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              }
             ],
             "fallback_candidates": [
               {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/ColdWeapon/ColdWeaponPowerUp.cs:ColdWeaponPowerUp",
-                "name": "ColdWeaponPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/ColdWeaponPowerUp.cs",
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                "name": "Equip",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+                "module": "PowerUps"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:Equip",
+                "name": "Equip",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs",
                 "module": "ColdWeapon"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/ColdWeapon/DualColdWeaponPowerUp.cs:DualColdWeaponPowerUp",
-                "name": "DualColdWeaponPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/DualColdWeaponPowerUp.cs",
-                "module": "ColdWeapon"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/GunParts/HatchmonConnectGunPowerUp.cs:HatchmonConnectGunPowerUp",
-                "name": "HatchmonConnectGunPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/GunParts/HatchmonConnectGunPowerUp.cs",
-                "module": "GunParts"
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
+                "name": "Equip",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
               }
             ],
             "upgrade_hints": [
-              {
-                "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"weapon powerup equip chain\" # resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset"
-              },
               {
                 "kind": "verify",
                 "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/光剑_Lightsaber/1_weapon_melee_lightsaber.asset",
@@ -5856,10 +5877,31 @@
               },
               {
                 "kind": "symbol",
-                "target": "HybridWeaponPowerUp",
+                "target": "Equip",
                 "why": "Inspect symbol-level context to continue tracing.",
-                "param_delta": "name=HybridWeaponPowerUp",
-                "next_command": "gitnexus context --repo \"neonspark-core\" \"HybridWeaponPowerUp\""
+                "param_delta": "name=Equip",
+                "next_command": "gitnexus context --repo \"neonspark-core\" \"Equip\""
+              },
+              {
+                "kind": "symbol",
+                "target": "Equip",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "Equip",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip\" --file \"Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "Equip",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:Equip",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:Equip\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs\""
               },
               {
                 "kind": "full",
@@ -5870,8 +5912,8 @@
               }
             ]
           },
-          "durationMs": 575.3,
-          "totalTokensEst": 1774
+          "durationMs": 594.6,
+          "totalTokensEst": 2029
         },
         {
           "tool": "query",
@@ -5886,31 +5928,36 @@
             "summary": "Unity-runtime-root → OnAddPowerUp",
             "candidates": [
               {
+                "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                "name": "WeaponPowerUp",
+                "kind": "Class",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
+              },
+              {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
                 "name": "EquipWithEvent",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                 "module": "ColdWeapon"
               },
               {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
                 "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                 "module": "NeonPlayer"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
-                "name": "WeaponPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
-              },
-              {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
                 "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
               },
               {
-                "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:UnEquip",
-                "name": "UnEquip",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                "name": "Equip",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
                 "module": "PowerUps"
               }
             ],
@@ -5936,21 +5983,21 @@
             "resource_hints": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+                "target": "Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+                "target": "Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "verify",
@@ -5960,63 +6007,91 @@
               }
             ],
             "decision": {
-              "primary_candidate": "EquipWithEvent",
-              "recommended_follow_up": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+              "primary_candidate": "WeaponPowerUp",
+              "recommended_follow_up": "resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
               "response_profile": "slim"
             },
             "missing_proof_targets": [
-              "resource:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
-              "resource:Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
-              "resource:Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
               "resource:Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+              "resource:Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
+              "resource:Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
               "symbol:Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
             ],
             "suggested_context_targets": [
-              "EquipWithEvent",
-              "Equip",
-              "WeaponPowerUp",
-              "UnEquip",
-              "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
+              {
+                "name": "WeaponPowerUp",
+                "uid": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "EquipWithEvent",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              }
             ],
             "fallback_candidates": [
               {
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "name": "EquipWithEvent",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "module": "ColdWeapon"
+              },
+              {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
                 "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                 "module": "NeonPlayer"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
-                "name": "WeaponPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
-              },
-              {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
                 "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
               }
             ],
             "upgrade_hints": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+                "target": "Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab"
+                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
+                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset"
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+                "target": "Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab"
+                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
+                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset"
               },
               {
                 "kind": "verify",
@@ -6024,6 +6099,27 @@
                 "why": "Low-confidence evidence requires a verification follow-up.",
                 "param_delta": "follow_next_hop",
                 "next_command": "Inspect asset + .meta linkage for this target, then rerun query/context with --unity-resources on --unity-hydration parity"
+              },
+              {
+                "kind": "symbol",
+                "target": "WeaponPowerUp",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp\" --file \"Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "EquipWithEvent",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "Equip",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
               },
               {
                 "kind": "full",
@@ -6034,8 +6130,8 @@
               }
             ]
           },
-          "durationMs": 515.2,
-          "totalTokensEst": 1669
+          "durationMs": 561.3,
+          "totalTokensEst": 2356
         },
         {
           "tool": "context",
@@ -6109,7 +6205,16 @@
             "resource_hints": [],
             "missing_proof_targets": [],
             "suggested_context_targets": [
-              "HoldPickup"
+              {
+                "name": "HoldPickup",
+                "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup",
+                "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+              },
+              {
+                "name": "HoldPickup",
+                "why": "Current symbol name remains available as a fallback context target."
+              }
             ],
             "upgrade_hints": [
               {
@@ -6120,6 +6225,13 @@
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"HoldPickup\""
               },
               {
+                "kind": "symbol",
+                "target": "HoldPickup",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup\" --file \"Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs\""
+              },
+              {
                 "kind": "full",
                 "target": "context",
                 "why": "Expand back to the legacy heavy payload when deeper evidence is required.",
@@ -6128,8 +6240,8 @@
               }
             ]
           },
-          "durationMs": 12.8,
-          "totalTokensEst": 575
+          "durationMs": 13,
+          "totalTokensEst": 780
         },
         {
           "tool": "context",
@@ -6205,7 +6317,16 @@
             "resource_hints": [],
             "missing_proof_targets": [],
             "suggested_context_targets": [
-              "EquipWithEvent"
+              {
+                "name": "EquipWithEvent",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+              },
+              {
+                "name": "EquipWithEvent",
+                "why": "Current symbol name remains available as a fallback context target."
+              }
             ],
             "upgrade_hints": [
               {
@@ -6214,6 +6335,13 @@
                 "why": "Inspect symbol-level context to continue tracing.",
                 "param_delta": "name=EquipWithEvent",
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"EquipWithEvent\""
+              },
+              {
+                "kind": "symbol",
+                "target": "EquipWithEvent",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
               },
               {
                 "kind": "full",
@@ -6225,7 +6353,7 @@
             ]
           },
           "durationMs": 13,
-          "totalTokensEst": 600
+          "totalTokensEst": 808
         },
         {
           "tool": "cypher",
@@ -6237,7 +6365,7 @@
             "markdown": "| src.name | dst.name |\n| --- | --- |\n| EquipWithEvent | Equip |\n| HoldPickup | PickItUp |\n| EquipWithEvent | Equip |",
             "row_count": 3
           },
-          "durationMs": 27.7,
+          "durationMs": 27.3,
           "totalTokensEst": 95
         }
       ],
@@ -6251,8 +6379,13 @@
         "closure_status": "not_verified_full"
       },
       "semantic_tuple_pass": true,
+      "anchor_top1_pass": false,
+      "recommended_follow_up_hit": false,
+      "post_narrowing_anchor_pass": true,
+      "post_narrowing_follow_up_hit": true,
+      "ambiguity_detour_count": 0,
       "tool_calls_to_completion": 5,
-      "tokens_to_completion": 4713,
+      "tokens_to_completion": 6068,
       "retry_breakdown": {
         "query_retry_count": 1,
         "context_retry_count": 1,
@@ -6276,27 +6409,35 @@
               {
                 "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:Reload",
                 "name": "Reload",
+                "kind": "Class",
                 "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs:MeleeReload",
-                "name": "MeleeReload",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs:TriggerReload",
-                "name": "TriggerReload",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs:FireReload",
-                "name": "FireReload",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/SawReload.cs:SawReload",
-                "name": "SawReload",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/SawReload.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs"
               }
             ],
             "process_hints": [
@@ -6383,27 +6524,58 @@
               "symbol:Assets/NEON/Graphs/PlayerGun/1_weapon_gun_payday.asset"
             ],
             "suggested_context_targets": [
-              "Reload",
-              "MeleeReload",
-              "TriggerReload",
-              "FireReload",
-              "SawReload"
+              {
+                "name": "Reload",
+                "uid": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:Reload",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "CheckReload",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "GetValue",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "CheckReload",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "GetValue",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              }
             ],
             "fallback_candidates": [
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs:MeleeReload",
-                "name": "MeleeReload",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs:TriggerReload",
-                "name": "TriggerReload",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs:FireReload",
-                "name": "FireReload",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireReload.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "module": "Reloads"
               }
             ],
             "upgrade_hints": [
@@ -6429,6 +6601,27 @@
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"Reload\""
               },
               {
+                "kind": "symbol",
+                "target": "Reload",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:Reload",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:Reload\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "CheckReload",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "GetValue",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
                 "kind": "full",
                 "target": "query",
                 "why": "Expand back to the legacy heavy payload when deeper evidence is required.",
@@ -6437,8 +6630,8 @@
               }
             ]
           },
-          "durationMs": 611.8,
-          "totalTokensEst": 1487
+          "durationMs": 637.3,
+          "totalTokensEst": 2171
         },
         {
           "tool": "query",
@@ -6453,30 +6646,38 @@
             "summary": "Divide runtime heuristic clue",
             "candidates": [
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Divide.cs:Divide",
-                "name": "Divide",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Divide.cs"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs:Plus",
-                "name": "Plus",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs:Remap",
-                "name": "Remap",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs:ToInt",
-                "name": "ToInt",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs"
-              },
-              {
                 "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
                 "name": "ReloadBase",
+                "kind": "Class",
                 "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
                 "module": "Energy"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "module": "Reloads"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs"
               }
             ],
             "process_hints": [
@@ -6528,15 +6729,15 @@
             "resource_hints": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
-              },
-              {
-                "kind": "resource",
                 "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
                 "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"Divide\""
+              },
+              {
+                "kind": "resource",
+                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
+                "why": "Unity resource evidence suggests this is the next deterministic hop.",
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
               },
               {
                 "kind": "verify",
@@ -6546,53 +6747,84 @@
               }
             ],
             "decision": {
-              "primary_candidate": "Divide",
-              "recommended_follow_up": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
+              "primary_candidate": "ReloadBase",
+              "recommended_follow_up": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
               "response_profile": "slim"
             },
             "missing_proof_targets": [
-              "resource:Assets/NEON/DataAssets/Elements/Poison.asset",
               "resource:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+              "resource:Assets/NEON/DataAssets/Elements/Poison.asset",
               "symbol:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
             ],
             "suggested_context_targets": [
-              "Divide",
-              "Plus",
-              "Remap",
-              "ToInt",
-              "ReloadBase"
+              {
+                "name": "ReloadBase",
+                "uid": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "GetValue",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "CheckReload",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "CheckReload",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "GetValue",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              }
             ],
             "fallback_candidates": [
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs:Plus",
-                "name": "Plus",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs:Remap",
-                "name": "Remap",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs:ToInt",
-                "name": "ToInt",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "module": "Reloads"
               }
             ],
             "upgrade_hints": [
-              {
-                "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset"
-              },
               {
                 "kind": "resource",
                 "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
                 "param_delta": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+              },
+              {
+                "kind": "resource",
+                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
+                "why": "Unity resource evidence suggests this is the next deterministic hop.",
+                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
+                "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset"
               },
               {
                 "kind": "verify",
@@ -6609,6 +6841,27 @@
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"Divide\""
               },
               {
+                "kind": "symbol",
+                "target": "ReloadBase",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "GetValue",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "CheckReload",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
                 "kind": "full",
                 "target": "query",
                 "why": "Expand back to the legacy heavy payload when deeper evidence is required.",
@@ -6617,8 +6870,8 @@
               }
             ]
           },
-          "durationMs": 704.5,
-          "totalTokensEst": 1583
+          "durationMs": 727.9,
+          "totalTokensEst": 2340
         },
         {
           "tool": "context",
@@ -6801,7 +7054,16 @@
             "resource_hints": [],
             "missing_proof_targets": [],
             "suggested_context_targets": [
-              "ReloadBase"
+              {
+                "name": "ReloadBase",
+                "uid": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+              },
+              {
+                "name": "ReloadBase",
+                "why": "Current symbol name remains available as a fallback context target."
+              }
             ],
             "upgrade_hints": [
               {
@@ -6812,6 +7074,13 @@
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"ReloadBase\""
               },
               {
+                "kind": "symbol",
+                "target": "ReloadBase",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                "param_delta": "uid=Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
                 "kind": "full",
                 "target": "context",
                 "why": "Expand back to the legacy heavy payload when deeper evidence is required.",
@@ -6820,8 +7089,8 @@
               }
             ]
           },
-          "durationMs": 9293.4,
-          "totalTokensEst": 1492
+          "durationMs": 9472.1,
+          "totalTokensEst": 1688
         },
         {
           "tool": "cypher",
@@ -6833,7 +7102,7 @@
             "markdown": "| src.name | dst.name |\n| --- | --- |\n| GetValue | CheckReload |",
             "row_count": 1
           },
-          "durationMs": 5.8,
+          "durationMs": 6.2,
           "totalTokensEst": 67
         }
       ],
@@ -6844,8 +7113,13 @@
         "closure_status": "not_verified_full"
       },
       "semantic_tuple_pass": true,
+      "anchor_top1_pass": false,
+      "recommended_follow_up_hit": false,
+      "post_narrowing_anchor_pass": true,
+      "post_narrowing_follow_up_hit": true,
+      "ambiguity_detour_count": 0,
       "tool_calls_to_completion": 4,
-      "tokens_to_completion": 4629,
+      "tokens_to_completion": 6266,
       "retry_breakdown": {
         "query_retry_count": 1,
         "context_retry_count": 0,
@@ -7430,7 +7704,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 23,
+                  "elapsedMs": 24,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 360,
                   "unityDiagnosticsCount": 0,
@@ -7666,7 +7940,7 @@
             "hydrationMeta": {
               "requestedMode": "compact",
               "effectiveMode": "compact",
-              "elapsedMs": 23,
+              "elapsedMs": 24,
               "fallbackToCompact": false,
               "resourceBindingCount": 360,
               "unityDiagnosticsCount": 0,
@@ -7678,21 +7952,21 @@
             "next_hops": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+                "target": "Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+                "target": "Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "verify",
@@ -7702,9 +7976,9 @@
               },
               {
                 "kind": "symbol",
-                "target": "WeaponPowerUp",
+                "target": "EquipWithEvent",
                 "why": "Inspect symbol-level context to continue tracing.",
-                "next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"WeaponPowerUp\""
+                "next_command": "gitnexus context --repo \"neonspark-core\" --unity-resources on --unity-hydration parity \"EquipWithEvent\""
               }
             ],
             "missing_evidence": [],
@@ -7721,7 +7995,7 @@
             ]
           },
           "durationMs": 0,
-          "totalTokensEst": 5161,
+          "totalTokensEst": 5177,
           "timestamp": "1970-01-01T00:00:00.000Z"
         },
         {
@@ -8029,7 +8303,7 @@
       },
       "semantic_tuple_pass": true,
       "tool_calls_to_completion": 4,
-      "tokens_to_completion": 7043
+      "tokens_to_completion": 7059
     },
     "reload": {
       "tool_plan": [
@@ -8253,7 +8527,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 19,
+                  "elapsedMs": 21,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 396,
                   "unityDiagnosticsCount": 0,
@@ -8370,7 +8644,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 24,
+                  "elapsedMs": 33,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 1014,
                   "unityDiagnosticsCount": 0,
@@ -8505,7 +8779,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 20,
+                  "elapsedMs": 29,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 814,
                   "unityDiagnosticsCount": 0,
@@ -8610,7 +8884,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 21,
+                  "elapsedMs": 23,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 630,
                   "unityDiagnosticsCount": 0,
@@ -8814,7 +9088,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 26,
+                  "elapsedMs": 35,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 1272,
                   "unityDiagnosticsCount": 0,
@@ -8860,7 +9134,7 @@
                 "hydrationMeta": {
                   "requestedMode": "compact",
                   "effectiveMode": "compact",
-                  "elapsedMs": 5,
+                  "elapsedMs": 6,
                   "fallbackToCompact": false,
                   "resourceBindingCount": 98,
                   "unityDiagnosticsCount": 0,
@@ -8892,7 +9166,7 @@
             "hydrationMeta": {
               "requestedMode": "compact",
               "effectiveMode": "compact",
-              "elapsedMs": 19,
+              "elapsedMs": 21,
               "fallbackToCompact": false,
               "resourceBindingCount": 396,
               "unityDiagnosticsCount": 0,
@@ -8904,15 +9178,15 @@
             "next_hops": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
-              },
-              {
-                "kind": "resource",
                 "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
                 "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"Divide\""
+              },
+              {
+                "kind": "resource",
+                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
+                "why": "Unity resource evidence suggests this is the next deterministic hop.",
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
               },
               {
                 "kind": "verify",
@@ -9454,31 +9728,36 @@
             "summary": "Unity-runtime-root → OnAddPowerUp",
             "candidates": [
               {
+                "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                "name": "WeaponPowerUp",
+                "kind": "Class",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
+              },
+              {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
                 "name": "EquipWithEvent",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                 "module": "ColdWeapon"
               },
               {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
                 "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                 "module": "NeonPlayer"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
-                "name": "WeaponPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
-              },
-              {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
                 "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
               },
               {
-                "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:UnEquip",
-                "name": "UnEquip",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                "name": "Equip",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
                 "module": "PowerUps"
               }
             ],
@@ -9504,21 +9783,21 @@
             "resource_hints": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+                "target": "Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+                "target": "Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab\" \"WeaponPowerUp\""
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset\" \"EquipWithEvent\""
               },
               {
                 "kind": "verify",
@@ -9528,63 +9807,91 @@
               }
             ],
             "decision": {
-              "primary_candidate": "EquipWithEvent",
-              "recommended_follow_up": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+              "primary_candidate": "WeaponPowerUp",
+              "recommended_follow_up": "resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
               "response_profile": "slim"
             },
             "missing_proof_targets": [
-              "resource:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
-              "resource:Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
-              "resource:Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
               "resource:Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+              "resource:Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
+              "resource:Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
               "symbol:Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
             ],
             "suggested_context_targets": [
-              "EquipWithEvent",
-              "Equip",
-              "WeaponPowerUp",
-              "UnEquip",
-              "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
+              {
+                "name": "WeaponPowerUp",
+                "uid": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "EquipWithEvent",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "Equip",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              }
             ],
             "fallback_candidates": [
               {
+                "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "name": "EquipWithEvent",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "module": "ColdWeapon"
+              },
+              {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
                 "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                 "module": "NeonPlayer"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
-                "name": "WeaponPowerUp",
-                "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
-              },
-              {
                 "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
                 "name": "Equip",
+                "kind": "Method",
                 "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
               }
             ],
             "upgrade_hints": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+                "target": "Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab"
+                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
+                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset"
               },
               {
                 "kind": "resource",
-                "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+                "target": "Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab"
+                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
+                "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset"
               },
               {
                 "kind": "verify",
@@ -9592,6 +9899,27 @@
                 "why": "Low-confidence evidence requires a verification follow-up.",
                 "param_delta": "follow_next_hop",
                 "next_command": "Inspect asset + .meta linkage for this target, then rerun query/context with --unity-resources on --unity-hydration parity"
+              },
+              {
+                "kind": "symbol",
+                "target": "WeaponPowerUp",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp\" --file \"Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "EquipWithEvent",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "Equip",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
               },
               {
                 "kind": "full",
@@ -9603,7 +9931,7 @@
             ]
           },
           "durationMs": 0,
-          "totalTokensEst": 1669,
+          "totalTokensEst": 2356,
           "timestamp": "1970-01-01T00:00:00.000Z"
         },
         {
@@ -9679,7 +10007,16 @@
             "resource_hints": [],
             "missing_proof_targets": [],
             "suggested_context_targets": [
-              "HoldPickup"
+              {
+                "name": "HoldPickup",
+                "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup",
+                "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+              },
+              {
+                "name": "HoldPickup",
+                "why": "Current symbol name remains available as a fallback context target."
+              }
             ],
             "upgrade_hints": [
               {
@@ -9688,6 +10025,13 @@
                 "why": "Inspect symbol-level context to continue tracing.",
                 "param_delta": "name=HoldPickup",
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"HoldPickup\""
+              },
+              {
+                "kind": "symbol",
+                "target": "HoldPickup",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup\" --file \"Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs\""
               },
               {
                 "kind": "full",
@@ -9699,7 +10043,7 @@
             ]
           },
           "durationMs": 0,
-          "totalTokensEst": 581,
+          "totalTokensEst": 786,
           "timestamp": "1970-01-01T00:00:00.000Z"
         },
         {
@@ -9777,7 +10121,16 @@
             "resource_hints": [],
             "missing_proof_targets": [],
             "suggested_context_targets": [
-              "EquipWithEvent"
+              {
+                "name": "EquipWithEvent",
+                "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+              },
+              {
+                "name": "EquipWithEvent",
+                "why": "Current symbol name remains available as a fallback context target."
+              }
             ],
             "upgrade_hints": [
               {
@@ -9786,6 +10139,13 @@
                 "why": "Inspect symbol-level context to continue tracing.",
                 "param_delta": "name=EquipWithEvent",
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"EquipWithEvent\""
+              },
+              {
+                "kind": "symbol",
+                "target": "EquipWithEvent",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
               },
               {
                 "kind": "full",
@@ -9797,7 +10157,7 @@
             ]
           },
           "durationMs": 0,
-          "totalTokensEst": 606,
+          "totalTokensEst": 814,
           "timestamp": "1970-01-01T00:00:00.000Z"
         },
         {
@@ -9826,7 +10186,7 @@
       },
       "semantic_tuple_pass": true,
       "tool_calls_to_completion": 4,
-      "tokens_to_completion": 2951
+      "tokens_to_completion": 4051
     },
     "reload": {
       "tool_plan": [
@@ -9871,30 +10231,38 @@
             "summary": "Divide runtime heuristic clue",
             "candidates": [
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Divide.cs:Divide",
-                "name": "Divide",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Divide.cs"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs:Plus",
-                "name": "Plus",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs:Remap",
-                "name": "Remap",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs"
-              },
-              {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs:ToInt",
-                "name": "ToInt",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs"
-              },
-              {
                 "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
                 "name": "ReloadBase",
+                "kind": "Class",
                 "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
                 "module": "Energy"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "module": "Reloads"
+              },
+              {
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs"
               }
             ],
             "process_hints": [
@@ -9946,15 +10314,15 @@
             "resource_hints": [
               {
                 "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
-              },
-              {
-                "kind": "resource",
                 "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
                 "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"Divide\""
+              },
+              {
+                "kind": "resource",
+                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
+                "why": "Unity resource evidence suggests this is the next deterministic hop.",
+                "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
               },
               {
                 "kind": "verify",
@@ -9964,53 +10332,84 @@
               }
             ],
             "decision": {
-              "primary_candidate": "Divide",
-              "recommended_follow_up": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
+              "primary_candidate": "ReloadBase",
+              "recommended_follow_up": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
               "response_profile": "slim"
             },
             "missing_proof_targets": [
-              "resource:Assets/NEON/DataAssets/Elements/Poison.asset",
               "resource:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+              "resource:Assets/NEON/DataAssets/Elements/Poison.asset",
               "symbol:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
             ],
             "suggested_context_targets": [
-              "Divide",
-              "Plus",
-              "Remap",
-              "ToInt",
-              "ReloadBase"
+              {
+                "name": "ReloadBase",
+                "uid": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "GetValue",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "CheckReload",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "CheckReload",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              },
+              {
+                "name": "GetValue",
+                "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+              }
             ],
             "fallback_candidates": [
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs:Plus",
-                "name": "Plus",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "name": "GetValue",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs:Remap",
-                "name": "Remap",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "module": "Reloads"
               },
               {
-                "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs:ToInt",
-                "name": "ToInt",
-                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs"
+                "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                "name": "CheckReload",
+                "kind": "Method",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                "module": "Reloads"
               }
             ],
             "upgrade_hints": [
-              {
-                "kind": "resource",
-                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
-                "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
-                "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset"
-              },
               {
                 "kind": "resource",
                 "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "why": "Unity resource evidence suggests this is the next deterministic hop.",
                 "param_delta": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+              },
+              {
+                "kind": "resource",
+                "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
+                "why": "Unity resource evidence suggests this is the next deterministic hop.",
+                "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
+                "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset"
               },
               {
                 "kind": "verify",
@@ -10027,6 +10426,27 @@
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"Divide\""
               },
               {
+                "kind": "symbol",
+                "target": "ReloadBase",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "GetValue",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
+                "kind": "symbol",
+                "target": "CheckReload",
+                "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                "param_delta": "uid=Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+              },
+              {
                 "kind": "full",
                 "target": "query",
                 "why": "Expand back to the legacy heavy payload when deeper evidence is required.",
@@ -10036,7 +10456,7 @@
             ]
           },
           "durationMs": 0,
-          "totalTokensEst": 1583,
+          "totalTokensEst": 2340,
           "timestamp": "1970-01-01T00:00:00.000Z"
         },
         {
@@ -10221,7 +10641,16 @@
             "resource_hints": [],
             "missing_proof_targets": [],
             "suggested_context_targets": [
-              "ReloadBase"
+              {
+                "name": "ReloadBase",
+                "uid": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+              },
+              {
+                "name": "ReloadBase",
+                "why": "Current symbol name remains available as a fallback context target."
+              }
             ],
             "upgrade_hints": [
               {
@@ -10230,6 +10659,13 @@
                 "why": "Inspect symbol-level context to continue tracing.",
                 "param_delta": "name=ReloadBase",
                 "next_command": "gitnexus context --repo \"neonspark-core\" \"ReloadBase\""
+              },
+              {
+                "kind": "symbol",
+                "target": "ReloadBase",
+                "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                "param_delta": "uid=Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
               },
               {
                 "kind": "full",
@@ -10241,7 +10677,7 @@
             ]
           },
           "durationMs": 0,
-          "totalTokensEst": 1498,
+          "totalTokensEst": 1694,
           "timestamp": "1970-01-01T00:00:00.000Z"
         },
         {
@@ -10267,7 +10703,7 @@
       },
       "semantic_tuple_pass": true,
       "tool_calls_to_completion": 3,
-      "tokens_to_completion": 3148
+      "tokens_to_completion": 4101
     }
   },
   "subagent_live": {
@@ -10707,31 +11143,36 @@
               "summary": "Unity-runtime-root → OnAddPowerUp",
               "candidates": [
                 {
+                  "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                  "name": "WeaponPowerUp",
+                  "kind": "Class",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
+                },
+                {
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
                   "name": "EquipWithEvent",
+                  "kind": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                   "module": "ColdWeapon"
                 },
                 {
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
                   "name": "Equip",
+                  "kind": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                   "module": "NeonPlayer"
                 },
                 {
-                  "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
-                  "name": "WeaponPowerUp",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
-                },
-                {
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
                   "name": "Equip",
+                  "kind": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
                 },
                 {
-                  "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:UnEquip",
-                  "name": "UnEquip",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                  "name": "Equip",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
                   "module": "PowerUps"
                 }
               ],
@@ -10757,21 +11198,21 @@
               "resource_hints": [
                 {
                   "kind": "resource",
-                  "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                  "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                   "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                  "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"WeaponPowerUp\""
+                  "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset\" \"EquipWithEvent\""
                 },
                 {
                   "kind": "resource",
-                  "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+                  "target": "Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
                   "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                  "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab\" \"WeaponPowerUp\""
+                  "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset\" \"EquipWithEvent\""
                 },
                 {
                   "kind": "resource",
-                  "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+                  "target": "Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                   "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                  "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab\" \"WeaponPowerUp\""
+                  "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset\" \"EquipWithEvent\""
                 },
                 {
                   "kind": "verify",
@@ -10781,63 +11222,91 @@
                 }
               ],
               "decision": {
-                "primary_candidate": "EquipWithEvent",
-                "recommended_follow_up": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                "primary_candidate": "WeaponPowerUp",
+                "recommended_follow_up": "resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                 "response_profile": "slim"
               },
               "missing_proof_targets": [
-                "resource:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
-                "resource:Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
-                "resource:Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
                 "resource:Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+                "resource:Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
+                "resource:Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                 "symbol:Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
               ],
               "suggested_context_targets": [
-                "EquipWithEvent",
-                "Equip",
-                "WeaponPowerUp",
-                "UnEquip",
-                "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
+                {
+                  "name": "WeaponPowerUp",
+                  "uid": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                },
+                {
+                  "name": "EquipWithEvent",
+                  "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                },
+                {
+                  "name": "Equip",
+                  "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                },
+                {
+                  "name": "Equip",
+                  "uid": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                },
+                {
+                  "name": "Equip",
+                  "uid": "Method:Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs:Equip",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/Obsolete/GunCorePowerUp.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                }
               ],
               "fallback_candidates": [
                 {
+                  "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                  "name": "EquipWithEvent",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                  "module": "ColdWeapon"
+                },
+                {
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
                   "name": "Equip",
+                  "kind": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
                   "module": "NeonPlayer"
                 },
                 {
-                  "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
-                  "name": "WeaponPowerUp",
-                  "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
-                },
-                {
                   "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
                   "name": "Equip",
+                  "kind": "Method",
                   "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
                 }
               ],
               "upgrade_hints": [
                 {
                   "kind": "resource",
-                  "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                  "target": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
                   "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                  "param_delta": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
-                  "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+                  "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+                  "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
                 },
                 {
                   "kind": "resource",
-                  "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
+                  "target": "Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
                   "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                  "param_delta": "resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab",
-                  "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_act.prefab"
+                  "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset",
+                  "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/PowerupLists/DropList/NewItemList/武器升级池/WeaponSoulList_钥匙.asset"
                 },
                 {
                   "kind": "resource",
-                  "target": "Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
+                  "target": "Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
                   "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                  "param_delta": "resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab",
-                  "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/Prefab/Weapons_combat/Sowrd/1_weapon_orb_key_eq.prefab"
+                  "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset",
+                  "next_command": "gitnexus query --repo \"neonspark-core\" \"WeaponPowerUp HoldPickup EquipWithEvent Equip\" # resource_path_prefix=Assets/NEON/DataAssets/SoulLevelConfigs/SoulLevelConfig.asset"
                 },
                 {
                   "kind": "verify",
@@ -10845,6 +11314,27 @@
                   "why": "Low-confidence evidence requires a verification follow-up.",
                   "param_delta": "follow_next_hop",
                   "next_command": "Inspect asset + .meta linkage for this target, then rerun query/context with --unity-resources on --unity-hydration parity"
+                },
+                {
+                  "kind": "symbol",
+                  "target": "WeaponPowerUp",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                  "param_delta": "uid=Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp\" --file \"Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs\""
+                },
+                {
+                  "kind": "symbol",
+                  "target": "EquipWithEvent",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                  "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
+                },
+                {
+                  "kind": "symbol",
+                  "target": "Equip",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                  "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:Equip\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
                 },
                 {
                   "kind": "full",
@@ -10856,7 +11346,7 @@
               ]
             },
             "durationMs": 0,
-            "totalTokensEst": 1669,
+            "totalTokensEst": 2356,
             "timestamp": "1970-01-01T00:00:00.000Z"
           },
           {
@@ -10932,7 +11422,16 @@
               "resource_hints": [],
               "missing_proof_targets": [],
               "suggested_context_targets": [
-                "HoldPickup"
+                {
+                  "name": "HoldPickup",
+                  "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup",
+                  "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs",
+                  "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+                },
+                {
+                  "name": "HoldPickup",
+                  "why": "Current symbol name remains available as a fallback context target."
+                }
               ],
               "upgrade_hints": [
                 {
@@ -10941,6 +11440,13 @@
                   "why": "Inspect symbol-level context to continue tracing.",
                   "param_delta": "name=HoldPickup",
                   "next_command": "gitnexus context --repo \"neonspark-core\" \"HoldPickup\""
+                },
+                {
+                  "kind": "symbol",
+                  "target": "HoldPickup",
+                  "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                  "param_delta": "uid=Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup\" --file \"Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs\""
                 },
                 {
                   "kind": "full",
@@ -10952,7 +11458,7 @@
               ]
             },
             "durationMs": 0,
-            "totalTokensEst": 581,
+            "totalTokensEst": 786,
             "timestamp": "1970-01-01T00:00:00.000Z"
           },
           {
@@ -11030,7 +11536,16 @@
               "resource_hints": [],
               "missing_proof_targets": [],
               "suggested_context_targets": [
-                "EquipWithEvent"
+                {
+                  "name": "EquipWithEvent",
+                  "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                  "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+                  "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+                },
+                {
+                  "name": "EquipWithEvent",
+                  "why": "Current symbol name remains available as a fallback context target."
+                }
               ],
               "upgrade_hints": [
                 {
@@ -11039,6 +11554,13 @@
                   "why": "Inspect symbol-level context to continue tracing.",
                   "param_delta": "name=EquipWithEvent",
                   "next_command": "gitnexus context --repo \"neonspark-core\" \"EquipWithEvent\""
+                },
+                {
+                  "kind": "symbol",
+                  "target": "EquipWithEvent",
+                  "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                  "param_delta": "uid=Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:EquipWithEvent\" --file \"Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs\""
                 },
                 {
                   "kind": "full",
@@ -11050,7 +11572,7 @@
               ]
             },
             "durationMs": 0,
-            "totalTokensEst": 606,
+            "totalTokensEst": 814,
             "timestamp": "1970-01-01T00:00:00.000Z"
           },
           {
@@ -11079,7 +11601,7 @@
         },
         "semantic_tuple_pass": true,
         "tool_calls_to_completion": 4,
-        "tokens_to_completion": 2951
+        "tokens_to_completion": 4051
       },
       "reload": {
         "tool_plan": [
@@ -11124,30 +11646,38 @@
               "summary": "Divide runtime heuristic clue",
               "candidates": [
                 {
-                  "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Divide.cs:Divide",
-                  "name": "Divide",
-                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Divide.cs"
-                },
-                {
-                  "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs:Plus",
-                  "name": "Plus",
-                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs"
-                },
-                {
-                  "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs:Remap",
-                  "name": "Remap",
-                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs"
-                },
-                {
-                  "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs:ToInt",
-                  "name": "ToInt",
-                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs"
-                },
-                {
                   "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
                   "name": "ReloadBase",
+                  "kind": "Class",
                   "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
                   "module": "Energy"
+                },
+                {
+                  "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                  "name": "GetValue",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                  "module": "Reloads"
+                },
+                {
+                  "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                  "name": "CheckReload",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                  "module": "Reloads"
+                },
+                {
+                  "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                  "name": "CheckReload",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                  "module": "Reloads"
+                },
+                {
+                  "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue",
+                  "name": "GetValue",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs"
                 }
               ],
               "process_hints": [
@@ -11199,15 +11729,15 @@
               "resource_hints": [
                 {
                   "kind": "resource",
-                  "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
-                  "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                  "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
-                },
-                {
-                  "kind": "resource",
                   "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                   "why": "Unity resource evidence suggests this is the next deterministic hop.",
                   "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset\" \"Divide\""
+                },
+                {
+                  "kind": "resource",
+                  "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
+                  "why": "Unity resource evidence suggests this is the next deterministic hop.",
+                  "next_command": "gitnexus query --repo \"neonspark-core\" --unity-resources on --unity-hydration parity --resource-path-prefix \"Assets/NEON/DataAssets/Elements/Poison.asset\" \"Divide\""
                 },
                 {
                   "kind": "verify",
@@ -11217,53 +11747,84 @@
                 }
               ],
               "decision": {
-                "primary_candidate": "Divide",
-                "recommended_follow_up": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
+                "primary_candidate": "ReloadBase",
+                "recommended_follow_up": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                 "response_profile": "slim"
               },
               "missing_proof_targets": [
-                "resource:Assets/NEON/DataAssets/Elements/Poison.asset",
                 "resource:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+                "resource:Assets/NEON/DataAssets/Elements/Poison.asset",
                 "symbol:Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
               ],
               "suggested_context_targets": [
-                "Divide",
-                "Plus",
-                "Remap",
-                "ToInt",
-                "ReloadBase"
+                {
+                  "name": "ReloadBase",
+                  "uid": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                },
+                {
+                  "name": "GetValue",
+                  "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                },
+                {
+                  "name": "CheckReload",
+                  "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                },
+                {
+                  "name": "CheckReload",
+                  "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                },
+                {
+                  "name": "GetValue",
+                  "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:GetValue",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation."
+                }
               ],
               "fallback_candidates": [
                 {
-                  "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs:Plus",
-                  "name": "Plus",
-                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Plus.cs"
+                  "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                  "name": "GetValue",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                  "module": "Reloads"
                 },
                 {
-                  "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs:Remap",
-                  "name": "Remap",
-                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Math/Remap.cs"
+                  "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                  "name": "CheckReload",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                  "module": "Reloads"
                 },
                 {
-                  "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs:ToInt",
-                  "name": "ToInt",
-                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Values/ToInt.cs"
+                  "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs:CheckReload",
+                  "name": "CheckReload",
+                  "kind": "Method",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ResourceReload.cs",
+                  "module": "Reloads"
                 }
               ],
               "upgrade_hints": [
-                {
-                  "kind": "resource",
-                  "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
-                  "why": "Unity resource evidence suggests this is the next deterministic hop.",
-                  "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
-                  "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset"
-                },
                 {
                   "kind": "resource",
                   "target": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                   "why": "Unity resource evidence suggests this is the next deterministic hop.",
                   "param_delta": "resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
                   "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+                },
+                {
+                  "kind": "resource",
+                  "target": "Assets/NEON/DataAssets/Elements/Poison.asset",
+                  "why": "Unity resource evidence suggests this is the next deterministic hop.",
+                  "param_delta": "resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset",
+                  "next_command": "gitnexus query --repo \"neonspark-core\" \"ReloadBase GetValue CheckReload\" # resource_path_prefix=Assets/NEON/DataAssets/Elements/Poison.asset"
                 },
                 {
                   "kind": "verify",
@@ -11280,6 +11841,27 @@
                   "next_command": "gitnexus context --repo \"neonspark-core\" \"Divide\""
                 },
                 {
+                  "kind": "symbol",
+                  "target": "ReloadBase",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                  "param_delta": "uid=Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+                },
+                {
+                  "kind": "symbol",
+                  "target": "GetValue",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                  "param_delta": "uid=Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:GetValue\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+                },
+                {
+                  "kind": "symbol",
+                  "target": "CheckReload",
+                  "why": "Query returned this ranked symbol candidate for direct context disambiguation.",
+                  "param_delta": "uid=Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
+                },
+                {
                   "kind": "full",
                   "target": "query",
                   "why": "Expand back to the legacy heavy payload when deeper evidence is required.",
@@ -11289,7 +11871,7 @@
               ]
             },
             "durationMs": 0,
-            "totalTokensEst": 1583,
+            "totalTokensEst": 2340,
             "timestamp": "1970-01-01T00:00:00.000Z"
           },
           {
@@ -11474,7 +12056,16 @@
               "resource_hints": [],
               "missing_proof_targets": [],
               "suggested_context_targets": [
-                "ReloadBase"
+                {
+                  "name": "ReloadBase",
+                  "uid": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                  "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+                  "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity."
+                },
+                {
+                  "name": "ReloadBase",
+                  "why": "Current symbol name remains available as a fallback context target."
+                }
               ],
               "upgrade_hints": [
                 {
@@ -11483,6 +12074,13 @@
                   "why": "Inspect symbol-level context to continue tracing.",
                   "param_delta": "name=ReloadBase",
                   "next_command": "gitnexus context --repo \"neonspark-core\" \"ReloadBase\""
+                },
+                {
+                  "kind": "symbol",
+                  "target": "ReloadBase",
+                  "why": "Current context symbol can be revisited via exact UID to avoid same-name ambiguity.",
+                  "param_delta": "uid=Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase",
+                  "next_command": "gitnexus context --repo \"neonspark-core\" --uid \"Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase\" --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\""
                 },
                 {
                   "kind": "full",
@@ -11494,7 +12092,7 @@
               ]
             },
             "durationMs": 0,
-            "totalTokensEst": 1498,
+            "totalTokensEst": 1694,
             "timestamp": "1970-01-01T00:00:00.000Z"
           },
           {
@@ -11520,7 +12118,7 @@
         },
         "semantic_tuple_pass": true,
         "tool_calls_to_completion": 3,
-        "tokens_to_completion": 3148
+        "tokens_to_completion": 4101
       }
     }
   },
@@ -11533,16 +12131,16 @@
   },
   "token_summary": {
     "weapon_powerup": {
-      "before": 7043,
-      "after": 2951,
-      "saved": 4092,
-      "reduction": 0.581
+      "before": 7059,
+      "after": 4051,
+      "saved": 3008,
+      "reduction": 0.426
     },
     "reload": {
       "before": 11660,
-      "after": 3148,
-      "saved": 8512,
-      "reduction": 0.73
+      "after": 4101,
+      "saved": 7559,
+      "reduction": 0.648
     }
   },
   "call_summary": {
