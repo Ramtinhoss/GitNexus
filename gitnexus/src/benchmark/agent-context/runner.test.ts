@@ -92,3 +92,32 @@ test('executeToolPlan maps impact uid to target_uid for backend impact contract'
     'Class:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorNetMgr.cs:MirrorNetMgr',
   );
 });
+
+test('executeToolPlan injects response_profile=full for legacy query/context payloads', async () => {
+  const calls: any[] = [];
+  const fakeRunner = {
+    query: async (params: any) => {
+      calls.push({ tool: 'query', params });
+      return {};
+    },
+    context: async (params: any) => {
+      calls.push({ tool: 'context', params });
+      return {};
+    },
+    impact: async () => ({}),
+    cypher: async () => ({}),
+    close: async () => {},
+  };
+
+  await executeToolPlan(
+    [
+      { tool: 'query', input: { query: 'Target' } },
+      { tool: 'context', input: { name: 'Target' } },
+    ],
+    fakeRunner,
+    'sample-repo',
+  );
+
+  assert.equal(calls[0].params.response_profile, 'full');
+  assert.equal(calls[1].params.response_profile, 'full');
+});

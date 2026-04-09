@@ -17,6 +17,11 @@ import { runUnityUiTrace } from '../../core/unity/ui-trace.js';
 import { loadUnityContext, type UnityContextPayload, type UnityHydrationMeta } from './unity-enrichment.js';
 import { buildMissingEvidenceFromHydrationMeta, hydrateUnityForSymbol } from './unity-runtime-hydration.js';
 import { buildUnityEvidenceView } from './unity-evidence-view.js';
+import {
+  buildSlimContextResult,
+  buildSlimQueryResult,
+  resolveResponseProfile,
+} from './agent-safe-response.js';
 import { deriveEvidenceFingerprint, mergeProcessEvidence } from './process-evidence.js';
 import { buildProcessRef, type ProcessRefOrigin } from './process-ref.js';
 import type { ProcessConfidence, ProcessEvidenceMode, VerificationHint } from './process-confidence.js';
@@ -382,12 +387,16 @@ export function pickVerifierSymbolAnchor(input: {
   processSymbols: any[];
   definitions: any[];
 }): { symbolName?: string; symbolFilePath?: string } {
+  const resourceAnchoredSymbol = [
+    ...input.processSymbols,
+    ...input.definitions,
+  ].find((row: any) => Array.isArray(row?.resourceBindings) && row.resourceBindings.length > 0);
   const lowerQuery = String(input.queryText || '').toLowerCase();
   const firstMatchInQuery = [
     ...input.processSymbols,
     ...input.definitions,
   ].find((row: any) => lowerQuery.includes(String(row?.name || '').toLowerCase()));
-  const anchor = firstMatchInQuery || input.processSymbols[0] || input.definitions[0];
+  const anchor = resourceAnchoredSymbol || input.processSymbols[0] || firstMatchInQuery || input.definitions[0];
   const symbolName = String(anchor?.name || '').trim();
   const symbolFilePath = normalizePath(String(anchor?.filePath || '').trim());
   return {
@@ -1332,6 +1341,7 @@ export class LocalBackend {
     max_reference_fields?: number;
     resource_seed_mode?: string;
     runtime_chain_verify?: string;
+    response_profile?: string;
   }): Promise<any> {
     if (!params.query?.trim()) {
       return { error: 'query parameter is required and cannot be empty.' };
@@ -1371,6 +1381,7 @@ export class LocalBackend {
     const evidenceBindingKind = String(params.binding_kind || '').trim() || undefined;
     const searchQuery = params.query.trim();
     const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
+    const responseProfile = resolveResponseProfile(params.response_profile);
     let mappedSeedTargets: string[] = [];
     if (seedPath) {
       try {
@@ -1934,7 +1945,13 @@ export class LocalBackend {
       }
     }
 
-    return result;
+    if (responseProfile === 'full') {
+      return result;
+    }
+    return buildSlimQueryResult(result, {
+      repoName: repo.name,
+      queryText: searchQuery,
+    });
   }
 
   /**
@@ -2254,11 +2271,13 @@ export class LocalBackend {
     max_reference_fields?: number;
     resource_seed_mode?: string;
     runtime_chain_verify?: string;
+    response_profile?: string;
   }): Promise<any> {
     await this.ensureInitialized(repo.id);
     
     const { name, uid, file_path, include_content } = params;
     const runtimeChainVerifyMode = String(params.runtime_chain_verify || 'off').trim().toLowerCase() as RuntimeChainVerifyMode;
+    const responseProfile = resolveResponseProfile(params.response_profile);
     const confidenceFieldsEnabled = true;
     let unityResourcesMode: 'off' | 'on' | 'auto' = 'off';
     let unityHydrationMode: 'compact' | 'parity' = 'compact';
@@ -2720,7 +2739,13 @@ export class LocalBackend {
       }
     }
 
-    return result;
+    if (responseProfile === 'full') {
+      return result;
+    }
+    return buildSlimContextResult(result, {
+      repoName: repo.name,
+      symbolName: symName || String(name || uid || ''),
+    });
   }
 
   /**

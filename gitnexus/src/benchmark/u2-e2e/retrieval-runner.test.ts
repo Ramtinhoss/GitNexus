@@ -48,6 +48,55 @@ test('runSymbolScenario executes context off/on + deepDive and records metrics',
   assert.equal(out.assertions.pass, true);
 });
 
+test('runSymbolScenario injects response_profile=full for legacy context/query steps', async () => {
+  const seen: Array<{ tool: string; input: Record<string, unknown> }> = [];
+  const runner = {
+    context: async (input: Record<string, unknown>) => {
+      seen.push({ tool: 'context', input });
+      if (input.unity_resources === 'on') {
+        return {
+          status: 'found',
+          hydrationMeta: {
+            requestedMode: 'compact',
+            effectiveMode: 'compact',
+            isComplete: false,
+            needsParityRetry: true,
+          },
+          resourceBindings: [{ resourcePath: 'Assets/Prefabs/UI.prefab', resourceType: 'prefab' }],
+        };
+      }
+      return { status: 'found' };
+    },
+    query: async (input: Record<string, unknown>) => {
+      seen.push({ tool: 'query', input });
+      return {
+        process_symbols: [{ id: 'Class:MainUIManager' }],
+        definitions: [{ name: 'DoorObj', resourceBindings: [{ resourcePath: 'Assets/A.prefab' }] }],
+      };
+    },
+    impact: async (input: Record<string, unknown>) => {
+      seen.push({ tool: 'impact', input });
+      return { impactedCount: 1 };
+    },
+    cypher: async (input: Record<string, unknown>) => {
+      seen.push({ tool: 'cypher', input });
+      return { rows: [] };
+    },
+  };
+
+  await runSymbolScenario(runner as any, {
+    symbol: 'MainUIManager',
+    kind: 'component',
+    objectives: ['verify context'],
+    deepDivePlan: [{ tool: 'query', input: { query: 'MainUIManager' } }],
+  });
+
+  const contextCalls = seen.filter((entry) => entry.tool === 'context');
+  const queryCalls = seen.filter((entry) => entry.tool === 'query');
+  assert.equal(contextCalls.every((entry) => entry.input.response_profile === 'full'), true);
+  assert.equal(queryCalls.every((entry) => entry.input.response_profile === 'full'), true);
+});
+
 test('AssetRef requires context(on) resourceBindings after serializable-class coverage', async () => {
   const noEvidenceRunner = {
     context: async () => ({

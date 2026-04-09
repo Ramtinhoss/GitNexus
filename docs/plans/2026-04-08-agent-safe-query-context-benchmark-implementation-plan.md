@@ -16,7 +16,14 @@ Track execution state here. `executing-plans` updates this section in place.
 
 Task | Status | Facts
 --- | --- | ---
-<!-- executing-plans appends one row per task as execution advances -->
+Task 1 | completed | Worktree `.worktrees/agent-safe-query-context-benchmark` created on branch `agent-safe-query-context-benchmark`; `npm --prefix gitnexus test` passed (76 files, 1665 tests); `node gitnexus/dist/cli/index.js analyze` rebuilt the index in the clean workspace; added frozen `cases.json`/`thresholds.json` plus loader/types; `npm exec -- tsx --test src/benchmark/agent-safe-query-context/io.test.ts` passed.
+Task 2 | completed | Added deterministic workflow replay plus semantic tuple derivation/comparison and shared runner typing; `npm exec -- tsx --test src/benchmark/agent-safe-query-context/runner.test.ts src/benchmark/agent-safe-query-context/semantic-tuple.test.ts` passed.
+Task 3 | completed | Added agent-safe benchmark report assembly and CLI command wiring; `npm exec -- tsx --test src/benchmark/agent-safe-query-context/report.test.ts src/cli/benchmark-agent-safe-query-context.test.ts` passed.
+Task 4 | completed | Added `response_profile` resolution plus backend/CLI/MCP plumbing and full-mode escape hatch scaffolding; `npm exec vitest run test/unit/local-backend-response-profile.test.ts test/unit/local-backend-agent-safe-query.test.ts test/unit/local-backend-agent-safe-context.test.ts` passed and `npm run build` passed.
+Task 5 | completed | Added slim default query shaping via `agent-safe-response.ts`, resource/process/upgrade hints, and verifier anchor preference for resource-linked symbols.
+Task 6 | completed | Added slim default context shaping and suppressed summary/focused `serializedFields`; `npm exec -- tsx --test src/mcp/local/unity-evidence-view.test.ts` passed.
+Task 7 | completed | Legacy benchmark callers now inject `response_profile=full` for query/context and public docs/skills/AGENTS were synced; `npm exec -- tsx --test src/benchmark/agent-context/runner.test.ts src/benchmark/u2-e2e/retrieval-runner.test.ts src/cli/benchmark-agent-context.test.ts src/cli/benchmark-agent-safe-query-context.test.ts` passed and contract grep succeeded.
+Task 8 | in_progress | Running consolidated regressions, live Neonspark benchmark, and explicit full-mode CLI spot checks before the human verification gate.
 
 ## Design Traceability Matrix
 

@@ -23,18 +23,6 @@
 | Index, status, clean, wiki CLI commands | `.agents/skills/gitnexus/gitnexus-cli/SKILL.md` |
 | Create Unity analyze_rules interactively | `.agents/skills/gitnexus/gitnexus-unity-rule-gen/SKILL.md` |
 
-## Dev Workflow (Source Build)
-
-To use a locally built dist instead of the globally installed package (useful when testing unreleased changes):
-
-```bash
-cd /path/to/GitNexus/gitnexus
-npm run build
-npm link   # replaces global install with symlink to local dist/cli/index.js
-```
-
-After `npm link`, `gitnexus` on this machine points to the local dist. All repos using `gitnexus mcp` in their MCP config will pick up the new build after restarting the agent session. To restore the published package: `npm unlink -g @veewo/gitnexus && npm install -g @veewo/gitnexus`.
-
 <!-- gitnexus:end -->
 
 ## Unity Runtime Process 真理源

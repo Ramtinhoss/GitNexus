@@ -86,6 +86,12 @@ Includes optional Unity retrieval contract:
         limit: { type: 'number', description: 'Max processes to return (default: 5)', default: 5 },
         max_symbols: { type: 'number', description: 'Max symbols per process (default: 10)', default: 10 },
         include_content: { type: 'boolean', description: 'Include full symbol source code (default: false)', default: false },
+        response_profile: {
+          type: 'string',
+          enum: ['slim', 'full'],
+          description: 'Response payload profile: slim (default) or full for legacy heavy payloads.',
+          default: 'slim',
+        },
         scope_preset: {
           type: 'string',
           enum: ['unity-gameplay', 'unity-all'],
@@ -230,6 +236,12 @@ Unity retrieval contract:
         uid: { type: 'string', description: 'Direct symbol UID from prior tool results (zero-ambiguity lookup)' },
         file_path: { type: 'string', description: 'File path to disambiguate common names' },
         include_content: { type: 'boolean', description: 'Include full symbol source code (default: false)', default: false },
+        response_profile: {
+          type: 'string',
+          enum: ['slim', 'full'],
+          description: 'Response payload profile: slim (default) or full for legacy heavy payloads.',
+          default: 'slim',
+        },
         unity_resources: {
           type: 'string',
           enum: ['off', 'on', 'auto'],

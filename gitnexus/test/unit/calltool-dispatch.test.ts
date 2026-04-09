@@ -33,6 +33,21 @@ vi.mock('../../src/mcp/core/embedder.js', () => ({
   getEmbeddingDims: vi.fn().mockReturnValue(384),
 }));
 
+vi.mock('../../src/mcp/local/runtime-chain-verify.js', () => ({
+  verifyRuntimeClaimOnDemand: vi.fn().mockResolvedValue({
+    status: 'verified_partial',
+    evidence_level: 'clue',
+    hops: [],
+    gaps: [],
+    reason: 'rule_matched_but_evidence_missing',
+    next_action: 'gitnexus query --runtime-chain-verify on-demand',
+  }),
+}));
+
+vi.mock('../../src/mcp/local/runtime-claim.js', () => ({
+  adjustRuntimeClaimForPolicy: vi.fn().mockImplementation(({ claim }: any) => claim),
+}));
+
 import { LocalBackend } from '../../src/mcp/local/local-backend.js';
 import { listRegisteredRepos, cleanupOldKuzuFiles } from '../../src/storage/repo-manager.js';
 import { initLbug, executeQuery, executeParameterized, isLbugReady, closeLbug } from '../../src/mcp/core/lbug-adapter.js';
@@ -145,8 +160,10 @@ describe('LocalBackend.callTool', () => {
   it('dispatches query tool', async () => {
     (executeParameterized as any).mockResolvedValue([]);
     const result = await backend.callTool('query', { query: 'auth' });
-    expect(result).toHaveProperty('processes');
-    expect(result).toHaveProperty('definitions');
+    expect(result).toHaveProperty('summary');
+    expect(result).toHaveProperty('candidates');
+    expect(result).toHaveProperty('process_hints');
+    expect(result).not.toHaveProperty('processes');
   });
 
   it('runtime_chain_verify enables on-demand runtime chain output', async () => {
@@ -168,7 +185,7 @@ describe('LocalBackend.callTool', () => {
       query: 'Reload',
       runtime_chain_verify: 'on-demand',
     });
-    expect(result.runtime_chain?.status).toBeDefined();
+    expect(result.runtime_preview?.status).toBeDefined();
   });
 
   it('query tool returns error for empty query', async () => {
@@ -275,7 +292,8 @@ describe('LocalBackend.callTool', () => {
   it('dispatches "search" as alias for query', async () => {
     (executeParameterized as any).mockResolvedValue([]);
     const result = await backend.callTool('search', { query: 'auth' });
-    expect(result).toHaveProperty('processes');
+    expect(result).toHaveProperty('summary');
+    expect(result).toHaveProperty('candidates');
   });
 
   it('dispatches "explore" as alias for context', async () => {
@@ -329,7 +347,8 @@ describe('LocalBackend.resolveRepo', () => {
       query: 'auth',
       repo: 'test-project',
     });
-    expect(result).toHaveProperty('processes');
+    expect(result).toHaveProperty('summary');
+    expect(result).toHaveProperty('candidates');
   });
 
   it('throws for unknown repo name', async () => {
@@ -348,7 +367,8 @@ describe('LocalBackend.resolveRepo', () => {
       query: 'test',
       repo: 'Test-Project',
     });
-    expect(result).toHaveProperty('processes');
+    expect(result).toHaveProperty('summary');
+    expect(result).toHaveProperty('candidates');
   });
 
   it('refreshes registry on repo miss', async () => {
@@ -364,7 +384,8 @@ describe('LocalBackend.resolveRepo', () => {
       query: 'test',
       repo: 'test-project',
     });
-    expect(result).toHaveProperty('processes');
+    expect(result).toHaveProperty('summary');
+    expect(result).toHaveProperty('candidates');
     // listRegisteredRepos should have been called again
     expect(listRegisteredRepos).toHaveBeenCalledTimes(2); // once in init, once in refreshRepos
   });
