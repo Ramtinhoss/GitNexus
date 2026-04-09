@@ -18,7 +18,7 @@
     ],
     "proof_cypher": "MATCH (src)-[:CodeRelation {type: 'CALLS'}]->(dst) WHERE (src.name = 'HoldPickup' AND dst.name = 'PickItUp') OR (src.name = 'EquipWithEvent' AND dst.name = 'Equip') RETURN src.name, dst.name",
     "live_task": {
-      "objective": "Investigate WeaponPowerUp from the provided asset seed and determine the strongest supported pickup/equip runtime relation.",
+      "objective": "pickup/equip bridge proof",
       "symbol_seed": "WeaponPowerUp",
       "resource_seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
     },
@@ -84,7 +84,7 @@
     ],
     "proof_cypher": "MATCH (src)-[:CodeRelation {type: 'CALLS'}]->(dst) WHERE src.name = 'GetValue' AND dst.name = 'CheckReload' RETURN src.name, dst.name",
     "live_task": {
-      "objective": "Investigate ReloadBase from the provided graph asset seed and determine the strongest supported reload relation.",
+      "objective": "reload call proof",
       "symbol_seed": "ReloadBase",
       "resource_seed": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
     },

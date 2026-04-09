@@ -15,7 +15,7 @@ const fakeCase: AgentSafeBenchmarkCase = {
     "MATCH (src)-[:CodeRelation {type: 'CALLS'}]->(dst) WHERE (src.name = 'HoldPickup' AND dst.name = 'PickItUp') OR (src.name = 'EquipWithEvent' AND dst.name = 'Equip') RETURN src.name, dst.name",
   tool_plan: [{ tool: 'query', input: { query: 'WeaponPowerUp' } }],
   live_task: {
-    objective: 'Investigate WeaponPowerUp from the provided asset seed and return the strongest validated runtime relation you can support.',
+    objective: 'pickup/equip bridge proof',
     symbol_seed: 'WeaponPowerUp',
     resource_seed: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
   },
@@ -39,6 +39,8 @@ test('buildSubagentPrompt includes wrapper command and final JSON schema without
 
   assert.equal(prompt.includes('telemetry-tool.js'), true);
   assert.equal(prompt.includes('Final JSON schema:'), true);
+  assert.equal(prompt.includes('strongest supported relation'), false);
+  assert.equal(prompt.includes('pickup/equip bridge proof'), true);
   assert.equal(prompt.includes('HoldPickup -> WeaponPowerUp.PickItUp'), false);
   assert.equal(prompt.includes('EquipWithEvent -> WeaponPowerUp.Equip'), false);
 });

@@ -53,7 +53,7 @@ export function buildSubagentPrompt(
     '',
     `Case: ${benchmarkCase.label}`,
     `Repo: ${options.repo}`,
-    `Objective: ${benchmarkCase.live_task.objective}`,
+    `Goal category: ${benchmarkCase.live_task.objective}`,
     '',
     'Starting seeds:',
     `- Symbol/class seed: ${benchmarkCase.live_task.symbol_seed}`,
@@ -64,6 +64,7 @@ export function buildSubagentPrompt(
     '',
     'Rules:',
     '- Investigate normally from the seeds. Do not assume the answer.',
+    '- Stay within the goal category and avoid switching to unrelated relation categories.',
     '- For benchmarked GitNexus evidence collection, use only query/context/cypher through the wrapper command above.',
     '- Stop when you have enough evidence to return your best result.',
     '',
@@ -150,6 +151,9 @@ function assertPromptContract(prompt: string, tuple: SemanticTuple): void {
   }
   if (!prompt.includes('Final JSON schema:')) {
     throw new Error('prompt missing final JSON schema');
+  }
+  if (prompt.includes('strongest supported relation') || prompt.includes('strongest validated runtime relation')) {
+    throw new Error('prompt uses open-ended strongest-relation objective wording');
   }
   if (tuple.proof_edge && prompt.includes(tuple.proof_edge)) {
     throw new Error('prompt leaks canonical proof_edge');
