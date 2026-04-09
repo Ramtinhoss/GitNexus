@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { benchmarkAgentSafeQueryContextCommand } from './benchmark-agent-safe-query-context.js';
 
 test('benchmark-agent-safe-query-context runs suite loader, benchmark, and report writer', async () => {
@@ -210,4 +213,25 @@ test('benchmark-agent-safe-query-context runs suite loader, benchmark, and repor
   assert.equal(calls[0].repo, 'neonspark-core');
   assert.ok(output.some((line) => line.includes('PASS')));
   assert.ok(output.some((line) => line.includes('Report:')));
+});
+
+test('runtime retrieval contract docs describe seed-first workflow and clue-tier semantics', async () => {
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+  const docPaths = [
+    'gitnexus/src/mcp/tools.ts',
+    'gitnexus/skills/gitnexus-exploring.md',
+    '.agents/skills/gitnexus/gitnexus-exploring/SKILL.md',
+    'gitnexus/skills/_shared/unity-runtime-process-contract.md',
+    '.agents/skills/gitnexus/_shared/unity-runtime-process-contract.md',
+    'gitnexus/skills/gitnexus-guide.md',
+    '.agents/skills/gitnexus/gitnexus-guide/SKILL.md',
+    'AGENTS.md',
+  ].map((relativePath) => path.join(repoRoot, relativePath));
+
+  const text = (await Promise.all(docPaths.map((filePath) => fs.readFile(filePath, 'utf-8')))).join('\n');
+
+  assert.ok(text.includes('discovery -> seed narrowing -> closure verification'));
+  assert.ok(text.includes('resource_heuristic'));
+  assert.ok(text.includes('clue'));
+  assert.ok(text.includes('strong graph hops can coexist with failed closure'));
 });

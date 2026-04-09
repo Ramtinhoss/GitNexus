@@ -47,7 +47,7 @@ For any task involving code understanding, debugging, impact analysis, or refact
 Default `query/context` responses are now slim for agent use:
 
 - `query`: `summary`, `candidates`, `process_hints`, `resource_hints`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
-- `context`: `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- `context`: `summary`, `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
 - `suggested_context_targets[]` now returns structured objects: `{ name, uid?, filePath?, why }`
 - `upgrade_hints[]` may include exact `gitnexus context --uid <uid>` commands for same-name disambiguation
 
@@ -63,11 +63,12 @@ When you need Unity resource evidence, pass:
 
 Recommended default workflow:
 
-1. Call `context/query` with `unity_hydration_mode: "compact"` for speed.
-2. Inspect `hydrationMeta` in the response:
+1. Follow `discovery -> seed narrowing -> closure verification`.
+2. Call `context/query` with `unity_hydration_mode: "compact"` for speed.
+3. Inspect `hydrationMeta` in the response:
    - `needsParityRetry: true` → rerun same call with `unity_hydration_mode: "parity"`
    - `isComplete: true` → keep compact result
-3. Treat parity as the completeness path for advanced verification.
+4. Treat parity as the completeness path for advanced verification.
 
 Agent-safe upgrade path:
 
@@ -81,6 +82,8 @@ Runtime claim closure reminder:
 
 - Query-time runtime closure is **graph-only** and does not require `verification_rules` / `trigger_tokens` matching.
 - `verification_rules` remains an offline governance/report artifact family.
+- Treat `resource_heuristic` as clue-tier (`clue`) evidence, not closure proof.
+- Strong graph hops can coexist with failed closure when verifier-core stays `failed`; report as partial bridge evidence.
 
 When task scope includes Unity runtime process semantics, load and follow:
 

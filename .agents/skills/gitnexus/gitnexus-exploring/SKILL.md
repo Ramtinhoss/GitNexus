@@ -25,6 +25,8 @@ description: "Use when the user asks how code works, wants to understand archite
 7. READ gitnexus://repo/{name}/process/{name} or use cypher   → Trace full execution flow or prove a structure
 ```
 
+Runtime retrieval mnemonic: `discovery -> seed narrowing -> closure verification`.
+
 > If step 2 says "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` (`cliPackageSpec` first, then `cliVersion`) and run `npx -y <resolved-spec> analyze` (it reuses previous analyze scope/options by default; add `--no-reuse-options` to reset). If the user declines, explicitly warn that retrieval may not reflect the current codebase.
 
 ## Checklist
@@ -36,7 +38,7 @@ description: "Use when the user asks how code works, wants to understand archite
 - [ ] Review slim query fields first: `summary`, `candidates`, `process_hints`, `resource_hints`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
 - [ ] Prefer narrowing with `decision.recommended_follow_up` and exact `uid`-based context before expanding payload size
 - [ ] gitnexus_context on key symbols for callers/callees
-- [ ] Review slim context fields first: `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- [ ] Review slim context fields first: `summary`, `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
 - [ ] If you need legacy heavy fields (`processes`, `process_symbols`, `definitions`, `resourceBindings`, `serializedFields`, `next_hops`), rerun with `response_profile: "full"`
 - [ ] For Unity evidence, call context/query with `unity_resources: "on"` and `unity_hydration_mode: "compact"`
 - [ ] If you need `hydrationMeta.needsParityRetry` or strict fallback diagnostics, rerun with `response_profile: "full"` first
@@ -111,6 +113,8 @@ gitnexus_context({
 
 - Query-time runtime closure is **graph-only** and does not require `verification_rules` / `trigger_tokens` matching.
 - In default slim mode, use `runtime_preview` as a fast status summary; rerun with `response_profile: "full"` when you need `runtime_claim.hops`, `runtime_claim.gaps`, or hydration diagnostics.
+- Treat `resource_heuristic` as clue-tier evidence (`clue`), not closure proof.
+- Strong graph hops can coexist with failed closure when verifier-core still reports `failed`; this is partial bridge evidence, not contradiction.
 - Treat runtime-chain outputs as two layers:
   - `verifier-core`: binary verifier result (`verified_full` | `failed`)
   - `policy-adjusted`: user-visible result after hydration policy is applied

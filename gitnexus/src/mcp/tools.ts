@@ -70,6 +70,9 @@ Default response_profile=slim shape:
 - suggested_context_targets[]: { name, uid?, filePath?, why } for direct context disambiguation
 - upgrade_hints may include exact \`context --uid\` follow-ups when same-name symbols are ambiguous
 - decision.recommended_follow_up prefers narrowing hints (for example resource_path_prefix/name) before response_profile=full fallback
+- recommended runtime retrieval sequence: discovery -> seed narrowing -> closure verification
+- treat evidence_mode=resource_heuristic as clue-tier evidence (not closure proof)
+- strong graph hops can coexist with failed closure when verifier-core remains failed
 
 Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
 Supports optional scope controls for noisy codebases:
@@ -229,10 +232,13 @@ Process participation metadata:
 - processes[].verification_hint: { action, target, next_command } (required when confidence=low)
 
 Default response_profile=slim shape:
-- symbol, incoming, outgoing, processes, resource_hints, verification_hint, upgrade_hints, runtime_preview
+- summary, symbol, incoming, outgoing, processes, resource_hints, verification_hint, upgrade_hints, runtime_preview
 - missing_proof_targets, suggested_context_targets
 - suggested_context_targets[]: { name, uid?, filePath?, why } for direct context disambiguation
 - upgrade_hints may include exact \`context --uid\` follow-ups when same-name symbols are ambiguous
+- recommended runtime retrieval sequence: discovery -> seed narrowing -> closure verification
+- treat evidence_mode=resource_heuristic as clue-tier evidence (not closure proof)
+- strong graph hops can coexist with failed closure when verifier-core remains failed
 
 Unity retrieval contract:
 - Set unity_resources=on|auto to include Unity resource evidence.
