@@ -37,6 +37,7 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 1. Unity 资源绑定解析（Phase 5.5）：
    - `processUnityResources`：`pipeline.ts:441`
    - 产出 `UNITY_COMPONENT_INSTANCE`、`UNITY_ASSET_GUID_REF`、`UNITY_RESOURCE_SUMMARY` 边
+   - `PrefabInstance.m_SourcePrefab` 资源级提取已纳入 Phase 5.5，产出去重后的 `scene->prefab` 与 `prefab->prefab` `UNITY_ASSET_GUID_REF`
 2. 内置 Lifecycle 注入（Phase 5.6）：
    - 对 Unity 项目自动生效（检测 `Assets/*.cs` 文件）：`pipeline.ts:444`
    - 通用 lifecycle 回调注入（OnEnable/Awake/Start/Update 等）：`unity-lifecycle-synthetic-calls.ts:52-107`
