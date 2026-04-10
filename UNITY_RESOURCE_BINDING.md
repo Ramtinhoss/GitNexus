@@ -64,16 +64,16 @@ Unity 游戏项目中，代码（C# 脚本）和资源（界面文件 UXML、样
 |------|------|--------------|-------------------|----------|----------|
 | 主线 A：脚本命中扫描（scan-context） | 先找“哪些资源里出现了脚本 GUID” | scoped 的 `.prefab/.unity/.asset`（以及相关 `.meta`） | `m_Script: { guid: ... }` | **流式逐行扫描**（line-by-line） | 全量扫资源文件，但只提取“脚本命中线索” |
 | 主线 B：组件深度解析（resolver） | 对命中的资源做组件绑定与字段解析 | 仅主线 A 命中的资源文件（不是所有资源） | `MonoBehaviour` 组件字段、引用字段、Prefab override 合并结果 | **整文件加载 + YAML 对象解析** | 按命中范围做深解析；不是 repo 全量深解析 |
-| 主线 C：Prefab Source 资源边（prefab-source） | 补齐 `scene/prefab -> prefab` 资源事实 | scoped 的 `.unity/.prefab` | `PrefabInstance.m_SourcePrefab` | 当前实现是**整文件加载 + 解析对象块** | 全量扫 `.unity/.prefab`；用于补资源链，不负责组件字段真值 |
+| 主线 C：Prefab Source 资源边（prefab-source） | 补齐 `scene/prefab -> prefab` 资源事实 | scoped 的 `.unity/.prefab` | `PrefabInstance.m_SourcePrefab` | **scan-context 流式识别 + Phase 5.5 统一消费写图** | 不再单独新增全量解析 pass；只记录轻量线索并统一消费 |
 
 补充说明：
 
 1. 主线 A/B 是“先筛选再深解析”的两段式设计。主线 A 负责快速缩小范围，主线 B 负责提取细节。  
 2. 主线 C 的目标很窄，只追 `m_SourcePrefab`，不替代主线 B。也就是说，非 prefab 引用的组件字段仍由主线 B 解析。  
 3. 你最关心的“哪些是流式、哪些是全量”可直接记为：  
-   - 流式：主线 A（脚本命中扫描）  
-   - 全量读取：主线 B、主线 C（当前实现）  
-4. 因为主线 C 当前是全量读取 `.unity/.prefab`，在大项目上会显著放大构建期内存压力；这也是近期 RSS 增长调查的核心背景。
+   - 流式：主线 A + 主线 C 的识别阶段（`scan-context`）  
+   - 全量读取：主线 B（仅命中资源的深解析）  
+4. 主线 C 已并入 scan-context 承载器并在 `processUnityResources` 统一消费，不再保留独立 prefab-source 全量解析 pass。
 
 ### 架构演进方向：Scan-Context 承载器 + 统一消费点
 

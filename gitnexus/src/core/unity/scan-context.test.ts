@@ -41,6 +41,19 @@ test('buildUnityScanContext exposes resourceFiles for scene/prefab scan pass', a
   assert.equal(new Set(context.resourceFiles).size, context.resourceFiles.length);
 });
 
+test('buildUnityScanContext collects prefabSourceRefs from scoped unity/prefab resources', async () => {
+  const context = await buildUnityScanContext({
+    repoRoot: fixtureRoot,
+    scopedPaths: ['Assets/Scene/MainUIManager.unity', 'Assets/Prefabs/BattleMode.prefab'],
+  });
+
+  assert.ok(Array.isArray((context as any).prefabSourceRefs));
+  assert.ok((context as any).prefabSourceRefs.length > 0);
+  const sample = (context as any).prefabSourceRefs[0];
+  assert.equal(sample.fieldName, 'm_SourcePrefab');
+  assert.equal(sample.sourceLayer === 'scene' || sample.sourceLayer === 'prefab', true);
+});
+
 test('buildUnityScanContextFromSeed rebuilds resourceFiles from guidToResourcePaths', () => {
   const context = buildUnityScanContextFromSeed({
     seed: {
@@ -57,6 +70,37 @@ test('buildUnityScanContextFromSeed rebuilds resourceFiles from guidToResourcePa
     'Assets/Prefabs/BattleMode.prefab',
     'Assets/Scene/MainUIManager.unity',
   ]);
+});
+
+test('buildUnityScanContextFromSeed reconstructs prefabSourceRefs', () => {
+  const context = buildUnityScanContextFromSeed({
+    seed: {
+      version: 1,
+      symbolToScriptPath: {},
+      scriptPathToGuid: {},
+      guidToResourcePaths: {},
+      prefabSourceRefs: [
+        {
+          sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+          targetGuid: '99999999999999999999999999999999',
+          targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+          fileId: '100100000',
+          fieldName: 'm_SourcePrefab',
+          sourceLayer: 'scene',
+        },
+      ],
+    } as any,
+  });
+
+  assert.equal((context as any).prefabSourceRefs.length, 1);
+});
+
+test('scan-context prefabSourceRefs drop unresolved and zero-guid entries', async () => {
+  const context = await buildUnityScanContext({ repoRoot: fixtureRoot });
+  for (const row of (context as any).prefabSourceRefs as any[]) {
+    assert.notEqual(row.targetGuid, '00000000000000000000000000000000');
+    assert.ok(String(row.targetResourcePath || '').length > 0);
+  }
 });
 
 test('buildUnityScanContext accepts symbol declarations as hint source', async () => {

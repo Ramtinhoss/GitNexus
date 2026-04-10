@@ -22,7 +22,12 @@ Track execution state here. `executing-plans` updates this section in place.
 
 Task | Status | Facts
 --- | --- | ---
-<!-- executing-plans appends one row per task as execution advances -->
+Task 1: Add Failing Scan-Context Contract Tests | completed | Added `prefabSourceRefs` contract tests; pre-implementation run failed with missing `prefabSourceRefs`; post-implementation `node --test dist/core/unity/scan-context.test.js` passed.
+Task 2: Implement Streamed Prefab-Source Recognizer in Scan-Context | completed | Added `gitnexus/src/core/unity/prefab-source-scan.ts`; wired scanner into `buildUnityScanContext`; filtering assertions for unresolved/zero-guid now pass in `scan-context.test`.
+Task 3: Refactor `processUnityResources` to Unified Consumption Path | completed | Removed independent prefab-source parse path from processor; now consumes `scanContext.prefabSourceRefs` via `emitPrefabSourceGuidRefsFromScanContext`; `unity-resource-processor.test.js` passed.
+Task 4: Add Concrete Negative Tests for Anti-Fake Guards | completed | Added placeholder/zero-guid negative test and guard logic in unified consumer; `unity-resource-processor.test.js` passes with valid-row-only emission.
+Task 5: Add Semantic Doc-Contract Test and Sync Docs | completed | Added `doc-contract.test.ts`; synced `UNITY_RESOURCE_BINDING.md`, SSOT, and design doc; `node --test dist/core/unity/doc-contract.test.js dist/core/ingestion/unity-resource-processor.test.js` passed.
+Task 6: Produce A/B RSS Report with Exact Commands and Toggle Proof | completed | Generated `off.log`/`on.log` and report file; parity/toggle/delta verification command passed; human gate decision=`通过`.
 
 ## Design Traceability Matrix
 

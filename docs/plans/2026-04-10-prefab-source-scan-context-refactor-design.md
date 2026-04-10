@@ -1,7 +1,7 @@
 # Prefab Source Scan-Context Refactor Design
 
 Date: 2026-04-10  
-Status: Draft accepted in discussion
+Status: Implemented (As-Built aligned)
 
 ## 1. 背景与问题
 
@@ -36,17 +36,17 @@ Status: Draft accepted in discussion
 
 ## 4. As-Is 与 To-Be
 
-### 4.1 As-Is（当前）
+### 4.1 As-Is（重构前）
 
 1. scan-context（主线 A）流式扫描资源，只抓 `m_Script.guid` 命中线索。
 2. resolver（主线 B）按命中范围做深解析，提取组件绑定与字段引用。
 3. prefab-source（主线 C）在 `processUnityResources` 内单独遍历 `.unity/.prefab`，整文件读取后解析 `PrefabInstance.m_SourcePrefab`。
 
-### 4.2 To-Be（目标）
+### 4.2 As-Built（当前）
 
 1. scan-context 在一次资源扫描中并行产出：
    - `scriptGuidHits`（现有）
-   - `prefabSourceHits`（新增，仅 `m_SourcePrefab`）
+   - `prefabSourceRefs`（新增，仅 `m_SourcePrefab`）
 2. `processUnityResources` 只消费 scan-context 产物：
    - 组件线索走 resolver（主线 B）
    - prefab-source 线索直接写 `UNITY_ASSET_GUID_REF`
@@ -59,7 +59,7 @@ Status: Draft accepted in discussion
 `UnityScanContext` 从“脚本命中缓存集合”升级为“资源线索承载器（resource signal carrier）”：
 
 1. 维持现有字段（symbol/script/guid/resource 命中映射）。
-2. 增加 prefab-source 线索集合（建议命名示例：`prefabSourceRefs`）。
+2. 增加 prefab-source 线索集合（当前命名：`prefabSourceRefs`）。
 3. prefab-source 线索记录采用轻量结构，不携带 YAML 全对象。
 
 建议记录字段：

@@ -1,4 +1,4 @@
-import type { UnityScanContext } from '../unity/scan-context.js';
+import type { UnityPrefabSourceRef, UnityScanContext } from '../unity/scan-context.js';
 
 export interface UnityParitySeed {
   version: 1;
@@ -6,6 +6,7 @@ export interface UnityParitySeed {
   scriptPathToGuid: Record<string, string>;
   guidToResourcePaths: Record<string, string[]>;
   assetGuidToPath?: Record<string, string>;
+  prefabSourceRefs?: UnityPrefabSourceRef[];
 }
 
 export function buildUnityParitySeed(scanContext: UnityScanContext): UnityParitySeed {
@@ -69,6 +70,14 @@ export function buildUnityParitySeed(scanContext: UnityScanContext): UnityParity
     scriptPathToGuid: sortRecord(scriptPathToGuid),
     guidToResourcePaths: sortRecord(guidToResourcePaths),
     assetGuidToPath: Object.keys(assetGuidToPath).length > 0 ? sortRecord(assetGuidToPath) : undefined,
+    prefabSourceRefs: scanContext.prefabSourceRefs?.map((row) => ({
+      sourceResourcePath: normalizePath(row.sourceResourcePath),
+      targetGuid: String(row.targetGuid || '').trim().toLowerCase(),
+      targetResourcePath: normalizePath(row.targetResourcePath || '') || undefined,
+      fileId: String(row.fileId || '').trim() || undefined,
+      fieldName: 'm_SourcePrefab',
+      sourceLayer: row.sourceLayer === 'scene' ? 'scene' : 'prefab',
+    })),
   };
 }
 

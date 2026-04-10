@@ -5,6 +5,7 @@ import { createInterface } from 'node:readline';
 import { glob } from 'glob';
 import { buildAssetMetaIndex, buildMetaIndex } from './meta-index.js';
 import { buildUnityUiMetaIndex } from './ui-meta-index.js';
+import { collectPrefabSourceRefs } from './prefab-source-scan.js';
 import type { UnityResourceGuidHit } from './resource-hit-scanner.js';
 import type { UnityObjectBlock } from './yaml-object-graph.js';
 import { buildSerializableTypeIndexFromFiles } from './serialized-type-index.js';
@@ -25,6 +26,15 @@ export interface UnitySymbolDeclaration {
   scriptPath: string;
 }
 
+export interface UnityPrefabSourceRef {
+  sourceResourcePath: string;
+  targetGuid: string;
+  targetResourcePath?: string;
+  fileId?: string;
+  fieldName: 'm_SourcePrefab';
+  sourceLayer: 'scene' | 'prefab';
+}
+
 export interface UnityScanContext {
   symbolToScriptPaths: Map<string, string[]>;
   symbolToCanonicalScriptPath: Map<string, string>;
@@ -36,6 +46,7 @@ export interface UnityScanContext {
   assetGuidToPath?: Map<string, string>;
   uxmlGuidToPath?: Map<string, string>;
   ussGuidToPath?: Map<string, string>;
+  prefabSourceRefs: UnityPrefabSourceRef[];
   resourceFiles: string[];
   resourceDocCache: Map<string, UnityObjectBlock[]>;
 }
@@ -79,6 +90,11 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
   );
   const assetGuidToPath = await buildAssetMetaIndex(input.repoRoot, { metaFiles: assetMetaFiles });
   const uiMetaIndex = await buildUnityUiMetaIndex(input.repoRoot, { scopedPaths: input.scopedPaths });
+  const prefabSourceRefs = await collectPrefabSourceRefs({
+    repoRoot: input.repoRoot,
+    resourceFiles: normalizedResourceFiles,
+    assetGuidToPath,
+  });
   const symbolToCanonicalScriptPath = buildCanonicalScriptPathIndex(
     symbolToScriptPaths,
     scriptPathToGuid,
@@ -97,6 +113,7 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     assetGuidToPath,
     uxmlGuidToPath: uiMetaIndex.uxmlGuidToPath,
     ussGuidToPath: uiMetaIndex.ussGuidToPath,
+    prefabSourceRefs,
     resourceFiles: normalizedResourceFiles,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
@@ -203,6 +220,10 @@ export function buildUnityScanContextFromSeed(input: {
     ),
   ].sort((left, right) => left.localeCompare(right));
 
+  const prefabSourceRefs = ((seed as any).prefabSourceRefs || [])
+    .map((value: any) => normalizePrefabSourceRef(value))
+    .filter((value: UnityPrefabSourceRef | undefined): value is UnityPrefabSourceRef => Boolean(value));
+
   return {
     symbolToScriptPaths,
     symbolToCanonicalScriptPath,
@@ -214,6 +235,7 @@ export function buildUnityScanContextFromSeed(input: {
     assetGuidToPath,
     uxmlGuidToPath,
     ussGuidToPath,
+    prefabSourceRefs,
     resourceFiles,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
@@ -498,6 +520,27 @@ function normalizeRelativePath(repoRoot: string, filePath: string): string | nul
 
 function normalizeSlashes(filePath: string): string {
   return filePath.replace(/\\/g, '/');
+}
+
+function normalizePrefabSourceRef(value: any): UnityPrefabSourceRef | undefined {
+  const sourceResourcePath = normalizeSlashes(String(value?.sourceResourcePath || '').trim());
+  const targetGuid = String(value?.targetGuid || '').trim().toLowerCase();
+  const targetResourcePath = normalizeSlashes(String(value?.targetResourcePath || '').trim());
+  const fileId = String(value?.fileId || '').trim();
+  if (!sourceResourcePath || !targetGuid) return undefined;
+
+  const sourceLayer = value?.sourceLayer === 'scene' ? 'scene' : value?.sourceLayer === 'prefab' ? 'prefab' : (
+    sourceResourcePath.endsWith('.unity') ? 'scene' : 'prefab'
+  );
+
+  return {
+    sourceResourcePath,
+    targetGuid,
+    targetResourcePath: targetResourcePath || undefined,
+    fileId: fileId || undefined,
+    fieldName: 'm_SourcePrefab',
+    sourceLayer,
+  };
 }
 
 function inferResourceType(resourcePath: string): UnityResourceGuidHit['resourceType'] {

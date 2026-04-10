@@ -652,33 +652,26 @@ test('processUnityResources writes asset-guid and graph-node reference edges fro
   assert.equal(guidReason.fieldName, 'gungraph');
 });
 
-test('scene prefab source emits UNITY_ASSET_GUID_REF', async () => {
+test('processUnityResources emits prefab-source edges from scanContext.prefabSourceRefs only', async () => {
   const graph = createKnowledgeGraph();
   const fakeScanContext = {
     symbolToScriptPath: new Map<string, string>(),
     scriptPathToGuid: new Map<string, string>(),
     guidToResourceHits: new Map<string, any[]>(),
-    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
-    resourceFiles: ['Assets/Scene/MainUIManager.unity'],
-    resourceDocCache: new Map([
-      [
-        'Assets/Scene/MainUIManager.unity',
-        [
-          {
-            objectType: 'PrefabInstance',
-            objectId: '3000',
-            stripped: false,
-            fields: {
-              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
-            },
-            rawBody: '',
-          },
-        ],
-      ],
-    ]),
+    prefabSourceRefs: [
+      {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      },
+    ],
+    resourceDocCache: new Map(),
   };
 
-  await processUnityResources(
+  const result = await processUnityResources(
     graph,
     { repoPath: fixtureRoot },
     {
@@ -692,6 +685,7 @@ test('scene prefab source emits UNITY_ASSET_GUID_REF', async () => {
   const reason = JSON.parse(String(guidRefs[0]?.reason || '{}'));
   assert.equal(reason.fieldName, 'm_SourcePrefab');
   assert.equal(reason.sourceLayer, 'scene');
+  assert.ok(result.diagnostics.some((line) => line.includes('prefab-source: emitted=1')));
 });
 
 test('prefab source pass can be disabled via env toggle', async () => {
@@ -700,24 +694,17 @@ test('prefab source pass can be disabled via env toggle', async () => {
     symbolToScriptPath: new Map<string, string>(),
     scriptPathToGuid: new Map<string, string>(),
     guidToResourceHits: new Map<string, any[]>(),
-    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
-    resourceFiles: ['Assets/Scene/MainUIManager.unity'],
-    resourceDocCache: new Map([
-      [
-        'Assets/Scene/MainUIManager.unity',
-        [
-          {
-            objectType: 'PrefabInstance',
-            objectId: '3000',
-            stripped: false,
-            fields: {
-              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
-            },
-            rawBody: '',
-          },
-        ],
-      ],
-    ]),
+    prefabSourceRefs: [
+      {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      },
+    ],
+    resourceDocCache: new Map(),
   };
 
   const originalValue = process.env.GITNEXUS_DISABLE_PREFAB_SOURCE_PASS;
@@ -749,33 +736,25 @@ test('prefab nested source dedupes duplicate PrefabInstance rows', async () => {
     symbolToScriptPath: new Map<string, string>(),
     scriptPathToGuid: new Map<string, string>(),
     guidToResourceHits: new Map<string, any[]>(),
-    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/Nested.prefab']]),
-    resourceFiles: ['Assets/Prefabs/BattleMode.prefab'],
-    resourceDocCache: new Map([
-      [
-        'Assets/Prefabs/BattleMode.prefab',
-        [
-          {
-            objectType: 'PrefabInstance',
-            objectId: '3000',
-            stripped: false,
-            fields: {
-              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
-            },
-            rawBody: '',
-          },
-          {
-            objectType: 'PrefabInstance',
-            objectId: '3001',
-            stripped: false,
-            fields: {
-              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
-            },
-            rawBody: '',
-          },
-        ],
-      ],
-    ]),
+    prefabSourceRefs: [
+      {
+        sourceResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/Nested.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'prefab',
+      },
+      {
+        sourceResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/Nested.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'prefab',
+      },
+    ],
+    resourceDocCache: new Map(),
   };
 
   await processUnityResources(
@@ -793,39 +772,39 @@ test('prefab nested source dedupes duplicate PrefabInstance rows', async () => {
   assert.equal(reason.guid, '99999999999999999999999999999999');
 });
 
-test('skips unresolved prefab source guid and built-in guid', async () => {
+test('drops placeholder unresolved and zero-guid prefab-source rows', async () => {
   const graph = createKnowledgeGraph();
   const fakeScanContext = {
     symbolToScriptPath: new Map<string, string>(),
     scriptPathToGuid: new Map<string, string>(),
     guidToResourceHits: new Map<string, any[]>(),
-    assetGuidToPath: new Map<string, string>(),
-    resourceFiles: ['Assets/Scene/MainUIManager.unity'],
-    resourceDocCache: new Map([
-      [
-        'Assets/Scene/MainUIManager.unity',
-        [
-          {
-            objectType: 'PrefabInstance',
-            objectId: '3000',
-            stripped: false,
-            fields: {
-              m_SourcePrefab: '{fileID: 100100000, guid: 55555555555555555555555555555555, type: 3}',
-            },
-            rawBody: '',
-          },
-          {
-            objectType: 'PrefabInstance',
-            objectId: '3001',
-            stripped: false,
-            fields: {
-              m_SourcePrefab: '{fileID: 100100000, guid: 00000000000000000000000000000000, type: 3}',
-            },
-            rawBody: '',
-          },
-        ],
-      ],
-    ]),
+    prefabSourceRefs: [
+      {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '00000000000000000000000000000000',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '1',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      },
+      {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        targetResourcePath: '__PLACEHOLDER__',
+        fileId: '2',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      },
+      {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '3',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      },
+    ],
+    resourceDocCache: new Map(),
   };
 
   await processUnityResources(
@@ -838,7 +817,10 @@ test('skips unresolved prefab source guid and built-in guid', async () => {
   );
 
   const guidRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF');
-  assert.equal(guidRefs.length, 0);
+  assert.equal(guidRefs.length, 1);
+  const reason = JSON.parse(String(guidRefs[0]?.reason || '{}'));
+  assert.equal(reason.targetResourcePath, 'Assets/Prefabs/BattleMode.prefab');
+  assert.notEqual(reason.guid, '00000000000000000000000000000000');
 });
 
 test('extracts prefab source refs without class binding resolve', async () => {
@@ -848,24 +830,17 @@ test('extracts prefab source refs without class binding resolve', async () => {
     symbolToScriptPath: new Map<string, string>(),
     scriptPathToGuid: new Map<string, string>(),
     guidToResourceHits: new Map<string, any[]>(),
-    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
-    resourceFiles: ['Assets/Scene/MainUIManager.unity'],
-    resourceDocCache: new Map([
-      [
-        'Assets/Scene/MainUIManager.unity',
-        [
-          {
-            objectType: 'PrefabInstance',
-            objectId: '3000',
-            stripped: false,
-            fields: {
-              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
-            },
-            rawBody: '',
-          },
-        ],
-      ],
-    ]),
+    prefabSourceRefs: [
+      {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      },
+    ],
+    resourceDocCache: new Map(),
   };
 
   await processUnityResources(
