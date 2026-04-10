@@ -59,6 +59,7 @@
 | `gitnexus/skills/_shared/unity-runtime-process-contract.md` | `.agents/skills/gitnexus/_shared/unity-runtime-process-contract.md` |
 | `gitnexus/skills/_shared/unity-ui-trace-contract.md` | `.agents/skills/gitnexus/_shared/unity-ui-trace-contract.md` |
 | `gitnexus/skills/_shared/unity-hydration-contract.md` | `.agents/skills/gitnexus/_shared/unity-hydration-contract.md` |
+| `gitnexus/skills/_shared/unity-gap-lab-contract.md` | `.agents/skills/gitnexus/_shared/unity-gap-lab-contract.md` |
 
 ### Hooks（安装到用户全局 Claude 配置）
 

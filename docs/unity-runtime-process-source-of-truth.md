@@ -117,6 +117,13 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
    - promote 写入 `.gitnexus/rules/catalog.json` + `approved/*.yaml`
    - `verification_rules` 供离线治理与回归对照，不参与 query-time graph-only closure
 
+### 2.5 Gap-Lab Slice Workflow Boundary（Authoring / Orchestration）
+
+1. `gitnexus-unity-rule-gen` 的 gap-lab slice 流程是 **offline authoring/orchestration layer**，用于生成与验收规则，不是 query-time verifier。
+2. gap-lab 产物路径为 `.gitnexus/gap-lab/runs/<run_id>/...`，用于跨会话恢复（focus、checkpoint、inventory、decision、slice evidence）。
+3. query-time runtime closure remains graph-only；gap-lab 不改变 `runtime_chain_verify=on-demand` 的 graph-only closure 语义。
+4. 当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，必须 parity rerun 后再做 closure 结论（无论是否经过 gap-lab authoring）。
+
 ## 3. 设计与实现对照（阶段）
 
 | 阶段 | 设计目标 | As-Built 结论 | 代码/证据 |

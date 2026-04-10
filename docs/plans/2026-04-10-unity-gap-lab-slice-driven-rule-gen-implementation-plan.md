@@ -16,7 +16,15 @@ Track execution state here. `executing-plans` updates this section in place.
 
 Task | Status | Facts
 --- | --- | ---
-<!-- executing-plans appends one row per task as execution advances -->
+Task 1 | completed | Created `gitnexus/test/integration/unity-gap-lab-skill-contracts.test.ts` with Phase A/B/C/D + focus-lock + single-slice + persistence assertions; `npx --prefix gitnexus vitest run gitnexus/test/integration/unity-gap-lab-skill-contracts.test.ts` fails on missing clauses as expected (baseline established).
+Task 2 | completed | Added source+installed `unity-gap-lab-contract.md` and indexed it in `AGENTS.md`; `npx --prefix gitnexus vitest run gitnexus/test/integration/unity-gap-lab-skill-contracts.test.ts -t "requires shared unity-gap-lab contract file and schema blocks"` passes.
+Task 3 | completed | Rewrote `gitnexus/skills/gitnexus-unity-rule-gen.md` to Phase A/B/C/D gap-lab slice-driven workflow (focus-lock, confidence thresholds, persistence, single-slice, semantic-first discovery); `npx --prefix gitnexus vitest run gitnexus/test/integration/unity-gap-lab-skill-contracts.test.ts` now passes all current assertions.
+Task 4 | completed | Added byte-level parity test and synchronized installed copy via `cp gitnexus/skills/gitnexus-unity-rule-gen.md .agents/skills/gitnexus/gitnexus-unity-rule-gen/SKILL.md`; `diff -u ...` clean and `npx --prefix gitnexus vitest run gitnexus/test/integration/unity-gap-lab-skill-contracts.test.ts` passes.
+Task 5 | completed | Extended `rule-lab-contracts` with gap-lab ownership assertions and updated `docs/gitnexus-config-files.md` with `gap-lab/runs/**` ownership + artifact list; `npx --prefix gitnexus vitest run gitnexus/test/integration/rule-lab-contracts.test.ts` passes.
+Task 6 | completed | Added gap-lab authoring boundary wording to `docs/unity-runtime-process-source-of-truth.md` and synced guide source/installed copies; `npx --prefix gitnexus vitest run gitnexus/test/integration/rule-lab-contracts.test.ts` passes with new truth-source assertions.
+Task 7 | completed | Added anti-placeholder / non-empty closure evidence / live evidence contract tests and updated skill text accordingly (command blocks use concrete vars, added `Expected signal:`); `npx --prefix gitnexus vitest run gitnexus/test/integration/unity-gap-lab-skill-contracts.test.ts` passes (10/10).
+Task 8 | completed | Human verification gate decision=`通过`; smoke report finalized at `docs/reports/2026-04-10-unity-gap-lab-skill-smoke.md` with concrete run artifact evidence under `.gitnexus/gap-lab/runs/smoke-20260410-1954` covering focus-lock/resume/insufficient-evidence gating.
+Task 9 | completed | Added `[Unreleased]` changelog entries and release-contract assertion; final verification passed via `npm --prefix gitnexus run build && npx --prefix gitnexus vitest run gitnexus/test/integration/unity-gap-lab-skill-contracts.test.ts gitnexus/test/integration/rule-lab-contracts.test.ts && diff -u gitnexus/skills/gitnexus-unity-rule-gen.md .agents/skills/gitnexus/gitnexus-unity-rule-gen/SKILL.md`.
 
 ## Design Traceability Matrix
 

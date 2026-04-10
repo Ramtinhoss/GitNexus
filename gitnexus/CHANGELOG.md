@@ -2,6 +2,17 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- Added gap-lab slice-driven Unity rule generation workflow for `gitnexus-unity-rule-gen`, including mandatory focus-lock, single-slice execution loop, resumable checkpointing, and authenticity evidence gates.
+- Added shared Unity gap-lab contract docs at `gitnexus/skills/_shared/unity-gap-lab-contract.md` and installed mirror path for setup distribution.
+- Added integration contract coverage for gap-lab skill semantics, source/installed parity, anti-placeholder checks, closure evidence guards, and changelog sync requirements.
+
+### Changed
+- Updated config/state ownership documentation to include `.gitnexus/gap-lab/runs/**` artifacts and owner responsibilities.
+- Updated Unity runtime source-of-truth and guide docs to state that gap-lab is an offline authoring/orchestration layer and query-time runtime closure remains graph-only.
+
 ## [1.5.0] - 2026-04-06
 
 > Stable release notes comparing `v1.4.9` -> `v1.5.0`.

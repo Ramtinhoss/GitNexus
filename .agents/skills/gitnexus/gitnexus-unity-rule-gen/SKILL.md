@@ -1,363 +1,222 @@
 ---
 name: gitnexus-unity-rule-gen
-description: "Interactive workflow for generating Unity analyze_rules: collect chain clues from user, explore graph to fill parameters, generate rule YAML, compile to bundle, analyze, and verify. Use when: 'create unity rules', 'generate analyze rules', 'add resource binding rules', 'unity rule gen'."
+description: "Interactive gap-lab workflow for generating Unity analyze_rules from missing synthetic-edge patterns. Slice-driven, resumable, one-slice-per-loop. Use when: 'create unity rules', 'generate analyze rules', 'fill runtime gap', 'unity rule gen'."
 ---
 
-# Unity Analyze Rules 交互式生成工作流
+# Unity Gap-Lab Slice-Driven Rule Generation
 
-本技能引导 agent 从用户描述的自然语言调用链路线索出发，通过图谱探索补全参数，交互式生成 `analyze_rules` 规则。支持一次录入多条规则，一次性 analyze 后逐一验证。
+This skill migrates Unity rule generation from chain-clue-first input to
+**gap-lab slice-driven** execution.
 
-## Phase 0: 初始化
+Core model:
 
-```
-1. 确认 gitnexus CLI 可用（gitnexus --version）
-2. 确认目标仓库路径（询问用户或从 cwd 推断）
-3. 确认仓库已索引（gitnexus status），未索引则先 analyze
-4. 确认 UNITY_ASSET_GUID_REF 和 UNITY_COMPONENT_INSTANCE 边存在：
-```
+1. Build run + slices once.
+2. Focus-lock one `gap_type/gap_subtype` slice.
+3. Execute a single-slice full loop.
+4. Persist resumable state and stop.
 
-```
-mcp__gitnexus__cypher:
-  query: |
-    MATCH ()-[r:CodeRelation]->()
-    WHERE r.type IN ['UNITY_ASSET_GUID_REF', 'UNITY_COMPONENT_INSTANCE']
-    RETURN r.type AS edgeType, count(*) AS cnt
-  repo: <repo-name>
-```
+Read first:
 
-如果这两种边不存在，说明索引时未启用 Unity 资源解析，需要重新 analyze，**必须加 Unity 参数**：
+- `gitnexus/skills/_shared/unity-gap-lab-contract.md`
+- `docs/unity-runtime-process-source-of-truth.md`
 
-```bash
-gitnexus analyze --force --extensions ".cs,.meta"
-# 如果所有代码都在 Assets/ 下，可加 --scope-prefix Assets/ 缩短分析时间
-```
+## Preconditions
 
----
+1. Confirm repository path and GitNexus index health.
+2. Confirm `rule-lab` commands are available.
+3. Confirm the run is for Unity runtime synthetic-edge authoring (offline authoring layer).
+4. Confirm query-time closure remains graph-only; this workflow does not alter that boundary.
 
-## Phase 1: 规则录入循环
+## Gap Taxonomy Contract
 
-```
-loop:
-  1.1 收集用户链路线索
-  1.2 图谱探索补全
-  1.3 多路径确认
-  1.4 binding 类型判定
-  1.5 生成规则 YAML 并暂存
-  1.6 询问用户：是否继续录入下一条规则？
-      - 是 → 回到 1.1
-      - 否 → 进入 Phase 2
-```
+Every candidate must include all required fields:
 
-### 1.1 收集用户链路线索
+- `gap_type`
+- `gap_subtype`
+- `pattern_id`
+- `detector_version`
 
-向用户询问：
-
-| 信息 | 问题 | 示例 |
-|------|------|------|
-| 场景名称 | 你想验证哪个资源→代码链路？ | weapon-powerup-gungraph |
-| 资源引用字段 | 哪些序列化字段名触发资源加载？ | `gungraph\|graph` |
-| 目标入口方法 | 加载的资源上哪些方法会被触发？ | OnEnable, Awake |
-| 持有字段的类 | 哪些类持有触发加载的字段？ | WeaponPowerUp |
-| 加载方法 | 哪些方法触发资源加载？ | Equip |
-| 动态跳转 | 链路中是否有事件派发或回调（C# Action/SyncList/delegate）？ | `NetEventHub.OnPickUpItem → OnClientPickItUp` |
-| 额外 lifecycle | 项目有自定义入口方法吗？ | Init |
-| lifecycle 范围 | 自定义入口方法的作用范围？ | Assets/Code/Graph |
-
-### 1.2 图谱探索补全
-
-用户不确定某些字段时，按优先级探索：**Cypher 直查 > gitnexus context > 文件 grep**
-
-```
-# 查找资源引用字段名
-mcp__gitnexus__cypher:
-  query: |
-    MATCH ()-[r:CodeRelation {type:'UNITY_ASSET_GUID_REF'}]->()
-    RETURN DISTINCT r.reason
-    LIMIT 20
-  repo: <repo-name>
-
-# 查找挂载在资源上的组件类
-mcp__gitnexus__cypher:
-  query: |
-    MATCH (c:Class)-[r:CodeRelation {type:'UNITY_COMPONENT_INSTANCE'}]->(f:File)
-    WHERE f.filePath CONTAINS '.asset'
-    RETURN c.name, f.filePath
-    LIMIT 20
-  repo: <repo-name>
-
-# 查找特定类的方法列表
-mcp__gitnexus__context:
-  name: <ClassName>
-  repo: <repo-name>
-```
-
-如果图谱查询无结果，回退到文件直读：
-
-```
-# 查找 [SerializeField] 字段
-Grep: pattern="\[SerializeField\]" path=<Assets目录>
-
-# 查找特定方法定义
-Grep: pattern="void Init\b|void Setup\b" path=<Assets目录>
-```
-
-### 1.3 多路径确认
-
-- 同一位置 ≥2 候选路径 → **向用户确认**选择哪条
-- 探索 3 步无结果 → **向用户补充提问**
-
-### 1.4 binding 类型判定
-
-| 链路特征 | binding kind | 说明 |
-|---------|-------------|------|
-| asset GUID 引用 → 目标资源组件激活 | `asset_ref_loads_components` | 序列化字段引用 asset，加载时触发组件 lifecycle |
-| 方法调用 → 字段引用的资源加载 | `method_triggers_field_load` | 特定方法触发序列化字段引用的资源加载 |
-| 方法调用 → SceneManager.LoadScene → 场景组件激活 | `method_triggers_scene_load` | 特定方法触发场景加载，场景中组件 lifecycle 被触发 |
-| 动态跳转（事件派发/回调/delegate，静态分析不可见） | `method_triggers_method` | 声明"方法 A 动态触发方法 B"，注入合成 CALLS 边桥接 gap |
-| 项目自定义入口方法 | `lifecycle_overrides` | 非标准 Unity lifecycle 的自定义入口 |
-
-### 1.5 生成规则 YAML
-
-使用以下模板，根据收集的线索填充：
-
-```yaml
-id: unity.<scenario-name>.v2
-version: 2.0.0
-family: analyze_rules
-description: >-
-  （可选）描述该规则覆盖的业务场景和调用链背景，
-  包括动态跳转的机制说明（事件派发/回调绑定等）。
-trigger_family: <scenario-name>
-resource_types:
-  - asset
-host_base_type:
-  - MonoBehaviour
-  - ScriptableObject
-
-match:
-  trigger_tokens:
-    - <token1>
-    - <token2>
-  host_base_type:
-    - MonoBehaviour
-    - ScriptableObject
-  resource_types:
-    - asset
-
-topology:
-
-resource_bindings:
-  - kind: asset_ref_loads_components
-    ref_field_pattern: "<field_pattern>"
-    target_entry_points:
-      - OnEnable
-      - Awake
-
-  - kind: method_triggers_field_load
-    host_class_pattern: "<class_pattern>"
-    field_name: "<field_name>"
-    loader_methods:
-      - <method_name>
-
-  # 类型 C（可选）：方法触发场景加载，场景中组件 lifecycle 被触发
-  - kind: method_triggers_scene_load
-    host_class_pattern: "<class_pattern>"
-    loader_methods:
-      - <method_name>
-    scene_name: "<scene_name>"           # 匹配 .unity 文件名（不含扩展名）
-    target_entry_points:
-      - Awake
-      - Start
-      - OnEnable
-
-  # 类型 D（可选）：声明静态分析无法捕获的动态跳转（事件派发/回调/delegate）
-  # 适用场景：C# Action/UnityEvent 事件派发、Mirror SyncList 回调、delegate 绑定等
-  # 注入一条 source_method → target_method 的合成 CALLS 边（精确匹配，一条边）
-  - kind: method_triggers_method
-    description: >-
-      说明动态跳转的机制：例如"A 通过 EventHub.OnXxx?.Invoke() 触发，
-      B 在初始化时订阅该事件"，或"A 调用 SyncList.Add()，
-      触发 SyncList.Callback 回调到 B"
-    source_class_pattern: "<source_class_regex>"   # 例如 "^PlayerActor$"
-    source_method: "<source_method_name>"           # 例如 "ProcessInteractables"
-    target_class_pattern: "<target_class_regex>"   # 例如 "^NetPlayer$"
-    target_method: "<target_method_name>"           # 例如 "OnClientPickItUp"
-
-lifecycle_overrides:
-  additional_entry_points:
-    - <custom_entry>
-  scope: "<path_prefix>"
-
-closure:
-  required_hops:
-    - resource
-    - guid_map
-    - code_loader
-    - code_runtime
-
-claims:
-  guarantees:
-    - resource_to_runtime_chain_closed
-  non_guarantees:
-    - no_runtime_execution
-    - no_dynamic_data_flow_proof
-```
-
-### 1.6 暂存并询问
-
-将生成的 YAML 暂存（不写入文件），向用户确认：
-
-> 规则 `<ruleId>` 已生成。是否继续录入下一条规则？
-
-- 是 → 回到 1.1
-- 否 → 进入 Phase 2
-
----
-
-## Phase 2: 写入 + compile + analyze
-
-### 2.1 写入规则文件
-
-```bash
-mkdir -p "$TARGET_REPO/.gitnexus/rules/approved"
-# 将每条暂存的 YAML 写入对应文件
-# 文件名: approved/<ruleId>.yaml
-```
-
-### 2.2 更新 catalog.json
-
-```bash
-# 如果 catalog.json 不存在，创建初始结构
-if [ ! -f "$TARGET_REPO/.gitnexus/rules/catalog.json" ]; then
-  echo '{"version":1,"rules":[]}' > "$TARGET_REPO/.gitnexus/rules/catalog.json"
-fi
-```
-
-向 `rules` 数组追加每条规则的条目：
+Example:
 
 ```json
 {
-  "id": "<ruleId>",
-  "version": "2.0.0",
-  "enabled": true,
-  "file": "approved/<ruleId>.yaml",
-  "family": "analyze_rules"
+  "gap_type": "event_delegate_gap",
+  "gap_subtype": "mirror_synclist_callback",
+  "pattern_id": "event_delegate.mirror_synclist_callback.v1",
+  "detector_version": "1.0.0"
 }
 ```
 
-### 2.3 编译规则
+## Persistence Layout Contract
+
+Persist all run artifacts under:
+
+```text
+.gitnexus/gap-lab/runs/<run_id>/
+  manifest.json
+  slice-plan.json
+  progress.json
+  inventory.jsonl
+  decisions.jsonl
+  slices/
+    <slice_id>.json
+```
+
+Placeholders are for schema explanation only. In executable steps, placeholder values are invalid; always use concrete run ids and slice ids.
+
+## Confidence and Confirmation Policy
+
+Use deterministic thresholds during classification:
+
+1. `confidence >= 0.8`: auto-classify and continue.
+2. `0.5 <= confidence < 0.8`: lightweight confirmation batch with the user.
+3. `confidence < 0.5`: mandatory user confirmation before rule generation.
+
+## Binding Mapping Policy
+
+Map by existing binding kinds first:
+
+- `scene_deserialize_gap` -> `asset_ref_loads_components`, `method_triggers_scene_load`
+- `event_delegate_gap` -> `method_triggers_method`
+- `scene_load_gap` -> `method_triggers_scene_load`
+- `conditional_branch_gap` -> `method_triggers_method` (bridge)
+- `startup_bootstrap_gap` -> `method_triggers_method` (bridge)
+
+If a gap cannot be expressed safely with current kinds, mark it as `needs new binding kind` and do not force an incorrect mapping.
+
+## Phase A Run Init (once per run)
+
+1. Create run skeleton under `.gitnexus/gap-lab/runs/<run_id>/`.
+2. Initialize `manifest.json` with:
+   - `patterns_version`
+   - `pattern_snapshot_hash`
+   - run metadata
+3. Initialize `slice-plan.json` with all slices and `pending` status.
+4. Initialize `progress.json` with checkpoint `phase_a_initialized`.
+5. Initialize empty `inventory.jsonl` and `decisions.jsonl`.
+6. Record each slice stub at `slices/<slice_id>.json`.
+
+Suggested commands:
 
 ```bash
-gitnexus rule-lab compile --repo-path "$TARGET_REPO"
+gitnexus rule-lab discover --repo "$REPO_ID"
 ```
 
-### 2.4 重建索引
+If this run already exists, do not reinitialize; load existing artifacts and continue.
+
+## Phase B Focus Lock (every loop)
+
+Focus lock is mandatory.
+
+If missing `gap_type`/`gap_subtype`, ask the user and lock one slice before discovery starts.
+
+Question template:
+
+1. Which `gap_type` should this loop focus on?
+2. Which `gap_subtype` should this loop focus on?
+3. Optional scope hints (`scene/module/path prefix`)?
+
+Write lock result to:
+
+- `slice-plan.json` focus history
+- `progress.json.current_slice_id`
+
+No implicit "run all slices" behavior. Single-slice only.
+
+## Phase C Single-Slice Full Loop
+
+Single-slice loop only. Do not process other slices in this phase.
+
+### C1 Discovery (semantic-first)
+
+Discovery policy is semantic-first + graph-missing verification:
+
+1. Semantic detection proposes expected linkage candidates.
+2. Graph verification proves expected edge/path is currently missing.
+3. Only then append candidate into `inventory.jsonl`.
+
+Do not use graph-only missing edges as sole discovery source.
+
+### C2 Candidate classification and confirmation
+
+1. Apply confidence thresholds.
+2. Append decisions to `decisions.jsonl`.
+3. Mark rejected candidates with explicit reason.
+
+### C3 Rule generation (single slice)
+
+Generate rule payload for selected candidates in this slice only.
+
+Suggested command:
 
 ```bash
-gitnexus analyze "$TARGET_REPO" --force --extensions ".cs,.meta"
-# 如果所有代码都在 Assets/ 下，可加 --scope-prefix Assets/
+gitnexus rule-lab analyze --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
 ```
 
----
+### C4 Compile/analyze and verify
 
-## Phase 3: 逐一验证
+Execute compile + analyze + verification in sequence:
 
-对每条规则执行 4 项验证，每项给出 PASS/FAIL 判定。
-
-### 验证 1: 合成边存在性
-
-```
-mcp__gitnexus__cypher:
-  query: |
-    MATCH (a)-[r:CodeRelation {type: 'CALLS'}]->(b)
-    WHERE r.reason STARTS WITH 'unity-rule-'
-    RETURN r.reason AS reason, count(*) AS cnt
-    ORDER BY cnt DESC
-  repo: <repo-name>
+```bash
+gitnexus rule-lab review-pack --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
+gitnexus rule-lab curate --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLICE_ID" --input-path "$CURATION_JSON_PATH"
+gitnexus rule-lab promote --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
 ```
 
-**PASS**: 返回 ≥1 行，且 `reason` 包含规则 ID。
-**FAIL 诊断**: 规则未被 pipeline 加载 → 检查 catalog.json 的 `family` 字段。
+Then reindex target repo with intended analyze scope/options.
 
-### 验证 2: 运行时链路验证
+### C5 Verification gates
 
-```
-mcp__gitnexus__query:
-  query: "<chain_intent_keyword>"
-  runtime_chain_verify: "on-demand"
-  repo: <repo-name>
-```
+Capture command + signal evidence for each gate:
 
-**PASS**: `runtime_chain.status === 'verified_full'` 且 `evidence_level === 'verified_chain'`。
-**FAIL 诊断**:
-- `rule_not_matched` → 缺少可用结构化锚点（或 derived seed 不足），无法形成 graph-only closure 候选
-- `rule_matched_but_evidence_missing` → Anchor/Bind/Bridge/Runtime 某段缺证据，无法闭环
-- `rule_matched_but_verification_failed` → 候选链路存在但闭环校验失败（通常是桥接方向或目标不一致）
+1. Rule materialized (compiled/promoted artifact exists).
+2. Analyze completed for this run.
+3. Retrieval/process verification for targeted runtime chain.
 
-### 验证 3: Process 完整性
+Without non-empty closure evidence, do not move to `verified`/`done`.
 
-```
-mcp__gitnexus__context:
-  name: "<target_class>"
-  repo: <repo-name>
-```
+## Phase D Persist and Stop Point
 
-**PASS**: `processes` 中至少有一个包含跨越资源层和代码层的步骤。
-**FAIL 诊断**: 合成边 confidence 过低 → 检查 `RULE_EDGE_CONFIDENCE`（应为 0.75）。
+1. Update slice status in `slice-plan.json`:
+   - `in_progress -> blocked|rule_generated|indexed|verified|done`
+2. Update `progress.json.checkpoint_phase`.
+3. Persist resumable next command hint in `progress.json.next_command`.
+4. Stop after current slice and hand control back to user.
 
-### 验证 4: 合成边分布
+Resume guidance must continue from saved state, not restart Phase A.
 
-```
-mcp__gitnexus__cypher:
-  query: |
-    MATCH (a)-[r:CodeRelation {type: 'CALLS'}]->(b)
-    WHERE r.reason STARTS WITH 'unity-rule-'
-    RETURN
-      CASE
-        WHEN r.reason CONTAINS 'resource-load' THEN 'resource-load'
-        WHEN r.reason CONTAINS 'lifecycle-override' THEN 'lifecycle-override'
-        WHEN r.reason CONTAINS 'loader-bridge' THEN 'loader-bridge'
-        WHEN r.reason CONTAINS 'scene-load' THEN 'scene-load'
-        WHEN r.reason CONTAINS 'method-bridge' THEN 'method-bridge'
-        ELSE 'other'
-      END AS edgeKind,
-      count(*) AS cnt
-  repo: <repo-name>
-```
+## State Model
 
-**PASS**: 规则涉及的边类型均有产出（`method_triggers_method` 对应 `method-bridge`）。
+Allowed statuses:
 
----
+`pending | in_progress | blocked | rule_generated | indexed | verified | done`
 
-## 失败诊断路径
+Transition guard:
 
-| 症状 | 可能原因 | 修复方向 |
-|------|---------|---------|
-| 验证 1 失败（0 合成边） | 规则未被 compile 或 family 不对 | 检查 catalog.json + compiled bundle |
-| 验证 1 部分（只有 resource-load） | method_triggers_field_load 参数错误 | 检查 host_class_pattern / loader_methods |
-| 验证 1 部分（无 scene-load） | method_triggers_scene_load 参数错误 | 检查 scene_name 是否匹配 .unity 文件名 |
-| 验证 1 部分（无 method-bridge） | method_triggers_method 类名/方法名不匹配 | 检查 source/target_class_pattern 和 source/target_method 是否与图谱中节点名一致 |
-| 验证 2 失败（rule_not_matched） | 无结构化锚点，且 derived seed 不足以生成候选 | 补充 symbol/resource anchors（不要依赖 queryText token） |
-| 验证 2 失败（rule_matched_but_evidence_missing） | 合成边存在但闭环缺段（Anchor/Bind/Bridge/Runtime） | 对照 hops/gaps 回补对应 binding |
-| 验证 2 失败（rule_matched_but_verification_failed） | 候选路径方向/目标不一致，闭环校验失败 | 检查 bridge 目标类/方法与资源路径映射是否一致 |
-| 验证 3 失败（无 Process） | 合成边 confidence 过低 | 检查 RULE_EDGE_CONFIDENCE（应为 0.75） |
-| 验证 4 链路断裂（中间有动态跳转） | 事件派发/回调/delegate 无静态 CALLS 边 | 添加 `method_triggers_method` binding 桥接动态跳转 |
-| lifecycle_overrides 无效 | scope 值不是文件路径前缀 | scope 应匹配 filePath 而非类名 |
+- `verified/done` requires non-empty closure evidence array (for example
+  `confirmed_chain.steps` or equivalent).
 
----
+## Live Evidence Requirements
 
-## 参考文档
+For each live run section, record:
 
-- 设计文档：`docs/plans/2026-04-04-unity-rule-gen-skill-design.md`
-- YAML 格式定义：设计文档 section 3.3
-- 注入逻辑：`gitnexus/src/core/ingestion/unity-runtime-binding-rules.ts`
-- 规则类型定义：`gitnexus/src/rule-lab/types.ts:90-114`
-- 编译命令：`gitnexus rule-lab compile --repo-path <path>`
+1. `Command:` executable command.
+2. `Output summary:` concrete observed output.
+3. `Expected signal:` deterministic pass/fail signal to check.
+4. `Decision:` PASS or FAIL.
 
-## Runtime-Chain Closure Guard
+Template-only text is invalid evidence.
 
-- Treat runtime-chain outputs as two layers:
-  - `verifier-core`: binary verifier result (`verified_full` | `failed`)
-  - `policy-adjusted`: user-visible result after hydration policy is applied
-- If `hydration_policy=strict` and `hydrationMeta.fallbackToCompact=true`, the result is downgraded policy-adjusted output and is not closure.
-- In that downgraded state, rerun with parity before final conclusions.
+## Completion Checklist (per loop)
+
+1. Focus locked to one slice.
+2. Single-slice loop completed.
+3. `progress.json` checkpoint updated.
+4. Resumable command produced.
+5. Status transition obeys evidence gate.
+
+## Notes
+
+- This workflow is for offline rule authoring/orchestration.
+- Query-time runtime closure remains graph-only.
+- Under strict hydration fallback (`fallbackToCompact=true`), rerun parity before final closure claim.

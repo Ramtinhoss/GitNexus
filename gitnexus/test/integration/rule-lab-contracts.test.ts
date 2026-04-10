@@ -32,4 +32,29 @@ describe('rule-lab docs/contracts', () => {
     expect(runner).toMatch(/dsl_lint_failed/);
     expect(runner).toMatch(/probe_pass_rate_below_threshold/);
   });
+
+  it('documents gap-lab state ownership under .gitnexus/gap-lab/runs/**', async () => {
+    const cfg = await readRepoFile('docs/gitnexus-config-files.md');
+    expect(cfg).toMatch(/gap-lab\/runs\/\*\*/);
+    expect(cfg).toMatch(/gitnexus-unity-rule-gen/);
+    expect(cfg).toMatch(/manifest\.json/);
+    expect(cfg).toMatch(/slice-plan\.json/);
+    expect(cfg).toMatch(/progress\.json/);
+    expect(cfg).toMatch(/inventory\.jsonl/);
+    expect(cfg).toMatch(/decisions\.jsonl/);
+    expect(cfg).toMatch(/slices\/<slice_id>\.json/);
+  });
+
+  it('truth source states gap-lab is authoring workflow and does not change query-time graph-only closure', async () => {
+    const truth = await readRepoFile('docs/unity-runtime-process-source-of-truth.md');
+    expect(truth).toMatch(/gap-lab/i);
+    expect(truth).toMatch(/offline authoring|authoring\/orchestration/i);
+    expect(truth).toMatch(/query-time runtime closure.*graph-only/i);
+    expect(truth).toMatch(/fallbackToCompact=true/i);
+    expect(truth).toMatch(/parity.*rerun|rerun.*parity/i);
+
+    const guide = await readRepoFile('gitnexus/skills/gitnexus-guide.md');
+    expect(guide).toMatch(/gap-lab/i);
+    expect(guide).toMatch(/query-time runtime closure is \*\*graph-only\*\*/i);
+  });
 });
