@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { generateId } from '../../lib/utils.js';
 import { createKnowledgeGraph } from '../graph/graph.js';
 import { closeLbug, executeQuery, initLbug, loadGraphToLbug } from '../lbug/lbug-adapter.js';
+import { buildUnityScanContext } from '../unity/scan-context.js';
+import { streamPrefabSourceRefs } from '../unity/prefab-source-scan.js';
 import { processUnityResources } from './unity-resource-processor.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -688,6 +690,207 @@ test('processUnityResources emits prefab-source edges from scanContext.prefabSou
   assert.ok(result.diagnostics.some((line) => line.includes('prefab-source: emitted=1')));
 });
 
+test('processUnityResources consumes prefab-source stream incrementally and emits edges', async () => {
+  const graph = createKnowledgeGraph();
+  const fakeScanContext = {
+    symbolToScriptPath: new Map<string, string>(),
+    scriptPathToGuid: new Map<string, string>(),
+    guidToResourceHits: new Map<string, any[]>(),
+    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
+    streamPrefabSourceRefs: async function* () {
+      yield {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      };
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      yield {
+        sourceResourcePath: 'Assets/Scene/Global.unity',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100001',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      };
+    },
+    prefabSourceRefs: [],
+    resourceDocCache: new Map(),
+  } as any;
+
+  const result = await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext,
+      resolveBindings: async () => ({ resourceBindings: [], unityDiagnostics: [] }) as any,
+    },
+  );
+
+  assert.ok(result.diagnostics.some((line) => line.includes('prefab-source: emitted=2')));
+  assert.ok(result.diagnostics.some((line) => line.includes('prefab_source.rows_emitted=2')));
+  assert.ok(result.diagnostics.some((line) => line.includes('prefab_source.rows_parsed=')));
+});
+
+test('prefab-source accounting invariant closes', async () => {
+  const graph = createKnowledgeGraph();
+  const fakeScanContext = {
+    symbolToScriptPath: new Map<string, string>(),
+    scriptPathToGuid: new Map<string, string>(),
+    guidToResourceHits: new Map<string, any[]>(),
+    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
+    streamPrefabSourceRefs: async function* () {
+      yield {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      };
+      yield {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '00000000000000000000000000000000',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100001',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      };
+      yield {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        targetResourcePath: '__PLACEHOLDER__',
+        fileId: '100100002',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      };
+      yield {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        targetResourcePath: '',
+        fileId: '100100003',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      };
+      yield {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      };
+    },
+    prefabSourceRefs: [],
+    resourceDocCache: new Map(),
+  } as any;
+
+  const result = await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext,
+      resolveBindings: async () => ({ resourceBindings: [], unityDiagnostics: [] }) as any,
+    },
+  );
+  assert.equal(
+    (result as any).prefabSourceStats.rowsParsed,
+    (result as any).prefabSourceStats.rowsFilteredZeroGuid
+      + (result as any).prefabSourceStats.rowsFilteredPlaceholder
+      + (result as any).prefabSourceStats.rowsFilteredUnresolved
+      + (result as any).prefabSourceStats.rowsDeduped
+      + (result as any).prefabSourceStats.rowsEmitted,
+  );
+});
+
+test('no cross-signal dedupe collision when same source has script-guid and prefab-source refs', async () => {
+  const graph = createKnowledgeGraph();
+  const filePath = 'Assets/Scripts/MainUIManager.cs';
+  const classId = generateId('Class', `${filePath}:MainUIManager`);
+  graph.addNode({
+    id: classId,
+    label: 'Class',
+    properties: { name: 'MainUIManager', filePath },
+  });
+
+  const fakeScanContext = {
+    symbolToScriptPath: new Map([['MainUIManager', filePath]]),
+    scriptPathToGuid: new Map([[filePath, 'dddddddddddddddddddddddddddddddd']]),
+    guidToResourceHits: new Map([
+      ['dddddddddddddddddddddddddddddddd', [{ resourcePath: 'Assets/Scene/MainUIManager.unity', resourceType: 'scene', line: 1, lineText: 'guid' }]],
+    ]),
+    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
+    streamPrefabSourceRefs: async function* () {
+      yield {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: '99999999999999999999999999999999',
+        targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
+        fileId: '100100000',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      };
+    },
+    prefabSourceRefs: [],
+    resourceDocCache: new Map(),
+  } as any;
+
+  await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext,
+      resolveBindings: async () =>
+        ({
+          symbol: 'MainUIManager',
+          scriptPath: filePath,
+          scriptGuid: 'dddddddddddddddddddddddddddddddd',
+          resourceBindings: [
+            {
+              resourcePath: 'Assets/Scene/MainUIManager.unity',
+              resourceType: 'scene',
+              bindingKind: 'direct',
+              componentObjectId: '11400000',
+              evidence: { line: 1, lineText: 'guid' },
+              serializedFields: { scalarFields: [], referenceFields: [] },
+              resolvedReferences: [
+                {
+                  fieldName: 'gungraph',
+                  sourceLayer: 'scene',
+                  fileId: '11400000',
+                  guid: '99999999999999999999999999999999',
+                  fromList: false,
+                  resolution: 'external-asset',
+                  target: { assetPath: 'Assets/Prefabs/BattleMode.prefab' },
+                },
+              ],
+            },
+          ],
+          serializedFields: { scalarFields: [], referenceFields: [] },
+          unityDiagnostics: [],
+        }) as any,
+    },
+  );
+
+  const refs = [...graph.iterRelationships()]
+    .filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF')
+    .map((rel) => JSON.parse(String(rel.reason || '{}')));
+  assert.ok(refs.some((reason) => reason.fieldName === 'm_SourcePrefab'));
+  assert.ok(refs.some((reason) => reason.fieldName === 'gungraph'));
+});
+
+test('scan-context does not write graph edges directly; processor remains sole writer', async () => {
+  const graph = createKnowledgeGraph();
+  const context = await buildUnityScanContext({ repoRoot: fixtureRoot });
+  assert.equal([...graph.iterRelationships()].length, 0);
+  await processUnityResources(graph, { repoPath: fixtureRoot }, {
+    buildScanContext: async () => context as any,
+    resolveBindings: async () => ({ resourceBindings: [], unityDiagnostics: [] }) as any,
+  });
+  assert.ok([...graph.iterRelationships()].some((rel) => rel.type === 'UNITY_ASSET_GUID_REF'));
+});
+
 test('prefab source pass can be disabled via env toggle', async () => {
   const graph = createKnowledgeGraph();
   const fakeScanContext = {
@@ -772,7 +975,7 @@ test('prefab nested source dedupes duplicate PrefabInstance rows', async () => {
   assert.equal(reason.guid, '99999999999999999999999999999999');
 });
 
-test('drops placeholder unresolved and zero-guid prefab-source rows', async () => {
+test('drops placeholder unresolved and zero-guid prefab-source rows and reports filtered counters', async () => {
   const graph = createKnowledgeGraph();
   const fakeScanContext = {
     symbolToScriptPath: new Map<string, string>(),
@@ -797,9 +1000,17 @@ test('drops placeholder unresolved and zero-guid prefab-source rows', async () =
       },
       {
         sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
+        targetGuid: 'cccccccccccccccccccccccccccccccc',
+        targetResourcePath: '',
+        fileId: '3',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'scene',
+      },
+      {
+        sourceResourcePath: 'Assets/Scene/MainUIManager.unity',
         targetGuid: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         targetResourcePath: 'Assets/Prefabs/BattleMode.prefab',
-        fileId: '3',
+        fileId: '4',
         fieldName: 'm_SourcePrefab',
         sourceLayer: 'scene',
       },
@@ -807,7 +1018,7 @@ test('drops placeholder unresolved and zero-guid prefab-source rows', async () =
     resourceDocCache: new Map(),
   };
 
-  await processUnityResources(
+  const result = await processUnityResources(
     graph,
     { repoPath: fixtureRoot },
     {
@@ -821,6 +1032,61 @@ test('drops placeholder unresolved and zero-guid prefab-source rows', async () =
   const reason = JSON.parse(String(guidRefs[0]?.reason || '{}'));
   assert.equal(reason.targetResourcePath, 'Assets/Prefabs/BattleMode.prefab');
   assert.notEqual(reason.guid, '00000000000000000000000000000000');
+  assert.ok((result as any).prefabSourceStats.rowsFilteredZeroGuid > 0);
+  assert.ok((result as any).prefabSourceStats.rowsFilteredPlaceholder > 0);
+  assert.ok((result as any).prefabSourceStats.rowsFilteredUnresolved > 0);
+  assert.ok(result.diagnostics.some((line) => line.includes('prefab_source.rows_filtered_zero_guid=')));
+  assert.ok(result.diagnostics.some((line) => line.includes('prefab_source.rows_filtered_placeholder=')));
+  assert.ok(result.diagnostics.some((line) => line.includes('prefab_source.rows_filtered_unresolved=')));
+});
+
+test('per-file scan failure is isolated and does not abort subsequent file emission', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-prefab-source-file-error-'));
+  const graph = createKnowledgeGraph();
+  try {
+    const sceneDir = path.join(tempRoot, 'Assets/Scene');
+    const prefabDir = path.join(tempRoot, 'Assets/Prefabs');
+    await fs.mkdir(path.join(sceneDir, 'Broken.unity'), { recursive: true });
+    await fs.mkdir(prefabDir, { recursive: true });
+    await fs.writeFile(
+      path.join(sceneDir, 'Good.unity'),
+      [
+        '--- !u!1001 &100100000',
+        'PrefabInstance:',
+        '  m_SourcePrefab: {fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
+      ].join('\n'),
+      'utf-8',
+    );
+    await fs.writeFile(path.join(prefabDir, 'BattleMode.prefab'), '--- !u!1 &1\nGameObject:\n', 'utf-8');
+
+    const fakeScanContext = {
+      symbolToScriptPath: new Map<string, string>(),
+      scriptPathToGuid: new Map<string, string>(),
+      guidToResourceHits: new Map<string, any[]>(),
+      assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
+      streamPrefabSourceRefs: (options?: any) => streamPrefabSourceRefs({
+        repoRoot: tempRoot,
+        resourceFiles: ['Assets/Scene/Broken.unity', 'Assets/Scene/Good.unity'],
+        assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
+        hooks: options?.hooks,
+      }),
+      prefabSourceRefs: [],
+      resourceDocCache: new Map(),
+    } as any;
+
+    const result = await processUnityResources(
+      graph,
+      { repoPath: tempRoot },
+      {
+        buildScanContext: async () => fakeScanContext,
+        resolveBindings: async () => ({ resourceBindings: [], unityDiagnostics: [] }) as any,
+      },
+    );
+    assert.ok((result as any).prefabSourceStats.rowsEmitted > 0);
+    assert.ok(result.diagnostics.some((line) => line.includes('prefab_source.file_errors=1')));
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('extracts prefab source refs without class binding resolve', async () => {

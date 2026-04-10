@@ -41,17 +41,27 @@ test('buildUnityScanContext exposes resourceFiles for scene/prefab scan pass', a
   assert.equal(new Set(context.resourceFiles).size, context.resourceFiles.length);
 });
 
-test('buildUnityScanContext collects prefabSourceRefs from scoped unity/prefab resources', async () => {
+test('buildUnityScanContext exposes prefab-source producer from scoped unity/prefab resources', async () => {
   const context = await buildUnityScanContext({
     repoRoot: fixtureRoot,
     scopedPaths: ['Assets/Scene/MainUIManager.unity', 'Assets/Prefabs/BattleMode.prefab'],
   });
 
-  assert.ok(Array.isArray((context as any).prefabSourceRefs));
-  assert.ok((context as any).prefabSourceRefs.length > 0);
-  const sample = (context as any).prefabSourceRefs[0];
+  assert.equal(typeof (context as any).streamPrefabSourceRefs, 'function');
+  const rows: any[] = [];
+  for await (const row of (context as any).streamPrefabSourceRefs()) {
+    rows.push(row);
+  }
+  assert.ok(rows.length > 0);
+  const sample = rows[0];
   assert.equal(sample.fieldName, 'm_SourcePrefab');
   assert.equal(sample.sourceLayer === 'scene' || sample.sourceLayer === 'prefab', true);
+});
+
+test('buildUnityScanContext keeps script-guid hits while exposing prefab-source producer', async () => {
+  const context = await buildUnityScanContext({ repoRoot: fixtureRoot });
+  assert.ok(context.guidToResourceHits.size > 0);
+  assert.equal(typeof (context as any).streamPrefabSourceRefs, 'function');
 });
 
 test('buildUnityScanContextFromSeed rebuilds resourceFiles from guidToResourcePaths', () => {
@@ -95,9 +105,9 @@ test('buildUnityScanContextFromSeed reconstructs prefabSourceRefs', () => {
   assert.equal((context as any).prefabSourceRefs.length, 1);
 });
 
-test('scan-context prefabSourceRefs drop unresolved and zero-guid entries', async () => {
+test('scan-context prefab-source producer drops unresolved and zero-guid entries', async () => {
   const context = await buildUnityScanContext({ repoRoot: fixtureRoot });
-  for (const row of (context as any).prefabSourceRefs as any[]) {
+  for await (const row of (context as any).streamPrefabSourceRefs()) {
     assert.notEqual(row.targetGuid, '00000000000000000000000000000000');
     assert.ok(String(row.targetResourcePath || '').length > 0);
   }

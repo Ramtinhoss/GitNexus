@@ -12,6 +12,7 @@ export interface UnityResourceProcessingResult {
   bindingCount: number;
   componentCount: number;
   diagnostics: string[];
+  prefabSourceStats: PrefabSourcePassStats;
   paritySeed?: UnityParitySeed;
   timingsMs: {
     scanContext: number;
@@ -32,6 +33,16 @@ export interface UnityResourceProcessingOptions {
 export interface UnityResourceProcessingDeps {
   buildScanContext?: typeof buildUnityScanContext;
   resolveBindings?: typeof resolveUnityBindings;
+}
+
+interface PrefabSourcePassStats {
+  rowsParsed: number;
+  rowsFilteredZeroGuid: number;
+  rowsFilteredPlaceholder: number;
+  rowsFilteredUnresolved: number;
+  rowsDeduped: number;
+  rowsEmitted: number;
+  fileErrors: number;
 }
 
 const UNITY_DIAGNOSTIC_SAMPLE_LIMIT = 3;
@@ -74,6 +85,7 @@ export async function processUnityResources(
   let scanContextMs = 0;
   let resolveMs = 0;
   let graphWriteMs = 0;
+  let prefabSourceStats: PrefabSourcePassStats = initPrefabSourcePassStats();
 
   try {
     const tScanContextStart = performance.now();
@@ -98,9 +110,16 @@ export async function processUnityResources(
       diagnostics.push(`prefab-source: skipped (env ${PREFAB_SOURCE_PASS_DISABLE_ENV}=1)`);
     } else {
       const tPrefabSourceStart = performance.now();
-      const prefabSourceEdgeCount = emitPrefabSourceGuidRefsFromScanContext(graph, scanContext);
+      prefabSourceStats = await emitPrefabSourceGuidRefsFromScanContext(graph, scanContext);
       graphWriteMs += performance.now() - tPrefabSourceStart;
-      diagnostics.push(`prefab-source: emitted=${prefabSourceEdgeCount}`);
+      diagnostics.push(`prefab-source: emitted=${prefabSourceStats.rowsEmitted}`);
+      diagnostics.push(`prefab_source.rows_parsed=${prefabSourceStats.rowsParsed}`);
+      diagnostics.push(`prefab_source.rows_filtered_zero_guid=${prefabSourceStats.rowsFilteredZeroGuid}`);
+      diagnostics.push(`prefab_source.rows_filtered_placeholder=${prefabSourceStats.rowsFilteredPlaceholder}`);
+      diagnostics.push(`prefab_source.rows_filtered_unresolved=${prefabSourceStats.rowsFilteredUnresolved}`);
+      diagnostics.push(`prefab_source.rows_deduped=${prefabSourceStats.rowsDeduped}`);
+      diagnostics.push(`prefab_source.rows_emitted=${prefabSourceStats.rowsEmitted}`);
+      diagnostics.push(`prefab_source.file_errors=${prefabSourceStats.fileErrors}`);
     }
     symbolsWithResourceHits = collectSymbolsWithResourceHits(scanContext);
   } catch (error) {
@@ -304,6 +323,7 @@ export async function processUnityResources(
     bindingCount,
     componentCount,
     diagnostics,
+    prefabSourceStats,
     paritySeed: scanContext ? buildUnityParitySeed(scanContext) : undefined,
     timingsMs: {
       scanContext: roundMs(scanContextMs),
@@ -603,26 +623,64 @@ function classifyUnityDiagnostic(message: string): UnityDiagnosticCategory {
   return 'other';
 }
 
-function emitPrefabSourceGuidRefsFromScanContext(
+async function emitPrefabSourceGuidRefsFromScanContext(
   graph: KnowledgeGraph,
   scanContext: UnityScanContext,
-): number {
-  const rows = scanContext.prefabSourceRefs || [];
-  const dedupeKeys = new Set<string>();
-  let emitted = 0;
-  for (const row of rows) {
-    const source = normalizePath(String(row.sourceResourcePath || '').trim());
-    const target = normalizePath(String(row.targetResourcePath || '').trim());
-    const guid = String(row.targetGuid || '').trim().toLowerCase();
-    if (!source || !target || target === '__PLACEHOLDER__') continue;
-    if (!guid || guid === '00000000000000000000000000000000') continue;
+): Promise<PrefabSourcePassStats> {
+  const stats = initPrefabSourcePassStats();
+  const dedupeBySource = new Map<string, Set<string>>();
+  const iterable: AsyncIterable<UnityScanContext['prefabSourceRefs'][number]> =
+    typeof scanContext.streamPrefabSourceRefs === 'function'
+      ? scanContext.streamPrefabSourceRefs({
+        hooks: {
+          onFileError: () => {
+            stats.fileErrors += 1;
+          },
+        },
+      })
+      : (async function* () {
+        for (const row of scanContext.prefabSourceRefs || []) {
+          yield row;
+        }
+      })();
 
-    const dedupeKey = `${source}|${target}|m_SourcePrefab|${guid}`;
-    if (dedupeKeys.has(dedupeKey)) continue;
-    dedupeKeys.add(dedupeKey);
+  for await (const row of iterable) {
+    stats.rowsParsed += 1;
+    const source = normalizePath(String(row.sourceResourcePath || '').trim());
+    const guid = String(row.targetGuid || '').trim().toLowerCase();
+    if (!guid || guid === '00000000000000000000000000000000') {
+      stats.rowsFilteredZeroGuid += 1;
+      continue;
+    }
+
+    const hintedTarget = normalizePath(String(row.targetResourcePath || '').trim());
+    if (hintedTarget === '__PLACEHOLDER__') {
+      stats.rowsFilteredPlaceholder += 1;
+      continue;
+    }
+
+    const resolvedTarget = hintedTarget
+      || normalizePath(scanContext.assetGuidToPath?.get(guid) || scanContext.assetGuidToPath?.get(guid.toLowerCase()) || '');
+    if (!resolvedTarget || !resolvedTarget.endsWith('.prefab')) {
+      stats.rowsFilteredUnresolved += 1;
+      continue;
+    }
+    if (!source) {
+      stats.rowsFilteredUnresolved += 1;
+      continue;
+    }
+
+    const perSourceDedupe = dedupeBySource.get(source) || new Set<string>();
+    const dedupeKey = `${resolvedTarget}|m_SourcePrefab|${guid}|${String(row.fileId || '').trim()}|${row.sourceLayer === 'scene' ? 'scene' : 'prefab'}`;
+    if (perSourceDedupe.has(dedupeKey)) {
+      stats.rowsDeduped += 1;
+      continue;
+    }
+    perSourceDedupe.add(dedupeKey);
+    dedupeBySource.set(source, perSourceDedupe);
 
     const sourceFileId = ensureResourceFileNode(graph, source);
-    const targetFileId = ensureResourceFileNode(graph, target);
+    const targetFileId = ensureResourceFileNode(graph, resolvedTarget);
     graph.addRelationship({
       id: generateId(
         'UNITY_ASSET_GUID_REF',
@@ -634,16 +692,28 @@ function emitPrefabSourceGuidRefsFromScanContext(
       confidence: 1.0,
       reason: JSON.stringify({
         resourcePath: source,
-        targetResourcePath: target,
+        targetResourcePath: resolvedTarget,
         guid,
         fileId: String(row.fileId || ''),
         fieldName: 'm_SourcePrefab',
         sourceLayer: row.sourceLayer === 'scene' ? 'scene' : 'prefab',
       }),
     });
-    emitted += 1;
+    stats.rowsEmitted += 1;
   }
-  return emitted;
+  return stats;
+}
+
+function initPrefabSourcePassStats(): PrefabSourcePassStats {
+  return {
+    rowsParsed: 0,
+    rowsFilteredZeroGuid: 0,
+    rowsFilteredPlaceholder: 0,
+    rowsFilteredUnresolved: 0,
+    rowsDeduped: 0,
+    rowsEmitted: 0,
+    fileErrors: 0,
+  };
 }
 
 function isPrefabSourcePassDisabledByEnv(): boolean {

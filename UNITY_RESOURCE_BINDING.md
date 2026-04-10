@@ -81,6 +81,7 @@ Unity 游戏项目中，代码（C# 脚本）和资源（界面文件 UXML、样
 
 1. **scan-context 作为承载器（carrier）**
    - 负责在资源扫描阶段产出轻量“线索记录”（resource signals）。
+   - 对 prefab-source 信号采用 **streaming delivery** 交付给统一消费点，而不是要求先聚合全量数组。
    - 可按需挂载更多字段识别器（recognizer），例如：
      - 现有：`m_Script.guid`
      - 新增：`PrefabInstance.m_SourcePrefab`
