@@ -1,9 +1,12 @@
 import { performance } from 'node:perf_hooks';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { generateId } from '../../lib/utils.js';
 import type { KnowledgeGraph, GraphNode } from '../graph/types.js';
 import type { UnityScanContext, UnitySymbolDeclaration } from '../unity/scan-context.js';
 import { buildUnityScanContext } from '../unity/scan-context.js';
 import { resolveUnityBindings } from '../unity/resolver.js';
+import { parseUnityYamlObjects, type UnityObjectBlock } from '../unity/yaml-object-graph.js';
 import { buildUnityParitySeed, type UnityParitySeed } from './unity-parity-seed.js';
 import { resolveUnityConfig } from '../config/unity-config.js';
 
@@ -93,6 +96,10 @@ export async function processUnityResources(
     diagnostics.push(
       `scanContext: scripts=${scanContext.symbolToScriptPath.size}, guids=${scanContext.scriptPathToGuid.size}, resources=${uniqueResourcePaths.size}`,
     );
+    const tPrefabSourceStart = performance.now();
+    const prefabSourceEdgeCount = await emitPrefabSourceGuidRefs(graph, options.repoPath, scanContext);
+    graphWriteMs += performance.now() - tPrefabSourceStart;
+    diagnostics.push(`prefab-source: emitted=${prefabSourceEdgeCount}`);
     symbolsWithResourceHits = collectSymbolsWithResourceHits(scanContext);
   } catch (error) {
     if (scanContextMs === 0) {
@@ -592,4 +599,104 @@ function classifyUnityDiagnostic(message: string): UnityDiagnosticCategory {
     return 'missing-meta-guid';
   }
   return 'other';
+}
+
+const PREFAB_SOURCE_REFERENCE_PATTERN = /\{[^}]*fileID\s*:\s*([^,\s}]+)[^}]*guid\s*:\s*([0-9a-fA-F]{32})[^}]*\}/;
+
+async function emitPrefabSourceGuidRefs(
+  graph: KnowledgeGraph,
+  repoPath: string,
+  scanContext: UnityScanContext,
+): Promise<number> {
+  const resourcePaths = [...new Set((scanContext.resourceFiles || []).map((value) => normalizePath(String(value || '').trim())))]
+    .filter((value) => value.endsWith('.unity') || value.endsWith('.prefab'));
+  if (resourcePaths.length === 0) {
+    return 0;
+  }
+
+  const dedupeKeys = new Set<string>();
+  let emitted = 0;
+  for (const resourcePath of resourcePaths) {
+    const blocks = await readResourceBlocks(repoPath, resourcePath, scanContext);
+    if (blocks.length === 0) continue;
+
+    for (const block of blocks) {
+      if (block.objectType !== 'PrefabInstance') continue;
+      const sourcePrefabField = String(block.fields.m_SourcePrefab || '').trim();
+      if (!sourcePrefabField) continue;
+
+      const parsed = parsePrefabSourceReference(sourcePrefabField);
+      if (!parsed) continue;
+      const guidLower = parsed.guid.toLowerCase();
+      if (guidLower === '00000000000000000000000000000000') continue;
+
+      const targetResourcePath = resolveAssetPathByGuid(scanContext.assetGuidToPath, guidLower);
+      if (!targetResourcePath || !targetResourcePath.endsWith('.prefab')) continue;
+
+      const normalizedSource = normalizePath(resourcePath);
+      const normalizedTarget = normalizePath(targetResourcePath);
+      const dedupeKey = `${normalizedSource}|${normalizedTarget}|m_SourcePrefab|${guidLower}`;
+      if (dedupeKeys.has(dedupeKey)) continue;
+      dedupeKeys.add(dedupeKey);
+
+      const sourceFileId = ensureResourceFileNode(graph, normalizedSource);
+      const targetFileId = ensureResourceFileNode(graph, normalizedTarget);
+      graph.addRelationship({
+        id: generateId(
+          'UNITY_ASSET_GUID_REF',
+          `${sourceFileId}->${targetFileId}:m_SourcePrefab:${guidLower}:${parsed.fileId || ''}`,
+        ),
+        type: 'UNITY_ASSET_GUID_REF',
+        sourceId: sourceFileId,
+        targetId: targetFileId,
+        confidence: 1.0,
+        reason: JSON.stringify({
+          resourcePath: normalizedSource,
+          targetResourcePath: normalizedTarget,
+          guid: guidLower,
+          fileId: parsed.fileId || '',
+          fieldName: 'm_SourcePrefab',
+          sourceLayer: normalizedSource.endsWith('.unity') ? 'scene' : 'prefab',
+        }),
+      });
+      emitted += 1;
+    }
+  }
+
+  return emitted;
+}
+
+async function readResourceBlocks(
+  repoPath: string,
+  resourcePath: string,
+  scanContext: UnityScanContext,
+): Promise<UnityObjectBlock[]> {
+  const normalizedResourcePath = normalizePath(resourcePath);
+  const cached = scanContext.resourceDocCache.get(normalizedResourcePath);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const text = await fs.readFile(path.join(repoPath, normalizedResourcePath), 'utf-8');
+    const blocks = parseUnityYamlObjects(text);
+    scanContext.resourceDocCache.set(normalizedResourcePath, blocks);
+    return blocks;
+  } catch {
+    return [];
+  }
+}
+
+function parsePrefabSourceReference(value: string): { fileId?: string; guid: string } | undefined {
+  const match = value.match(PREFAB_SOURCE_REFERENCE_PATTERN);
+  if (!match) return undefined;
+  const guid = String(match[2] || '').trim();
+  if (!guid) return undefined;
+  const fileId = String(match[1] || '').trim();
+  return { fileId, guid };
+}
+
+function resolveAssetPathByGuid(assetGuidToPath: Map<string, string> | undefined, guid: string): string | undefined {
+  if (!assetGuidToPath) return undefined;
+  return assetGuidToPath.get(guid) || assetGuidToPath.get(guid.toLowerCase());
 }
