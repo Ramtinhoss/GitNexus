@@ -36,6 +36,7 @@ export interface UnityScanContext {
   assetGuidToPath?: Map<string, string>;
   uxmlGuidToPath?: Map<string, string>;
   ussGuidToPath?: Map<string, string>;
+  resourceFiles: string[];
   resourceDocCache: Map<string, UnityObjectBlock[]>;
 }
 
@@ -88,6 +89,7 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     assetGuidToPath,
     uxmlGuidToPath: uiMetaIndex.uxmlGuidToPath,
     ussGuidToPath: uiMetaIndex.ussGuidToPath,
+    resourceFiles: [],
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
 }
@@ -195,6 +197,7 @@ export function buildUnityScanContextFromSeed(input: {
     assetGuidToPath,
     uxmlGuidToPath,
     ussGuidToPath,
+    resourceFiles: [],
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
 }

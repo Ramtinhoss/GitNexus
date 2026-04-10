@@ -29,6 +29,34 @@ test('buildUnityScanContext exposes reusable resourceDocCache for repeated resol
   assert.ok(cacheSizeAfterFirst > 0);
 });
 
+test('buildUnityScanContext exposes resourceFiles for scene/prefab scan pass', async () => {
+  const context = await buildUnityScanContext({
+    repoRoot: fixtureRoot,
+    scopedPaths: ['Assets/Scene/MainUIManager.unity', 'Assets/Prefabs/BattleMode.prefab'],
+  });
+
+  assert.ok(context.resourceFiles.includes('Assets/Scene/MainUIManager.unity'));
+  assert.ok(context.resourceFiles.includes('Assets/Prefabs/BattleMode.prefab'));
+});
+
+test('buildUnityScanContextFromSeed rebuilds resourceFiles from guidToResourcePaths', () => {
+  const context = buildUnityScanContextFromSeed({
+    seed: {
+      version: 1,
+      symbolToScriptPath: {},
+      scriptPathToGuid: {},
+      guidToResourcePaths: {
+        '11111111111111111111111111111111': ['Assets/Scene/MainUIManager.unity', 'Assets/Prefabs/BattleMode.prefab'],
+      },
+    },
+  });
+
+  assert.deepEqual(context.resourceFiles.sort(), [
+    'Assets/Prefabs/BattleMode.prefab',
+    'Assets/Scene/MainUIManager.unity',
+  ]);
+});
+
 test('buildUnityScanContext accepts symbol declarations as hint source', async () => {
   const context = await buildUnityScanContext({
     repoRoot: fixtureRoot,
