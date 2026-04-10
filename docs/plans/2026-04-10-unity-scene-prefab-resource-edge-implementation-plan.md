@@ -23,6 +23,26 @@ Task 4 | completed | Added resource-level prefab-source extraction and deduped `
 Task 5 | completed | Added fixture-backed scene->prefab regression plus `BattleMode.prefab.meta`/scene fixture update; targeted fixture+legacy edge checks pass (`19` tests, `0` failures).
 Task 6 | completed | Synced source-of-truth + design docs and passed targeted/full sweeps (`scan-context` + `unity-resource-processor` full test files all green).
 Task 7 | completed | Live analyze/cypher validation accepted (`通过`): local CLI force-analyze emitted `prefab-source: 56445`; BattleMode chain `BattleMode.unity -> Systems/BattleMode.prefab -> Class(BattleMode)` confirmed; `Controls.unity` rows attributed to in-scope `Packages` sample data.
+Task 8 | completed | Fixed post-acceptance retrieval exposure defect: `query/context` now return graph-backed `resource_chains` for seed `File -[UNITY_ASSET_GUID_REF]-> File -[UNITY_GRAPH_NODE_SCRIPT_REF]-> Symbol`; targeted/full LocalBackend response-contract tests pass.
+
+## Post-Acceptance Defect: Context Exposure Gap
+
+**Observed problem:** Task 7 proved ingestion is working: live Cypher returns `Assets/NEON/Scene/BattleModeScenes/BattleMode.unity -[UNITY_ASSET_GUID_REF]-> Assets/NEON/Prefab/Systems/BattleMode.prefab -[UNITY_GRAPH_NODE_SCRIPT_REF]-> Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs`. However, the MCP `query` / `context` payloads do not surface that relation chain as structured evidence. Slim responses compress it into resource follow-up hints, and full responses leave the agent without a first-class `scene -> prefab -> symbol` hop chain.
+
+**Root cause:** The implementation stopped at analyze-time edge creation. Retrieval-time seed mapping already reads direct `UNITY_ASSET_GUID_REF` targets into `mappedSeedTargets`, but it does not load or return the second-hop `UNITY_GRAPH_NODE_SCRIPT_REF` relationship. As a result, process/runtime verification can still report missing evidence even though the graph contains the resource bridge needed for agent-side inference.
+
+**Resolution plan:** Add retrieval-time `resource_chains` evidence for Unity seed paths. When `resource_path_prefix` or query text resolves to a Unity resource, load graph-backed chains of the form `sourceResource -[UNITY_ASSET_GUID_REF]-> intermediateResource -[UNITY_GRAPH_NODE_SCRIPT_REF]-> targetSymbol`, rank exact symbol matches first, and expose them in both full and slim `query/context` responses. This is a response-contract fix, not an ingestion or Process synthesis change.
+
+**Acceptance check:** A `context` call for `BattleMode` with `resource_path_prefix=Assets/NEON/Scene/BattleModeScenes/BattleMode.unity` must return a structured `resource_chains` entry containing:
+
+- `sourceResourcePath = Assets/NEON/Scene/BattleModeScenes/BattleMode.unity`
+- `intermediateResourcePath = Assets/NEON/Prefab/Systems/BattleMode.prefab`
+- `targetSymbol.name = BattleMode`
+- `targetSymbol.filePath = Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs`
+
+Agents may then cite the returned graph chain directly instead of doing manual scene/prefab text retrieval.
+
+**Scoped live verification:** Re-ran neonspark analysis with the default sync manifest explicitly passed (`--scope-manifest /Volumes/Shuttle/unity-projects/neonspark/.gitnexus/sync-manifest.txt`, `--sync-manifest-policy keep`, `--csharp-define-csproj /Volumes/Shuttle/unity-projects/neonspark/Assembly-CSharp.csproj`). The run completed with `Scope Rules: 2`, `Scoped Files: 8044`, and `prefab-source: emitted=56445`. Subsequent `context BattleMode` and `query BattleMode` calls returned exactly one `resource_chains` entry for `BattleMode.unity -> BattleMode.prefab -> BattleMode.cs`, including slim `closure.resource_chains`.
 
 ## Design Traceability Matrix
 

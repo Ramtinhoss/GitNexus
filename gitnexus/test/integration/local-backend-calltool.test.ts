@@ -302,6 +302,46 @@ response_profile: 'full',
       }
     });
 
+    it('context returns graph-backed Unity scene-prefab-script resource chains', async () => {
+      const out = await backend.callTool('context', {
+        name: 'BattleMode',
+        file_path: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+        response_profile: 'full',
+        unity_resources: 'on',
+        unity_hydration_mode: 'parity',
+        resource_path_prefix: 'Assets/NEON/Scene/BattleModeScenes/BattleMode.unity',
+      });
+
+      expect(out.status).toBe('found');
+      expect(out.resource_chains).toHaveLength(1);
+      expect(out.resource_chains[0]).toMatchObject({
+        sourceResourcePath: 'Assets/NEON/Scene/BattleModeScenes/BattleMode.unity',
+        relationType: 'UNITY_ASSET_GUID_REF',
+        intermediateResourcePath: 'Assets/NEON/Prefab/Systems/BattleMode.prefab',
+        nextRelationType: 'UNITY_GRAPH_NODE_SCRIPT_REF',
+        targetSymbol: {
+          name: 'BattleMode',
+          filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+        },
+      });
+    });
+
+    it('query returns exact graph-backed Unity resource chain for symbol-like queries', async () => {
+      const out = await backend.callTool('query', {
+        query: 'BattleMode',
+        response_profile: 'full',
+        unity_resources: 'on',
+        unity_hydration_mode: 'parity',
+        resource_path_prefix: 'Assets/NEON/Scene/BattleModeScenes/BattleMode.unity',
+      });
+
+      expect(out.resource_chains).toHaveLength(1);
+      expect(out.resource_chains[0].targetSymbol).toMatchObject({
+        name: 'BattleMode',
+        filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+      });
+    });
+
     it('v1 dual layer confidence fields', async () => {
       const original = process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS;
       process.env.GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS = 'on';

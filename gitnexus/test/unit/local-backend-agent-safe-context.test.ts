@@ -189,6 +189,48 @@ describe('slim context response shaping', () => {
     expect((out as any).clues.process_hints).toEqual([]);
   });
 
+  it('preserves graph-backed Unity resource chains in slim context output', () => {
+    const out = buildSlimContextResult({
+      status: 'found',
+      symbol: {
+        uid: 'class:BattleMode',
+        name: 'BattleMode',
+        kind: 'Class',
+        filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+      },
+      incoming: {},
+      outgoing: {},
+      processes: [],
+      resource_chains: [
+        {
+          sourceResourcePath: 'Assets/NEON/Scene/BattleModeScenes/BattleMode.unity',
+          relationType: 'UNITY_ASSET_GUID_REF',
+          intermediateResourcePath: 'Assets/NEON/Prefab/Systems/BattleMode.prefab',
+          nextRelationType: 'UNITY_GRAPH_NODE_SCRIPT_REF',
+          targetSymbol: {
+            uid: 'class:BattleMode',
+            name: 'BattleMode',
+            kind: 'Class',
+            filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+          },
+        },
+      ],
+    } as any, {
+      repoName: 'neonspark-core',
+      symbolName: 'BattleMode',
+    });
+
+    expect((out as any).resource_chains).toHaveLength(1);
+    expect((out as any).closure.resource_chains[0]).toMatchObject({
+      sourceResourcePath: 'Assets/NEON/Scene/BattleModeScenes/BattleMode.unity',
+      intermediateResourcePath: 'Assets/NEON/Prefab/Systems/BattleMode.prefab',
+      targetSymbol: {
+        name: 'BattleMode',
+        filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+      },
+    });
+  });
+
   it('slim context clues.process_hints is always empty after heuristic removal', () => {
     const out = buildSlimContextResult({
       status: 'found',

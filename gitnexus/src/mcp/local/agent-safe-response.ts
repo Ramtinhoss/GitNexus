@@ -17,6 +17,7 @@ export function buildSlimQueryResult(
   });
   const processHints = buildProcessHints(full.processes);
   const resourceHints = buildResourceHints(full.next_hops);
+  const resourceChains = buildResourceChains(full.resource_chains);
   const runtimePreview = buildRuntimePreview(full.runtime_claim);
   const suggestedContextTargets = buildSuggestedContextTargets({
     candidates,
@@ -41,6 +42,7 @@ export function buildSlimQueryResult(
   const closure = {
     runtime_preview: runtimePreview,
     missing_proof_targets: missingProofTargets,
+    resource_chains: resourceChains,
   };
   const clues = {
     process_hints: [],
@@ -69,6 +71,7 @@ export function buildSlimQueryResult(
     candidates,
     process_hints: processHints,
     resource_hints: resourceHints,
+    resource_chains: resourceChains,
     facts,
     closure,
     clues,
@@ -103,6 +106,7 @@ export function buildSlimContextResult(
   const strictAnchorMode = Boolean(full?.decision_context?.strict_anchor_mode);
   const processHints = buildProcessHints(full.processes);
   const resourceHints = buildResourceHints(full.next_hops);
+  const resourceChains = buildResourceChains(full.resource_chains);
   const runtimePreview = buildRuntimePreview(full.runtime_claim);
   const suggestedContextTargets = buildSuggestedContextTargets({
     processHints,
@@ -130,6 +134,7 @@ export function buildSlimContextResult(
   const closure = {
     runtime_preview: runtimePreview,
     missing_proof_targets: missingProofTargets,
+    resource_chains: resourceChains,
     verification_hint: Array.isArray(full.processes)
       ? full.processes.find((row: any) => row?.verification_hint)?.verification_hint
       : undefined,
@@ -163,6 +168,7 @@ export function buildSlimContextResult(
     outgoing: facts.outgoing,
     processes: processHints,
     resource_hints: resourceHints,
+    resource_chains: resourceChains,
     facts,
     closure,
     clues,
@@ -417,6 +423,27 @@ function buildResourceHints(nextHops: any): Array<Record<string, unknown>> {
       why: hop.why,
       next_command: hop.next_command,
     }));
+}
+
+function buildResourceChains(resourceChains: any): Array<Record<string, unknown>> {
+  if (!Array.isArray(resourceChains)) return [];
+  return resourceChains
+    .slice(0, 5)
+    .map((chain: any) => ({
+      sourceResourcePath: chain?.sourceResourcePath,
+      relationType: chain?.relationType,
+      intermediateResourcePath: chain?.intermediateResourcePath,
+      nextRelationType: chain?.nextRelationType,
+      targetSymbol: chain?.targetSymbol && typeof chain.targetSymbol === 'object'
+        ? {
+          uid: chain.targetSymbol.uid,
+          name: chain.targetSymbol.name,
+          kind: chain.targetSymbol.kind,
+          filePath: chain.targetSymbol.filePath,
+        }
+        : undefined,
+    }))
+    .filter((chain) => Boolean(chain.sourceResourcePath && chain.intermediateResourcePath && chain.targetSymbol));
 }
 
 function buildUpgradeHints(input: {

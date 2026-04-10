@@ -46,10 +46,11 @@ For any task involving code understanding, debugging, impact analysis, or refact
 
 Default `query/context` responses are now slim for agent use:
 
-- `query`: `summary`, `candidates`, `process_hints`, `resource_hints`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
-- `context`: `summary`, `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- `query`: `summary`, `candidates`, `process_hints`, `resource_hints`, `resource_chains`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- `context`: `summary`, `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `resource_chains`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
 - `suggested_context_targets[]` now returns structured objects: `{ name, uid?, filePath?, why }`
 - `upgrade_hints[]` may include exact `gitnexus context --uid <uid>` commands for same-name disambiguation
+- `resource_chains[]` returns graph-backed Unity seed chains such as `sourceResourcePath -> intermediateResourcePath -> targetSymbol` when a resource seed can be bridged through `UNITY_ASSET_GUID_REF -> UNITY_GRAPH_NODE_SCRIPT_REF`.
 
 When you need the legacy heavy payloads (`processes`, `process_symbols`, `definitions`, `resourceBindings`, `serializedFields`, `next_hops`), pass:
 
@@ -72,7 +73,7 @@ Recommended default workflow:
 
 Agent-safe upgrade path:
 
-- inspect `resource_hints[]` / `process_hints[]` first and narrow with `resource_path_prefix=` or symbol-targeted context
+- inspect `resource_chains[]` first for graph-backed Unity resource bridges, then `resource_hints[]` / `process_hints[]` and narrow with `resource_path_prefix=` or symbol-targeted context
 - use `decision.recommended_follow_up` as the default narrow-first next step
 - inspect `missing_proof_targets[]` and structured `suggested_context_targets[]` before considering payload expansion
 - when `suggested_context_targets[]` includes `uid`, prefer the matching `upgrade_hints[]` `context --uid` command over same-name `context(name=...)`

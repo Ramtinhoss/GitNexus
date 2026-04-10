@@ -274,6 +274,28 @@ interface SeedTargetCandidate {
   sourceLayer?: string;
 }
 
+interface ResourceChainTargetSymbol {
+  id?: string;
+  name?: string;
+  filePath?: string;
+  requireExact?: boolean;
+}
+
+interface UnityResourceChainPayload {
+  sourceResourcePath: string;
+  relationType: 'UNITY_ASSET_GUID_REF';
+  intermediateResourcePath: string;
+  nextRelationType: 'UNITY_GRAPH_NODE_SCRIPT_REF';
+  targetSymbol: {
+    uid?: string;
+    name?: string;
+    kind?: string;
+    filePath?: string;
+  };
+  relationReason?: string;
+  nextRelationReason?: string;
+}
+
 function pathTokens(value: string): string[] {
   return String(value || '')
     .toLowerCase()
@@ -296,6 +318,118 @@ function parseSeedRelationReason(rawReason: unknown): Pick<SeedTargetCandidate, 
   } catch {
     return {};
   }
+}
+
+async function loadSeedUnityResourceChains(input: {
+  repoId: string;
+  seedPath?: string;
+  targetSymbols?: ResourceChainTargetSymbol[];
+}): Promise<UnityResourceChainPayload[]> {
+  const seedPath = normalizePath(String(input.seedPath || '').trim());
+  if (!seedPath) return [];
+
+  const targetSymbols = (input.targetSymbols || [])
+    .map((symbol) => ({
+      id: String(symbol?.id || '').trim(),
+      name: String(symbol?.name || '').trim(),
+      filePath: normalizePath(String(symbol?.filePath || '').trim()),
+      requireExact: Boolean(symbol?.requireExact),
+    }))
+    .filter((symbol) => symbol.id || symbol.name || symbol.filePath);
+
+  let rows: any[] = [];
+  try {
+    rows = await executeParameterized(input.repoId, `
+      MATCH (source:File {filePath: $seedPath})-[r1:CodeRelation {type: 'UNITY_ASSET_GUID_REF'}]->(intermediate:File)-[r2:CodeRelation {type: 'UNITY_GRAPH_NODE_SCRIPT_REF'}]->(target)
+      RETURN source.filePath AS sourceResourcePath,
+             r1.type AS relationType,
+             r1.reason AS relationReason,
+             intermediate.filePath AS intermediateResourcePath,
+             r2.type AS nextRelationType,
+             r2.reason AS nextRelationReason,
+             target.id AS targetUid,
+             target.name AS targetName,
+             labels(target)[0] AS targetKind,
+             target.filePath AS targetFilePath
+      LIMIT 200
+    `, { seedPath });
+  } catch (e) {
+    logQueryError('unity-resource-chains:seed-second-hop', e);
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const chains = rows
+    .map((row: any, index: number) => {
+      const targetUid = String(row?.targetUid || row?.[6] || '').trim();
+      const targetName = String(row?.targetName || row?.[7] || '').trim();
+      const targetFilePath = normalizePath(String(row?.targetFilePath || row?.[9] || '').trim());
+      const chain: UnityResourceChainPayload = {
+        sourceResourcePath: normalizePath(String(row?.sourceResourcePath || row?.[0] || '').trim()),
+        relationType: 'UNITY_ASSET_GUID_REF',
+        relationReason: String(row?.relationReason || row?.[2] || '').trim() || undefined,
+        intermediateResourcePath: normalizePath(String(row?.intermediateResourcePath || row?.[3] || '').trim()),
+        nextRelationType: 'UNITY_GRAPH_NODE_SCRIPT_REF',
+        nextRelationReason: String(row?.nextRelationReason || row?.[5] || '').trim() || undefined,
+        targetSymbol: {
+          ...(targetUid ? { uid: targetUid } : {}),
+          ...(targetName ? { name: targetName } : {}),
+          kind: String(row?.targetKind || row?.[8] || '').trim() || undefined,
+          ...(targetFilePath ? { filePath: targetFilePath } : {}),
+        },
+      };
+      return {
+        chain,
+        index,
+        score: scoreUnityResourceChainTarget(chain, targetSymbols),
+      };
+    })
+    .filter(({ chain, score }) => {
+      if (!chain.sourceResourcePath || !chain.intermediateResourcePath || !chain.targetSymbol?.name) return false;
+      if (targetSymbols.length > 0 && score <= 0) return false;
+      const key = `${chain.sourceResourcePath}->${chain.intermediateResourcePath}->${chain.targetSymbol.uid || chain.targetSymbol.name}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => (b.score - a.score) || (a.index - b.index))
+    .slice(0, 20)
+    .map((entry) => entry.chain);
+
+  return chains;
+}
+
+function scoreUnityResourceChainTarget(
+  chain: UnityResourceChainPayload,
+  targetSymbols: ResourceChainTargetSymbol[],
+): number {
+  if (targetSymbols.length === 0) return 1;
+  const activeTargetSymbols = targetSymbols.some((symbol) => symbol.requireExact)
+    ? targetSymbols.filter((symbol) => symbol.requireExact)
+    : targetSymbols;
+  const targetUid = String(chain.targetSymbol?.uid || '').trim();
+  const targetName = String(chain.targetSymbol?.name || '').trim();
+  const targetFilePath = normalizePath(String(chain.targetSymbol?.filePath || '').trim());
+  let best = 0;
+  for (const symbol of activeTargetSymbols) {
+    let score = 0;
+    const exactMatched = Boolean(
+      (targetUid && symbol.id && targetUid === symbol.id)
+      || (targetName && symbol.name && targetName === symbol.name),
+    );
+    if (targetUid && symbol.id && targetUid === symbol.id) score += 100;
+    if (targetFilePath && symbol.filePath && targetFilePath === symbol.filePath) score += 60;
+    if (targetName && symbol.name && targetName === symbol.name) score += 30;
+    if (symbol.requireExact && !exactMatched) score = 0;
+    best = Math.max(best, score);
+  }
+  return best;
+}
+
+function exactResourceChainQuerySymbol(queryText: string): ResourceChainTargetSymbol | undefined {
+  const trimmed = String(queryText || '').trim();
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(trimmed)) return undefined;
+  return { name: trimmed, requireExact: true };
 }
 
 function scoreSeedTargetCandidate(seedPath: string, candidate: SeedTargetCandidate): number {
@@ -1848,6 +1982,20 @@ export class LocalBackend {
       process_symbols: dedupedSymbols,
       definitions: definitions.slice(0, 20), // cap standalone definitions
     };
+    if (unityResourcesMode !== 'off' && seedPath) {
+      result.resource_chains = await loadSeedUnityResourceChains({
+        repoId: repo.id,
+        seedPath,
+        targetSymbols: [
+          exactResourceChainQuerySymbol(searchQuery),
+          ...[...dedupedSymbols, ...definitions].map((row: any) => ({
+            id: row?.id,
+            name: row?.name,
+            filePath: row?.filePath,
+          })),
+        ].filter(Boolean) as ResourceChainTargetSymbol[],
+      });
+    }
     const hydrationMetas = [...dedupedSymbols, ...definitions]
       .map((row: any) => row?.hydrationMeta)
       .filter(Boolean);
@@ -2696,6 +2844,18 @@ export class LocalBackend {
     });
     const topVerificationHint = result.processes.find((row: any) => row?.verification_hint)?.verification_hint;
     const contextResourceBindings = Array.isArray((result as any).resourceBindings) ? (result as any).resourceBindings : [];
+    if (unityResourcesMode !== 'off' && seedPath) {
+      result.resource_chains = await loadSeedUnityResourceChains({
+        repoId: repo.id,
+        seedPath,
+        targetSymbols: [{
+          id: symNodeId,
+          name: symName,
+          filePath: symFilePath,
+          requireExact: true,
+        }],
+      });
+    }
     const retrievalRule = await resolveRetrievalRuleHint({
       repoPath: repo.repoPath,
       queryText: name,

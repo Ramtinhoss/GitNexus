@@ -128,10 +128,11 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 7. `verification_hint`（low confidence 时应可行动）
 8. `response_profile=slim` 语义分层：
    - `facts`：图谱事实与 process/candidate 主证据
-   - `closure`：runtime claim/preview 与缺口
+   - `closure`：runtime claim/preview、缺口，以及图谱已证明的 Unity 资源桥接链路（`resource_chains`）
    - `clues`：资源线索（`resource_hints`）等收敛提示
    - `tier_envelope`：`facts_present/closure_present/clues_present/semantic_order_pass/summary_source`
    - strict-anchor 默认阅读顺序：`facts -> closure -> clues`
+9. `resource_chains[]`：当请求提供 Unity resource seed（例如 `resource_path_prefix`）且图谱存在 `File -[UNITY_ASSET_GUID_REF]-> File -[UNITY_GRAPH_NODE_SCRIPT_REF]-> Symbol` 时，`query/context` 返回结构化链路：`sourceResourcePath`、`intermediateResourcePath`、`targetSymbol`。这是检索返回契约，不等同于把资源桥接写入 `Process`。
 
 ### 4.2 `runtime_chain` 输出条件
 

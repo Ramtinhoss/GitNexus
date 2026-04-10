@@ -13,6 +13,10 @@ export const LOCAL_BACKEND_SEED_DATA = [
   `CREATE (c:Class {id: 'class:BaseService', name: 'BaseService', filePath: 'src/base.ts', startLine: 1, endLine: 20, isExported: true, content: 'class BaseService {}', description: 'Base service class'})`,
   `CREATE (c:Class {id: 'class:ReloadBase', name: 'ReloadBase', filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs', startLine: 1, endLine: 80, isExported: true, content: 'class ReloadBase : MonoBehaviour {}', description: 'Reload graph node'})`,
   `CREATE (f:File {id: 'file:reload-orb.prefab', name: '1_weapon_orb_key.prefab', filePath: 'Assets/NEON/Prefabs/Weapons/1_weapon_orb_key.prefab', content: 'prefab'})`,
+  `CREATE (c:Class {id: 'class:BattleMode', name: 'BattleMode', filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs', startLine: 1, endLine: 120, isExported: true, content: 'class BattleMode : MonoBehaviour {}', description: 'BattleMode scene lifecycle component'})`,
+  `CREATE (c:Class {id: 'class:StringVector2', name: 'StringVector2', filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs', startLine: 130, endLine: 140, isExported: true, content: 'class StringVector2 {}', description: 'Co-located helper class'})`,
+  `CREATE (f:File {id: 'file:battlemode-scene', name: 'BattleMode.unity', filePath: 'Assets/NEON/Scene/BattleModeScenes/BattleMode.unity', content: 'PrefabInstance m_SourcePrefab BattleMode'})`,
+  `CREATE (f:File {id: 'file:battlemode-prefab', name: 'BattleMode.prefab', filePath: 'Assets/NEON/Prefab/Systems/BattleMode.prefab', content: 'BattleMode prefab script component'})`,
   // Methods
   `CREATE (m:Method {id: 'method:AuthService.authenticate', name: 'authenticate', filePath: 'src/auth.ts', startLine: 35, endLine: 45, isExported: false, content: 'authenticate() {}', description: 'Authenticate user'})`,
   `CREATE (m:Method {id: 'method:BaseService.authenticate', name: 'authenticate', filePath: 'src/base.ts', startLine: 5, endLine: 10, isExported: false, content: 'authenticate() {}', description: 'Base authenticate'})`,
@@ -51,6 +55,12 @@ export const LOCAL_BACKEND_SEED_DATA = [
    CREATE (c)-[:CodeRelation {type: 'HAS_METHOD', confidence: 1.0, reason: 'class-method', step: 0}]->(m)`,
   `MATCH (c:Class), (f:File) WHERE c.id = 'class:ReloadBase' AND f.id = 'file:reload-orb.prefab'
    CREATE (c)-[:CodeRelation {type: 'UNITY_RESOURCE_SUMMARY', confidence: 0.61, reason: '{"resourceType":"prefab","bindingKinds":["direct"],"lightweight":true}', step: 0}]->(f)`,
+  `MATCH (scene:File), (prefab:File) WHERE scene.id = 'file:battlemode-scene' AND prefab.id = 'file:battlemode-prefab'
+   CREATE (scene)-[:CodeRelation {type: 'UNITY_ASSET_GUID_REF', confidence: 1.0, reason: '{"resourcePath":"Assets/NEON/Scene/BattleModeScenes/BattleMode.unity","targetResourcePath":"Assets/NEON/Prefab/Systems/BattleMode.prefab","guid":"e49bc84a92a08425dab0a86fbbd2784b","fileId":"100100000","fieldName":"m_SourcePrefab","sourceLayer":"scene"}', step: 0}]->(prefab)`,
+  `MATCH (prefab:File), (cls:Class) WHERE prefab.id = 'file:battlemode-prefab' AND cls.id = 'class:BattleMode'
+   CREATE (prefab)-[:CodeRelation {type: 'UNITY_GRAPH_NODE_SCRIPT_REF', confidence: 1.0, reason: '{"resourcePath":"Assets/NEON/Prefab/Systems/BattleMode.prefab","resourceType":"prefab","bindingKind":"prefab-instance","componentObjectId":"114230427048511580"}', step: 0}]->(cls)`,
+  `MATCH (prefab:File), (cls:Class) WHERE prefab.id = 'file:battlemode-prefab' AND cls.id = 'class:StringVector2'
+   CREATE (prefab)-[:CodeRelation {type: 'UNITY_GRAPH_NODE_SCRIPT_REF', confidence: 1.0, reason: '{"resourcePath":"Assets/NEON/Prefab/Systems/BattleMode.prefab","resourceType":"prefab","bindingKind":"prefab-instance","componentObjectId":"114230427048511580"}', step: 0}]->(cls)`,
 ];
 
 export const LOCAL_BACKEND_FTS_INDEXES: FTSIndexDef[] = [

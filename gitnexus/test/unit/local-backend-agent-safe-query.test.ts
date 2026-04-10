@@ -195,6 +195,48 @@ describe('slim query response shaping', () => {
     expect((out as any).candidates[0].name).toBe('ReloadBase');
   });
 
+  it('preserves graph-backed Unity resource chains in slim query output', () => {
+    const out = buildSlimQueryResult({
+      processes: [],
+      process_symbols: [],
+      definitions: [
+        {
+          id: 'class:BattleMode',
+          name: 'BattleMode',
+          type: 'Class',
+          filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+        },
+      ],
+      resource_chains: [
+        {
+          sourceResourcePath: 'Assets/NEON/Scene/BattleModeScenes/BattleMode.unity',
+          relationType: 'UNITY_ASSET_GUID_REF',
+          intermediateResourcePath: 'Assets/NEON/Prefab/Systems/BattleMode.prefab',
+          nextRelationType: 'UNITY_GRAPH_NODE_SCRIPT_REF',
+          targetSymbol: {
+            uid: 'class:BattleMode',
+            name: 'BattleMode',
+            kind: 'Class',
+            filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+          },
+        },
+      ],
+    } as any, {
+      repoName: 'neonspark-core',
+      queryText: 'BattleMode',
+    });
+
+    expect((out as any).resource_chains).toHaveLength(1);
+    expect((out as any).closure.resource_chains[0]).toMatchObject({
+      sourceResourcePath: 'Assets/NEON/Scene/BattleModeScenes/BattleMode.unity',
+      intermediateResourcePath: 'Assets/NEON/Prefab/Systems/BattleMode.prefab',
+      targetSymbol: {
+        name: 'BattleMode',
+        filePath: 'Assets/NEON/Code/Game/GameModes/BattleMode/BattleMode.cs',
+      },
+    });
+  });
+
   it('prefers a high-confidence graph-backed process hint over low-confidence heuristic clue in first-screen summary', () => {
     const out = buildSlimQueryResult({
       processes: [

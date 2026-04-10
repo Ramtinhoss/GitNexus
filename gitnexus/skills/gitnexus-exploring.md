@@ -41,10 +41,10 @@ Unity runtime retrieval rule of thumb:
 - [ ] READ gitnexus://repo/{name}/context
 - [ ] Only use `gitnexus://repos` / `list_repos` when the target repo is unknown or multiple repos are indexed
 - [ ] gitnexus_query for the concept you want to understand
-- [ ] Review slim query fields first: `summary`, `candidates`, `process_hints`, `resource_hints`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- [ ] Review slim query fields first: `summary`, `candidates`, `process_hints`, `resource_hints`, `resource_chains`, `decision`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
 - [ ] Prefer narrowing with `decision.recommended_follow_up` and exact `uid`-based context before expanding payload size
 - [ ] gitnexus_context on key symbols for callers/callees
-- [ ] Review slim context fields first: `summary`, `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
+- [ ] Review slim context fields first: `summary`, `symbol`, `incoming`, `outgoing`, `processes`, `resource_hints`, `resource_chains`, `verification_hint`, `missing_proof_targets`, `suggested_context_targets`, `upgrade_hints`, `runtime_preview`
 - [ ] If you need legacy heavy fields (`processes`, `process_symbols`, `definitions`, `resourceBindings`, `serializedFields`, `next_hops`), rerun with `response_profile: "full"`
 - [ ] For Unity evidence, call context/query with `unity_resources: "on"` and `unity_hydration_mode: "compact"`
 - [ ] If you need `hydrationMeta.needsParityRetry` or strict fallback diagnostics, rerun with `response_profile: "full"` first
@@ -75,7 +75,7 @@ When exploration touches Unity runtime process semantics (runtime chain closure,
 
 ```
 gitnexus_query({query: "payment processing"})
-→ Slim response: summary + candidates + process_hints + resource_hints + decision + missing_proof_targets + suggested_context_targets + upgrade_hints + runtime_preview
+→ Slim response: summary + candidates + process_hints + resource_hints + resource_chains + decision + missing_proof_targets + suggested_context_targets + upgrade_hints + runtime_preview
 → Use `decision.recommended_follow_up` first; if `suggested_context_targets[]` includes `uid`, prefer the matching `context --uid` upgrade hint
 → Rerun with response_profile: "full" only if you need grouped process rows (`processes`, `process_symbols`, `definitions`, `next_hops`) or full `runtime_claim`
 ```
@@ -84,7 +84,7 @@ gitnexus_query({query: "payment processing"})
 
 ```
 gitnexus_context({name: "validateUser"})
-→ Slim response: symbol + incoming/outgoing refs + processes + resource_hints + verification_hint + missing_proof_targets + suggested_context_targets + upgrade_hints + runtime_preview
+→ Slim response: symbol + incoming/outgoing refs + processes + resource_hints + resource_chains + verification_hint + missing_proof_targets + suggested_context_targets + upgrade_hints + runtime_preview
 → Use structured `suggested_context_targets[]` and `uid` disambiguation before rerunning full
 → Rerun with response_profile: "full" for Unity hydration diagnostics, `next_hops`, `runtime_claim`, or larger categorized ref payloads
 ```
