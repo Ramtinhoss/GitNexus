@@ -601,6 +601,190 @@ test('processUnityResources writes asset-guid and graph-node reference edges fro
   assert.equal(guidReason.fieldName, 'gungraph');
 });
 
+test('scene prefab source emits UNITY_ASSET_GUID_REF', async () => {
+  const graph = createKnowledgeGraph();
+  const fakeScanContext = {
+    symbolToScriptPath: new Map<string, string>(),
+    scriptPathToGuid: new Map<string, string>(),
+    guidToResourceHits: new Map<string, any[]>(),
+    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
+    resourceFiles: ['Assets/Scene/MainUIManager.unity'],
+    resourceDocCache: new Map([
+      [
+        'Assets/Scene/MainUIManager.unity',
+        [
+          {
+            objectType: 'PrefabInstance',
+            objectId: '3000',
+            stripped: false,
+            fields: {
+              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
+            },
+            rawBody: '',
+          },
+        ],
+      ],
+    ]),
+  };
+
+  await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext as any,
+      resolveBindings: async () => ({ resourceBindings: [], unityDiagnostics: [] }) as any,
+    },
+  );
+
+  const guidRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF');
+  assert.equal(guidRefs.length, 1);
+  const reason = JSON.parse(String(guidRefs[0]?.reason || '{}'));
+  assert.equal(reason.fieldName, 'm_SourcePrefab');
+  assert.equal(reason.sourceLayer, 'scene');
+});
+
+test('prefab nested source dedupes duplicate PrefabInstance rows', async () => {
+  const graph = createKnowledgeGraph();
+  const fakeScanContext = {
+    symbolToScriptPath: new Map<string, string>(),
+    scriptPathToGuid: new Map<string, string>(),
+    guidToResourceHits: new Map<string, any[]>(),
+    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/Nested.prefab']]),
+    resourceFiles: ['Assets/Prefabs/BattleMode.prefab'],
+    resourceDocCache: new Map([
+      [
+        'Assets/Prefabs/BattleMode.prefab',
+        [
+          {
+            objectType: 'PrefabInstance',
+            objectId: '3000',
+            stripped: false,
+            fields: {
+              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
+            },
+            rawBody: '',
+          },
+          {
+            objectType: 'PrefabInstance',
+            objectId: '3001',
+            stripped: false,
+            fields: {
+              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
+            },
+            rawBody: '',
+          },
+        ],
+      ],
+    ]),
+  };
+
+  await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext as any,
+      resolveBindings: async () => ({ resourceBindings: [], unityDiagnostics: [] }) as any,
+    },
+  );
+
+  const guidRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF');
+  assert.equal(guidRefs.length, 1);
+  const reason = JSON.parse(String(guidRefs[0]?.reason || '{}'));
+  assert.equal(reason.guid, '99999999999999999999999999999999');
+});
+
+test('skips unresolved prefab source guid and built-in guid', async () => {
+  const graph = createKnowledgeGraph();
+  const fakeScanContext = {
+    symbolToScriptPath: new Map<string, string>(),
+    scriptPathToGuid: new Map<string, string>(),
+    guidToResourceHits: new Map<string, any[]>(),
+    assetGuidToPath: new Map<string, string>(),
+    resourceFiles: ['Assets/Scene/MainUIManager.unity'],
+    resourceDocCache: new Map([
+      [
+        'Assets/Scene/MainUIManager.unity',
+        [
+          {
+            objectType: 'PrefabInstance',
+            objectId: '3000',
+            stripped: false,
+            fields: {
+              m_SourcePrefab: '{fileID: 100100000, guid: 55555555555555555555555555555555, type: 3}',
+            },
+            rawBody: '',
+          },
+          {
+            objectType: 'PrefabInstance',
+            objectId: '3001',
+            stripped: false,
+            fields: {
+              m_SourcePrefab: '{fileID: 100100000, guid: 00000000000000000000000000000000, type: 3}',
+            },
+            rawBody: '',
+          },
+        ],
+      ],
+    ]),
+  };
+
+  await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext as any,
+      resolveBindings: async () => ({ resourceBindings: [], unityDiagnostics: [] }) as any,
+    },
+  );
+
+  const guidRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF');
+  assert.equal(guidRefs.length, 0);
+});
+
+test('extracts prefab source refs without class binding resolve', async () => {
+  const graph = createKnowledgeGraph();
+  let resolveBindingsCallCount = 0;
+  const fakeScanContext = {
+    symbolToScriptPath: new Map<string, string>(),
+    scriptPathToGuid: new Map<string, string>(),
+    guidToResourceHits: new Map<string, any[]>(),
+    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
+    resourceFiles: ['Assets/Scene/MainUIManager.unity'],
+    resourceDocCache: new Map([
+      [
+        'Assets/Scene/MainUIManager.unity',
+        [
+          {
+            objectType: 'PrefabInstance',
+            objectId: '3000',
+            stripped: false,
+            fields: {
+              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
+            },
+            rawBody: '',
+          },
+        ],
+      ],
+    ]),
+  };
+
+  await processUnityResources(
+    graph,
+    { repoPath: fixtureRoot },
+    {
+      buildScanContext: async () => fakeScanContext as any,
+      resolveBindings: async () => {
+        resolveBindingsCallCount += 1;
+        return ({ resourceBindings: [], unityDiagnostics: [] }) as any;
+      },
+    },
+  );
+
+  const guidRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF');
+  assert.equal(resolveBindingsCallCount, 0);
+  assert.equal(guidRefs.length, 1);
+});
+
 test('processUnityResources writes compact UNITY_RESOURCE_SUMMARY reason by default', async () => {
   const graph = createKnowledgeGraph();
   const classId = generateId('Class', 'Assets/Scripts/Compact.cs:CompactSymbol');
