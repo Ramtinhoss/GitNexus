@@ -97,6 +97,57 @@ test('processUnityResources emits schema-compatible component-instance edges and
   assert.ok(result.timingsMs.graphWrite > 0);
 });
 
+test('fixture run emits scene->prefab UNITY_ASSET_GUID_REF and keeps script ref edges', async () => {
+  const graph = createKnowledgeGraph();
+  for (const symbol of symbols) {
+    const filePath = `Assets/Scripts/${symbol}.cs`;
+    const fileId = generateId('File', filePath);
+    const classId = generateId('Class', `${filePath}:${symbol}`);
+
+    graph.addNode({
+      id: fileId,
+      label: 'File',
+      properties: {
+        name: `${symbol}.cs`,
+        filePath,
+      },
+    });
+
+    graph.addNode({
+      id: classId,
+      label: 'Class',
+      properties: {
+        name: symbol,
+        filePath,
+      },
+    });
+
+    graph.addRelationship({
+      id: generateId('DEFINES', `${fileId}->${classId}`),
+      type: 'DEFINES',
+      sourceId: fileId,
+      targetId: classId,
+      confidence: 1.0,
+      reason: '',
+    });
+  }
+
+  await processUnityResources(graph, { repoPath: fixtureRoot });
+
+  const guidRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF');
+  const scenePrefabRef = guidRefs.find((rel) => {
+    const reason = JSON.parse(String(rel.reason || '{}'));
+    return (
+      reason.resourcePath === 'Assets/Scene/MainUIManager.unity'
+      && reason.targetResourcePath === 'Assets/Prefabs/BattleMode.prefab'
+      && reason.fieldName === 'm_SourcePrefab'
+    );
+  });
+  assert.ok(scenePrefabRef);
+  const scriptRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_GRAPH_NODE_SCRIPT_REF');
+  assert.ok(scriptRefs.length > 0);
+});
+
 test('processUnityResources persists UNITY_RESOURCE_SUMMARY in LadybugDB', async () => {
   const graph = createKnowledgeGraph();
 
