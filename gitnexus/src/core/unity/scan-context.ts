@@ -67,8 +67,16 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
   }
 
   const resourceFiles = await resolveResourceFiles(input.repoRoot, input.scopedPaths);
-  const guidToResourceHits = await buildGuidHitIndex(input.repoRoot, scriptPathToGuid, resourceFiles);
-  const assetMetaFiles = resolveAssetMetaFiles(input.repoRoot, input.scopedPaths, scriptFiles, resourceFiles);
+  const normalizedResourceFiles = [...new Set(resourceFiles.map((resourcePath) => normalizeSlashes(resourcePath)))]
+    .filter((resourcePath) => resourcePath.length > 0)
+    .sort((left, right) => left.localeCompare(right));
+  const guidToResourceHits = await buildGuidHitIndex(input.repoRoot, scriptPathToGuid, normalizedResourceFiles);
+  const assetMetaFiles = resolveAssetMetaFiles(
+    input.repoRoot,
+    input.scopedPaths,
+    scriptFiles,
+    normalizedResourceFiles,
+  );
   const assetGuidToPath = await buildAssetMetaIndex(input.repoRoot, { metaFiles: assetMetaFiles });
   const uiMetaIndex = await buildUnityUiMetaIndex(input.repoRoot, { scopedPaths: input.scopedPaths });
   const symbolToCanonicalScriptPath = buildCanonicalScriptPathIndex(
@@ -89,7 +97,7 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     assetGuidToPath,
     uxmlGuidToPath: uiMetaIndex.uxmlGuidToPath,
     ussGuidToPath: uiMetaIndex.ussGuidToPath,
-    resourceFiles: [],
+    resourceFiles: normalizedResourceFiles,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
 }
@@ -186,6 +194,15 @@ export function buildUnityScanContextFromSeed(input: {
     }
   }
 
+  const resourceFiles = [
+    ...new Set(
+      Object.values(seed.guidToResourcePaths || {})
+        .flat()
+        .map((resourcePathRaw) => normalizeSlashes(String(resourcePathRaw || '').trim()))
+        .filter((resourcePath) => resourcePath.length > 0),
+    ),
+  ].sort((left, right) => left.localeCompare(right));
+
   return {
     symbolToScriptPaths,
     symbolToCanonicalScriptPath,
@@ -197,7 +214,7 @@ export function buildUnityScanContextFromSeed(input: {
     assetGuidToPath,
     uxmlGuidToPath,
     ussGuidToPath,
-    resourceFiles: [],
+    resourceFiles,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
 }

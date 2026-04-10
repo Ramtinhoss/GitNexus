@@ -37,6 +37,8 @@ test('buildUnityScanContext exposes resourceFiles for scene/prefab scan pass', a
 
   assert.ok(context.resourceFiles.includes('Assets/Scene/MainUIManager.unity'));
   assert.ok(context.resourceFiles.includes('Assets/Prefabs/BattleMode.prefab'));
+  assert.equal(context.resourceFiles.includes('Assets\\Scene\\MainUIManager.unity' as any), false);
+  assert.equal(new Set(context.resourceFiles).size, context.resourceFiles.length);
 });
 
 test('buildUnityScanContextFromSeed rebuilds resourceFiles from guidToResourcePaths', () => {
