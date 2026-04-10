@@ -694,6 +694,55 @@ test('scene prefab source emits UNITY_ASSET_GUID_REF', async () => {
   assert.equal(reason.sourceLayer, 'scene');
 });
 
+test('prefab source pass can be disabled via env toggle', async () => {
+  const graph = createKnowledgeGraph();
+  const fakeScanContext = {
+    symbolToScriptPath: new Map<string, string>(),
+    scriptPathToGuid: new Map<string, string>(),
+    guidToResourceHits: new Map<string, any[]>(),
+    assetGuidToPath: new Map([['99999999999999999999999999999999', 'Assets/Prefabs/BattleMode.prefab']]),
+    resourceFiles: ['Assets/Scene/MainUIManager.unity'],
+    resourceDocCache: new Map([
+      [
+        'Assets/Scene/MainUIManager.unity',
+        [
+          {
+            objectType: 'PrefabInstance',
+            objectId: '3000',
+            stripped: false,
+            fields: {
+              m_SourcePrefab: '{fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}',
+            },
+            rawBody: '',
+          },
+        ],
+      ],
+    ]),
+  };
+
+  const originalValue = process.env.GITNEXUS_DISABLE_PREFAB_SOURCE_PASS;
+  process.env.GITNEXUS_DISABLE_PREFAB_SOURCE_PASS = '1';
+  try {
+    const result = await processUnityResources(
+      graph,
+      { repoPath: fixtureRoot },
+      {
+        buildScanContext: async () => fakeScanContext as any,
+        resolveBindings: async () => ({ resourceBindings: [], unityDiagnostics: [] }) as any,
+      },
+    );
+    const guidRefs = [...graph.iterRelationships()].filter((rel) => rel.type === 'UNITY_ASSET_GUID_REF');
+    assert.equal(guidRefs.length, 0);
+    assert.ok(result.diagnostics.some((line) => line.includes('prefab-source: skipped')));
+  } finally {
+    if (typeof originalValue === 'undefined') {
+      delete process.env.GITNEXUS_DISABLE_PREFAB_SOURCE_PASS;
+    } else {
+      process.env.GITNEXUS_DISABLE_PREFAB_SOURCE_PASS = originalValue;
+    }
+  }
+});
+
 test('prefab nested source dedupes duplicate PrefabInstance rows', async () => {
   const graph = createKnowledgeGraph();
   const fakeScanContext = {

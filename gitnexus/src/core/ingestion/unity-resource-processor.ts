@@ -38,6 +38,7 @@ export interface UnityResourceProcessingDeps {
 }
 
 const UNITY_DIAGNOSTIC_SAMPLE_LIMIT = 3;
+const PREFAB_SOURCE_PASS_DISABLE_ENV = 'GITNEXUS_DISABLE_PREFAB_SOURCE_PASS';
 
 export async function processUnityResources(
   graph: KnowledgeGraph,
@@ -96,10 +97,14 @@ export async function processUnityResources(
     diagnostics.push(
       `scanContext: scripts=${scanContext.symbolToScriptPath.size}, guids=${scanContext.scriptPathToGuid.size}, resources=${uniqueResourcePaths.size}`,
     );
-    const tPrefabSourceStart = performance.now();
-    const prefabSourceEdgeCount = await emitPrefabSourceGuidRefs(graph, options.repoPath, scanContext);
-    graphWriteMs += performance.now() - tPrefabSourceStart;
-    diagnostics.push(`prefab-source: emitted=${prefabSourceEdgeCount}`);
+    if (isPrefabSourcePassDisabledByEnv()) {
+      diagnostics.push(`prefab-source: skipped (env ${PREFAB_SOURCE_PASS_DISABLE_ENV}=1)`);
+    } else {
+      const tPrefabSourceStart = performance.now();
+      const prefabSourceEdgeCount = await emitPrefabSourceGuidRefs(graph, options.repoPath, scanContext);
+      graphWriteMs += performance.now() - tPrefabSourceStart;
+      diagnostics.push(`prefab-source: emitted=${prefabSourceEdgeCount}`);
+    }
     symbolsWithResourceHits = collectSymbolsWithResourceHits(scanContext);
   } catch (error) {
     if (scanContextMs === 0) {
@@ -699,4 +704,9 @@ function parsePrefabSourceReference(value: string): { fileId?: string; guid: str
 function resolveAssetPathByGuid(assetGuidToPath: Map<string, string> | undefined, guid: string): string | undefined {
   if (!assetGuidToPath) return undefined;
   return assetGuidToPath.get(guid) || assetGuidToPath.get(guid.toLowerCase());
+}
+
+function isPrefabSourcePassDisabledByEnv(): boolean {
+  const value = String(process.env[PREFAB_SOURCE_PASS_DISABLE_ENV] || '').trim().toLowerCase();
+  return value === '1' || value === 'true' || value === 'yes' || value === 'on';
 }

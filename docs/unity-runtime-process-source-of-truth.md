@@ -1,6 +1,6 @@
 # Unity Runtime Process 真理源（Design × As-Built）
 
-Date: 2026-04-09
+Date: 2026-04-10
 Owner: GitNexus
 Status: Active (source of truth) — V2 规则驱动架构
 
@@ -54,6 +54,19 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 4. Process 生成（Phase 6）：
    - 基于 CALLS tracing，标注 `processSubtype` 和 `runtimeChainConfidence`：`pipeline.ts:490-525`
    - 生命周期 metadata 按 Unity resource-binding flow 条件持久化（Unity 自动检测命中 `Assets/*.cs` 时开启）：`pipeline.ts:446`
+
+### 2.1.1 Scan-Context 承载器契约（As-Built + Design Direction）
+
+1. As-Built（当前事实）：
+   - `scan-context` 已承担 Unity 资源扫描阶段的核心索引输入（脚本 GUID 命中、资源路径集合、GUID 映射等）。
+   - `PrefabInstance.m_SourcePrefab` 能力已在 Phase 5.5 生效，但当前实现仍存在 `processUnityResources` 内独立资源解析路径。
+2. Design Direction（重构方向，待实现）：
+   - 将 `scan-context` 明确为可扩展的“资源字段识别承载器（resource signal carrier）”。
+   - 资源字段识别需求（例如 `m_Script.guid`、`PrefabInstance.m_SourcePrefab`）应优先以“扫描期识别器挂载”方式扩展，而不是新增孤立重型 pass。
+3. 统一消费点契约：
+   - scan-context 的识别结果由 `processUnityResources` 统一消费并写图（含 dedupe、diagnostics、reason payload）。
+   - 组件级深解析仍由 resolver/绑定链路执行；scan-context 不承担完整语义求值职责。
+   - 目标是固定“扫描产出记录 → Phase 5.5 统一消费”这一主干，避免后续功能扩展时出现平行管线漂移。
 
 ### 2.2 Query/Context 侧（检索与投影）
 
@@ -237,3 +250,4 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 1. 任何 Unity runtime process 行为变更（字段、配置、语义、默认值），必须同步更新本文。
 2. 扩展新的 `resource_bindings` kind 时，需在本文补充触发判定、图谱遍历路径、合成边属性。
 3. `AGENTS.md` / `CLAUDE.md` 应持续指向本文，作为该领域唯一入口文档。
+4. 新增 Unity 资源字段识别需求时，优先评估是否应挂载到 scan-context 承载器，并在本文同步记录“识别器输入字段 + Phase 5.5 消费方式”。
