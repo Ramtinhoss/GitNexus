@@ -5,7 +5,8 @@ import { createInterface } from 'node:readline';
 import { glob } from 'glob';
 import { buildAssetMetaIndex, buildMetaIndex } from './meta-index.js';
 import { buildUnityUiMetaIndex } from './ui-meta-index.js';
-import { collectPrefabSourceRefs } from './prefab-source-scan.js';
+import { streamPrefabSourceRefs } from './prefab-source-scan.js';
+import type { StreamPrefabSourceRefsInput } from './prefab-source-scan.js';
 import type { UnityResourceGuidHit } from './resource-hit-scanner.js';
 import type { UnityObjectBlock } from './yaml-object-graph.js';
 import { buildSerializableTypeIndexFromFiles } from './serialized-type-index.js';
@@ -47,6 +48,9 @@ export interface UnityScanContext {
   uxmlGuidToPath?: Map<string, string>;
   ussGuidToPath?: Map<string, string>;
   prefabSourceRefs: UnityPrefabSourceRef[];
+  streamPrefabSourceRefs: (
+    options?: Pick<StreamPrefabSourceRefsInput, 'queue' | 'hooks'>,
+  ) => AsyncIterable<UnityPrefabSourceRef>;
   resourceFiles: string[];
   resourceDocCache: Map<string, UnityObjectBlock[]>;
 }
@@ -90,11 +94,14 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
   );
   const assetGuidToPath = await buildAssetMetaIndex(input.repoRoot, { metaFiles: assetMetaFiles });
   const uiMetaIndex = await buildUnityUiMetaIndex(input.repoRoot, { scopedPaths: input.scopedPaths });
-  const prefabSourceRefs = await collectPrefabSourceRefs({
-    repoRoot: input.repoRoot,
-    resourceFiles: normalizedResourceFiles,
-    assetGuidToPath,
-  });
+  const streamPrefabSourceRefsFn = (options?: Pick<StreamPrefabSourceRefsInput, 'queue' | 'hooks'>) =>
+    streamPrefabSourceRefs({
+      repoRoot: input.repoRoot,
+      resourceFiles: normalizedResourceFiles,
+      assetGuidToPath,
+      queue: options?.queue,
+      hooks: options?.hooks,
+    });
   const symbolToCanonicalScriptPath = buildCanonicalScriptPathIndex(
     symbolToScriptPaths,
     scriptPathToGuid,
@@ -113,7 +120,8 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     assetGuidToPath,
     uxmlGuidToPath: uiMetaIndex.uxmlGuidToPath,
     ussGuidToPath: uiMetaIndex.ussGuidToPath,
-    prefabSourceRefs,
+    prefabSourceRefs: [],
+    streamPrefabSourceRefs: streamPrefabSourceRefsFn,
     resourceFiles: normalizedResourceFiles,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
@@ -223,6 +231,11 @@ export function buildUnityScanContextFromSeed(input: {
   const prefabSourceRefs = ((seed as any).prefabSourceRefs || [])
     .map((value: any) => normalizePrefabSourceRef(value))
     .filter((value: UnityPrefabSourceRef | undefined): value is UnityPrefabSourceRef => Boolean(value));
+  const streamPrefabSourceRefsFn = async function* (): AsyncGenerator<UnityPrefabSourceRef> {
+    for (const row of prefabSourceRefs) {
+      yield { ...row };
+    }
+  };
 
   return {
     symbolToScriptPaths,
@@ -236,6 +249,7 @@ export function buildUnityScanContextFromSeed(input: {
     uxmlGuidToPath,
     ussGuidToPath,
     prefabSourceRefs,
+    streamPrefabSourceRefs: streamPrefabSourceRefsFn,
     resourceFiles,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };

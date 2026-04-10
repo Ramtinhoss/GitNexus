@@ -59,8 +59,9 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 
 1. As-Built（当前事实）：
    - `scan-context` 已承担 Unity 资源扫描阶段的核心索引输入（脚本 GUID 命中、资源路径集合、GUID 映射等）。
-   - `scan-context` 在同次资源扫描中产出 `prefabSourceRefs`（`PrefabInstance.m_SourcePrefab` 轻量线索）。
-   - `processUnityResources` 在 Phase 5.5 统一消费 `scanContext.prefabSourceRefs` 写入 `UNITY_ASSET_GUID_REF`，并统一执行 dedupe/diagnostics/reason payload。
+   - `scan-context` 在同次资源扫描中以流式方式产出 `PrefabInstance.m_SourcePrefab` 轻量线索（streaming delivery）。
+   - `processUnityResources` 在 Phase 5.5 统一消费 `scanContext.streamPrefabSourceRefs(...)` 写入 `UNITY_ASSET_GUID_REF`，并统一执行 dedupe/diagnostics/reason payload。
+   - `scan-context does not write graph edges`; 图谱写入职责仅在 `processUnityResources`。
 2. Design Direction（重构方向，待实现）：
    - `scan-context` 持续作为可扩展的“资源字段识别承载器（resource signal carrier）”。
    - 后续资源字段识别需求（新增字段）优先通过扫描期识别器挂载扩展，避免新增孤立重型 pass。
