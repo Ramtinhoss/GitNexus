@@ -27,7 +27,7 @@ export interface LexicalScanOutput {
 }
 
 function normalizeFile(filePath: string): string {
-  return filePath.split(path.sep).join('/');
+  return filePath.split(path.sep).join('/').replace(/^\.\/+/, '');
 }
 
 function safeScope(repoPath: string, scopePath?: string): string {
@@ -162,4 +162,3 @@ export async function scanLexicalUniverse(input: LexicalScanInput): Promise<Lexi
     };
   }
 }
-

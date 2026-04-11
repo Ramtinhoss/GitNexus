@@ -7,11 +7,20 @@ import { ruleLabAnalyzeCommand } from '../../src/cli/rule-lab.js';
 import { scanLexicalUniverse } from '../../src/gap-lab/exhaustive-scanner.js';
 import { classifyScopePath } from '../../src/gap-lab/scope-classifier.js';
 import { resolveLexicalCandidates } from '../../src/gap-lab/candidate-resolver.js';
+import { auditCandidateRows } from '../../src/gap-lab/candidate-audit.js';
 import { verifyMissingEdges } from '../../src/gap-lab/missing-edge-verifier.js';
 
 const tempDirs: string[] = [];
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureManifestPath = path.resolve(here, '..', 'fixtures', 'gap-lab-exhaustive', 'files.json');
+const exemplarScopeDriftFixtureManifestPath = path.resolve(
+  here,
+  '..',
+  'fixtures',
+  'gap-lab-exhaustive',
+  'exemplar-scope-drift',
+  'files.json',
+);
 
 async function writeJson(filePath: string, value: unknown): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -24,11 +33,11 @@ async function writeJsonl(filePath: string, rows: unknown[]): Promise<void> {
   await fs.writeFile(filePath, content ? `${content}\n` : '', 'utf-8');
 }
 
-async function createRepoFromFixture(): Promise<string> {
+async function createRepoFromFixture(manifestPath = fixtureManifestPath): Promise<string> {
   const repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'gap-lab-fixture-'));
   tempDirs.push(repoPath);
 
-  const files = JSON.parse(await fs.readFile(fixtureManifestPath, 'utf-8')) as Array<{ path: string; content: string }>;
+  const files = JSON.parse(await fs.readFile(manifestPath, 'utf-8')) as Array<{ path: string; content: string }>;
   for (const file of files) {
     const absPath = path.join(repoPath, file.path);
     await fs.mkdir(path.dirname(absPath), { recursive: true });
@@ -248,6 +257,50 @@ describe('gap-lab exhaustive discovery', () => {
     expect(updated.coverage_gate?.user_raw_matches).toBe(1);
     expect(updated.coverage_gate?.processed_user_matches).toBe(0);
     expect(updated.coverage_gate?.reason).toBe('candidate_audit_drift');
+  });
+
+  it('rejects exemplar-driven exclusion under default full_user_code scope', async () => {
+    const repoPath = await createRepoFromFixture(exemplarScopeDriftFixtureManifestPath);
+    const lexical = await scanLexicalUniverse({
+      repoPath,
+      gapSubtype: 'mirror_syncdictionary_callback',
+    });
+    const resolved = await resolveLexicalCandidates({ matches: lexical.matches });
+    const verified = await verifyMissingEdges({ candidates: resolved });
+    const audit = auditCandidateRows({
+      discoveryScopeMode: 'full_user_code',
+      rows: verified,
+    });
+
+    expect(verified.map((row) => row.file)).toEqual(
+      expect.arrayContaining([
+        'Assets/NEON/Code/NetworkCode/NetMirrorState.cs',
+        'Assets/NEON/Code/Game/GameMirrorState.cs',
+      ]),
+    );
+    expect(audit.blocked).toBe(false);
+    expect(audit.invalidRows).toHaveLength(0);
+    expect(audit.userRawRows).toHaveLength(2);
+    expect(audit.processedUserRows).toHaveLength(2);
+  });
+
+  it('supports generic subtype seeds without any exemplar input', async () => {
+    const repoPath = await createRepoFromFixture(exemplarScopeDriftFixtureManifestPath);
+    const lexical = await scanLexicalUniverse({
+      repoPath,
+      gapSubtype: 'mirror_syncvar_hook',
+    });
+    const resolved = await resolveLexicalCandidates({ matches: lexical.matches });
+    const verified = await verifyMissingEdges({ candidates: resolved });
+    const audit = auditCandidateRows({
+      discoveryScopeMode: 'full_user_code',
+      rows: verified,
+    });
+
+    expect(lexical.matches).toHaveLength(1);
+    expect(audit.blocked).toBe(false);
+    expect(audit.userRawRows).toHaveLength(1);
+    expect(audit.processedUserRows).toHaveLength(1);
   });
 
   it('writes slim artifacts', async () => {
