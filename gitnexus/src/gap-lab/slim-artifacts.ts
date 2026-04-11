@@ -13,6 +13,30 @@ export interface SlimArtifactsResult {
   removedFiles: string[];
 }
 
+export interface GapLabSliceArtifactPaths {
+  runRoot: string;
+  slicesRoot: string;
+  inventoryPath: string;
+  decisionsPath: string;
+  slicePath: string;
+  candidatesPath: string;
+}
+
+export function getGapLabSliceArtifactPaths(input: SlimArtifactsInput): GapLabSliceArtifactPaths {
+  const repoPath = path.resolve(input.repoPath);
+  const runRoot = path.join(repoPath, '.gitnexus', 'gap-lab', 'runs', input.runId);
+  const slicesRoot = path.join(runRoot, 'slices');
+
+  return {
+    runRoot,
+    slicesRoot,
+    inventoryPath: path.join(runRoot, 'inventory.jsonl'),
+    decisionsPath: path.join(runRoot, 'decisions.jsonl'),
+    slicePath: path.join(slicesRoot, `${input.sliceId}.json`),
+    candidatesPath: path.join(slicesRoot, `${input.sliceId}.candidates.jsonl`),
+  };
+}
+
 async function ensureFile(filePath: string): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   try {
@@ -32,15 +56,13 @@ async function removeIfExists(filePath: string): Promise<boolean> {
 }
 
 export async function ensureBalancedSlimArtifacts(input: SlimArtifactsInput): Promise<SlimArtifactsResult> {
-  const repoPath = path.resolve(input.repoPath);
-  const runRoot = path.join(repoPath, '.gitnexus', 'gap-lab', 'runs', input.runId);
-  const slicesRoot = path.join(runRoot, 'slices');
+  const { runRoot, slicesRoot, inventoryPath, decisionsPath, slicePath, candidatesPath } = getGapLabSliceArtifactPaths(input);
 
   const requiredFiles = [
-    path.join(runRoot, 'inventory.jsonl'),
-    path.join(runRoot, 'decisions.jsonl'),
-    path.join(slicesRoot, `${input.sliceId}.json`),
-    path.join(slicesRoot, `${input.sliceId}.candidates.jsonl`),
+    inventoryPath,
+    decisionsPath,
+    slicePath,
+    candidatesPath,
   ];
 
   for (const filePath of requiredFiles) {
@@ -64,4 +86,3 @@ export async function ensureBalancedSlimArtifacts(input: SlimArtifactsInput): Pr
 
   return { runRoot, requiredFiles, removedFiles };
 }
-

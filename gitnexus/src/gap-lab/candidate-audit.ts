@@ -16,6 +16,8 @@ export interface CandidateAuditResult {
   blockedReason?: 'invalid_default_scope_reason';
   invalidRows: CandidateAuditRow[];
   eligibleRows: CandidateAuditRow[];
+  userRawRows: CandidateAuditRow[];
+  processedUserRows: CandidateAuditRow[];
 }
 
 const DISALLOWED_DEFAULT_SCOPE_REASONS = new Set([
@@ -26,10 +28,20 @@ const DISALLOWED_DEFAULT_SCOPE_REASONS = new Set([
 ]);
 
 const ELIGIBLE_STATUSES = new Set(['verified_missing', 'accepted', 'eligible', 'promotion_backlog']);
+const NON_FINAL_STATUSES = new Set(['raw_match', 'resolved']);
 
 export function auditCandidateRows(input: CandidateAuditInput): CandidateAuditResult {
+  const userRawRows = input.rows.filter((row) => row.scopeClass === 'user_code');
+  const eligibleRows = input.rows.filter((row) => ELIGIBLE_STATUSES.has(row.status ?? ''));
+
   if (input.discoveryScopeMode !== 'full_user_code') {
-    return { blocked: false, invalidRows: [], eligibleRows: input.rows.filter((row) => ELIGIBLE_STATUSES.has(row.status ?? '')) };
+    return {
+      blocked: false,
+      invalidRows: [],
+      eligibleRows,
+      userRawRows,
+      processedUserRows: userRawRows.filter((row) => !NON_FINAL_STATUSES.has(row.status ?? '')),
+    };
   }
 
   const invalidRows = input.rows.filter(
@@ -39,12 +51,17 @@ export function auditCandidateRows(input: CandidateAuditInput): CandidateAuditRe
       !!row.reasonCode &&
       DISALLOWED_DEFAULT_SCOPE_REASONS.has(row.reasonCode),
   );
-  const eligibleRows = input.rows.filter((row) => ELIGIBLE_STATUSES.has(row.status ?? ''));
+  const invalidRowSet = new Set(invalidRows);
+  const processedUserRows = userRawRows.filter(
+    (row) => !NON_FINAL_STATUSES.has(row.status ?? '') && !invalidRowSet.has(row),
+  );
 
   return {
     blocked: invalidRows.length > 0,
     blockedReason: invalidRows.length > 0 ? 'invalid_default_scope_reason' : undefined,
     invalidRows,
     eligibleRows,
+    userRawRows,
+    processedUserRows,
   };
 }

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
-import type { CandidateAuditResult } from './candidate-audit.js';
-import { ensureBalancedSlimArtifacts } from './slim-artifacts.js';
+import type { CandidateAuditResult, CandidateAuditRow, DiscoveryScopeMode } from './candidate-audit.js';
+import { auditCandidateRows } from './candidate-audit.js';
+import { ensureBalancedSlimArtifacts, getGapLabSliceArtifactPaths } from './slim-artifacts.js';
 
 export interface CoverageGateInput {
   repoPath: string;
@@ -14,7 +14,7 @@ export interface CoverageGateResult {
   blocked: boolean;
   userRawMatches: number;
   processedUserMatches: number;
-  reason?: 'coverage_incomplete';
+  reason?: 'coverage_incomplete' | 'candidate_audit_drift';
   slicePath?: string;
   candidateAudit?: CandidateAuditResult;
 }
@@ -29,12 +29,33 @@ interface GapLabSliceDoc {
     reason?: string;
     checked_at?: string;
   };
+  discovery_scope?: { mode?: string } | string;
   [key: string]: unknown;
 }
 
 function numberOrZero(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+function parseCandidateRows(raw: string): CandidateAuditRow[] {
+  return raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as CandidateAuditRow);
+}
+
+function resolveDiscoveryScopeMode(slice: GapLabSliceDoc): DiscoveryScopeMode {
+  const mode = typeof slice.discovery_scope === 'string'
+    ? slice.discovery_scope
+    : slice.discovery_scope?.mode;
+
+  if (mode === 'path_prefix_override' || mode === 'module_override' || mode === 'full_user_code') {
+    return mode;
+  }
+
+  return 'full_user_code';
 }
 
 export async function enforceCoverageGate(input: CoverageGateInput): Promise<CoverageGateResult> {
@@ -44,15 +65,7 @@ export async function enforceCoverageGate(input: CoverageGateInput): Promise<Cov
     sliceId: input.sliceId,
   });
 
-  const slicePath = path.join(
-    path.resolve(input.repoPath),
-    '.gitnexus',
-    'gap-lab',
-    'runs',
-    input.runId,
-    'slices',
-    `${input.sliceId}.json`,
-  );
+  const { slicePath, candidatesPath } = getGapLabSliceArtifactPaths(input);
 
   let rawSlice: string;
   try {
@@ -69,9 +82,32 @@ export async function enforceCoverageGate(input: CoverageGateInput): Promise<Cov
 
   const now = new Date().toISOString();
   const slice = JSON.parse(rawSlice) as GapLabSliceDoc;
-  const userRawMatches = numberOrZero(slice.coverage_gate?.user_raw_matches);
-  const processedUserMatches = numberOrZero(slice.coverage_gate?.processed_user_matches);
-  const hasGateData = userRawMatches > 0 || processedUserMatches > 0 || slice.coverage_gate?.required === true;
+  const summaryUserRawMatches = numberOrZero(slice.coverage_gate?.user_raw_matches);
+  const summaryProcessedUserMatches = numberOrZero(slice.coverage_gate?.processed_user_matches);
+
+  let rawCandidates = '';
+  try {
+    rawCandidates = await fs.readFile(candidatesPath, 'utf-8');
+  } catch {
+    rawCandidates = '';
+  }
+
+  const candidateRows = parseCandidateRows(rawCandidates);
+  const hasCandidateRows = candidateRows.length > 0;
+  const candidateAudit = hasCandidateRows
+    ? auditCandidateRows({
+        discoveryScopeMode: resolveDiscoveryScopeMode(slice),
+        rows: candidateRows,
+      })
+    : undefined;
+
+  const userRawMatches = candidateAudit ? candidateAudit.userRawRows.length : summaryUserRawMatches;
+  const processedUserMatches = candidateAudit ? candidateAudit.processedUserRows.length : summaryProcessedUserMatches;
+  const hasGateData =
+    hasCandidateRows ||
+    summaryUserRawMatches > 0 ||
+    summaryProcessedUserMatches > 0 ||
+    slice.coverage_gate?.required === true;
 
   if (!hasGateData) {
     return {
@@ -80,17 +116,29 @@ export async function enforceCoverageGate(input: CoverageGateInput): Promise<Cov
       userRawMatches,
       processedUserMatches,
       slicePath,
+      candidateAudit,
     };
   }
 
-  const blocked = processedUserMatches < userRawMatches;
+  const summaryMismatch = hasCandidateRows && (
+    summaryUserRawMatches !== userRawMatches ||
+    summaryProcessedUserMatches !== processedUserMatches
+  );
+  const countShortfall = processedUserMatches < userRawMatches;
+  const blocked = Boolean(candidateAudit?.blocked) || summaryMismatch || countShortfall;
+  const reason = candidateAudit?.blocked || summaryMismatch
+    ? 'candidate_audit_drift'
+    : blocked
+      ? 'coverage_incomplete'
+      : undefined;
+
   slice.coverage_gate = {
     ...slice.coverage_gate,
     required: true,
     user_raw_matches: userRawMatches,
     processed_user_matches: processedUserMatches,
     status: blocked ? 'blocked' : 'passed',
-    reason: blocked ? 'coverage_incomplete' : undefined,
+    reason,
     checked_at: now,
   };
 
@@ -105,7 +153,8 @@ export async function enforceCoverageGate(input: CoverageGateInput): Promise<Cov
     blocked,
     userRawMatches,
     processedUserMatches,
-    reason: blocked ? 'coverage_incomplete' : undefined,
+    reason,
     slicePath,
+    candidateAudit,
   };
 }

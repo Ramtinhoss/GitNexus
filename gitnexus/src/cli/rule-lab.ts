@@ -33,6 +33,12 @@ function resolveRepoPath(repoPath?: string): string {
   return path.resolve(repoPath || process.cwd());
 }
 
+function assertConcreteRunSliceIds(runId: string, sliceId: string): void {
+  if (/[<>]/.test(runId) || /[<>]/.test(sliceId)) {
+    throw new Error('Invalid run/slice id: placeholder values are not allowed');
+  }
+}
+
 export function getRuleLabCommandNames(program: Command): string[] {
   const root = program.commands.find((command) => command.name() === 'rule-lab');
   if (!root) return [];
@@ -134,10 +140,8 @@ export async function ruleLabDiscoverCommand(options: { repoPath?: string; scope
 }
 
 export async function ruleLabAnalyzeCommand(options: { repoPath?: string; runId: string; sliceId: string }): Promise<void> {
+  assertConcreteRunSliceIds(options.runId, options.sliceId);
   const repoPath = resolveRepoPath(options?.repoPath);
-  if (/[<>]/.test(options.runId) || /[<>]/.test(options.sliceId)) {
-    throw new Error('Invalid run/slice id: placeholder values are not allowed');
-  }
 
   const parity = await enforceRunArtifactParity({
     repoPath,

@@ -18,6 +18,12 @@ async function writeJson(filePath: string, value: unknown): Promise<void> {
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf-8');
 }
 
+async function writeJsonl(filePath: string, rows: unknown[]): Promise<void> {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  const content = rows.map((row) => JSON.stringify(row)).join('\n');
+  await fs.writeFile(filePath, content ? `${content}\n` : '', 'utf-8');
+}
+
 async function createRepoFromFixture(): Promise<string> {
   const repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'gap-lab-fixture-'));
   tempDirs.push(repoPath);
@@ -221,6 +227,29 @@ describe('gap-lab exhaustive discovery', () => {
     expect(updated.coverage_gate?.user_raw_matches).toBe(3);
   });
 
+  it('blocks c3 on candidate-audit drift even when slice summary counts look passed', async () => {
+    const runId = 'run-gap-cov-drift-1';
+    const sliceId = 'event_delegate_gap.mirror_syncvar_hook';
+    const { repoPath, gapSlicePath, runRoot } = await createRunFixture({
+      runId,
+      sliceId,
+      coverage: { userRaw: 1, processed: 1, status: 'passed' },
+    });
+
+    await writeJsonl(path.join(runRoot, 'slices', `${sliceId}.candidates.jsonl`), [
+      { scopeClass: 'user_code', status: 'rejected', reasonCode: 'out_of_focus_scope' },
+    ]);
+
+    await expect(ruleLabAnalyzeCommand({ repoPath, runId, sliceId })).rejects.toThrow(/candidate_audit_drift|coverage_incomplete/i);
+
+    const updated = JSON.parse(await fs.readFile(gapSlicePath, 'utf-8')) as any;
+    expect(updated.status).toBe('blocked');
+    expect(updated.coverage_gate?.status).toBe('blocked');
+    expect(updated.coverage_gate?.user_raw_matches).toBe(1);
+    expect(updated.coverage_gate?.processed_user_matches).toBe(0);
+    expect(updated.coverage_gate?.reason).toBe('candidate_audit_drift');
+  });
+
   it('writes slim artifacts', async () => {
     const runId = 'run-gap-slim-1';
     const sliceId = 'event_delegate_gap.mirror_syncvar_hook';
@@ -258,7 +287,7 @@ describe('gap-lab exhaustive discovery', () => {
       ruleLabAnalyzeCommand({
         repoPath: '/tmp',
         runId: '<run_id>',
-        sliceId: 'event_delegate_gap.mirror_syncvar_hook',
+        sliceId: '<slice_id>',
       }),
     ).rejects.toThrow(/placeholder values are not allowed/i);
   });
