@@ -57,4 +57,14 @@ describe('rule-lab docs/contracts', () => {
     expect(guide).toMatch(/gap-lab/i);
     expect(guide).toMatch(/query-time runtime closure is \*\*graph-only\*\*/i);
   });
+
+  it('documents backlog-capable eligibility and candidate-derived coverage truth', async () => {
+    const truth = await readRepoFile('docs/unity-runtime-process-source-of-truth.md');
+    expect(truth).toMatch(/promotion_backlog|eligible/i);
+    expect(truth).toMatch(/candidate-derived coverage/i);
+
+    const cfg = await readRepoFile('docs/gitnexus-config-files.md');
+    expect(cfg).toMatch(/candidate-derived coverage/i);
+    expect(cfg).toMatch(/out_of_focus_scope|deferred_non_clue_module/i);
+  });
 });

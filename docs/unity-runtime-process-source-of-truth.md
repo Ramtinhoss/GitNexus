@@ -125,8 +125,10 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 4. 当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，必须 parity rerun 后再做 closure 结论（无论是否经过 gap-lab authoring）。
 5. C1 发现流程采用穷尽链路：`C1a lexical universe -> C1b scope classification -> C1c symbol resolution -> C1d missing-edge verification`，用户线索仅作为 seed，不是排它检索范围。
 6. C0 parity gate 为 analyze 前置：`gap-lab` 与 `rules/lab` 的同 run/slice 工件不一致时必须阻断。
-7. C2.6 coverage gate 为 C3 前置：`processed_user_matches == user_raw_matches` 才允许进入 rule generation；否则标记 `coverage_incomplete` 并阻断。
-8. Gap-lab C1 持久化采用 balanced-slim 工件模型：`slice.json`、`slice.candidates.jsonl`、`inventory.jsonl`、`decisions.jsonl`；不保留 standalone universe/scope/coverage 工件。
+7. C2.6 coverage gate 为 C3 前置，且 **candidate-derived coverage** 为真理源：`processed_user_matches` / `user_raw_matches` 必须从 `slice.candidates.jsonl` 派生，`slice.json.coverage_gate` 只是派生缓存；若摘要计数与候选行漂移，必须标记 `candidate_audit_drift` 并阻断。
+8. 默认 `full_user_code` scope 禁止 exemplar/module locality 驱动的排除理由；`out_of_focus_scope`、`deferred_non_clue_module` 等理由只有在显式 `explicit_discovery_scope_override` 下才允许出现。
+9. `promotion_backlog` 是 **eligible** 候选状态，不是 rejection bucket；“本轮不提升”必须与“候选无效”分离。
+10. Gap-lab C1 持久化采用 balanced-slim 工件模型：`slice.json`、`slice.candidates.jsonl`、`inventory.jsonl`、`decisions.jsonl`；不保留 standalone universe/scope/coverage 工件。
 
 ## 3. 设计与实现对照（阶段）
 

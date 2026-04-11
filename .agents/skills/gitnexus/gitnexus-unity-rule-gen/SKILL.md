@@ -263,9 +263,11 @@ Requirements:
 
 Before C3, enforce a hard coverage gate for user-code matches:
 
-1. Require `processed_user_matches == user_raw_matches`.
-2. If coverage check fails, set slice status `blocked`, write `coverage_incomplete`, and stop.
-3. C3 remains blocked on coverage_incomplete until unresolved user-code matches are resolved or explicitly waived.
+1. Treat `slice.candidates.jsonl` as the candidate-derived coverage truth source; `slice.json.coverage_gate` is derived state only.
+2. Require `processed_user_matches == user_raw_matches`.
+3. Under default `full_user_code`, reject exemplar/module exclusion reasons such as `out_of_focus_scope` and `deferred_non_clue_module`; drift between summary counts and candidate rows must block as `candidate_audit_drift`.
+4. If coverage check fails, set slice status `blocked`, write `coverage_incomplete`, and stop.
+5. C3 remains blocked on coverage_incomplete until unresolved user-code matches are resolved or explicitly waived.
 
 ### C2.5 Aggregation mode confirmation (mandatory when subtype duplicates)
 

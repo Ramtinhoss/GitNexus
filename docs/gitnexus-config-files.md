@@ -13,7 +13,7 @@ This document defines the current configuration and state file rules used by Git
 | `rules/approved/*.yaml` | `rule-lab-curate` / `rule-lab-promote` | Approved project rule definitions (analyze/retrieval/verification families) | Written during curation/promotion | Rule compiler and analyze/offline governance fallback loaders |
 | `rules/compiled/*.v2.json` | `rule-lab-compile` | Compiled rule bundles by family (`analyze_rules`, `retrieval_rules`, `verification_rules`) | Written by `gitnexus rule-lab compile` | Analyze pipeline (`analyze_rules`), retrieval next-hop hint resolver (`retrieval_rules`), offline governance/report workflows |
 | `rules/lab/runs/**` | `rule-lab-discover` / `rule-lab-analyze` / `rule-lab-review-pack` / `rule-lab-curate` | Rule Lab intermediate artifacts (`manifest.json`, `slice-plan.json`, `slices/*/slice.json`, `candidates.jsonl`, `review-cards.md`, `curated.json`, `dsl-draft.json`) | Written by Rule Lab execution | Rule Lab follow-up commands and promote compiler input |
-| `gap-lab/runs/**` | `gitnexus-unity-rule-gen` | Gap-lab slice-driven run artifacts (`manifest.json`, `slice-plan.json`, `progress.json`, `inventory.jsonl`, `decisions.jsonl`, `slices/<slice_id>.json`, `slices/<slice_id>.candidates.jsonl`) with C0 parity + C2.6 coverage gate state | Written by gap-lab skill loop execution | Session resume, slice checkpoints, exhaustive-candidate lifecycle tracking, and evidence continuity across loops |
+| `gap-lab/runs/**` | `gitnexus-unity-rule-gen` | Gap-lab slice-driven run artifacts (`manifest.json`, `slice-plan.json`, `progress.json`, `inventory.jsonl`, `decisions.jsonl`, `slices/<slice_id>.json`, `slices/<slice_id>.candidates.jsonl`) with C0 parity + C2.6 candidate-derived coverage gate state | Written by gap-lab skill loop execution | Session resume, slice checkpoints, exhaustive-candidate lifecycle tracking, candidate-derived coverage truth, and evidence continuity across loops |
 | `rules/reports/*.md` | `rule-lab-regress` | Rule quality and regression reports | Written by regression pass | Human review and CI reports |
 
 ### `meta.json` schema (current)
@@ -169,6 +169,9 @@ gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt --no-reuse-options
 - `rule-lab-*` commands own `.gitnexus/rules/**` write paths listed above.
 - `gitnexus-unity-rule-gen` owns `.gitnexus/gap-lab/runs/**` artifacts listed above.
 - Gap-lab C1 persistence uses balanced-slim artifacts only (`slice.json`, `slice.candidates.jsonl`, `inventory.jsonl`, `decisions.jsonl`); standalone universe/scope/coverage files are not persisted.
+- Gap-lab C2.6 uses candidate-derived coverage: `slice.candidates.jsonl` is the semantic source of truth, while `slice.json.coverage_gate` is a derived cache that must block on `candidate_audit_drift` if counts drift.
+- Under default `full_user_code` scope, reason codes such as `out_of_focus_scope` and `deferred_non_clue_module` are invalid unless an explicit discovery-scope override is recorded.
+- `promotion_backlog` remains an eligible candidate status and must not be serialized as a rejection outcome.
 - Default `clean` removes repo-local index artifacts and unregisters from global registry.
 - Default `clean` does **not** remove `.gitnexus/rules/**`.
 - `clean --include-rules-lab` may remove `.gitnexus/rules/lab/runs/**` and `.gitnexus/rules/reports/*.md` only.

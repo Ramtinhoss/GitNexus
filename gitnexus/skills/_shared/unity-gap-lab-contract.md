@@ -85,8 +85,9 @@ Contract terms:
   (`phase_b_clues_confirmed` decision + `current_slice_id` pointer + `in_progress` status).
 - Updating `progress.json.next_command` text alone is not a valid phase transition.
 - `gap-lab` and `rules/lab` artifacts for the same `run_id/slice_id` must be kept in parity before C1/C3.
-- Coverage gate before C3 is mandatory: `processed_user_matches == user_raw_matches`;
-  otherwise slice status is `blocked` with reason `coverage_incomplete`.
+- Coverage gate before C3 is mandatory and candidate-derived: `slice.candidates.jsonl` is the semantic source of truth, while `slice.json.coverage_gate` is derived state.
+- Coverage gate requires `processed_user_matches == user_raw_matches`; summary/candidate drift or invalid default-scope exclusion reasons (`out_of_focus_scope`, `deferred_non_clue_module`) must block with `candidate_audit_drift`.
+- Otherwise slice status is `blocked` with reason `coverage_incomplete`.
 - Artifact model is balanced-slim: keep `slice.json`, `slice.candidates.jsonl`,
   `inventory.jsonl`, and `decisions.jsonl`; no standalone universe/scope/coverage artifacts.
 - `promotion_backlog` is an eligible candidate state, not a rejection reason; backlog choice must stay separate from validity.
