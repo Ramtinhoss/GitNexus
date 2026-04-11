@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { ensureBalancedSlimArtifacts } from './slim-artifacts.js';
 
 export interface CoverageGateInput {
   repoPath: string;
@@ -35,6 +36,12 @@ function numberOrZero(value: unknown): number {
 }
 
 export async function enforceCoverageGate(input: CoverageGateInput): Promise<CoverageGateResult> {
+  await ensureBalancedSlimArtifacts({
+    repoPath: input.repoPath,
+    runId: input.runId,
+    sliceId: input.sliceId,
+  });
+
   const slicePath = path.join(
     path.resolve(input.repoPath),
     '.gitnexus',
@@ -100,4 +107,3 @@ export async function enforceCoverageGate(input: CoverageGateInput): Promise<Cov
     slicePath,
   };
 }
-
