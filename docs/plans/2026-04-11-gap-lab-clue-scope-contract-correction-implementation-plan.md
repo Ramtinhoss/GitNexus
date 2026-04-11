@@ -24,7 +24,7 @@ Task 5 | completed | Added the candidate-audit drift regression, observed the ga
 Task 6 | completed | Added the exemplar-scope-drift regression fixture/tests, exposed and fixed a `./Assets/...` lexical path-normalization bug, and verified the targeted integration tests passed for both cross-module default-scope discovery and generic seeds without exemplars.
 Task 7 | completed | Added the docs/contract regression, observed missing repo-level wording, updated source-of-truth/config/skill contracts for candidate-derived coverage and backlog semantics, and verified the targeted docs test passed.
 Task 8 | completed | Added the repair checklist/docs, archived the live neonspark run to `.pre-contract-fix`, confirmed baseline user-code `out_of_focus_scope` rows in the real artifact, captured summary/closure evidence from the live slice, and passed the required human verification gate.
-Task 9 | in_progress | Starting the final changelog/assertion red phase and full integration/parity verification run.
+Task 9 | completed | Added the final changelog assertion, fixed the remaining handoff wording and release notes, and verified the full integration suite plus installed-skill parity command passed.
 
 ## Design Traceability Matrix
 
