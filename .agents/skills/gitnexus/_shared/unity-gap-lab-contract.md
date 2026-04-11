@@ -61,6 +61,13 @@ Responsibilities:
 
 ## Control Policy
 
+Contract terms:
+
+- `slice_focus`: selected `gap_type/gap_subtype` for the active loop.
+- `discovery_scope`: repo search scope for C1; default is `full_user_code`.
+- `search_seeds`: optional user hints that accelerate exhaustive discovery.
+- `validation_exemplars`: optional example matches used to validate/refine candidate quality after discovery.
+
 - Focus lock is mandatory before discovery when `gap_type/gap_subtype` are missing.
 - Each loop executes one slice only; no implicit run-all-slices behavior.
 - Discovery is semantic-first; graph is used for missing-edge verification and
@@ -71,7 +78,7 @@ Responsibilities:
   semantic parsing; avoid full-repo Python file walks as first action.
 - C2 must emit fixed classification buckets (`third_party_excluded`,
   `unresolvable_handler_symbol`, `accepted`) to avoid hit-count ambiguity.
-- User clues can seed patterns but are not exclusive search scope.
+- User clues can provide `search_seeds` and `validation_exemplars`, but are not exclusive search scope and must not redefine `discovery_scope` by example locality alone.
 - Before C1, readiness must be persisted as machine-checkable state
   (`phase_b_clues_confirmed` decision + `current_slice_id` pointer + `in_progress` status).
 - Updating `progress.json.next_command` text alone is not a valid phase transition.
@@ -92,6 +99,7 @@ After Phase B focus lock, the agent must return a handoff block to the user
 that includes:
 
 - focus summary (gap_type/gap_subtype + active scope constraints);
+- explicit mention of `slice_focus`, `discovery_scope`, optional `search_seeds`, and optional `validation_exemplars`;
 - immediate next step in Phase C;
 - explicit request for user clues needed to keep candidate quality high;
 - quality gate warning when clues are missing.

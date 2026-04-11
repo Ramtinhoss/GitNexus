@@ -206,6 +206,14 @@ describe('unity gap-lab skill contracts', () => {
     expect(source).not.toMatch(/Resume command`: a concrete command/i);
   });
 
+  it('separates search seeds, validation exemplars, focus, and discovery scope', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/search[_ -]?seeds/i);
+    expect(source).toMatch(/validation[_ -]?exemplars/i);
+    expect(source).toMatch(/discovery_scope/i);
+    expect(source).not.toMatch(/anchor this slice/i);
+  });
+
   it('uses --repo-path in rule-lab command examples', async () => {
     const { source } = await readSkills();
     const commandBlocks = extractBashBlocks(source).join('\n');

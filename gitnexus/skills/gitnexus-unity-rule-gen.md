@@ -121,14 +121,21 @@ Write lock result to:
 - `slice-plan.json` focus history
 - `progress.json.current_slice_id`
 
+Phase B terms are distinct and must stay distinct:
+
+- `slice_focus`: the selected `gap_type/gap_subtype` for this loop.
+- `discovery_scope`: repo search scope for C1; defaults to `full_user_code`.
+- `search_seeds`: optional user hints that accelerate repo-wide discovery.
+- `validation_exemplars`: optional examples used to validate/refine patterns after discovery.
+
 ### Phase B User Handoff (mandatory)
 
 After focus lock, always return a user-facing handoff before moving on:
 
-1. `Focus summary`: focused `gap_type/gap_subtype` and concrete scope constraints now in effect.
+1. `Focus summary`: focused `gap_type/gap_subtype` (`slice_focus`) plus current `discovery_scope`.
 2. `Next step`: what the agent will do in Phase C for this slice.
-3. `Required user clues`: ask for 1-3 concrete clues/examples that anchor this slice (symbol/file/path, expected missing hop, observed runtime symptom).
-4. `Quality gate`: without user clues, do not claim high-quality gap pattern output; ask user to provide clues or explicitly accept an exploratory low-confidence pass.
+3. `Required user clues`: ask for 1-3 concrete inputs split into optional `search_seeds` (symbol/file/path, expected missing hop, observed runtime symptom) and optional `validation_exemplars` (known example matches used for validation only).
+4. `Quality gate`: without user clues, do not claim high-quality gap pattern output; ask user to provide clues or explicitly accept an exploratory low-confidence pass, but keep `discovery_scope` independent from example locality.
 
 If the loop pauses right after Phase B, do not stop at "focus lock completed". The response must include focus + next-step + requested clues.
 Do not expose `checkpoint_phase`, `current_slice_id`, or resumable shell commands in normal handoff unless the user explicitly asks for debug state.
