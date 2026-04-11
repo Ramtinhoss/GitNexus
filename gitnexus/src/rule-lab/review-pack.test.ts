@@ -51,4 +51,44 @@ describe('rule-lab review-pack', () => {
 
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
+
+  it('shows actionable guidance when candidates are missing', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-review-pack-missing-'));
+    const sliceDir = path.join(repoRoot, '.gitnexus', 'rules', 'lab', 'runs', 'run-y', 'slices', 'slice-b');
+    await fs.mkdir(sliceDir, { recursive: true });
+
+    const err = await buildReviewPack({ repoPath: repoRoot, runId: 'run-y', sliceId: 'slice-b', maxTokens: 6000 })
+      .then(() => null)
+      .catch((error) => error as Error);
+    expect(err).toBeTruthy();
+    expect(String(err?.message || '')).toMatch(/Missing candidates file for review-pack/);
+    expect(String(err?.message || '')).toMatch(/rule-lab analyze --repo-path/);
+
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+
+  it('waits briefly for candidates to avoid analyze/review-pack races', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-review-pack-race-'));
+    const sliceDir = path.join(repoRoot, '.gitnexus', 'rules', 'lab', 'runs', 'run-z', 'slices', 'slice-c');
+    await fs.mkdir(sliceDir, { recursive: true });
+    const candidatesPath = path.join(sliceDir, 'candidates.jsonl');
+    const line = JSON.stringify({
+      id: 'cand-race',
+      title: 'race candidate',
+      topology: [{ hop: 'resource', from: { entity: 'resource' }, to: { entity: 'script' }, edge: { kind: 'binds_script' } }],
+      evidence: { hops: [{ hop_type: 'resource', anchor: 'Assets/Test.prefab:1', snippet: 'Race' }] },
+    });
+
+    const delayedWrite = new Promise<void>((resolve, reject) => {
+      setTimeout(() => {
+        fs.writeFile(candidatesPath, `${line}\n`, 'utf-8').then(() => resolve()).catch(reject);
+      }, 150);
+    });
+
+    const out = await buildReviewPack({ repoPath: repoRoot, runId: 'run-z', sliceId: 'slice-c', maxTokens: 6000 });
+    await delayedWrite;
+    expect(out.meta.total_candidates).toBe(1);
+
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
 });

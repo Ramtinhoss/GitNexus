@@ -64,3 +64,16 @@ Responsibilities:
 - Each loop executes one slice only; no implicit run-all-slices behavior.
 - Discovery is semantic-first; graph is used for missing-edge verification and
   closure verification, not as the sole discovery source.
+
+## User-Facing Handoff Contract
+
+After Phase B focus lock, the agent must return a handoff block to the user
+that includes:
+
+- current checkpoint and focused slice id;
+- active scope constraints (file/symbol/module hints);
+- immediate next step in Phase C;
+- resumable next command.
+
+A "focus lock completed" message without explicit status + next-step guidance
+is contract-incomplete.

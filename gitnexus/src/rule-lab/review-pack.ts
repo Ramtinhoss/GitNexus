@@ -36,6 +36,10 @@ export interface ReviewPackOutput {
   cards: ReviewPackCard[];
 }
 
+interface ErrnoLike {
+  code?: string;
+}
+
 function estimateTokens(value: unknown): number {
   return Math.ceil(JSON.stringify(value).length / 4);
 }
@@ -142,10 +146,45 @@ function renderReviewPack(meta: ReviewPackMeta, cards: ReviewPackCard[]): string
   return `${lines.join('\n')}\n`;
 }
 
+function isENOENT(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as ErrnoLike).code === 'ENOENT';
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function readCandidatesFileWithRetry(
+  candidatesPath: string,
+  analyzeCommandHint: string,
+  timeoutMs = 3000,
+  intervalMs = 100,
+): Promise<string> {
+  const deadline = Date.now() + timeoutMs;
+
+  while (true) {
+    try {
+      return await fs.readFile(candidatesPath, 'utf-8');
+    } catch (error) {
+      if (!isENOENT(error)) throw error;
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `Missing candidates file for review-pack: ${candidatesPath}\n` +
+          `Run analyze first and wait for completion, then retry review-pack.\n` +
+          `Suggested command: ${analyzeCommandHint}`,
+        );
+      }
+      await sleep(intervalMs);
+    }
+  }
+}
+
 export async function buildReviewPack(input: ReviewPackInput): Promise<ReviewPackOutput> {
   const normalizedRepoPath = path.resolve(input.repoPath);
   const paths = getRuleLabPaths(normalizedRepoPath, input.runId, input.sliceId);
-  const raw = await fs.readFile(paths.candidatesPath, 'utf-8');
+  const analyzeCommandHint =
+    `gitnexus rule-lab analyze --repo-path "${normalizedRepoPath}" --run-id "${input.runId}" --slice-id "${input.sliceId}"`;
+  const raw = await readCandidatesFileWithRetry(paths.candidatesPath, analyzeCommandHint);
   const candidates = parseCandidates(raw);
 
   const included: RuleLabCandidate[] = [];

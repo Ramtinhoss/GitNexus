@@ -100,7 +100,7 @@ export function attachRuleLabCommands(program: Command, lazyFactory?: LazyFactor
     .requiredOption('--run-id <id>', 'Rule-lab run id')
     .requiredOption('--slice-id <id>', 'Slice id')
     .option('--repo-path <path>', 'Repository path (default: cwd)')
-    .option('--version <version>', 'Promoted rule version', '1.0.0')
+    .option('--rule-version <version>', 'Promoted rule version', '1.0.0')
     .action(action('ruleLabPromoteCommand'));
 
   root
@@ -160,12 +160,13 @@ export async function ruleLabCurateCommand(options: { repoPath?: string; runId: 
   output(result);
 }
 
-export async function ruleLabPromoteCommand(options: { repoPath?: string; runId: string; sliceId: string; version?: string }): Promise<void> {
+export async function ruleLabPromoteCommand(options: { repoPath?: string; runId: string; sliceId: string; ruleVersion?: string; version?: string }): Promise<void> {
+  const version = options.ruleVersion ?? options.version;
   const result = await promoteCuratedRules({
     repoPath: resolveRepoPath(options?.repoPath),
     runId: options.runId,
     sliceId: options.sliceId,
-    version: options.version,
+    version,
   });
   output(result);
 }

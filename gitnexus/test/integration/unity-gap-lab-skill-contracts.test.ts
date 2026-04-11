@@ -106,7 +106,9 @@ describe('unity gap-lab skill contracts', () => {
       [/pattern_id/i, 'taxonomy: pattern_id'],
       [/detector_version/i, 'taxonomy: detector_version'],
       [/(pending\|in_progress\|blocked\|rule_generated\|indexed\|verified\|done)/i, 'status enum contract'],
-      [/\.gitnexus\/gap-lab\/runs\/<run_id>\//i, 'persistence tree root']
+      [/\.gitnexus\/gap-lab\/runs\/<run_id>\//i, 'persistence tree root'],
+      [/User-Facing Handoff Contract/i, 'phase B user handoff contract heading'],
+      [/resumable next command/i, 'phase B handoff requires resumable next command']
     ]);
 
     expect(installedContract).toContain('Unity Gap-Lab Contract');
@@ -128,6 +130,27 @@ describe('unity gap-lab skill contracts', () => {
     const { source } = await readSkills();
     expect(source).toMatch(/verified\/done.*non-empty closure evidence/i);
     expect(source).toMatch(/confirmed_chain\.steps/i);
+  });
+
+  it('requires Phase B user handoff with explicit status and next-step guidance', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/Phase B User Handoff/i);
+    expect(source).toMatch(/Current status/i);
+    expect(source).toMatch(/Scope lock/i);
+    expect(source).toMatch(/Next step/i);
+    expect(source).toMatch(/Resume command/i);
+    expect(source).toMatch(/do not stop at "focus lock completed"/i);
+  });
+
+  it('uses --repo-path in rule-lab command examples', async () => {
+    const { source } = await readSkills();
+    const commandBlocks = extractBashBlocks(source).join('\n');
+    expect(commandBlocks).toMatch(/rule-lab discover --repo-path/i);
+    expect(commandBlocks).toMatch(/rule-lab analyze --repo-path/i);
+    expect(commandBlocks).toMatch(/rule-lab review-pack --repo-path/i);
+    expect(commandBlocks).toMatch(/rule-lab curate --repo-path/i);
+    expect(commandBlocks).toMatch(/rule-lab promote --repo-path/i);
+    expect(commandBlocks).not.toMatch(/rule-lab\s+[a-z-]+\s+--repo\s/i);
   });
 
   it('requires executable tool evidence in live mode sections', async () => {

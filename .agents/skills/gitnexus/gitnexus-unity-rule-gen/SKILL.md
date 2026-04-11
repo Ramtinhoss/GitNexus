@@ -99,7 +99,7 @@ If a gap cannot be expressed safely with current kinds, mark it as `needs new bi
 Suggested commands:
 
 ```bash
-gitnexus rule-lab discover --repo "$REPO_ID"
+gitnexus rule-lab discover --repo-path "$REPO_PATH"
 ```
 
 If this run already exists, do not reinitialize; load existing artifacts and continue.
@@ -120,6 +120,17 @@ Write lock result to:
 
 - `slice-plan.json` focus history
 - `progress.json.current_slice_id`
+
+### Phase B User Handoff (mandatory)
+
+After focus lock, always return a user-facing handoff before moving on:
+
+1. `Current status`: `checkpoint_phase`, `current_slice_id`, and focused `gap_type/gap_subtype`.
+2. `Scope lock`: concrete file/symbol constraints now in effect.
+3. `Next step`: immediate action in Phase C (what will run next, and why).
+4. `Resume command`: a concrete command that can continue this slice from current state.
+
+If the loop pauses right after Phase B, do not stop at "focus lock completed". The response must include both status and next-step guidance.
 
 No implicit "run all slices" behavior. Single-slice only.
 
@@ -150,7 +161,7 @@ Generate rule payload for selected candidates in this slice only.
 Suggested command:
 
 ```bash
-gitnexus rule-lab analyze --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
+gitnexus rule-lab analyze --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
 ```
 
 ### C4 Compile/analyze and verify
@@ -158,9 +169,9 @@ gitnexus rule-lab analyze --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLIC
 Execute compile + analyze + verification in sequence:
 
 ```bash
-gitnexus rule-lab review-pack --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
-gitnexus rule-lab curate --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLICE_ID" --input-path "$CURATION_JSON_PATH"
-gitnexus rule-lab promote --repo "$REPO_ID" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
+gitnexus rule-lab review-pack --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
+gitnexus rule-lab curate --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id "$SLICE_ID" --input-path "$CURATION_JSON_PATH"
+gitnexus rule-lab promote --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
 ```
 
 Then reindex target repo with intended analyze scope/options.
