@@ -10,6 +10,7 @@ import { promoteCuratedRules } from '../rule-lab/promote.js';
 import { runRuleLabRegress } from '../rule-lab/regress.js';
 import { compileRules } from '../rule-lab/compile.js';
 import { enforceCoverageGate } from '../gap-lab/coverage-gate.js';
+import { enforceRunArtifactParity } from '../gap-lab/parity-gate.js';
 
 const RULE_LAB_COMMANDS = ['discover', 'analyze', 'review-pack', 'curate', 'promote', 'regress'] as const;
 
@@ -134,6 +135,19 @@ export async function ruleLabDiscoverCommand(options: { repoPath?: string; scope
 
 export async function ruleLabAnalyzeCommand(options: { repoPath?: string; runId: string; sliceId: string }): Promise<void> {
   const repoPath = resolveRepoPath(options?.repoPath);
+  if (/[<>]/.test(options.runId) || /[<>]/.test(options.sliceId)) {
+    throw new Error('Invalid run/slice id: placeholder values are not allowed');
+  }
+
+  const parity = await enforceRunArtifactParity({
+    repoPath,
+    runId: options.runId,
+    sliceId: options.sliceId,
+  });
+  if (parity.blocked) {
+    throw new Error(`C0 blocked: artifact_parity_mismatch (${parity.reason})`);
+  }
+
   const coverage = await enforceCoverageGate({
     repoPath,
     runId: options.runId,
