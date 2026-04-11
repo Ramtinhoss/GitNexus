@@ -83,6 +83,7 @@
 > - Unity runtime process 架构变更（新增 edge type、新增 process 阶段）
 > - Shared contract 接口变更
 > - `query/context` 默认返回契约或 `response_profile` 升级路径变更
+> - `gitnexus-unity-rule-gen` 的 phase gate/工件契约变更（如 C0 parity、C2.6 coverage、balanced-slim 工件形态、候选 reason_code）
 >
 > 检查方式：阅读对应源文件，确认 skill 中的示例、字段说明、工作流步骤与当前实现一致。
 

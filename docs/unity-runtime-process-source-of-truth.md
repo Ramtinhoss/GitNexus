@@ -123,6 +123,10 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 2. gap-lab 产物路径为 `.gitnexus/gap-lab/runs/<run_id>/...`，用于跨会话恢复（focus、checkpoint、inventory、decision、slice evidence）。
 3. query-time runtime closure remains graph-only；gap-lab 不改变 `runtime_chain_verify=on-demand` 的 graph-only closure 语义。
 4. 当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，必须 parity rerun 后再做 closure 结论（无论是否经过 gap-lab authoring）。
+5. C1 发现流程采用穷尽链路：`C1a lexical universe -> C1b scope classification -> C1c symbol resolution -> C1d missing-edge verification`，用户线索仅作为 seed，不是排它检索范围。
+6. C0 parity gate 为 analyze 前置：`gap-lab` 与 `rules/lab` 的同 run/slice 工件不一致时必须阻断。
+7. C2.6 coverage gate 为 C3 前置：`processed_user_matches == user_raw_matches` 才允许进入 rule generation；否则标记 `coverage_incomplete` 并阻断。
+8. Gap-lab C1 持久化采用 balanced-slim 工件模型：`slice.json`、`slice.candidates.jsonl`、`inventory.jsonl`、`decisions.jsonl`；不保留 standalone universe/scope/coverage 工件。
 
 ## 3. 设计与实现对照（阶段）
 
