@@ -183,6 +183,32 @@ Discovery policy is exhaustive semantic-first + graph-missing verification:
 Do not rely on user clue files as exclusive search scope.
 Do not use graph-only missing edges as sole discovery source.
 
+### C1 Performance-First Retrieval (mandatory)
+
+For large Unity repos, execute C1 with a two-stage path. Do not start with full-repo Python file walks.
+
+1. **Stage 1 lexical prefilter (fast, repo-wide):**
+   - Use `rg` to collect raw `Callback +=` hits and candidate files.
+   - Example:
+
+```bash
+HITS="$(mktemp)"
+FILES="$(mktemp)"
+rg -n --glob '*.cs' '\.Callback\s*\+=' Assets > "$HITS"
+cut -d: -f1 "$HITS" | sort -u > "$FILES"
+```
+
+2. **Stage 2 targeted semantic resolution (only candidate files):**
+   - Parse only files from `$FILES` to resolve source/handler symbols and scope.
+   - Preserve `third_party` rows in artifacts; do not silently drop them.
+   - If needed, shard candidate files (`split -l 100`) and merge results.
+
+3. **Live evidence requirement for performance:**
+   - Record `hit_lines`, `candidate_files`, and stage timings in C1 output summary.
+
+4. **Forbidden discovery pattern (unless user explicitly asks exploratory brute-force):**
+   - `Path('.').rglob('*.cs')` / full-repo Python scans before lexical prefilter.
+
 C1 persistence uses a **balanced-slim** artifact model:
 
 1. Persist per-candidate lifecycle rows in `slices/$SLICE_ID.candidates.jsonl` (`slice.candidates.jsonl`).
@@ -190,11 +216,39 @@ C1 persistence uses a **balanced-slim** artifact model:
 3. Keep slice summary in `slices/$SLICE_ID.json`.
 4. Keep no standalone universe/scope/coverage artifacts.
 
+### C1 Timeout Protection Workflow (after performance path)
+
+Apply timeout policy only after using the performance-first path above.
+
+1. Recommended timeouts:
+   - Stage 1 lexical prefilter (`rg`): `10-30s`
+   - Stage 2 targeted semantic parse: `30-120s`
+2. On timeout:
+   - first narrow/shard scope and retry once;
+   - then persist `blocked` with explicit reason (`discovery_timeout`) and command evidence.
+3. Do not treat timeout as success:
+   - no C2/C3 transition with partial unknown coverage;
+   - if partial output exists, mark unresolved user-code matches and fail coverage gate.
+
 ### C2 Candidate classification and confirmation
 
 1. Apply confidence thresholds.
 2. Append decisions to `decisions.jsonl`.
 3. Mark rejected or deferred candidates with explicit `reason_code`.
+
+### C2 Fixed Bucket Summary (mandatory)
+
+To avoid hit-count ambiguity, C2 output must always include fixed buckets:
+
+1. `third_party_excluded`
+2. `unresolvable_handler_symbol`
+3. `accepted`
+
+Requirements:
+
+1. Persist bucket counts in slice summary (`slices/$SLICE_ID.json`).
+2. Include one user-code example path for each non-zero reject bucket when available.
+3. Keep bucket names stable; do not rename per run.
 
 ### C2.6 Coverage gate (mandatory before C3)
 
@@ -233,6 +287,19 @@ Suggested command:
 ```bash
 gitnexus rule-lab analyze --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
 ```
+
+### C3 Pre-Generation Lint (mandatory for `method_triggers_method`)
+
+Before `rule-lab analyze/curate/promote`, run lint on curated bindings:
+
+1. `source_class_pattern` / `target_class_pattern` MUST NOT use symbol-id shape (`Class:...`).
+2. `source_method` / `target_method` MUST be plain method names (no regex anchors like `^...$`).
+
+If lint fails:
+
+1. block C3 with explicit reason `binding_lint_failed`;
+2. record failing fields and candidate ids into `decisions.jsonl`;
+3. do not advance to C4/C5 until corrected.
 
 ### C4 Compile/analyze and verify
 

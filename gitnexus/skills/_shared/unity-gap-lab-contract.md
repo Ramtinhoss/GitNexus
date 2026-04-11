@@ -67,6 +67,10 @@ Responsibilities:
   closure verification, not as the sole discovery source.
 - Discovery must be exhaustive before C3: C1a lexical universe -> C1b scope
   classification -> C1c symbol resolution -> C1d missing-edge verification.
+- Discovery execution order is performance-first: run lexical prefilter before
+  semantic parsing; avoid full-repo Python file walks as first action.
+- C2 must emit fixed classification buckets (`third_party_excluded`,
+  `unresolvable_handler_symbol`, `accepted`) to avoid hit-count ambiguity.
 - User clues can seed patterns but are not exclusive search scope.
 - Before C1, readiness must be persisted as machine-checkable state
   (`phase_b_clues_confirmed` decision + `current_slice_id` pointer + `in_progress` status).
@@ -76,6 +80,11 @@ Responsibilities:
   otherwise slice status is `blocked` with reason `coverage_incomplete`.
 - Artifact model is balanced-slim: keep `slice.json`, `slice.candidates.jsonl`,
   `inventory.jsonl`, and `decisions.jsonl`; no standalone universe/scope/coverage artifacts.
+- For `method_triggers_method`, C3 pre-generation lint is mandatory:
+  class patterns must not use `Class:...` symbol-id shape; method fields must be
+  plain names (no regex-anchor form like `^...$`).
+- Timeout handling: after performance-first narrowing, retry once with shard/narrow scope;
+  if still timed out, persist explicit `blocked` reason and do not advance to C2/C3.
 
 ## User-Facing Handoff Contract
 
