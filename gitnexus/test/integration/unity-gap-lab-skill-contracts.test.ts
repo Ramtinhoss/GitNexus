@@ -108,7 +108,8 @@ describe('unity gap-lab skill contracts', () => {
       [/(pending\|in_progress\|blocked\|rule_generated\|indexed\|verified\|done)/i, 'status enum contract'],
       [/\.gitnexus\/gap-lab\/runs\/<run_id>\//i, 'persistence tree root'],
       [/User-Facing Handoff Contract/i, 'phase B user handoff contract heading'],
-      [/resumable next command/i, 'phase B handoff requires resumable next command']
+      [/request for user clues|user clues/i, 'phase B handoff requires clue request'],
+      [/quality gate/i, 'phase B handoff requires quality gate']
     ]);
 
     expect(installedContract).toContain('Unity Gap-Lab Contract');
@@ -132,14 +133,18 @@ describe('unity gap-lab skill contracts', () => {
     expect(source).toMatch(/confirmed_chain\.steps/i);
   });
 
-  it('requires Phase B user handoff with explicit status and next-step guidance', async () => {
+  it('requires Phase B user handoff to be user-facing and clue-driven', async () => {
     const { source } = await readSkills();
     expect(source).toMatch(/Phase B User Handoff/i);
-    expect(source).toMatch(/Current status/i);
-    expect(source).toMatch(/Scope lock/i);
+    expect(source).toMatch(/Focus summary/i);
+    expect(source).toMatch(/scope constraints/i);
     expect(source).toMatch(/Next step/i);
-    expect(source).toMatch(/Resume command/i);
+    expect(source).toMatch(/Required user clues/i);
+    expect(source).toMatch(/Quality gate/i);
     expect(source).toMatch(/do not stop at "focus lock completed"/i);
+    expect(source).toMatch(/Do not expose `checkpoint_phase`/i);
+    expect(source).not.toMatch(/Current status`: `checkpoint_phase`/i);
+    expect(source).not.toMatch(/Resume command`: a concrete command/i);
   });
 
   it('uses --repo-path in rule-lab command examples', async () => {

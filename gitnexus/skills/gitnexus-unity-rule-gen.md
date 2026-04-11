@@ -125,12 +125,13 @@ Write lock result to:
 
 After focus lock, always return a user-facing handoff before moving on:
 
-1. `Current status`: `checkpoint_phase`, `current_slice_id`, and focused `gap_type/gap_subtype`.
-2. `Scope lock`: concrete file/symbol constraints now in effect.
-3. `Next step`: immediate action in Phase C (what will run next, and why).
-4. `Resume command`: a concrete command that can continue this slice from current state.
+1. `Focus summary`: focused `gap_type/gap_subtype` and concrete scope constraints now in effect.
+2. `Next step`: what the agent will do in Phase C for this slice.
+3. `Required user clues`: ask for 1-3 concrete clues/examples that anchor this slice (symbol/file/path, expected missing hop, observed runtime symptom).
+4. `Quality gate`: without user clues, do not claim high-quality gap pattern output; ask user to provide clues or explicitly accept an exploratory low-confidence pass.
 
-If the loop pauses right after Phase B, do not stop at "focus lock completed". The response must include both status and next-step guidance.
+If the loop pauses right after Phase B, do not stop at "focus lock completed". The response must include focus + next-step + requested clues.
+Do not expose `checkpoint_phase`, `current_slice_id`, or resumable shell commands in normal handoff unless the user explicitly asks for debug state.
 
 No implicit "run all slices" behavior. Single-slice only.
 

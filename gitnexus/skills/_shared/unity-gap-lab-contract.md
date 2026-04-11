@@ -70,10 +70,14 @@ Responsibilities:
 After Phase B focus lock, the agent must return a handoff block to the user
 that includes:
 
-- current checkpoint and focused slice id;
-- active scope constraints (file/symbol/module hints);
+- focus summary (gap_type/gap_subtype + active scope constraints);
 - immediate next step in Phase C;
-- resumable next command.
+- explicit request for user clues needed to keep candidate quality high;
+- quality gate warning when clues are missing.
 
-A "focus lock completed" message without explicit status + next-step guidance
+A "focus lock completed" message without focus + next-step + clue request
 is contract-incomplete.
+
+Default user handoff should avoid internal state dumps (`checkpoint_phase`,
+`current_slice_id`) and resumable shell commands unless the user explicitly
+asks for debug/recovery details.
