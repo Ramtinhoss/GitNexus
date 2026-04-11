@@ -11,34 +11,23 @@ import { verifyMissingEdges } from '../../src/gap-lab/missing-edge-verifier.js';
 
 const tempDirs: string[] = [];
 const here = path.dirname(fileURLToPath(import.meta.url));
-const fixtureRoot = path.resolve(here, '..', 'fixtures', 'gap-lab-exhaustive');
+const fixtureManifestPath = path.resolve(here, '..', 'fixtures', 'gap-lab-exhaustive', 'files.json');
 
 async function writeJson(filePath: string, value: unknown): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf-8');
 }
 
-async function copyDir(source: string, target: string): Promise<void> {
-  await fs.mkdir(target, { recursive: true });
-  const entries = await fs.readdir(source, { withFileTypes: true });
-  for (const entry of entries) {
-    const sourcePath = path.join(source, entry.name);
-    const targetPath = path.join(target, entry.name);
-    if (entry.isDirectory()) {
-      await copyDir(sourcePath, targetPath);
-      continue;
-    }
-    if (entry.isFile()) {
-      await fs.mkdir(path.dirname(targetPath), { recursive: true });
-      await fs.copyFile(sourcePath, targetPath);
-    }
-  }
-}
-
 async function createRepoFromFixture(): Promise<string> {
   const repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'gap-lab-fixture-'));
   tempDirs.push(repoPath);
-  await copyDir(fixtureRoot, repoPath);
+
+  const files = JSON.parse(await fs.readFile(fixtureManifestPath, 'utf-8')) as Array<{ path: string; content: string }>;
+  for (const file of files) {
+    const absPath = path.join(repoPath, file.path);
+    await fs.mkdir(path.dirname(absPath), { recursive: true });
+    await fs.writeFile(absPath, file.content, 'utf-8');
+  }
   return repoPath;
 }
 
@@ -274,4 +263,3 @@ describe('gap-lab exhaustive discovery', () => {
     ).rejects.toThrow(/placeholder values are not allowed/i);
   });
 });
-
