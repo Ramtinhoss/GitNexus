@@ -67,6 +67,7 @@ Contract terms:
 - `discovery_scope`: repo search scope for C1; default is `full_user_code`.
 - `search_seeds`: optional user hints that accelerate exhaustive discovery.
 - `validation_exemplars`: optional example matches used to validate/refine candidate quality after discovery.
+- `explicit_discovery_scope_override`: explicit user-selected narrowing mode; allowed values are `full_user_code`, `path_prefix_override`, and `module_override`.
 
 - Focus lock is mandatory before discovery when `gap_type/gap_subtype` are missing.
 - Each loop executes one slice only; no implicit run-all-slices behavior.
@@ -79,6 +80,7 @@ Contract terms:
 - C2 must emit fixed classification buckets (`third_party_excluded`,
   `unresolvable_handler_symbol`, `accepted`) to avoid hit-count ambiguity.
 - User clues can provide `search_seeds` and `validation_exemplars`, but are not exclusive search scope and must not redefine `discovery_scope` by example locality alone.
+- Inferred exemplar/module/community locality must not narrow scope; only `explicit_discovery_scope_override` may replace the default `full_user_code` discovery scope.
 - Before C1, readiness must be persisted as machine-checkable state
   (`phase_b_clues_confirmed` decision + `current_slice_id` pointer + `in_progress` status).
 - Updating `progress.json.next_command` text alone is not a valid phase transition.

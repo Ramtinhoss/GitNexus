@@ -214,6 +214,13 @@ describe('unity gap-lab skill contracts', () => {
     expect(source).not.toMatch(/anchor this slice/i);
   });
 
+  it('allows scope narrowing only as explicit user override', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/explicit_discovery_scope_override/i);
+    expect(source).toMatch(/full_user_code/i);
+    expect(source).not.toMatch(/inferred community.*scope/i);
+  });
+
   it('uses --repo-path in rule-lab command examples', async () => {
     const { source } = await readSkills();
     const commandBlocks = extractBashBlocks(source).join('\n');
