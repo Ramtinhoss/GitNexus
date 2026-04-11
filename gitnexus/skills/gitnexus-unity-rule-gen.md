@@ -135,9 +135,41 @@ Do not expose `checkpoint_phase`, `current_slice_id`, or resumable shell command
 
 No implicit "run all slices" behavior. Single-slice only.
 
+### Phase B.5 Execution Readiness Gate (mandatory before C1)
+
+Before entering C1, persist a machine-checkable "ready for execution" state.
+
+1. Require either:
+   - non-empty user clues (symbol/file/path + missing hop or runtime symptom), or
+   - explicit user consent for exploratory low-confidence pass.
+2. Append a readiness decision into `decisions.jsonl` with:
+   - `decision_type: "phase_b_clues_confirmed"`
+   - `slice_id`, `gap_type`, `gap_subtype`
+   - `clue_refs` (or `exploratory_pass: true`)
+3. Move focused slice to execution pointer:
+   - `slice-plan.json.current_slice_id = <focused slice>`
+   - `slice-plan.slices[].status: pending -> in_progress`
+   - `progress.json.current_slice_id = <focused slice>`
+   - `progress.json.checkpoint_phase = "phase_b_ready_for_c1"`
+4. If readiness conditions are not met, set slice `blocked` with explicit reason and stop.
+
+`next_command` text updates alone are never considered progress.
+
 ## Phase C Single-Slice Full Loop
 
 Single-slice loop only. Do not process other slices in this phase.
+
+### C0 Run Artifact Parity Check (mandatory before C1/C3)
+
+Keep `gap-lab` and `rule-lab` run artifacts in sync for the same `run_id/slice_id`.
+
+1. Validate existence of:
+   - `.gitnexus/gap-lab/runs/$RUN_ID/slices/$SLICE_ID.json`
+   - `.gitnexus/rules/lab/runs/$RUN_ID/slices/$SLICE_ID/slice.json`
+2. If `rules/lab` slice artifact is missing, create/refresh it from focused slice metadata before analyze.
+3. If parity cannot be established, mark slice `blocked` and stop with explicit mismatch reason.
+
+Do not claim C1/C3 started when parity check fails.
 
 ### C1 Discovery (semantic-first)
 
@@ -155,9 +187,29 @@ Do not use graph-only missing edges as sole discovery source.
 2. Append decisions to `decisions.jsonl`.
 3. Mark rejected candidates with explicit reason.
 
+### C2.5 Aggregation mode confirmation (mandatory when subtype duplicates)
+
+After C2 and before C3, decide rule granularity for this slice.
+
+1. Trigger condition: if current slice has `>=2` accepted candidates with the same `gap_subtype`, ask user once:
+   - `per_anchor_rules`: produce one rule per source/target anchor pair.
+   - `aggregate_single_rule`: merge homogeneous anchor pairs into one `rule_id`.
+2. Homogeneous merge requirement: same `gap_type`, same `gap_subtype`, same suggested binding kind, and compatible binding fields.
+3. If candidates are not safely mergeable, force `per_anchor_rules` and record the forcing reason.
+4. Persist aggregation decision to `decisions.jsonl` with:
+   - `decision_type: "rule_aggregation_mode"`
+   - `gap_type`, `gap_subtype`, `aggregation_mode`
+   - `candidate_ids`
+   - `reason` (required when force-split is applied)
+
 ### C3 Rule generation (single slice)
 
 Generate rule payload for selected candidates in this slice only.
+
+Rule generation contract:
+
+1. `aggregation_mode=per_anchor_rules`: each anchor pair maps to a distinct `rule_id` and promoted YAML file.
+2. `aggregation_mode=aggregate_single_rule`: selected homogeneous anchor pairs map to one `rule_id` with merged bindings/evidence.
 
 Suggested command:
 

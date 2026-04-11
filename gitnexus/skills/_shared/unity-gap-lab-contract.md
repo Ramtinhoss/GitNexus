@@ -64,6 +64,10 @@ Responsibilities:
 - Each loop executes one slice only; no implicit run-all-slices behavior.
 - Discovery is semantic-first; graph is used for missing-edge verification and
   closure verification, not as the sole discovery source.
+- Before C1, readiness must be persisted as machine-checkable state
+  (`phase_b_clues_confirmed` decision + `current_slice_id` pointer + `in_progress` status).
+- Updating `progress.json.next_command` text alone is not a valid phase transition.
+- `gap-lab` and `rules/lab` artifacts for the same `run_id/slice_id` must be kept in parity before C1/C3.
 
 ## User-Facing Handoff Contract
 

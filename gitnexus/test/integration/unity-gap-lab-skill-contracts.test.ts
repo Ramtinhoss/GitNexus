@@ -73,6 +73,34 @@ describe('unity gap-lab skill contracts', () => {
     expect(source).toMatch(/confidence\s*<\s*0\.5/i);
   });
 
+  it('requires subtype-level aggregation mode confirmation when duplicate candidates exist', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/Aggregation mode confirmation/i);
+    expect(source).toMatch(/>=2.*accepted candidates.*same.*gap_subtype/i);
+    expect(source).toMatch(/per_anchor_rules/i);
+    expect(source).toMatch(/aggregate_single_rule/i);
+    expect(source).toMatch(/decision_type:\s*"rule_aggregation_mode"/i);
+    expect(source).toMatch(/candidate_ids/i);
+    expect(source).toMatch(/force.*per_anchor_rules|force-split/i);
+  });
+
+  it('requires execution-readiness state before entering C1', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/Execution Readiness Gate/i);
+    expect(source).toMatch(/phase_b_clues_confirmed/i);
+    expect(source).toMatch(/pending\s*->\s*in_progress/i);
+    expect(source).toMatch(/phase_b_ready_for_c1/i);
+    expect(source).toMatch(/next_command.*alone.*never considered progress/i);
+  });
+
+  it('requires gap-lab and rules-lab artifact parity before C1\/C3', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/Run Artifact Parity Check/i);
+    expect(source).toMatch(/\.gitnexus\/gap-lab\/runs\/\$RUN_ID\/slices\/\$SLICE_ID\.json/i);
+    expect(source).toMatch(/\.gitnexus\/rules\/lab\/runs\/\$RUN_ID\/slices\/\$SLICE_ID\/slice\.json/i);
+    expect(source).toMatch(/mark slice `blocked`.*mismatch reason/i);
+  });
+
   it('requires .gitnexus/gap-lab persistence layout fields in skill contract', async () => {
     const { source } = await readSkills();
 
@@ -109,7 +137,10 @@ describe('unity gap-lab skill contracts', () => {
       [/\.gitnexus\/gap-lab\/runs\/<run_id>\//i, 'persistence tree root'],
       [/User-Facing Handoff Contract/i, 'phase B user handoff contract heading'],
       [/request for user clues|user clues/i, 'phase B handoff requires clue request'],
-      [/quality gate/i, 'phase B handoff requires quality gate']
+      [/quality gate/i, 'phase B handoff requires quality gate'],
+      [/phase_b_clues_confirmed/i, 'execution readiness decision marker'],
+      [/next_command.*alone.*not a valid phase transition/i, 'next_command-only transition forbidden'],
+      [/gap-lab.*rules\/lab.*parity/i, 'cross-artifact parity requirement']
     ]);
 
     expect(installedContract).toContain('Unity Gap-Lab Contract');
