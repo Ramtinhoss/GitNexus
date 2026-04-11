@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { CandidateAuditResult } from './candidate-audit.js';
 import { ensureBalancedSlimArtifacts } from './slim-artifacts.js';
 
 export interface CoverageGateInput {
@@ -15,6 +16,7 @@ export interface CoverageGateResult {
   processedUserMatches: number;
   reason?: 'coverage_incomplete';
   slicePath?: string;
+  candidateAudit?: CandidateAuditResult;
 }
 
 interface GapLabSliceDoc {
