@@ -243,6 +243,7 @@ Apply timeout policy only after using the performance-first path above.
 1. Apply confidence thresholds.
 2. Append decisions to `decisions.jsonl`.
 3. Mark rejected or deferred candidates with explicit `reason_code`.
+4. Keep `promotion_backlog` distinct from rejection: it remains eligible for later promotion and must not be encoded as a rejection bucket.
 
 ### C2 Fixed Bucket Summary (mandatory)
 

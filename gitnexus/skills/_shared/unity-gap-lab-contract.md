@@ -89,6 +89,7 @@ Contract terms:
   otherwise slice status is `blocked` with reason `coverage_incomplete`.
 - Artifact model is balanced-slim: keep `slice.json`, `slice.candidates.jsonl`,
   `inventory.jsonl`, and `decisions.jsonl`; no standalone universe/scope/coverage artifacts.
+- `promotion_backlog` is an eligible candidate state, not a rejection reason; backlog choice must stay separate from validity.
 - For `method_triggers_method`, C3 pre-generation lint is mandatory:
   class patterns must not use `Class:...` symbol-id shape; method fields must be
   plain names (no regex-anchor form like `^...$`).

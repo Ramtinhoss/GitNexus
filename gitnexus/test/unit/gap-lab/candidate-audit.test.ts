@@ -10,4 +10,14 @@ describe('gap-lab candidate audit', () => {
 
     expect(result.blocked).toBe(true);
   });
+
+  it('treats promotion_backlog as eligible rather than rejected', async () => {
+    const result = auditCandidateRows({
+      discoveryScopeMode: 'full_user_code',
+      rows: [{ scopeClass: 'user_code', status: 'promotion_backlog' }],
+    });
+
+    expect(result.blocked).toBe(false);
+    expect(result.eligibleRows).toHaveLength(1);
+  });
 });
