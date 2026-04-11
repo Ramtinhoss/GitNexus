@@ -171,21 +171,38 @@ Keep `gap-lab` and `rule-lab` run artifacts in sync for the same `run_id/slice_i
 
 Do not claim C1/C3 started when parity check fails.
 
-### C1 Discovery (semantic-first)
+### C1 Discovery (exhaustive semantic-first)
 
-Discovery policy is semantic-first + graph-missing verification:
+Discovery policy is exhaustive semantic-first + graph-missing verification:
 
-1. Semantic detection proposes expected linkage candidates.
-2. Graph verification proves expected edge/path is currently missing.
-3. Only then append candidate into `inventory.jsonl`.
+1. **C1a repo-wide lexical universe**: scan the full repo scope for subtype pattern matches.
+2. **C1b scope classification**: classify each raw match as `user_code|third_party|unknown` with explicit reason.
+3. **C1c symbol resolution**: resolve candidate source/target symbols from lexical matches.
+4. **C1d missing-edge verification**: verify expected synthetic edge/path is absent before inventory acceptance.
 
+Do not rely on user clue files as exclusive search scope.
 Do not use graph-only missing edges as sole discovery source.
+
+C1 persistence uses a **balanced-slim** artifact model:
+
+1. Persist per-candidate lifecycle rows in `slices/$SLICE_ID.candidates.jsonl` (`slice.candidates.jsonl`).
+2. Keep run-level `inventory.jsonl` and `decisions.jsonl`.
+3. Keep slice summary in `slices/$SLICE_ID.json`.
+4. Keep no standalone universe/scope/coverage artifacts.
 
 ### C2 Candidate classification and confirmation
 
 1. Apply confidence thresholds.
 2. Append decisions to `decisions.jsonl`.
-3. Mark rejected candidates with explicit reason.
+3. Mark rejected or deferred candidates with explicit `reason_code`.
+
+### C2.6 Coverage gate (mandatory before C3)
+
+Before C3, enforce a hard coverage gate for user-code matches:
+
+1. Require `processed_user_matches == user_raw_matches`.
+2. If coverage check fails, set slice status `blocked`, write `coverage_incomplete`, and stop.
+3. C3 remains blocked on coverage_incomplete until unresolved user-code matches are resolved or explicitly waived.
 
 ### C2.5 Aggregation mode confirmation (mandatory when subtype duplicates)
 

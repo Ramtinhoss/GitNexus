@@ -101,6 +101,34 @@ describe('unity gap-lab skill contracts', () => {
     expect(source).toMatch(/mark slice `blocked`.*mismatch reason/i);
   });
 
+  it('requires exhaustive discovery sub-steps before candidate selection', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/C1a.*repo-wide lexical universe/i);
+    expect(source).toMatch(/C1b.*scope classification/i);
+    expect(source).toMatch(/C1c.*symbol resolution/i);
+    expect(source).toMatch(/C1d.*missing-edge verification/i);
+    expect(source).toMatch(/Do not rely on user clue files as exclusive search scope/i);
+  });
+
+  it('requires coverage gate before C3 and reason_code on non-accepted candidates', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/coverage gate/i);
+    expect(source).toMatch(/processed_user_matches\s*==\s*user_raw_matches/i);
+    expect(source).toMatch(/C3.*blocked.*coverage_incomplete/i);
+    expect(source).toMatch(/reason_code/i);
+    expect(source).toMatch(/rejected|deferred/i);
+  });
+
+  it('requires balanced slim artifacts without per-stage standalone files', async () => {
+    const { source } = await readSkills();
+    expect(source).toMatch(/balanced[- ]slim/i);
+    expect(source).toMatch(/slice\.json/i);
+    expect(source).toMatch(/slice\.candidates\.jsonl/i);
+    expect(source).toMatch(/inventory\.jsonl/i);
+    expect(source).toMatch(/decisions\.jsonl/i);
+    expect(source).toMatch(/no standalone universe\/scope\/coverage artifacts/i);
+  });
+
   it('requires .gitnexus/gap-lab persistence layout fields in skill contract', async () => {
     const { source } = await readSkills();
 

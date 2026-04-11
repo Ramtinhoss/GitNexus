@@ -57,6 +57,7 @@ Responsibilities:
 - `inventory.jsonl`: append-only gap candidates
 - `decisions.jsonl`: user confirmation/rejection decisions
 - `slices/<slice_id>.json`: slice-local evidence, generated rules, verification outcome
+- `slices/<slice_id>.candidates.jsonl`: per-candidate lifecycle (`raw_match`, `resolved`, `rejected`, `deferred`, `accepted`) with `reason_code` on non-accepted rows
 
 ## Control Policy
 
@@ -64,10 +65,17 @@ Responsibilities:
 - Each loop executes one slice only; no implicit run-all-slices behavior.
 - Discovery is semantic-first; graph is used for missing-edge verification and
   closure verification, not as the sole discovery source.
+- Discovery must be exhaustive before C3: C1a lexical universe -> C1b scope
+  classification -> C1c symbol resolution -> C1d missing-edge verification.
+- User clues can seed patterns but are not exclusive search scope.
 - Before C1, readiness must be persisted as machine-checkable state
   (`phase_b_clues_confirmed` decision + `current_slice_id` pointer + `in_progress` status).
 - Updating `progress.json.next_command` text alone is not a valid phase transition.
 - `gap-lab` and `rules/lab` artifacts for the same `run_id/slice_id` must be kept in parity before C1/C3.
+- Coverage gate before C3 is mandatory: `processed_user_matches == user_raw_matches`;
+  otherwise slice status is `blocked` with reason `coverage_incomplete`.
+- Artifact model is balanced-slim: keep `slice.json`, `slice.candidates.jsonl`,
+  `inventory.jsonl`, and `decisions.jsonl`; no standalone universe/scope/coverage artifacts.
 
 ## User-Facing Handoff Contract
 
