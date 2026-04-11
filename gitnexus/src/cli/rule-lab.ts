@@ -9,6 +9,7 @@ import { curateRuleLabSlice } from '../rule-lab/curate.js';
 import { promoteCuratedRules } from '../rule-lab/promote.js';
 import { runRuleLabRegress } from '../rule-lab/regress.js';
 import { compileRules } from '../rule-lab/compile.js';
+import { enforceCoverageGate } from '../gap-lab/coverage-gate.js';
 
 const RULE_LAB_COMMANDS = ['discover', 'analyze', 'review-pack', 'curate', 'promote', 'regress'] as const;
 
@@ -132,8 +133,20 @@ export async function ruleLabDiscoverCommand(options: { repoPath?: string; scope
 }
 
 export async function ruleLabAnalyzeCommand(options: { repoPath?: string; runId: string; sliceId: string }): Promise<void> {
+  const repoPath = resolveRepoPath(options?.repoPath);
+  const coverage = await enforceCoverageGate({
+    repoPath,
+    runId: options.runId,
+    sliceId: options.sliceId,
+  });
+  if (coverage.enforced && coverage.blocked) {
+    throw new Error(
+      `C3 blocked: coverage_incomplete (processed_user_matches=${coverage.processedUserMatches}, user_raw_matches=${coverage.userRawMatches})`,
+    );
+  }
+
   const result = await analyzeRuleLabSlice({
-    repoPath: resolveRepoPath(options?.repoPath),
+    repoPath,
     runId: options.runId,
     sliceId: options.sliceId,
   });
