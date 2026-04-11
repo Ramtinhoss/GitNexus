@@ -133,7 +133,7 @@ Phase B terms are distinct and must stay distinct:
 
 After focus lock, always return a user-facing handoff before moving on:
 
-1. `Focus summary`: focused `gap_type/gap_subtype` (`slice_focus`) plus current `discovery_scope`.
+1. `Focus summary`: focused `gap_type/gap_subtype` (`slice_focus`) plus current `discovery_scope` and any active scope constraints.
 2. `Next step`: what the agent will do in Phase C for this slice.
 3. `Required user clues`: ask for 1-3 concrete inputs split into optional `search_seeds` (symbol/file/path, expected missing hop, observed runtime symptom) and optional `validation_exemplars` (known example matches used for validation only).
 4. `Quality gate`: without user clues, do not claim high-quality gap pattern output; ask user to provide clues or explicitly accept an exploratory low-confidence pass, but keep `discovery_scope` independent from example locality. Inferred exemplar/module/community locality must not narrow scope without `explicit_discovery_scope_override`.

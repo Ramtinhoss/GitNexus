@@ -16,6 +16,8 @@ All notable changes to GitNexus will be documented in this file.
 - Updated Unity runtime source-of-truth and guide docs to state that gap-lab is an offline authoring/orchestration layer and query-time runtime closure remains graph-only.
 - Updated `rule-lab analyze` preflight: enforce C0 run-artifact parity and C2.6 coverage gate before C3 candidate generation.
 - Updated gap-lab persistence contract to balanced-slim artifacts with `slices/<slice_id>.candidates.jsonl` and explicit non-accepted `reason_code` semantics.
+- Added clue and scope contract correction for gap-lab: split `slice_focus`, `discovery_scope`, `search_seeds`, and `validation_exemplars`, and require explicit scope overrides before narrowing.
+- Added candidate-derived coverage audit and default-scope anti-exemplar filtering guards, including `candidate_audit_drift` blocking and `promotion_backlog` eligibility semantics.
 
 ## [1.5.0] - 2026-04-06
 

@@ -246,4 +246,9 @@ describe('unity gap-lab skill contracts', () => {
     expect(changelog).toMatch(/gap-lab slice-driven unity rule generation workflow/i);
     expect(changelog).toMatch(/shared unity gap-lab contract|gap-lab state ownership/i);
   });
+
+  it('tracks clue and scope contract correction in changelog', async () => {
+    const changelog = await readRepoFile('gitnexus/CHANGELOG.md');
+    expect(changelog).toMatch(/clue and scope contract correction/i);
+  });
 });
