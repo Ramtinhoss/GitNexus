@@ -22,6 +22,7 @@ Use this order: `discovery -> seed narrowing -> closure verification`.
 3. Do not conclude "no runtime chain" from empty `processes` alone.
 4. If Unity evidence exists, continue stitching:
    - `processes`
+   - `resource_chains` for graph-backed `UNITY_ASSET_GUID_REF -> UNITY_GRAPH_NODE_SCRIPT_REF` bridges
    - `resourceBindings`
    - asset/meta mapping anchors
    - runtime candidate symbols
