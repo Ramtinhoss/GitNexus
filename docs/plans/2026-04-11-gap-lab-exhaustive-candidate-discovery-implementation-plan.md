@@ -16,14 +16,14 @@ Track execution state here. `executing-plans` updates this section in place.
 
 Task | Status | Facts
 --- | --- | ---
-Task 1 | pending | Contract fields and gates not yet codified in runtime schema
-Task 2 | pending | Exhaustive scanner module not implemented
-Task 3 | pending | Scope classifier and reason codes not implemented
-Task 4 | pending | Resolver + graph-missing verifier not integrated for exhaustive flow
-Task 5 | pending | Coverage gate enforcement not wired to C3 entry
-Task 6 | pending | Slim artifact writer not implemented
-Task 7 | pending | Tests for coverage/parity/no-silent-drop not implemented
-Task 8 | pending | Docs/skills/setup sync and parity checks not completed
+Task 1 | completed | Added exhaustive/coverage/reason_code contract clauses; skill-contract suite now passes (19/19)
+Task 2 | completed | Added rg-first exhaustive scanner + pattern library; unit tests pass (2/2)
+Task 3 | completed | Added scope classifier with deterministic reason_code + evidence; unit tests pass (3/3)
+Task 4 | completed | Added resolver + missing-edge verifier with ambiguity filtering; unit tests pass (3/3)
+Task 5 | completed | Added coverage gate + CLI pre-check; integration test confirms C3 blocking on incomplete coverage
+Task 6 | completed | Added slim-artifact writer + cleanup, integrated into coverage gate; slim artifact test passes
+Task 7 | completed | Added parity gate + anti-fake checks + exhaustive integration fixtures/tests; suite passes (7/7)
+Task 8 | completed | Docs/contracts/changelog synchronized; source/install parity diff clean; contract tests pass (23/23)
 
 ## Design Traceability Matrix
 
