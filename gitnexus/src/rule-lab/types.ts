@@ -59,6 +59,16 @@ export interface RuleLabCandidate {
     missing_hop?: string;
     evidence_anchor?: string;
   }>;
+  closure?: {
+    required_hops: string[];
+    failure_map: Record<string, RuntimeClaimFailureReason | string>;
+  };
+  claims?: {
+    guarantees: string[];
+    non_guarantees: string[];
+    next_action: string;
+  };
+  proposal_evidence_keys?: string[];
   evidence: {
     hops: RuleLabCandidateHop[];
   };

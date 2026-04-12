@@ -95,6 +95,10 @@ Contract terms:
   - `gap-lab .../<slice>.candidates.jsonl` stays the exhaustive candidate truth source.
   - `rules/lab .../candidates.jsonl` stores proposal candidates derived from accepted IDs + aggregation mode.
   - `rules/lab .../slice.json.source_gap_handoff` must persist accepted/backlog/reject summary so downstream can audit `universe -> accepted -> proposal`.
+  - proposal `binding_kind` must be derived from handoff (`default_binding_kinds` or accepted-candidate metadata), never hardcoded.
+  - `aggregate_single_rule` must preserve full accepted-anchor lineage (`source_gap_candidate_ids`) and merged bindings/evidence.
+  - proposal `confirmed_chain.steps` must be proposal-specific; copying mixed slice-wide chain is invalid.
+  - unresolved binding placeholders (`UnknownClass` / `UnknownMethod`) are forbidden in curation/promote outputs and must fail closed.
 - For `method_triggers_method`, C3 pre-generation lint is mandatory:
   class patterns must not use `Class:...` symbol-id shape; method fields must be
   plain names (no regex-anchor form like `^...$`).

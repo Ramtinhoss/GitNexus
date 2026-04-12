@@ -209,6 +209,10 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
    - `review-cards.md` 至少包含 `accepted_count`、`backlog_count`、`source_gap_candidate_ids`
    - `curation-input.json` 必须由 proposal candidates 自动生成并保证 `confirmed_chain.steps` 非空
    - 多候选切片必须持久化 `dsl-drafts.json`；`dsl-draft.json` 仅作为兼容别名（多候选时带 warning）
+   - proposal 的 `binding_kind` 必须从 handoff `default_binding_kinds` 或 accepted-candidate metadata 派生，禁止硬编码默认值
+   - `aggregate_single_rule` 必须保留全部 accepted anchors 的 lineage（`source_gap_candidate_ids`、merged bindings、guarantees）
+   - proposal-level closure evidence 必须 proposal-specific；不得直接复制混合 slice-wide chain
+   - unresolved binding 必须 fail-closed：`UnknownClass` / `UnknownMethod` 不得出现在 curation/promote artifact
 5. promote/compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配
 6. 规则族区分：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）
 

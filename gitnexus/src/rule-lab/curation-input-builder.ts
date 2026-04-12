@@ -43,41 +43,78 @@ function unique(values: string[]): string[] {
 function splitSymbol(symbol?: string): { className: string; methodName: string } {
   const raw = String(symbol || '').trim();
   const parts = raw.split('.');
-  if (parts.length >= 2) {
-    return {
-      className: parts[parts.length - 2] || 'UnknownClass',
-      methodName: parts[parts.length - 1] || 'UnknownMethod',
-    };
+  if (parts.length < 2) {
+    return { className: '', methodName: '' };
   }
-  return {
-    className: 'UnknownClass',
-    methodName: raw || 'UnknownMethod',
-  };
+  const className = String(parts[parts.length - 2] || '').trim();
+  const methodName = String(parts[parts.length - 1] || '').trim();
+  return { className, methodName };
+}
+
+function assertResolvedBindingParts(parts: { className: string; methodName: string }, side: 'source' | 'target', candidateId: string): void {
+  const className = String(parts.className || '').trim();
+  const methodName = String(parts.methodName || '').trim();
+  if (!className || !methodName) {
+    throw new Error(`binding_unresolved: ${side} symbol unresolved for candidate ${candidateId}`);
+  }
+  if (/^unknown/i.test(className) || /^unknown/i.test(methodName)) {
+    throw new Error(`binding_unresolved: ${side} symbol contains unknown placeholder for candidate ${candidateId}`);
+  }
 }
 
 function buildBinding(
   candidate: RuleLabCandidate,
   handoff: GapHandoffData,
 ): UnityResourceBinding[] {
-  const sourceId = candidate.source_gap_candidate_ids?.[0];
-  const row = handoff.accepted_candidates.find((item) => item.candidate_id === sourceId);
-  if (!row) return [];
-  const source = splitSymbol(row.source_anchor?.symbol);
-  const target = splitSymbol(row.target_anchor?.symbol);
-  return [{
-    kind: 'method_triggers_method',
-    source_class_pattern: source.className,
-    source_method: source.methodName,
-    target_class_pattern: target.className,
-    target_method: target.methodName,
-    description: `Derived from gap candidate ${row.candidate_id}`,
-  }];
+  const sourceIds = Array.isArray(candidate.source_gap_candidate_ids)
+    ? candidate.source_gap_candidate_ids
+    : [];
+  const rows = sourceIds
+    .map((sourceId) => handoff.accepted_candidates.find((item) => item.candidate_id === sourceId))
+    .filter((row): row is NonNullable<typeof row> => Boolean(row));
+  if (rows.length === 0) return [];
+  return rows.map((row) => {
+    const source = splitSymbol(row.source_anchor?.symbol);
+    const target = splitSymbol(row.target_anchor?.symbol);
+    assertResolvedBindingParts(source, 'source', row.candidate_id);
+    assertResolvedBindingParts(target, 'target', row.candidate_id);
+    return {
+      kind: candidate.binding_kind === 'method_triggers_scene_load'
+        ? 'method_triggers_scene_load'
+        : 'method_triggers_method',
+      source_class_pattern: source.className,
+      source_method: source.methodName,
+      target_class_pattern: target.className,
+      target_method: target.methodName,
+      description: `Derived from gap candidate ${row.candidate_id}`,
+    } as UnityResourceBinding;
+  });
 }
 
 function buildConfirmedChain(
   candidate: RuleLabCandidate,
   handoff: GapHandoffData,
 ): Array<{ hop_type?: string; anchor: string; snippet: string }> {
+  const sourceIds = Array.isArray(candidate.source_gap_candidate_ids)
+    ? candidate.source_gap_candidate_ids
+    : [];
+  const anchorPrefixes = new Set(
+    sourceIds.flatMap((sourceId) => {
+      const row = handoff.accepted_candidates.find((item) => item.candidate_id === sourceId);
+      if (!row) return [];
+      const prefixes: string[] = [];
+      if (String(row.source_anchor?.file || '').trim()) prefixes.push(`${String(row.source_anchor?.file).trim()}:`);
+      if (String(row.target_anchor?.file || '').trim()) prefixes.push(`${String(row.target_anchor?.file).trim()}:`);
+      return prefixes;
+    }),
+  );
+  if (handoff.confirmed_chain_steps.length > 0 && anchorPrefixes.size > 0) {
+    const filtered = handoff.confirmed_chain_steps.filter((step) =>
+      [...anchorPrefixes].some((prefix) => String(step.anchor || '').startsWith(prefix)),
+    );
+    if (filtered.length > 0) return filtered;
+    throw new Error(`proposal-specific confirmed chain missing for source ids: ${sourceIds.join(', ')}`);
+  }
   if (handoff.confirmed_chain_steps.length > 0) return handoff.confirmed_chain_steps;
   const hops = (candidate.evidence?.hops || []).filter((hop) => String(hop.anchor || '').trim() && String(hop.snippet || '').trim());
   if (hops.length > 0) return hops;
@@ -104,6 +141,9 @@ export function buildCurationInput(input: {
       `does not promote backlog candidates (${input.slice.source_gap_handoff?.promotion_backlog_count || 0})`,
     ];
     const bindings = buildBinding(candidate, input.handoff);
+    if (bindings.length === 0) {
+      throw new Error(`binding_unresolved: no resolvable bindings for candidate ${candidate.id}`);
+    }
     const confirmedChain = buildConfirmedChain(candidate, input.handoff);
     return {
       id: candidate.id,
@@ -133,14 +173,7 @@ export function buildCurationInput(input: {
       },
       guarantees: guaranteed,
       non_guarantees: nonGuaranteed,
-      resource_bindings: bindings.length > 0 ? bindings : [{
-        kind: 'method_triggers_method',
-        source_class_pattern: 'UnknownClass',
-        source_method: 'UnknownSource',
-        target_class_pattern: 'UnknownClass',
-        target_method: 'UnknownTarget',
-        description: 'Fallback binding derived from proposal topology',
-      }],
+      resource_bindings: bindings,
     };
   });
 

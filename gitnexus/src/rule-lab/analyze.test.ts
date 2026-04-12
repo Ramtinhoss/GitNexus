@@ -11,6 +11,8 @@ interface SetupOptions {
   aggregationMode?: 'per_anchor_rules' | 'aggregate_single_rule';
   includeGapHandoff?: boolean;
   acceptedCandidateRows?: Array<Record<string, unknown>>;
+  defaultBindingKinds?: string[];
+  classificationBuckets?: Record<string, unknown>;
 }
 
 async function writeJson(filePath: string, value: unknown): Promise<void> {
@@ -53,7 +55,7 @@ async function setupGapToRuleFixture(options: SetupOptions = {}): Promise<{
         { candidate_id: 'accepted-a', decision: 'accepted', confidence: 0.91 },
         { candidate_id: 'accepted-b', decision: 'accepted', confidence: 0.88 },
       ],
-      classification_buckets: {
+      classification_buckets: options.classificationBuckets || {
         accepted: { count: 2 },
         promotion_backlog: { count: 73 },
         third_party_excluded: { count: 41 },
@@ -70,6 +72,7 @@ async function setupGapToRuleFixture(options: SetupOptions = {}): Promise<{
           ],
         },
       },
+      default_binding_kinds: options.defaultBindingKinds || ['method_triggers_method'],
     });
 
     const rows = options.acceptedCandidateRows || [
@@ -165,6 +168,98 @@ describe('rule-lab analyze', () => {
       'accepted-a',
       'accepted-b',
     ]);
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+
+  it('binding kind handoff + candidate-derived downstream handoff summary ignore stale classification buckets', async () => {
+    const { repoRoot, runId, sliceId } = await setupGapToRuleFixture({
+      aggregationMode: 'per_anchor_rules',
+      defaultBindingKinds: ['method_triggers_scene_load'],
+      classificationBuckets: {
+        accepted: { count: 99 },
+        promotion_backlog: { count: 999 },
+        third_party_excluded: { count: 999 },
+      },
+      acceptedCandidateRows: [
+        {
+          candidate_id: 'accepted-a',
+          status: 'accepted',
+          binding_kind: 'method_triggers_scene_load',
+          source_anchor: {
+            file: 'Assets/Gameplay/SceneBoot.cs',
+            line: 12,
+            symbol: 'SceneBoot.Load',
+          },
+          target_anchor: {
+            file: 'Assets/Gameplay/SceneDriver.cs',
+            line: 18,
+            symbol: 'SceneDriver.Activate',
+          },
+        },
+        {
+          candidate_id: 'accepted-b',
+          status: 'accepted',
+          binding_kind: 'method_triggers_scene_load',
+          source_anchor: {
+            file: 'Assets/Gameplay/SceneBoot2.cs',
+            line: 22,
+            symbol: 'SceneBoot2.Load',
+          },
+          target_anchor: {
+            file: 'Assets/Gameplay/SceneDriver2.cs',
+            line: 30,
+            symbol: 'SceneDriver2.Activate',
+          },
+        },
+        {
+          candidate_id: 'backlog-1',
+          status: 'promotion_backlog',
+          source_anchor: { file: 'Assets/Gameplay/Backlog1.cs', line: 1, symbol: 'Backlog.One' },
+          target_anchor: { file: 'Assets/Gameplay/Backlog1T.cs', line: 2, symbol: 'Backlog.OneT' },
+        },
+        {
+          candidate_id: 'backlog-2',
+          status: 'promotion_backlog',
+          source_anchor: { file: 'Assets/Gameplay/Backlog2.cs', line: 1, symbol: 'Backlog.Two' },
+          target_anchor: { file: 'Assets/Gameplay/Backlog2T.cs', line: 2, symbol: 'Backlog.TwoT' },
+        },
+        {
+          candidate_id: 'backlog-3',
+          status: 'promotion_backlog',
+          source_anchor: { file: 'Assets/Gameplay/Backlog3.cs', line: 1, symbol: 'Backlog.Three' },
+          target_anchor: { file: 'Assets/Gameplay/Backlog3T.cs', line: 2, symbol: 'Backlog.ThreeT' },
+        },
+        {
+          candidate_id: 'reject-third-party-1',
+          status: 'third_party_excluded',
+          source_anchor: { file: 'Assets/Gameplay/Tp1.cs', line: 1, symbol: 'Tp.One' },
+          target_anchor: { file: 'Assets/Gameplay/Tp1T.cs', line: 2, symbol: 'Tp.OneT' },
+        },
+        {
+          candidate_id: 'reject-third-party-2',
+          status: 'third_party_excluded',
+          source_anchor: { file: 'Assets/Gameplay/Tp2.cs', line: 1, symbol: 'Tp.Two' },
+          target_anchor: { file: 'Assets/Gameplay/Tp2T.cs', line: 2, symbol: 'Tp.TwoT' },
+        },
+        {
+          candidate_id: 'reject-third-party-3',
+          status: 'third_party_excluded',
+          source_anchor: { file: 'Assets/Gameplay/Tp3.cs', line: 1, symbol: 'Tp.Three' },
+          target_anchor: { file: 'Assets/Gameplay/Tp3T.cs', line: 2, symbol: 'Tp.ThreeT' },
+        },
+        {
+          candidate_id: 'reject-third-party-4',
+          status: 'third_party_excluded',
+          source_anchor: { file: 'Assets/Gameplay/Tp4.cs', line: 1, symbol: 'Tp.Four' },
+          target_anchor: { file: 'Assets/Gameplay/Tp4T.cs', line: 2, symbol: 'Tp.FourT' },
+        },
+      ],
+    });
+    const result = await analyzeRuleLabSlice({ repoPath: repoRoot, runId, sliceId });
+    expect(result.candidates[0].binding_kind).toBe('method_triggers_scene_load');
+    expect(result.candidates[0].binding_kind).not.toBe('method_triggers_method');
+    expect(result.slice.source_gap_handoff.promotion_backlog_count).toBe(3);
+    expect(result.slice.source_gap_handoff.reject_buckets.third_party_excluded).toBe(4);
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
 

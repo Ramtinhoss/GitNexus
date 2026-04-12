@@ -294,7 +294,10 @@ Rule generation contract:
 2. `aggregation_mode=aggregate_single_rule`: selected homogeneous anchor pairs map to one `rule_id` with merged bindings/evidence.
 3. `rules/lab/.../candidates.jsonl` stores **proposal candidates** only (not exhaustive gap candidates), and each proposal row must keep `source_gap_candidate_ids`.
 4. `rules/lab/.../slice.json` must persist `source_gap_handoff` (`accepted_candidate_ids`, `promotion_backlog_count`, `reject_buckets`, `aggregation_mode`) so downstream can audit `universe -> accepted -> proposal`.
-5. `rule-lab analyze` should auto-generate `curation-input.json` from proposal candidates; `confirmed_chain.steps` must stay non-empty before C4.
+5. `rule-lab analyze` should auto-generate `curation-input.json` from proposal candidates; `confirmed_chain.steps` must stay non-empty before C4 and must be proposal-specific (no mixed slice-wide chain copy).
+6. Proposal `binding_kind` must be handoff-derived (`default_binding_kinds` or accepted-candidate metadata), not hardcoded fallback.
+7. `aggregation_mode=aggregate_single_rule` must preserve all accepted anchors into one proposal (`source_gap_candidate_ids`, merged bindings/evidence, guarantees mentioning all accepted ids).
+8. Unresolved bindings must fail closed across analyze/curate/promote; `UnknownClass` / `UnknownMethod` placeholders are forbidden in generated artifacts.
 
 Suggested command:
 

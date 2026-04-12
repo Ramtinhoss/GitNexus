@@ -171,6 +171,10 @@ gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt --no-reuse-options
   - `gap-lab/slices/<slice>.candidates.jsonl` = exhaustive candidate truth.
   - `rules/lab/.../candidates.jsonl` = proposal candidates derived from accepted IDs + aggregation mode.
   - `rules/lab/.../slice.json.source_gap_handoff` is mandatory for downstream `universe -> accepted -> proposal` audits.
+  - Proposal `binding_kind` must be handoff-derived (`default_binding_kinds` or accepted-candidate metadata), not hardcoded.
+  - `aggregate_single_rule` proposal rows must preserve multi-anchor lineage (`source_gap_candidate_ids`) and merged resource bindings.
+  - `curation-input.json` and `curated.json` must keep proposal-specific `confirmed_chain.steps`; copying mixed slice-wide chain is invalid.
+  - Unresolved bindings must fail closed; `UnknownClass` / `UnknownMethod` placeholders are forbidden in `curation-input.json`, `curated.json`, and `approved/*.yaml`.
 - `gitnexus-unity-rule-gen` owns `.gitnexus/gap-lab/runs/**` artifacts listed above.
 - Gap-lab C1 persistence uses balanced-slim artifacts only (`slice.json`, `slice.candidates.jsonl`, `inventory.jsonl`, `decisions.jsonl`); standalone universe/scope/coverage files are not persisted.
 - Gap-lab C2.6 uses candidate-derived coverage: `slice.candidates.jsonl` is the semantic source of truth, while `slice.json.coverage_gate` is a derived cache that must block on `candidate_audit_drift` if counts drift.

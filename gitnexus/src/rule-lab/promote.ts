@@ -103,6 +103,14 @@ function assertNoPlaceholderScope(values: string[], field: 'resource_types' | 'h
   }
 }
 
+function assertResolvedBindings(resourceBindings: RuleDslDraft['resource_bindings']): void {
+  if (!Array.isArray(resourceBindings) || resourceBindings.length === 0) return;
+  const raw = JSON.stringify(resourceBindings);
+  if (/UnknownClass|UnknownMethod|UnknownSource|UnknownTarget/i.test(raw)) {
+    throw new Error('binding unresolved: unknown placeholder binding values are forbidden');
+  }
+}
+
 function toDraftFromCurated(item: PromotableItem): RuleDslDraft {
   const triggerTokens = unique(item.match?.trigger_tokens || [inferTriggerFamily(item)]);
   const topology = Array.isArray(item.topology) && item.topology.length > 0
@@ -141,6 +149,9 @@ function toDraftFromCurated(item: PromotableItem): RuleDslDraft {
       non_guarantees: nonGuarantees,
       next_action: nextAction,
     },
+    ...(Array.isArray((item as { resource_bindings?: unknown[] }).resource_bindings)
+      ? { resource_bindings: (item as { resource_bindings?: RuleDslDraft['resource_bindings'] }).resource_bindings }
+      : {}),
   };
 }
 
@@ -161,6 +172,7 @@ function compileRule(ruleId: string, version: string, draft: RuleDslDraft): Comp
 
   assertNoPlaceholderScope(resourceTypes, 'resource_types');
   assertNoPlaceholderScope(hostBaseType, 'host_base_type');
+  assertResolvedBindings(draft.resource_bindings);
 
   return {
     id: ruleId,

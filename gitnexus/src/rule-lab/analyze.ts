@@ -112,6 +112,13 @@ function inferRuleStem(slice: RuleLabSliceWithHandoff, row: GapCandidateRow): st
   return joined || normalizeToken(slice.id) || 'runtime-rule';
 }
 
+function inferAggregateRuleStem(slice: RuleLabSliceWithHandoff, rows: GapCandidateRow[]): string {
+  const stems = rows.map((row) => inferRuleStem(slice, row)).filter(Boolean);
+  const unique = [...new Set(stems)];
+  if (unique.length > 0) return unique.join('-');
+  return normalizeToken(slice.id) || 'runtime-rule';
+}
+
 function buildProposalTopology(slice: RuleLabSliceWithHandoff): Array<{
   hop: string;
   from: Record<string, unknown>;
@@ -129,15 +136,59 @@ function buildProposalTopology(slice: RuleLabSliceWithHandoff): Array<{
   }));
 }
 
+function buildProposalSemantics(
+  slice: RuleLabSliceWithHandoff,
+  sourceGapCandidateIds: string[],
+  handoff: NonNullable<Awaited<ReturnType<typeof loadGapHandoff>>>,
+): Pick<RuleLabCandidate, 'closure' | 'claims'> {
+  const requiredHops = unique(
+    buildProposalTopology(slice).map((hop) => hop.hop),
+  );
+  return {
+    closure: {
+      required_hops: requiredHops.length > 0 ? requiredHops : ['code_runtime'],
+      failure_map: {
+        missing_evidence: 'rule_matched_but_evidence_missing',
+      },
+    },
+    claims: {
+      guarantees: [
+        `accepted source ids: ${sourceGapCandidateIds.join(', ')}`,
+      ],
+      non_guarantees: [
+        `backlog candidates are not promoted (${handoff.source_gap_handoff.promotion_backlog_count})`,
+      ],
+      next_action: `gitnexus query "${slice.trigger_family}"`,
+    },
+  };
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function resolveBindingKind(input: {
+  handoff: NonNullable<Awaited<ReturnType<typeof loadGapHandoff>>>;
+  row?: GapCandidateRow;
+}): string {
+  const rowKind = String(input.row?.binding_kind || '').trim();
+  if (rowKind) return rowKind;
+  const defaultKind = input.handoff.default_binding_kinds
+    .map((value) => String(value || '').trim())
+    .find(Boolean);
+  if (defaultKind) return defaultKind;
+  return 'method_triggers_method';
+}
+
 function buildProposalCandidates(
   slice: RuleLabSliceWithHandoff,
   handoff: NonNullable<Awaited<ReturnType<typeof loadGapHandoff>>>,
 ): RuleLabCandidate[] {
   const topology = buildProposalTopology(slice);
-  const bindingKind = 'method_triggers_method';
   if (handoff.source_gap_handoff.aggregation_mode === 'aggregate_single_rule') {
     const seed = handoff.accepted_candidates[0];
-    const draftRuleId = `unity.event.${inferRuleStem(slice, seed)}.v1`;
+    const bindingKind = resolveBindingKind({ handoff, row: seed });
+    const draftRuleId = `unity.event.${inferAggregateRuleStem(slice, handoff.accepted_candidates)}.v1`;
     return [{
       id: buildCandidateId(slice, `aggregate:${handoff.source_gap_handoff.accepted_candidate_ids.join(',')}`),
       title: `${slice.trigger_family} aggregated proposal`,
@@ -148,7 +199,9 @@ function buildProposalCandidates(
       aggregation_mode: 'aggregate_single_rule',
       binding_kind: bindingKind,
       draft_rule_id: draftRuleId,
+      proposal_evidence_keys: [...handoff.source_gap_handoff.accepted_candidate_ids],
       topology,
+      ...buildProposalSemantics(slice, handoff.source_gap_handoff.accepted_candidate_ids, handoff),
       evidence: {
         hops: handoff.accepted_candidates.flatMap((row) => {
           const hops = [];
@@ -174,6 +227,7 @@ function buildProposalCandidates(
 
   return handoff.accepted_candidates.map((row) => {
     const candidateId = String(row.candidate_id || '').trim();
+    const bindingKind = resolveBindingKind({ handoff, row });
     const draftRuleId = `unity.event.${inferRuleStem(slice, row)}.v1`;
     return {
       id: buildCandidateId(slice, `proposal:${candidateId}`),
@@ -185,7 +239,9 @@ function buildProposalCandidates(
       aggregation_mode: 'per_anchor_rules',
       binding_kind: bindingKind,
       draft_rule_id: draftRuleId,
+      proposal_evidence_keys: [candidateId],
       topology,
+      ...buildProposalSemantics(slice, [candidateId], handoff),
       evidence: {
         hops: [
           {

@@ -125,6 +125,13 @@ function validateCuratedItem(item: CuratedItem): void {
     throw new Error('curated item contains placeholder text');
   }
 
+  if (Array.isArray(item.resource_bindings)) {
+    const rawBindings = JSON.stringify(item.resource_bindings);
+    if (/UnknownClass|UnknownMethod|UnknownSource|UnknownTarget/i.test(rawBindings)) {
+      throw new Error('binding unresolved: unknown placeholder binding values are forbidden');
+    }
+  }
+
   const guaranteeSet = normalizeForSet(item.guarantees);
   const nonGuaranteeSet = normalizeForSet(item.non_guarantees);
   const overlap = [...guaranteeSet].filter((entry) => nonGuaranteeSet.has(entry));

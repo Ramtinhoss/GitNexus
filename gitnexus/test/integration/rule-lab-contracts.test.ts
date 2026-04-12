@@ -79,4 +79,18 @@ describe('rule-lab docs/contracts', () => {
     expect(cfg).toMatch(/curation-input\.json/i);
     expect(cfg).toMatch(/dsl-drafts\.json/i);
   });
+
+  it('documents binding kind propagation, aggregate anchor preservation, proposal-specific evidence, and fail-closed bindings', async () => {
+    const truth = await readRepoFile('docs/unity-runtime-process-source-of-truth.md');
+    expect(truth).toMatch(/binding_kind.*default_binding_kinds|accepted-candidate metadata/i);
+    expect(truth).toMatch(/aggregate_single_rule.*accepted anchors|accepted-anchor lineage|保留全部 accepted anchors/i);
+    expect(truth).toMatch(/proposal-specific.*confirmed_chain\.steps|proposal-specific.*slice-wide chain/i);
+    expect(truth).toMatch(/UnknownClass|UnknownMethod.*fail-closed/i);
+
+    const cfg = await readRepoFile('docs/gitnexus-config-files.md');
+    expect(cfg).toMatch(/binding_kind.*handoff-derived|default_binding_kinds/i);
+    expect(cfg).toMatch(/aggregate_single_rule.*multi-anchor lineage|source_gap_candidate_ids/i);
+    expect(cfg).toMatch(/proposal-specific.*confirmed_chain\.steps/i);
+    expect(cfg).toMatch(/UnknownClass|UnknownMethod.*forbidden/i);
+  });
 });
