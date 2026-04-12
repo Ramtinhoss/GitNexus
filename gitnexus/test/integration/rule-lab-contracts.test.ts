@@ -67,4 +67,16 @@ describe('rule-lab docs/contracts', () => {
     expect(cfg).toMatch(/candidate-derived coverage/i);
     expect(cfg).toMatch(/out_of_focus_scope|deferred_non_clue_module/i);
   });
+
+  it('documents proposal candidates and source_gap_handoff downstream contract', async () => {
+    const truth = await readRepoFile('docs/unity-runtime-process-source-of-truth.md');
+    expect(truth).toMatch(/proposal candidates/i);
+    expect(truth).toMatch(/source_gap_handoff/i);
+    expect(truth).toMatch(/universe\s*->\s*accepted\s*->\s*proposal/i);
+
+    const cfg = await readRepoFile('docs/gitnexus-config-files.md');
+    expect(cfg).toMatch(/source_gap_handoff/i);
+    expect(cfg).toMatch(/curation-input\.json/i);
+    expect(cfg).toMatch(/dsl-drafts\.json/i);
+  });
 });

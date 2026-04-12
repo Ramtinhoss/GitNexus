@@ -123,7 +123,14 @@ export async function loadGapHandoff(input: {
   const acceptedCandidateIds = readAcceptedCandidateIds(gapSlice);
   if (acceptedCandidateIds.length === 0) return null;
 
-  const candidateRows = parseJsonLines(gapCandidatesRaw) as GapCandidateRow[];
+  const candidateRows = parseJsonLines(gapCandidatesRaw).map((row) => ({
+    candidate_id: String(row.candidate_id || '').trim(),
+    status: typeof row.status === 'string' ? row.status : undefined,
+    lifecycle_stage: typeof row.lifecycle_stage === 'string' ? row.lifecycle_stage : undefined,
+    source_anchor: typeof row.source_anchor === 'object' ? row.source_anchor as GapCandidateAnchor : undefined,
+    target_anchor: typeof row.target_anchor === 'object' ? row.target_anchor as GapCandidateAnchor : undefined,
+    raw_match: typeof row.raw_match === 'string' ? row.raw_match : undefined,
+  }));
   const acceptedRows = candidateRows.filter((row) =>
     acceptedCandidateIds.includes(String(row.candidate_id || '').trim()) && isAcceptedRow(row),
   );

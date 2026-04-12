@@ -110,6 +110,27 @@
           },
           "guarantees": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
           "non_guarantees": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+          ,
+          "resource_bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": {
+                "kind": { "type": "string", "minLength": 1 },
+                "description": { "type": "string" },
+                "ref_field_pattern": { "type": "string" },
+                "target_entry_points": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+                "host_class_pattern": { "type": "string" },
+                "field_name": { "type": "string" },
+                "loader_methods": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+                "source_class_pattern": { "type": "string" },
+                "source_method": { "type": "string" },
+                "target_class_pattern": { "type": "string" },
+                "target_method": { "type": "string" }
+              }
+            }
+          }
         }
       }
     }
