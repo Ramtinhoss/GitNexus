@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getRuleLabPaths } from './paths.js';
-import type { RuleDslDraft, RuleDslMatch, RuleDslTopologyHop, RuleDslClosure, RuleDslClaims } from './types.js';
+import type { RuleDslDraft, RuleDslMatch, RuleDslTopologyHop, RuleDslClosure, RuleDslClaims, UnityResourceBinding } from './types.js';
 
 const PLACEHOLDER_RE = /TODO|TBD|placeholder|<[^>]+>/i;
 
@@ -26,6 +26,7 @@ export interface CuratedItem {
   topology?: RuleDslTopologyHop[];
   closure?: RuleDslClosure;
   claims?: RuleDslClaims;
+  resource_bindings?: UnityResourceBinding[];
   confirmed_chain: {
     steps: CuratedStep[];
   };
@@ -142,6 +143,9 @@ function toDslDraft(item: CuratedItem): RuleDslDraft {
     topology: item.topology as RuleDslTopologyHop[],
     closure: item.closure as RuleDslClosure,
     claims: item.claims as RuleDslClaims,
+    ...(Array.isArray(item.resource_bindings) && item.resource_bindings.length > 0
+      ? { resource_bindings: item.resource_bindings }
+      : {}),
   };
 }
 
@@ -176,8 +180,10 @@ export async function curateRuleLabSlice(input: CurateInput): Promise<CurateOutp
   }
 
   curated.forEach(validateCuratedItem);
-  const firstDraft = toDslDraft(curated[0]);
-  validateDslDraft(firstDraft);
+  const drafts = curated.map((item) => toDslDraft(item));
+  drafts.forEach(validateDslDraft);
+  const firstDraft = drafts[0];
+  const sliceDir = path.dirname(paths.curatedPath);
 
   await fs.mkdir(path.dirname(paths.curatedPath), { recursive: true });
   await fs.writeFile(
@@ -186,10 +192,27 @@ export async function curateRuleLabSlice(input: CurateInput): Promise<CurateOutp
     'utf-8',
   );
   await fs.writeFile(
-    path.join(path.dirname(paths.curatedPath), 'dsl-draft.json'),
-    `${JSON.stringify(firstDraft, null, 2)}\n`,
+    path.join(sliceDir, 'dsl-drafts.json'),
+    `${JSON.stringify({ run_id: input.runId, slice_id: input.sliceId, drafts }, null, 2)}\n`,
     'utf-8',
   );
+  if (drafts.length === 1) {
+    await fs.writeFile(
+      path.join(sliceDir, 'dsl-draft.json'),
+      `${JSON.stringify(firstDraft, null, 2)}\n`,
+      'utf-8',
+    );
+  } else {
+    await fs.writeFile(
+      path.join(sliceDir, 'dsl-draft.json'),
+      `${JSON.stringify({
+        compatibility_warning: 'multi-draft mode active; use dsl-drafts.json for complete draft set',
+        primary_draft_id: firstDraft.id,
+        primary_draft: firstDraft,
+      }, null, 2)}\n`,
+      'utf-8',
+    );
+  }
 
   return {
     paths,

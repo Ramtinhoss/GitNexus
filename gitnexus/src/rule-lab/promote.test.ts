@@ -193,4 +193,81 @@ describe('rule-lab promote', () => {
 
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
+
+  it('promotes every curated item when dsl-drafts includes multiple candidates', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-promote-multi-'));
+    const rulesRoot = path.join(repoRoot, '.gitnexus', 'rules');
+    const sliceDir = path.join(rulesRoot, 'lab', 'runs', 'run-x', 'slices', 'slice-a');
+    await fs.mkdir(path.join(rulesRoot, 'approved'), { recursive: true });
+    await fs.mkdir(sliceDir, { recursive: true });
+    await fs.writeFile(path.join(rulesRoot, 'catalog.json'), JSON.stringify({ version: 1, rules: [] }, null, 2), 'utf-8');
+    const curated = {
+      run_id: 'run-x',
+      slice_id: 'slice-a',
+      curated: [
+        {
+          id: 'candidate-1',
+          rule_id: 'demo.multi.first.v1',
+          title: 'demo first',
+          match: { trigger_tokens: ['reload'], resource_types: ['syncvar_hook'], host_base_type: ['network_behaviour'] },
+          topology: [{ hop: 'code_runtime', from: { entity: 'script' }, to: { entity: 'runtime' }, edge: { kind: 'calls' } }],
+          closure: { required_hops: ['code_runtime'], failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' } },
+          claims: { guarantees: ['reload_chain_closed'], non_guarantees: ['no_runtime_execution'], next_action: 'gitnexus query "reload"' },
+          confirmed_chain: { steps: [{ hop_type: 'code_runtime', anchor: 'Assets/A.cs:1', snippet: 'A' }] },
+          guarantees: ['reload_chain_closed'],
+          non_guarantees: ['no_runtime_execution'],
+        },
+        {
+          id: 'candidate-2',
+          rule_id: 'demo.multi.second.v1',
+          title: 'demo second',
+          match: { trigger_tokens: ['reload'], resource_types: ['syncvar_hook'], host_base_type: ['network_behaviour'] },
+          topology: [{ hop: 'code_runtime', from: { entity: 'script' }, to: { entity: 'runtime' }, edge: { kind: 'calls' } }],
+          closure: { required_hops: ['code_runtime'], failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' } },
+          claims: { guarantees: ['reload_chain_closed'], non_guarantees: ['no_runtime_execution'], next_action: 'gitnexus query "reload"' },
+          confirmed_chain: { steps: [{ hop_type: 'code_runtime', anchor: 'Assets/B.cs:2', snippet: 'B' }] },
+          guarantees: ['reload_chain_closed'],
+          non_guarantees: ['no_runtime_execution'],
+        },
+      ],
+    };
+    await fs.writeFile(path.join(sliceDir, 'curated.json'), JSON.stringify(curated, null, 2), 'utf-8');
+    await fs.writeFile(
+      path.join(sliceDir, 'dsl-drafts.json'),
+      JSON.stringify({
+        drafts: [
+          {
+            id: 'demo.multi.first.v1',
+            version: '2.0.0',
+            match: curated.curated[0].match,
+            topology: curated.curated[0].topology,
+            closure: curated.curated[0].closure,
+            claims: curated.curated[0].claims,
+          },
+          {
+            id: 'demo.multi.second.v1',
+            version: '2.0.0',
+            match: curated.curated[1].match,
+            topology: curated.curated[1].topology,
+            closure: curated.curated[1].closure,
+            claims: curated.curated[1].claims,
+          },
+        ],
+      }, null, 2),
+      'utf-8',
+    );
+    await fs.writeFile(
+      path.join(sliceDir, 'dsl-draft.json'),
+      JSON.stringify({
+        compatibility_warning: 'multi-draft compatibility alias',
+        primary_draft_id: 'demo.multi.first.v1',
+      }, null, 2),
+      'utf-8',
+    );
+
+    const out = await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a' });
+    expect(out.promotedFiles).toHaveLength(2);
+
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
 });
