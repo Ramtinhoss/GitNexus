@@ -19,6 +19,10 @@ export interface ReviewPackCard {
     failure_map: Record<string, string>;
     guarantees: string[];
     non_guarantees: string[];
+    source_gap_candidate_ids: string[];
+    draft_rule_ids: string[];
+    aggregation_modes: string[];
+    binding_kinds: string[];
   };
 }
 
@@ -34,6 +38,15 @@ export interface ReviewPackOutput {
   paths: ReturnType<typeof getRuleLabPaths>;
   meta: ReviewPackMeta;
   cards: ReviewPackCard[];
+}
+
+interface SliceSummary {
+  source_gap_handoff?: {
+    accepted_candidate_ids?: string[];
+    promotion_backlog_count?: number;
+    reject_buckets?: Record<string, number>;
+    aggregation_mode?: string;
+  };
 }
 
 interface ErrnoLike {
@@ -97,6 +110,32 @@ function collectClaims(
   };
 }
 
+function collectSourceGapCandidateIds(candidates: RuleLabCandidate[]): string[] {
+  return unique(candidates.flatMap((candidate) =>
+    Array.isArray((candidate as RuleLabCandidate & { source_gap_candidate_ids?: string[] }).source_gap_candidate_ids)
+      ? (candidate as RuleLabCandidate & { source_gap_candidate_ids?: string[] }).source_gap_candidate_ids || []
+      : [],
+  ));
+}
+
+function collectDraftRuleIds(candidates: RuleLabCandidate[]): string[] {
+  return unique(candidates.map((candidate) =>
+    String((candidate as RuleLabCandidate & { draft_rule_id?: string }).draft_rule_id || '').trim(),
+  ).filter(Boolean));
+}
+
+function collectAggregationModes(candidates: RuleLabCandidate[]): string[] {
+  return unique(candidates.map((candidate) =>
+    String((candidate as RuleLabCandidate & { aggregation_mode?: string }).aggregation_mode || '').trim(),
+  ).filter(Boolean));
+}
+
+function collectBindingKinds(candidates: RuleLabCandidate[]): string[] {
+  return unique(candidates.map((candidate) =>
+    String((candidate as RuleLabCandidate & { binding_kind?: string }).binding_kind || '').trim(),
+  ).filter(Boolean));
+}
+
 function buildCards(candidates: RuleLabCandidate[]): ReviewPackCard[] {
   const cards: ReviewPackCard[] = [];
   const chunkSize = 4;
@@ -113,6 +152,10 @@ function buildCards(candidates: RuleLabCandidate[]): ReviewPackCard[] {
         failure_map: mergeFailureMaps(chunk),
         guarantees: claims.guarantees,
         non_guarantees: claims.non_guarantees,
+        source_gap_candidate_ids: collectSourceGapCandidateIds(chunk),
+        draft_rule_ids: collectDraftRuleIds(chunk),
+        aggregation_modes: collectAggregationModes(chunk),
+        binding_kinds: collectBindingKinds(chunk),
       },
     });
   }
@@ -120,7 +163,7 @@ function buildCards(candidates: RuleLabCandidate[]): ReviewPackCard[] {
   return cards;
 }
 
-function renderReviewPack(meta: ReviewPackMeta, cards: ReviewPackCard[]): string {
+function renderReviewPack(meta: ReviewPackMeta, cards: ReviewPackCard[], sliceSummary?: SliceSummary): string {
   const lines: string[] = [];
   lines.push('# Rule Lab Review Pack');
   lines.push('');
@@ -132,6 +175,16 @@ function renderReviewPack(meta: ReviewPackMeta, cards: ReviewPackCard[]): string
   lines.push(`- included_candidates: ${meta.included_candidates}`);
   lines.push('');
 
+  if (sliceSummary?.source_gap_handoff) {
+    const handoff = sliceSummary.source_gap_handoff;
+    lines.push('## Handoff Summary');
+    lines.push(`- accepted_count: ${Array.isArray(handoff.accepted_candidate_ids) ? handoff.accepted_candidate_ids.length : 0}`);
+    lines.push(`- backlog_count: ${Number(handoff.promotion_backlog_count || 0)}`);
+    lines.push(`- reject_buckets: ${JSON.stringify(handoff.reject_buckets || {})}`);
+    lines.push(`- aggregation_mode: ${String(handoff.aggregation_mode || '')}`);
+    lines.push('');
+  }
+
   for (const card of cards) {
     lines.push(`## ${card.title}`);
     lines.push(`- card_id: ${card.card_id}`);
@@ -139,6 +192,10 @@ function renderReviewPack(meta: ReviewPackMeta, cards: ReviewPackCard[]): string
     lines.push(`- required_hops: ${card.decision_inputs.required_hops.join(', ')}`);
     lines.push(`- guarantees: ${card.decision_inputs.guarantees.join(', ')}`);
     lines.push(`- non_guarantees: ${card.decision_inputs.non_guarantees.join(', ')}`);
+    lines.push(`- source_gap_candidate_ids: ${card.decision_inputs.source_gap_candidate_ids.join(', ')}`);
+    lines.push(`- draft_rule_ids: ${card.decision_inputs.draft_rule_ids.join(', ')}`);
+    lines.push(`- aggregation_modes: ${card.decision_inputs.aggregation_modes.join(', ')}`);
+    lines.push(`- binding_kinds: ${card.decision_inputs.binding_kinds.join(', ')}`);
     lines.push(`- failure_map: ${JSON.stringify(card.decision_inputs.failure_map)}`);
     lines.push('');
   }
@@ -186,6 +243,13 @@ export async function buildReviewPack(input: ReviewPackInput): Promise<ReviewPac
     `gitnexus rule-lab analyze --repo-path "${normalizedRepoPath}" --run-id "${input.runId}" --slice-id "${input.sliceId}"`;
   const raw = await readCandidatesFileWithRetry(paths.candidatesPath, analyzeCommandHint);
   const candidates = parseCandidates(raw);
+  let sliceSummary: SliceSummary | undefined;
+  try {
+    const sliceRaw = await fs.readFile(path.join(path.dirname(paths.candidatesPath), 'slice.json'), 'utf-8');
+    sliceSummary = JSON.parse(sliceRaw) as SliceSummary;
+  } catch (error: any) {
+    if (!isENOENT(error)) throw error;
+  }
 
   const included: RuleLabCandidate[] = [];
   let tokenEstimate = 0;
@@ -209,7 +273,7 @@ export async function buildReviewPack(input: ReviewPackInput): Promise<ReviewPac
 
   const cards = buildCards(included);
   await fs.mkdir(path.dirname(paths.reviewCardsPath), { recursive: true });
-  await fs.writeFile(paths.reviewCardsPath, renderReviewPack(meta, cards), 'utf-8');
+  await fs.writeFile(paths.reviewCardsPath, renderReviewPack(meta, cards, sliceSummary), 'utf-8');
 
   return {
     paths,
