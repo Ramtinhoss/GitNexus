@@ -292,6 +292,9 @@ Rule generation contract:
 
 1. `aggregation_mode=per_anchor_rules`: each anchor pair maps to a distinct `rule_id` and promoted YAML file.
 2. `aggregation_mode=aggregate_single_rule`: selected homogeneous anchor pairs map to one `rule_id` with merged bindings/evidence.
+3. `rules/lab/.../candidates.jsonl` stores **proposal candidates** only (not exhaustive gap candidates), and each proposal row must keep `source_gap_candidate_ids`.
+4. `rules/lab/.../slice.json` must persist `source_gap_handoff` (`accepted_candidate_ids`, `promotion_backlog_count`, `reject_buckets`, `aggregation_mode`) so downstream can audit `universe -> accepted -> proposal`.
+5. `rule-lab analyze` should auto-generate `curation-input.json` from proposal candidates; `confirmed_chain.steps` must stay non-empty before C4.
 
 Suggested command:
 

@@ -129,6 +129,10 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 8. 默认 `full_user_code` scope 禁止 exemplar/module locality 驱动的排除理由；`out_of_focus_scope`、`deferred_non_clue_module` 等理由只有在显式 `explicit_discovery_scope_override` 下才允许出现。
 9. `promotion_backlog` 是 **eligible** 候选状态，不是 rejection bucket；“本轮不提升”必须与“候选无效”分离。
 10. Gap-lab C1 持久化采用 balanced-slim 工件模型：`slice.json`、`slice.candidates.jsonl`、`inventory.jsonl`、`decisions.jsonl`；不保留 standalone universe/scope/coverage 工件。
+11. Gap-lab 与 Rule-lab 之间采用两层候选语义：
+   - `gap-lab slice.candidates.jsonl` = exhaustive candidate universe（完整候选真理源）
+   - `rules/lab .../candidates.jsonl` = proposal candidates（由 accepted candidates + aggregation_mode 派生）
+12. Rule-lab downstream `slice.json` 必须包含 `source_gap_handoff`，用于 machine-auditable `universe -> accepted -> proposal` reduction 说明。
 
 ## 3. 设计与实现对照（阶段）
 
@@ -198,8 +202,15 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 
 1. Rule Lab 六阶段生命周期：discover → analyze → review_pack → curate → promote → regress
 2. Artifact 路径：`.gitnexus/rules/lab/runs/<run_id>/...`
-3. promote/compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配
-4. 规则族区分：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）
+3. Rule-lab `analyze` 输出必须区分 proposal candidates 与 exhaustive gap candidates：
+   - `candidates.jsonl` 中每个 proposal candidate 必须显式携带 `source_gap_candidate_ids`、`aggregation_mode`、`draft_rule_id`
+   - `slice.json` 中必须持久化 `source_gap_handoff`（`accepted_candidate_ids`、`promotion_backlog_count`、`reject_buckets` 等）
+4. Rule-lab downstream artifact 需要可解释 `universe -> accepted -> proposal`：
+   - `review-cards.md` 至少包含 `accepted_count`、`backlog_count`、`source_gap_candidate_ids`
+   - `curation-input.json` 必须由 proposal candidates 自动生成并保证 `confirmed_chain.steps` 非空
+   - 多候选切片必须持久化 `dsl-drafts.json`；`dsl-draft.json` 仅作为兼容别名（多候选时带 warning）
+5. promote/compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配
+6. 规则族区分：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）
 
 ## 5. 配置方式（V2）
 

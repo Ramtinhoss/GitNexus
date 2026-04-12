@@ -91,6 +91,10 @@ Contract terms:
 - Artifact model is balanced-slim: keep `slice.json`, `slice.candidates.jsonl`,
   `inventory.jsonl`, and `decisions.jsonl`; no standalone universe/scope/coverage artifacts.
 - `promotion_backlog` is an eligible candidate state, not a rejection reason; backlog choice must stay separate from validity.
+- Downstream handoff layering is mandatory:
+  - `gap-lab .../<slice>.candidates.jsonl` stays the exhaustive candidate truth source.
+  - `rules/lab .../candidates.jsonl` stores proposal candidates derived from accepted IDs + aggregation mode.
+  - `rules/lab .../slice.json.source_gap_handoff` must persist accepted/backlog/reject summary so downstream can audit `universe -> accepted -> proposal`.
 - For `method_triggers_method`, C3 pre-generation lint is mandatory:
   class patterns must not use `Class:...` symbol-id shape; method fields must be
   plain names (no regex-anchor form like `^...$`).

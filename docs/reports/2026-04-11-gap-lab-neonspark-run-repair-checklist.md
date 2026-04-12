@@ -124,3 +124,56 @@ Expected signal:
 - summary counts align with the repaired candidate artifact;
 - no stale `coverage_incomplete` / `candidate_audit_drift` remains for the repaired path;
 - `confirmed_chain` and non-empty `steps` remain required before `verified` / `done`.
+
+8. Verify downstream rule-lab handoff artifacts (not only gap-lab truth).
+
+Command:
+
+```bash
+REPO_PATH="/Volumes/Shuttle/projects/neonspark"
+RUN_ID="gaplab-20260411-104710"
+SLICE_ID="event_delegate_gap.mirror_syncvar_hook"
+node /Volumes/Shuttle/projects/agentic/GitNexus/gitnexus/dist/cli/index.js \
+  rule-lab analyze --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
+node /Volumes/Shuttle/projects/agentic/GitNexus/gitnexus/dist/cli/index.js \
+  rule-lab review-pack --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id "$SLICE_ID"
+rg -n '"source_gap_handoff"|"accepted_candidate_ids"|"promotion_backlog_count"' \
+  "$REPO_PATH/.gitnexus/rules/lab/runs/$RUN_ID/slices/$SLICE_ID/slice.json"
+rg -n 'accepted_count|backlog_count|source_gap_candidate_ids' \
+  "$REPO_PATH/.gitnexus/rules/lab/runs/$RUN_ID/slices/$SLICE_ID/review-cards.md"
+```
+
+Expected signal:
+- downstream `rules/lab` slice summary contains `source_gap_handoff`;
+- review pack explicitly shows `accepted_count`, `backlog_count`, and proposal lineage ids.
+
+9. Enforce semantic proposal checks on downstream artifacts.
+
+Command:
+
+```bash
+node - <<'NODE'
+const fs = require('fs');
+const path = require('path');
+const base = '/Volumes/Shuttle/projects/neonspark/.gitnexus/rules/lab/runs/gaplab-20260411-104710/slices/event_delegate_gap.mirror_syncvar_hook';
+const candidates = fs.readFileSync(path.join(base, 'candidates.jsonl'), 'utf8')
+  .trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
+if (candidates.length !== 2) throw new Error(`expected 2 proposal candidates, got ${candidates.length}`);
+if (candidates.some((row) => !Array.isArray(row.source_gap_candidate_ids) || row.source_gap_candidate_ids.length === 0)) {
+  throw new Error('proposal lineage missing source_gap_candidate_ids');
+}
+if (candidates.some((row) => /candidate-a|candidate-b|\.primary$|\.fallback$/.test(String(row.title || '')) || /\.primary$|\.fallback$/.test(String(row.rule_hint || '')))) {
+  throw new Error('generic fallback proposals still present');
+}
+const curation = JSON.parse(fs.readFileSync(path.join(base, 'curation-input.json'), 'utf8'));
+if (!Array.isArray(curation.curated) || curation.curated.length !== 2) {
+  throw new Error('expected 2 curated proposal entries');
+}
+if (curation.curated.some((item) => !Array.isArray(item.confirmed_chain?.steps) || item.confirmed_chain.steps.length === 0)) {
+  throw new Error('confirmed_chain.steps missing for curated proposal');
+}
+NODE
+```
+
+Expected signal:
+- downstream artifact set proves `76 -> 2 accepted proposals + 73 backlog` with explicit proposal lineage and non-empty closure evidence.
