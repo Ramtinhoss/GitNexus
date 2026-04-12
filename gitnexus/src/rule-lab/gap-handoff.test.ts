@@ -111,14 +111,23 @@ describe('gap-handoff schema validation', () => {
       { source_anchor: { file: 'Assets/Gameplay/SourceA.cs', line: 12, symbol: '' } },
     ]);
     await expect(loadGapHandoff(sourceMissing)).rejects.toThrow(
-      /gap-handoff schema error: candidate accepted-a missing source_anchor\.symbol/i,
+      /gap-handoff schema error: accepted candidate accepted-a has empty source_anchor\.symbol/i,
     );
 
     const targetMissing = await setupGapHandoffFixture([
       { target_anchor: { file: '', line: 35, symbol: 'TargetA.OnTrigger' } },
     ]);
     await expect(loadGapHandoff(targetMissing)).rejects.toThrow(
-      /gap-handoff schema error: candidate accepted-a missing target_anchor\.file/i,
+      /gap-handoff schema error: accepted candidate accepted-a has empty target_anchor\.file/i,
+    );
+  });
+
+  it('throws when accepted anchor fields contain placeholder text', async () => {
+    const fixture = await setupGapHandoffFixture([
+      { source_anchor: { file: 'Assets/Gameplay/SourceA.cs', line: 12, symbol: '<placeholder>' } },
+    ]);
+    await expect(loadGapHandoff(fixture)).rejects.toThrow(
+      /gap-handoff schema error: accepted candidate accepted-a has empty source_anchor\.symbol/i,
     );
   });
 

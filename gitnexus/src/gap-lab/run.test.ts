@@ -109,6 +109,8 @@ public class HookBehaviour : NetworkBehaviour
     expect(rows).toHaveLength(3);
     expect(rows.every((row) => row.gap_type === 'event_delegate_gap')).toBe(true);
     expect(rows.every((row) => row.gap_subtype === 'mirror_syncvar_hook')).toBe(true);
+    expect(rows.every((row) => typeof row.candidate_id === 'string' && row.candidate_id.length > 0)).toBe(true);
+    expect(rows.every((row) => typeof row.pattern_id === 'string' && row.pattern_id.length > 0)).toBe(true);
     expect(rows.every((row) => row.detector_version === '1.0.0')).toBe(true);
     expect(rows.every((row) => typeof row.file === 'string' && typeof row.line === 'number')).toBe(true);
     expect(rows.every((row) => ['user_code', 'third_party', 'unknown'].includes(String(row.scopeClass)))).toBe(true);

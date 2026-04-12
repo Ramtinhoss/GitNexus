@@ -50,13 +50,21 @@ function parseJsonLines(raw: string): Array<Record<string, unknown>> {
     .map((line) => JSON.parse(line) as Record<string, unknown>);
 }
 
-function readAcceptedCandidateIds(gapSlice: Record<string, any>): string[] {
+function readAcceptedCandidateIds(gapSlice: Record<string, any>, candidateRows: GapCandidateRow[]): string[] {
+  // Primary: read from selected_candidates in slice.json (legacy format)
   const rows = Array.isArray(gapSlice.selected_candidates) ? gapSlice.selected_candidates : [];
-  const accepted = rows
+  const fromSlice = rows
     .filter((row) => String(row?.decision || '').toLowerCase() === 'accepted')
     .map((row) => String(row?.candidate_id || '').trim())
     .filter(Boolean);
-  return [...new Set(accepted)];
+  if (fromSlice.length > 0) return [...new Set(fromSlice)];
+
+  // Fallback: derive from candidates.jsonl status=accepted (gap-lab run format)
+  const fromCandidates = candidateRows
+    .filter((row) => getRowStatus(row) === 'accepted')
+    .map((row) => String(row.candidate_id || '').trim())
+    .filter(Boolean);
+  return [...new Set(fromCandidates)];
 }
 
 function readRejectBuckets(buckets: Record<string, any>): Record<string, number> {
@@ -117,9 +125,20 @@ function schemaError(candidateId: string, fieldPath: string): never {
   throw new Error(`gap-handoff schema error: candidate ${candidateId} missing ${fieldPath}`);
 }
 
+function acceptedAnchorError(candidateId: string, fieldPath: string): never {
+  throw new Error(`gap-handoff schema error: accepted candidate ${candidateId} has empty ${fieldPath}`);
+}
+
 function assertRequiredString(candidateId: string, fieldPath: string, value: unknown): void {
   if (!String(value || '').trim()) {
     schemaError(candidateId, fieldPath);
+  }
+}
+
+function assertAcceptedAnchorField(candidateId: string, fieldPath: string, value: unknown): void {
+  const str = String(value || '').trim();
+  if (!str || isPlaceholderText(str)) {
+    acceptedAnchorError(candidateId, fieldPath);
   }
 }
 
@@ -133,10 +152,10 @@ function assertCandidateSchema(rows: GapCandidateRow[]): void {
 
     if (!isAcceptedRow(row)) return;
 
-    assertRequiredString(candidateId, 'source_anchor.file', row.source_anchor?.file);
-    assertRequiredString(candidateId, 'source_anchor.symbol', row.source_anchor?.symbol);
-    assertRequiredString(candidateId, 'target_anchor.file', row.target_anchor?.file);
-    assertRequiredString(candidateId, 'target_anchor.symbol', row.target_anchor?.symbol);
+    assertAcceptedAnchorField(candidateId, 'source_anchor.file', row.source_anchor?.file);
+    assertAcceptedAnchorField(candidateId, 'source_anchor.symbol', row.source_anchor?.symbol);
+    assertAcceptedAnchorField(candidateId, 'target_anchor.file', row.target_anchor?.file);
+    assertAcceptedAnchorField(candidateId, 'target_anchor.symbol', row.target_anchor?.symbol);
   });
 }
 
@@ -179,8 +198,6 @@ export async function loadGapHandoff(input: {
   }
 
   const gapSlice = JSON.parse(gapSliceRaw) as Record<string, any>;
-  const acceptedCandidateIds = readAcceptedCandidateIds(gapSlice);
-  if (acceptedCandidateIds.length === 0) return null;
 
   const candidateRows = parseJsonLines(gapCandidatesRaw).map((row) => ({
     candidate_id: String(row.candidate_id || '').trim(),
@@ -204,6 +221,10 @@ export async function loadGapHandoff(input: {
     target_anchor: typeof row.target_anchor === 'object' ? row.target_anchor as GapCandidateAnchor : undefined,
     raw_match: typeof row.raw_match === 'string' ? row.raw_match : undefined,
   }));
+
+  const acceptedCandidateIds = readAcceptedCandidateIds(gapSlice, candidateRows);
+  if (acceptedCandidateIds.length === 0) return null;
+
   assertNoPlaceholders(input.runId, input.sliceId, candidateRows);
   assertCandidateSchema(candidateRows);
 
