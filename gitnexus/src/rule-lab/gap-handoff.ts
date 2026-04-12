@@ -21,6 +21,8 @@ export interface GapCandidateRow {
 export interface GapHandoffData {
   source_gap_handoff: RuleLabSourceGapHandoff;
   accepted_candidates: GapCandidateRow[];
+  confirmed_chain_steps: Array<{ hop_type?: string; anchor: string; snippet: string }>;
+  default_binding_kinds: string[];
 }
 
 const PLACEHOLDER_RE = /<[^>]+>|placeholder|todo|tbd/i;
@@ -146,5 +148,11 @@ export async function loadGapHandoff(input: {
   return {
     source_gap_handoff: handoff,
     accepted_candidates: acceptedRows,
+    confirmed_chain_steps: Array.isArray(gapSlice.verification?.confirmed_chain?.steps)
+      ? (gapSlice.verification.confirmed_chain.steps as Array<{ hop_type?: string; anchor: string; snippet: string }>)
+      : [],
+    default_binding_kinds: Array.isArray(gapSlice.default_binding_kinds)
+      ? gapSlice.default_binding_kinds.map((value: unknown) => String(value))
+      : [],
   };
 }

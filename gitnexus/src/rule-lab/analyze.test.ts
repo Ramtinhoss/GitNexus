@@ -228,4 +228,45 @@ describe('rule-lab analyze', () => {
     ).rejects.toThrow(/placeholder/i);
     await fs.rm(second.repoRoot, { recursive: true, force: true });
   });
+
+  it('persists source_gap_handoff and generates curation input derived from proposal candidates', async () => {
+    const { repoRoot, runId, sliceId } = await setupGapToRuleFixture({
+      aggregationMode: 'per_anchor_rules',
+    });
+    const result = await analyzeRuleLabSlice({ repoPath: repoRoot, runId, sliceId });
+    const slicePath = path.join(
+      repoRoot,
+      '.gitnexus',
+      'rules',
+      'lab',
+      'runs',
+      runId,
+      'slices',
+      sliceId,
+      'slice.json',
+    );
+    const curationPath = path.join(
+      repoRoot,
+      '.gitnexus',
+      'rules',
+      'lab',
+      'runs',
+      runId,
+      'slices',
+      sliceId,
+      'curation-input.json',
+    );
+    const slice = JSON.parse(await fs.readFile(slicePath, 'utf-8')) as any;
+    const curation = JSON.parse(await fs.readFile(curationPath, 'utf-8')) as any;
+
+    expect(slice.source_gap_handoff.promotion_backlog_count).toBe(73);
+    expect(curation.curated).toHaveLength(result.candidates.length);
+    expect(curation.curated.every((item: any) => /^unity\.event\..+\.v1$/.test(item.rule_id))).toBe(true);
+    expect(curation.curated.every((item: any) => item.confirmed_chain.steps.length > 0)).toBe(true);
+    expect(curation.curated.every((item: any) =>
+      Array.isArray(item.resource_bindings) && item.resource_bindings.length > 0,
+    )).toBe(true);
+
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
 });

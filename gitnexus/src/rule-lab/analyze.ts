@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { getRuleLabPaths } from './paths.js';
 import { loadGapHandoff, type GapCandidateRow } from './gap-handoff.js';
+import { buildCurationInput } from './curation-input-builder.js';
 import type { RuleLabCandidate, RuleLabSliceWithHandoff } from './types.js';
 
 export interface AnalyzeInput {
@@ -238,6 +239,20 @@ export async function analyzeRuleLabSlice(input: AnalyzeInput): Promise<AnalyzeO
   await fs.mkdir(path.dirname(paths.candidatesPath), { recursive: true });
   await fs.writeFile(paths.candidatesPath, `${candidates.map((candidate) => JSON.stringify(candidate)).join('\n')}\n`, 'utf-8');
   await fs.writeFile(slicePath, `${JSON.stringify(nextSlice, null, 2)}\n`, 'utf-8');
+  if (handoff) {
+    const curation = buildCurationInput({
+      runId: input.runId,
+      sliceId: input.sliceId,
+      slice: nextSlice,
+      candidates,
+      handoff,
+    });
+    await fs.writeFile(
+      path.join(path.dirname(paths.candidatesPath), 'curation-input.json'),
+      `${JSON.stringify(curation, null, 2)}\n`,
+      'utf-8',
+    );
+  }
 
   return {
     paths,
