@@ -13,6 +13,7 @@ export interface GapCandidateRow {
   candidate_id: string;
   status?: string;
   lifecycle_stage?: string;
+  reasonCode?: string;
   binding_kind?: string;
   source_anchor?: GapCandidateAnchor;
   target_anchor?: GapCandidateAnchor;
@@ -80,7 +81,9 @@ function summarizeCandidateRows(rows: GapCandidateRow[]): {
       promotionBacklogCount += 1;
       continue;
     }
-    rejectBuckets[status] = (rejectBuckets[status] || 0) + 1;
+    const reasonCode = String(row.reasonCode || '').trim();
+    const bucket = reasonCode || status;
+    rejectBuckets[bucket] = (rejectBuckets[bucket] || 0) + 1;
   }
   return {
     promotion_backlog_count: promotionBacklogCount,
@@ -152,6 +155,11 @@ export async function loadGapHandoff(input: {
     candidate_id: String(row.candidate_id || '').trim(),
     status: typeof row.status === 'string' ? row.status : undefined,
     lifecycle_stage: typeof row.lifecycle_stage === 'string' ? row.lifecycle_stage : undefined,
+    reasonCode: typeof row.reasonCode === 'string'
+      ? row.reasonCode
+      : typeof row.reason_code === 'string'
+        ? String(row.reason_code)
+        : undefined,
     binding_kind: typeof row.binding_kind === 'string'
       ? row.binding_kind
       : typeof (row.binding as Record<string, unknown> | undefined)?.kind === 'string'

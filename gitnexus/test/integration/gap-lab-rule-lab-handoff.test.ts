@@ -239,6 +239,126 @@ describe('gap-lab -> rule-lab handoff', () => {
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
 
+  it('preserves reject buckets by reasonCode when gap candidates use generic rejected status', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gap-lab-rule-lab-reasons-'));
+    const runId = 'gaplab-20260411-104710';
+    const sliceId = 'event_delegate_gap.reason_buckets';
+    const ruleSlicePath = path.join(repoRoot, '.gitnexus', 'rules', 'lab', 'runs', runId, 'slices', sliceId, 'slice.json');
+    const gapSlicePath = path.join(repoRoot, '.gitnexus', 'gap-lab', 'runs', runId, 'slices', `${sliceId}.json`);
+    const gapCandidatesPath = path.join(repoRoot, '.gitnexus', 'gap-lab', 'runs', runId, 'slices', `${sliceId}.candidates.jsonl`);
+    const decisionsPath = path.join(repoRoot, '.gitnexus', 'gap-lab', 'runs', runId, 'decisions.jsonl');
+
+    await writeJson(ruleSlicePath, {
+      id: sliceId,
+      trigger_family: 'event_delegate',
+      resource_types: ['syncvar_hook'],
+      host_base_type: ['network_behaviour'],
+      required_hops: ['code_runtime'],
+    });
+    await writeJson(gapSlicePath, {
+      slice_id: sliceId,
+      selected_candidates: [
+        { candidate_id: 'accepted-a', decision: 'accepted' },
+        { candidate_id: 'accepted-b', decision: 'accepted' },
+      ],
+      coverage_gate: {
+        user_raw_matches: 6,
+        processed_user_matches: 6,
+      },
+      discovery_scope: { mode: 'full_user_code' },
+      classification_buckets: {
+        accepted: { count: 2 },
+        promotion_backlog: { count: 1 },
+        third_party_excluded: { count: 99 },
+        unresolvable_handler_symbol: { count: 99 },
+      },
+      verification: {
+        confirmed_chain: {
+          steps: [
+            { hop_type: 'code_runtime', anchor: 'Assets/Gameplay/A.cs:12', snippet: 'A.Source' },
+            { hop_type: 'code_runtime', anchor: 'Assets/Gameplay/C.cs:14', snippet: 'C.Source' },
+          ],
+        },
+      },
+      default_binding_kinds: ['method_triggers_method'],
+    });
+    await fs.writeFile(
+      gapCandidatesPath,
+      `${[
+        JSON.stringify({
+          slice_id: sliceId,
+          candidate_id: 'accepted-a',
+          status: 'accepted',
+          source_anchor: { file: 'Assets/Gameplay/A.cs', line: 12, symbol: 'A.Source' },
+          target_anchor: { file: 'Assets/Gameplay/B.cs', line: 32, symbol: 'B.Target' },
+        }),
+        JSON.stringify({
+          slice_id: sliceId,
+          candidate_id: 'accepted-b',
+          status: 'accepted',
+          source_anchor: { file: 'Assets/Gameplay/C.cs', line: 14, symbol: 'C.Source' },
+          target_anchor: { file: 'Assets/Gameplay/D.cs', line: 42, symbol: 'D.Target' },
+        }),
+        JSON.stringify({
+          slice_id: sliceId,
+          candidate_id: 'backlog-1',
+          status: 'promotion_backlog',
+          reasonCode: 'missing_runtime_source_anchor',
+          source_anchor: { file: 'Assets/Gameplay/Backlog.cs', line: 1, symbol: 'Backlog.Source' },
+          target_anchor: { file: 'Assets/Gameplay/BacklogT.cs', line: 2, symbol: 'Backlog.Target' },
+        }),
+        JSON.stringify({
+          slice_id: sliceId,
+          candidate_id: 'reject-tp-1',
+          status: 'rejected',
+          reasonCode: 'third_party_scope_excluded',
+          source_anchor: { file: 'Assets/Gameplay/Tp1.cs', line: 1, symbol: 'Tp.One' },
+          target_anchor: { file: 'Assets/Gameplay/Tp1T.cs', line: 2, symbol: 'Tp.OneT' },
+        }),
+        JSON.stringify({
+          slice_id: sliceId,
+          candidate_id: 'reject-tp-2',
+          status: 'rejected',
+          reasonCode: 'third_party_scope_excluded',
+          source_anchor: { file: 'Assets/Gameplay/Tp2.cs', line: 1, symbol: 'Tp.Two' },
+          target_anchor: { file: 'Assets/Gameplay/Tp2T.cs', line: 2, symbol: 'Tp.TwoT' },
+        }),
+        JSON.stringify({
+          slice_id: sliceId,
+          candidate_id: 'reject-handler-1',
+          status: 'rejected',
+          reasonCode: 'unresolvable_handler_symbol',
+          source_anchor: { file: 'Assets/Gameplay/Uh1.cs', line: 1, symbol: 'Uh.One' },
+          target_anchor: { file: 'Assets/Gameplay/Uh1T.cs', line: 2, symbol: 'Uh.OneT' },
+        }),
+      ].join('\n')}\n`,
+      'utf-8',
+    );
+    await fs.writeFile(
+      decisionsPath,
+      `${JSON.stringify({
+        decision_type: 'rule_aggregation_mode',
+        slice_id: sliceId,
+        aggregation_mode: 'per_anchor_rules',
+        candidate_ids: ['accepted-a', 'accepted-b'],
+      })}\n`,
+      'utf-8',
+    );
+
+    const analyzed = await analyzeRuleLabSlice({ repoPath: repoRoot, runId, sliceId });
+    const review = await buildReviewPack({ repoPath: repoRoot, runId, sliceId, maxTokens: 6000 });
+    const reviewText = await fs.readFile(review.paths.reviewCardsPath, 'utf-8');
+
+    expect(analyzed.slice.source_gap_handoff?.promotion_backlog_count).toBe(1);
+    expect(analyzed.slice.source_gap_handoff?.reject_buckets).toEqual({
+      third_party_scope_excluded: 2,
+      unresolvable_handler_symbol: 1,
+    });
+    expect(reviewText).toContain('reject_buckets: {"third_party_scope_excluded":2,"unresolvable_handler_symbol":1}');
+
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+
   it('proposal-specific confirmed chain and review semantics remain non-empty and proposal-scoped', async () => {
     const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gap-lab-rule-lab-proposal-'));
     const runId = 'gaplab-20260411-104710';

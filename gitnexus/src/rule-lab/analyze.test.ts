@@ -263,6 +263,79 @@ describe('rule-lab analyze', () => {
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
 
+  it('reject bucket summary keys rejected rows by reasonCode instead of generic rejected status', async () => {
+    const { repoRoot, runId, sliceId } = await setupGapToRuleFixture({
+      acceptedCandidateRows: [
+        {
+          candidate_id: 'accepted-a',
+          status: 'accepted',
+          source_anchor: {
+            file: 'Assets/Gameplay/SourceA.cs',
+            line: 12,
+            symbol: 'SourceA.Trigger',
+          },
+          target_anchor: {
+            file: 'Assets/Gameplay/TargetA.cs',
+            line: 35,
+            symbol: 'TargetA.OnTrigger',
+          },
+        },
+        {
+          candidate_id: 'accepted-b',
+          status: 'accepted',
+          source_anchor: {
+            file: 'Assets/Gameplay/SourceB.cs',
+            line: 16,
+            symbol: 'SourceB.Trigger',
+          },
+          target_anchor: {
+            file: 'Assets/Gameplay/TargetB.cs',
+            line: 41,
+            symbol: 'TargetB.OnTrigger',
+          },
+        },
+        {
+          candidate_id: 'backlog-1',
+          status: 'promotion_backlog',
+          reasonCode: 'missing_runtime_source_anchor',
+          source_anchor: { file: 'Assets/Gameplay/Backlog1.cs', line: 1, symbol: 'Backlog.One' },
+          target_anchor: { file: 'Assets/Gameplay/Backlog1T.cs', line: 2, symbol: 'Backlog.OneT' },
+        },
+        {
+          candidate_id: 'reject-third-party-1',
+          status: 'rejected',
+          reasonCode: 'third_party_scope_excluded',
+          source_anchor: { file: 'Assets/Gameplay/Tp1.cs', line: 1, symbol: 'Tp.One' },
+          target_anchor: { file: 'Assets/Gameplay/Tp1T.cs', line: 2, symbol: 'Tp.OneT' },
+        },
+        {
+          candidate_id: 'reject-third-party-2',
+          status: 'rejected',
+          reasonCode: 'third_party_scope_excluded',
+          source_anchor: { file: 'Assets/Gameplay/Tp2.cs', line: 1, symbol: 'Tp.Two' },
+          target_anchor: { file: 'Assets/Gameplay/Tp2T.cs', line: 2, symbol: 'Tp.TwoT' },
+        },
+        {
+          candidate_id: 'reject-handler-1',
+          status: 'rejected',
+          reasonCode: 'unresolvable_handler_symbol',
+          source_anchor: { file: 'Assets/Gameplay/Uh1.cs', line: 1, symbol: 'Uh.One' },
+          target_anchor: { file: 'Assets/Gameplay/Uh1T.cs', line: 2, symbol: 'Uh.OneT' },
+        },
+      ],
+    });
+
+    const result = await analyzeRuleLabSlice({ repoPath: repoRoot, runId, sliceId });
+
+    expect(result.slice.source_gap_handoff.promotion_backlog_count).toBe(1);
+    expect(result.slice.source_gap_handoff.reject_buckets).toEqual({
+      third_party_scope_excluded: 2,
+      unresolvable_handler_symbol: 1,
+    });
+
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+
   it('aggregate_single_rule merges accepted anchors into one proposal lineage row', async () => {
     const { repoRoot, runId, sliceId } = await setupGapToRuleFixture({
       aggregationMode: 'aggregate_single_rule',
