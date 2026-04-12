@@ -167,6 +167,20 @@ Before entering C1, persist a machine-checkable "ready for execution" state.
 
 Single-slice loop only. Do not process other slices in this phase.
 
+Preferred execution entrypoint for C1 is the first-class CLI:
+
+```bash
+gitnexus gap-lab run --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id "$SLICE_ID" --gap-subtype "$GAP_SUBTYPE"
+```
+
+Exit semantics:
+
+1. Exit code `0`: slice run passed and `slice.json.coverage_gate.status` is `passed`.
+2. Exit code `1`: coverage gate blocked; inspect `slice.json.coverage_gate.reason` before C3.
+3. Exit code `2`: hard error such as invalid subtype, timeout, or artifact I/O failure.
+
+Do not keep manual scanner/resolver/verifier chaining as the default operator path once `gap-lab run` is available.
+
 ### C0 Run Artifact Parity Check (mandatory before C1/C3)
 
 Keep `gap-lab` and `rule-lab` run artifacts in sync for the same `run_id/slice_id`.
@@ -181,12 +195,12 @@ Do not claim C1/C3 started when parity check fails.
 
 ### C1 Discovery (exhaustive semantic-first)
 
-Discovery policy is exhaustive semantic-first + graph-missing verification:
+Discovery policy is exhaustive semantic-first + approved-rule-backed duplicate prevention:
 
 1. **C1a repo-wide lexical universe**: scan the full repo scope for subtype pattern matches.
 2. **C1b scope classification**: classify each raw match as `user_code|third_party|unknown` with explicit reason.
 3. **C1c symbol resolution**: resolve candidate source/target symbols from lexical matches.
-4. **C1d missing-edge verification**: verify expected synthetic edge/path is absent before inventory acceptance.
+4. **C1d missing-edge verification**: verify expected synthetic edge/path is absent before inventory acceptance, and suppress already-covered candidates from approved rule artifacts under `.gitnexus/rules/approved/*.yaml` rather than from graph state.
 
 Do not rely on user clue files as exclusive search scope.
 Do not use graph-only missing edges as sole discovery source.

@@ -71,10 +71,11 @@ Contract terms:
 
 - Focus lock is mandatory before discovery when `gap_type/gap_subtype` are missing.
 - Each loop executes one slice only; no implicit run-all-slices behavior.
-- Discovery is semantic-first; graph is used for missing-edge verification and
-  closure verification, not as the sole discovery source.
+- Discovery is semantic-first; graph is used for closure verification, not as the sole discovery source.
 - Discovery must be exhaustive before C3: C1a lexical universe -> C1b scope
   classification -> C1c symbol resolution -> C1d missing-edge verification.
+- Approved rule artifacts, not graph state, back C1d duplicate-prevention:
+  `.gitnexus/rules/approved/*.yaml` `resource_bindings` are the source of truth for already-covered source->target pairs.
 - Discovery execution order is performance-first: run lexical prefilter before
   semantic parsing; avoid full-repo Python file walks as first action.
 - C2 must emit fixed classification buckets (`third_party_excluded`,

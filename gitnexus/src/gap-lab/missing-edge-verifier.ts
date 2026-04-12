@@ -1,13 +1,9 @@
 import type { ResolvedCandidate } from './candidate-resolver.js';
-
-export interface MissingEdgeLookupInput {
-  handlerSymbol: string;
-  candidate: ResolvedCandidate;
-}
+import type { RuleArtifactCoverageCheck } from './rule-coverage-lookup.js';
 
 export interface VerifyMissingEdgesInput {
   candidates: ResolvedCandidate[];
-  edgeLookup?: (input: MissingEdgeLookupInput) => Promise<boolean>;
+  coverageCheck?: RuleArtifactCoverageCheck;
 }
 
 export type VerifyStatus = 'verified_missing' | 'accepted' | 'promotion_backlog' | 'rejected';
@@ -19,7 +15,7 @@ export interface VerifiedCandidate extends Omit<ResolvedCandidate, 'status' | 'r
 }
 
 export async function verifyMissingEdges(input: VerifyMissingEdgesInput): Promise<VerifiedCandidate[]> {
-  const edgeLookup = input.edgeLookup ?? (async () => false);
+  const coverageCheck = input.coverageCheck ?? (async () => false);
 
   const out: VerifiedCandidate[] = [];
   for (const candidate of input.candidates) {
@@ -42,12 +38,14 @@ export async function verifyMissingEdges(input: VerifyMissingEdgesInput): Promis
       continue;
     }
 
-    const edgeExists = await edgeLookup({
-      handlerSymbol: candidate.handlerSymbol,
-      candidate,
-    });
+    const alreadyCovered = candidate.sourceAnchor && candidate.targetAnchor
+      ? await coverageCheck({
+          handlerSymbol: candidate.handlerSymbol,
+          candidate,
+        })
+      : false;
 
-    if (edgeExists) {
+    if (alreadyCovered) {
       out.push({
         ...candidate,
         status: 'rejected',

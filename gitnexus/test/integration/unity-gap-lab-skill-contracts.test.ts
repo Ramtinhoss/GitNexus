@@ -110,6 +110,18 @@ describe('unity gap-lab skill contracts', () => {
     expect(source).toMatch(/Do not rely on user clue files as exclusive search scope/i);
   });
 
+  it('documents gap-lab run entrypoint and coverage-blocked exit semantics', async () => {
+    const { source, installed } = await readSkills();
+    const commandPattern = /gitnexus gap-lab run --repo-path "\$REPO_PATH" --run-id "\$RUN_ID" --slice-id "\$SLICE_ID" --gap-subtype "\$GAP_SUBTYPE"/i;
+
+    expect(source).toMatch(commandPattern);
+    expect(installed).toMatch(commandPattern);
+    expect(source).toMatch(/exit code `?1`?.*coverage gate blocked/i);
+    expect(installed).toMatch(/exit code `?1`?.*coverage gate blocked/i);
+    expect(source).toMatch(/Do not keep manual scanner\/resolver\/verifier chaining as the default operator path/i);
+    expect(installed).toMatch(/Do not keep manual scanner\/resolver\/verifier chaining as the default operator path/i);
+  });
+
   it('requires coverage gate before C3 and reason_code on non-accepted candidates', async () => {
     const { source } = await readSkills();
     expect(source).toMatch(/coverage gate/i);
@@ -168,7 +180,8 @@ describe('unity gap-lab skill contracts', () => {
       [/quality gate/i, 'phase B handoff requires quality gate'],
       [/phase_b_clues_confirmed/i, 'execution readiness decision marker'],
       [/next_command.*alone.*not a valid phase transition/i, 'next_command-only transition forbidden'],
-      [/gap-lab.*rules\/lab.*parity/i, 'cross-artifact parity requirement']
+      [/gap-lab.*rules\/lab.*parity/i, 'cross-artifact parity requirement'],
+      [/approved rule artifacts.*not graph state.*C1d duplicate-prevention/i, 'approved-rule duplicate prevention contract']
     ]);
 
     expect(installedContract).toContain('Unity Gap-Lab Contract');

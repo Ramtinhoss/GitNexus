@@ -11,6 +11,10 @@ interface GapCandidateAnchor {
 
 export interface GapCandidateRow {
   candidate_id: string;
+  gap_type?: string;
+  gap_subtype?: string;
+  pattern_id?: string;
+  detector_version?: string;
   status?: string;
   lifecycle_stage?: string;
   reasonCode?: string;
@@ -109,6 +113,33 @@ function isAcceptedRow(row: GapCandidateRow): boolean {
   return getRowStatus(row) === 'accepted';
 }
 
+function schemaError(candidateId: string, fieldPath: string): never {
+  throw new Error(`gap-handoff schema error: candidate ${candidateId} missing ${fieldPath}`);
+}
+
+function assertRequiredString(candidateId: string, fieldPath: string, value: unknown): void {
+  if (!String(value || '').trim()) {
+    schemaError(candidateId, fieldPath);
+  }
+}
+
+function assertCandidateSchema(rows: GapCandidateRow[]): void {
+  rows.forEach((row) => {
+    const candidateId = String(row.candidate_id || '').trim() || '<missing-candidate-id>';
+    assertRequiredString(candidateId, 'gap_type', row.gap_type);
+    assertRequiredString(candidateId, 'gap_subtype', row.gap_subtype);
+    assertRequiredString(candidateId, 'pattern_id', row.pattern_id);
+    assertRequiredString(candidateId, 'detector_version', row.detector_version);
+
+    if (!isAcceptedRow(row)) return;
+
+    assertRequiredString(candidateId, 'source_anchor.file', row.source_anchor?.file);
+    assertRequiredString(candidateId, 'source_anchor.symbol', row.source_anchor?.symbol);
+    assertRequiredString(candidateId, 'target_anchor.file', row.target_anchor?.file);
+    assertRequiredString(candidateId, 'target_anchor.symbol', row.target_anchor?.symbol);
+  });
+}
+
 function assertNoPlaceholders(runId: string, sliceId: string, rows: GapCandidateRow[]): void {
   if (isPlaceholderText(runId) || isPlaceholderText(sliceId)) {
     throw new Error('gap handoff rejected placeholder run/slice id');
@@ -153,6 +184,10 @@ export async function loadGapHandoff(input: {
 
   const candidateRows = parseJsonLines(gapCandidatesRaw).map((row) => ({
     candidate_id: String(row.candidate_id || '').trim(),
+    gap_type: typeof row.gap_type === 'string' ? row.gap_type : undefined,
+    gap_subtype: typeof row.gap_subtype === 'string' ? row.gap_subtype : undefined,
+    pattern_id: typeof row.pattern_id === 'string' ? row.pattern_id : undefined,
+    detector_version: typeof row.detector_version === 'string' ? row.detector_version : undefined,
     status: typeof row.status === 'string' ? row.status : undefined,
     lifecycle_stage: typeof row.lifecycle_stage === 'string' ? row.lifecycle_stage : undefined,
     reasonCode: typeof row.reasonCode === 'string'
@@ -169,10 +204,12 @@ export async function loadGapHandoff(input: {
     target_anchor: typeof row.target_anchor === 'object' ? row.target_anchor as GapCandidateAnchor : undefined,
     raw_match: typeof row.raw_match === 'string' ? row.raw_match : undefined,
   }));
+  assertNoPlaceholders(input.runId, input.sliceId, candidateRows);
+  assertCandidateSchema(candidateRows);
+
   const acceptedRows = candidateRows.filter((row) =>
     acceptedCandidateIds.includes(String(row.candidate_id || '').trim()) && isAcceptedRow(row),
   );
-  assertNoPlaceholders(input.runId, input.sliceId, candidateRows);
 
   const decisionRows = parseJsonLines(decisionsRaw);
   const aggregationMode = selectAggregationMode(decisionRows, input.sliceId);

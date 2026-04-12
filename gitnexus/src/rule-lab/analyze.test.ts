@@ -111,7 +111,14 @@ async function setupGapToRuleFixture(options: SetupOptions = {}): Promise<{
     ];
     await fs.writeFile(
       gapCandidatesPath,
-      `${rows.map((row) => JSON.stringify({ slice_id: sliceId, ...row })).join('\n')}\n`,
+      `${rows.map((row) => JSON.stringify({
+        slice_id: sliceId,
+        gap_type: 'event_delegate_gap',
+        gap_subtype: 'mirror_syncvar_hook',
+        pattern_id: 'event_delegate.mirror_syncvar_hook.v1',
+        detector_version: '1.0.0',
+        ...row,
+      })).join('\n')}\n`,
       'utf-8',
     );
 
@@ -260,6 +267,33 @@ describe('rule-lab analyze', () => {
     expect(result.candidates[0].binding_kind).not.toBe('method_triggers_method');
     expect(result.slice.source_gap_handoff.promotion_backlog_count).toBe(3);
     expect(result.slice.source_gap_handoff.reject_buckets.third_party_excluded).toBe(4);
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+
+  it('fails early when gap-handoff candidate taxonomy is missing', async () => {
+    const { repoRoot, runId, sliceId } = await setupGapToRuleFixture({
+      acceptedCandidateRows: [
+        {
+          candidate_id: 'accepted-a',
+          gap_type: undefined,
+          status: 'accepted',
+          source_anchor: {
+            file: 'Assets/Gameplay/SourceA.cs',
+            line: 12,
+            symbol: 'SourceA.Trigger',
+          },
+          target_anchor: {
+            file: 'Assets/Gameplay/TargetA.cs',
+            line: 35,
+            symbol: 'TargetA.OnTrigger',
+          },
+        },
+      ],
+    });
+
+    await expect(analyzeRuleLabSlice({ repoPath: repoRoot, runId, sliceId })).rejects.toThrow(
+      /gap-handoff schema error: candidate accepted-a missing gap_type/i,
+    );
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
 

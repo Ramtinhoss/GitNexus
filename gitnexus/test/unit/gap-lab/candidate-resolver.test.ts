@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LexicalMatch } from '../../../src/gap-lab/exhaustive-scanner.js';
 import { resolveLexicalCandidates } from '../../../src/gap-lab/candidate-resolver.js';
 import { verifyMissingEdges } from '../../../src/gap-lab/missing-edge-verifier.js';
@@ -169,25 +169,78 @@ public partial class NetPlayer : NetworkBehaviour
 });
 
 describe('gap-lab missing-edge verifier', () => {
-  it('keeps missing-edge candidates and rejects already-present edges', async () => {
+  it('rejects already-covered accepted candidates and skips backlog rows', async () => {
+    const repoPath = await createRepo([
+      {
+        path: 'Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.Dead.cs',
+        content: `using Mirror;
+
+public partial class NetPlayer : NetworkBehaviour
+{
+    [SyncVar(hook = nameof(OnDeadChange))]
+    public bool IsDead;
+
+    public void GameOverInDead()
+    {
+        IsDead = true;
+    }
+
+    private void OnDeadChange(bool oldValue, bool newValue)
+    {
+    }
+}
+`,
+      },
+      {
+        path: 'Assets/NEON/Code/UI/StoreItem.cs',
+        content: `using Mirror;
+
+public class StoreItem : NetworkBehaviour
+{
+    [SyncVar(hook = nameof(GetTradingType))]
+    public int tradingTypeId;
+
+    private void GetTradingType(int oldValue, int newValue)
+    {
+    }
+}
+`,
+      },
+    ]);
+
     const resolved = await resolveLexicalCandidates({
+      repoPath,
       matches: [
-        baseMatch({ text: 'PlayerStates.Callback += OnPlayerStateChange' }),
-        baseMatch({ text: 'PlayerStates.Callback += OnGunGraphVariableChange' }),
+        baseMatch({
+          gapSubtype: 'mirror_syncvar_hook',
+          patternId: 'event_delegate.mirror_syncvar_hook.v1',
+          file: 'Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.Dead.cs',
+          line: 4,
+          text: '[SyncVar(hook = nameof(OnDeadChange))]',
+        }),
+        baseMatch({
+          gapSubtype: 'mirror_syncvar_hook',
+          patternId: 'event_delegate.mirror_syncvar_hook.v1',
+          file: 'Assets/NEON/Code/UI/StoreItem.cs',
+          line: 4,
+          text: '[SyncVar(hook = nameof(GetTradingType))]',
+        }),
       ],
     });
 
+    const coverageCheck = vi.fn(async ({ candidate }) => candidate.targetAnchor?.symbol === 'NetPlayer.OnDeadChange');
     const verified = await verifyMissingEdges({
       candidates: resolved,
-      edgeLookup: async ({ handlerSymbol }) => handlerSymbol === 'OnGunGraphVariableChange',
+      coverageCheck,
     });
 
-    const kept = verified.find((row) => row.handlerSymbol === 'OnPlayerStateChange');
-    const rejected = verified.find((row) => row.handlerSymbol === 'OnGunGraphVariableChange');
-    expect(kept?.status).toBe('verified_missing');
-    expect(kept?.missingEdge).toBe(true);
-    expect(rejected?.status).toBe('rejected');
-    expect(rejected?.reasonCode).toBe('edge_already_present');
+    const covered = verified.find((row) => row.file.endsWith('NetPlayer.Dead.cs'));
+    const backlog = verified.find((row) => row.file.endsWith('StoreItem.cs'));
+    expect(covered?.status).toBe('rejected');
+    expect(covered?.reasonCode).toBe('edge_already_present');
+    expect(backlog?.status).toBe('promotion_backlog');
+    expect(backlog?.reasonCode).toBe('missing_runtime_source_anchor');
+    expect(coverageCheck).toHaveBeenCalledTimes(1);
   });
 
   it('classifies syncvar candidates into accepted, backlog, and third-party buckets', async () => {

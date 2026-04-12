@@ -10,6 +10,7 @@ All notable changes to GitNexus will be documented in this file.
 - Added integration contract coverage for gap-lab skill semantics, source/installed parity, anti-placeholder checks, closure evidence guards, and changelog sync requirements.
 - Added exhaustive gap-lab discovery building blocks: subtype pattern library, repo-wide lexical scanner (`rg`-first with fallback), ownership scope classifier, candidate resolver, missing-edge verifier, parity gate, and balanced-slim artifact writer.
 - Added exhaustive gap-lab integration coverage for lexical universe generation, parity blocking, semantic coverage-gate blocking, anti-placeholder protection, and slim artifact persistence guarantees.
+- Added first-class `gitnexus gap-lab run` orchestration with exit code `1` for coverage-gate blocked slices and exit code `2` for hard errors.
 
 ### Changed
 - Updated config/state ownership documentation to include `.gitnexus/gap-lab/runs/**` artifacts and owner responsibilities.
@@ -18,6 +19,7 @@ All notable changes to GitNexus will be documented in this file.
 - Updated gap-lab persistence contract to balanced-slim artifacts with `slices/<slice_id>.candidates.jsonl` and explicit non-accepted `reason_code` semantics.
 - Added clue and scope contract correction for gap-lab: split `slice_focus`, `discovery_scope`, `search_seeds`, and `validation_exemplars`, and require explicit scope overrides before narrowing.
 - Added candidate-derived coverage audit and default-scope anti-exemplar filtering guards, including `candidate_audit_drift` blocking and `promotion_backlog` eligibility semantics.
+- Updated gap-lab C1d duplicate suppression to use approved rule artifacts under `.gitnexus/rules/approved/*.yaml` instead of graph state, and hardened gap-handoff schema validation with field-path diagnostics.
 
 ## [1.5.0] - 2026-04-06
 

@@ -9,6 +9,7 @@ import { classifyScopePath } from '../../src/gap-lab/scope-classifier.js';
 import { resolveLexicalCandidates } from '../../src/gap-lab/candidate-resolver.js';
 import { auditCandidateRows } from '../../src/gap-lab/candidate-audit.js';
 import { verifyMissingEdges } from '../../src/gap-lab/missing-edge-verifier.js';
+import { buildRuleArtifactCoverageCheck } from '../../src/gap-lab/rule-coverage-lookup.js';
 
 const tempDirs: string[] = [];
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -31,6 +32,12 @@ async function writeJsonl(filePath: string, rows: unknown[]): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   const content = rows.map((row) => JSON.stringify(row)).join('\n');
   await fs.writeFile(filePath, content ? `${content}\n` : '', 'utf-8');
+}
+
+async function writeApprovedRule(repoPath: string, fileName: string, yaml: string): Promise<void> {
+  const filePath = path.join(repoPath, '.gitnexus', 'rules', 'approved', fileName);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, yaml, 'utf-8');
 }
 
 async function createRepoFromFixture(manifestPath = fixtureManifestPath): Promise<string> {
@@ -176,12 +183,82 @@ describe('gap-lab exhaustive discovery', () => {
     });
     const verified = await verifyMissingEdges({
       candidates: resolved,
-      edgeLookup: async ({ handlerSymbol }) => handlerSymbol === 'OnPlayerStateChange',
+      coverageCheck: async () => false,
     });
 
     const nonAccepted = verified.filter((row) => row.status !== 'verified_missing');
     expect(nonAccepted.length).toBeGreaterThan(0);
     expect(nonAccepted.every((row) => !!row.reasonCode)).toBe(true);
+  });
+
+  it('suppresses already-covered accepted candidates from approved YAML artifacts', async () => {
+    const repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'gap-lab-approved-coverage-'));
+    tempDirs.push(repoPath);
+
+    const sourceFile = path.join(repoPath, 'Assets', 'NEON', 'Code', 'NetworkCode', 'NeonPlayer', 'NetPlayer.Dead.cs');
+    await fs.mkdir(path.dirname(sourceFile), { recursive: true });
+    await fs.writeFile(sourceFile, `using Mirror;
+
+public partial class NetPlayer : NetworkBehaviour
+{
+    [SyncVar(hook = nameof(OnDeadChange))]
+    public bool IsDead;
+
+    public void GameOverInDead()
+    {
+        IsDead = true;
+    }
+
+    private void OnDeadChange(bool oldValue, bool newValue)
+    {
+    }
+}
+`, 'utf-8');
+
+    await writeApprovedRule(repoPath, 'syncvar-approved.yaml', `id: approved.netplayer.syncvar
+version: 1.0.0
+family: analyze_rules
+trigger_family: event_delegate
+resource_types:
+  - syncvar_hook
+host_base_type:
+  - network_behaviour
+required_hops:
+  - code_runtime
+guarantees:
+  - approved duplicate coverage
+non_guarantees:
+  - none
+resource_bindings:
+  - kind: method_triggers_method
+    source_class_pattern: NetPlayer
+    source_method: GameOverInDead
+    target_class_pattern: NetPlayer
+    target_method: OnDeadChange
+`);
+
+    const resolved = await resolveLexicalCandidates({
+      repoPath,
+      matches: [
+        {
+          gapSubtype: 'mirror_syncvar_hook',
+          patternId: 'event_delegate.mirror_syncvar_hook.v1',
+          file: 'Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.Dead.cs',
+          line: 4,
+          text: '[SyncVar(hook = nameof(OnDeadChange))]',
+        },
+      ],
+    });
+
+    const coverageCheck = await buildRuleArtifactCoverageCheck(repoPath);
+    const verified = await verifyMissingEdges({
+      candidates: resolved,
+      coverageCheck,
+    });
+
+    expect(verified).toHaveLength(1);
+    expect(verified[0].status).toBe('rejected');
+    expect(verified[0].reasonCode).toBe('edge_already_present');
   });
 
   it('enforces run artifact parity gate', async () => {
