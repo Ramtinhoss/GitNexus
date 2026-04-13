@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promoteCuratedRules } from './promote.js';
+import { loadRuleRegistry } from '../mcp/local/runtime-claim-rule-registry.js';
 
 describe('rule-lab promote', () => {
   it('promotes curated candidate into approved yaml and catalog entry', async () => {
@@ -267,6 +268,97 @@ describe('rule-lab promote', () => {
 
     const out = await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a' });
     expect(out.promotedFiles).toHaveLength(2);
+
+    await fs.rm(repoRoot, { recursive: true, force: true });
+  });
+
+  it('writes all binding fields into yaml and keeps them parseable via loadRuleRegistry', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-promote-bindings-roundtrip-'));
+    const rulesRoot = path.join(repoRoot, '.gitnexus', 'rules');
+    const sliceDir = path.join(rulesRoot, 'lab', 'runs', 'run-x', 'slices', 'slice-a');
+    await fs.mkdir(path.join(rulesRoot, 'approved'), { recursive: true });
+    await fs.mkdir(sliceDir, { recursive: true });
+    await fs.writeFile(path.join(rulesRoot, 'catalog.json'), JSON.stringify({ version: 1, rules: [] }, null, 2), 'utf-8');
+    await fs.writeFile(
+      path.join(sliceDir, 'curated.json'),
+      JSON.stringify({
+        run_id: 'run-x',
+        slice_id: 'slice-a',
+        curated: [
+          {
+            id: 'candidate-1',
+            rule_id: 'demo.bindings.roundtrip.v1',
+            title: 'demo bindings',
+            match: {
+              trigger_tokens: ['reload'],
+              resource_types: ['syncvar_hook'],
+              host_base_type: ['network_behaviour'],
+            },
+            topology: [
+              { hop: 'code_runtime', from: { entity: 'script' }, to: { entity: 'runtime' }, edge: { kind: 'calls' } },
+            ],
+            closure: {
+              required_hops: ['code_runtime'],
+              failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' },
+            },
+            claims: {
+              guarantees: ['binding_fields_roundtrip'],
+              non_guarantees: ['no_runtime_execution'],
+              next_action: 'gitnexus query "reload"',
+            },
+            confirmed_chain: {
+              steps: [{ hop_type: 'code_runtime', anchor: 'Assets/Demo.cs:12', snippet: 'Demo.Trigger' }],
+            },
+            guarantees: ['binding_fields_roundtrip'],
+            non_guarantees: ['no_runtime_execution'],
+            resource_bindings: [
+              {
+                kind: 'method_triggers_scene_load',
+                host_class_pattern: 'BattleController',
+                loader_methods: ['EnterBattle'],
+                scene_name: 'BattleScene',
+              },
+              {
+                kind: 'method_triggers_method',
+                source_class_pattern: 'SourceClass',
+                source_method: 'Emit',
+                target_class_pattern: 'TargetClass',
+                target_method: 'Handle',
+              },
+            ],
+          },
+        ],
+      }, null, 2),
+      'utf-8',
+    );
+
+    const out = await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a', version: '1.0.0' });
+    const yaml = await fs.readFile(out.promotedFiles[0], 'utf-8');
+    expect(yaml).toContain('scene_name: BattleScene');
+    expect(yaml).toContain('host_class_pattern: BattleController');
+    expect(yaml).toContain('loader_methods:');
+    expect(yaml).toContain('- EnterBattle');
+    expect(yaml).toContain('target_class_pattern: TargetClass');
+    expect(yaml).toContain('target_method: Handle');
+
+    await fs.rm(path.join(rulesRoot, 'compiled'), { recursive: true, force: true });
+    const registry = await loadRuleRegistry(repoRoot);
+    const rule = registry.activeRules.find((item) => item.id === 'demo.bindings.roundtrip.v1');
+    expect(rule).toBeTruthy();
+    expect(rule?.resource_bindings).toBeDefined();
+    expect(rule?.resource_bindings?.[0].kind).toBe('method_triggers_scene_load');
+    expect(rule?.resource_bindings?.[0].host_class_pattern).toBe('BattleController');
+    expect(rule?.resource_bindings?.[0].loader_methods).toEqual(['EnterBattle']);
+    expect(rule?.resource_bindings?.[0].scene_name).toBe('BattleScene');
+    expect(rule?.resource_bindings?.[0].source_class_pattern).toBeUndefined();
+    expect(rule?.resource_bindings?.[0].source_method).toBeUndefined();
+    expect(rule?.resource_bindings?.[0].target_class_pattern).toBeUndefined();
+    expect(rule?.resource_bindings?.[0].target_method).toBeUndefined();
+    expect(rule?.resource_bindings?.[1].kind).toBe('method_triggers_method');
+    expect(rule?.resource_bindings?.[1].source_class_pattern).toBe('SourceClass');
+    expect(rule?.resource_bindings?.[1].source_method).toBe('Emit');
+    expect(rule?.resource_bindings?.[1].target_class_pattern).toBe('TargetClass');
+    expect(rule?.resource_bindings?.[1].target_method).toBe('Handle');
 
     await fs.rm(repoRoot, { recursive: true, force: true });
   });

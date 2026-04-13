@@ -21,6 +21,7 @@ interface PromotableItem {
   };
   guarantees: string[];
   non_guarantees: string[];
+  resource_bindings?: RuleDslDraft['resource_bindings'];
 }
 
 interface CatalogEntry {
@@ -94,6 +95,11 @@ function isForbiddenPlaceholder(value: string): boolean {
   return token === 'unknown' || token === 'todo' || token === 'tbd' || /<[^>]+>/.test(token);
 }
 
+function hasPlaceholderText(value: unknown): boolean {
+  const raw = String(value || '').trim();
+  return !raw || /TODO|TBD|placeholder|<[^>]+>/i.test(raw);
+}
+
 function assertNoPlaceholderScope(values: string[], field: 'resource_types' | 'host_base_type'): void {
   if (values.length === 0) {
     throw new Error(`promote lint failed: ${field} must be non-empty`);
@@ -103,12 +109,48 @@ function assertNoPlaceholderScope(values: string[], field: 'resource_types' | 'h
   }
 }
 
-function assertResolvedBindings(resourceBindings: RuleDslDraft['resource_bindings']): void {
+function assertResolvedBindings(resourceBindings: RuleDslDraft['resource_bindings'], ruleId: string): void {
   if (!Array.isArray(resourceBindings) || resourceBindings.length === 0) return;
   const raw = JSON.stringify(resourceBindings);
-  if (/UnknownClass|UnknownMethod|UnknownSource|UnknownTarget/i.test(raw)) {
-    throw new Error('binding unresolved: unknown placeholder binding values are forbidden');
+  if (/UnknownClass|UnknownMethod|UnknownSource|UnknownTarget|TODO|TBD|placeholder|<[^>]+>/i.test(raw)) {
+    throw new Error(`binding_unresolved: placeholder binding values are forbidden for rule ${ruleId}`);
   }
+}
+
+function requireEvidenceGuard(item: PromotableItem, ruleId: string): void {
+  const steps = Array.isArray(item.confirmed_chain?.steps) ? item.confirmed_chain.steps : [];
+  if (steps.length === 0) {
+    throw new Error(`evidence_guard_failed: confirmed_chain.steps must be non-empty for rule ${ruleId}`);
+  }
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index];
+    if (hasPlaceholderText(step.anchor)) {
+      throw new Error(`evidence_guard_failed: confirmed_chain.steps[${index}].anchor invalid for rule ${ruleId}`);
+    }
+    if (hasPlaceholderText(step.snippet)) {
+      throw new Error(`evidence_guard_failed: confirmed_chain.steps[${index}].snippet invalid for rule ${ruleId}`);
+    }
+  }
+}
+
+function isExactPairEventDelegateItem(item: PromotableItem): boolean {
+  const triggerTokens = Array.isArray(item.match?.trigger_tokens)
+    ? item.match?.trigger_tokens || []
+    : [];
+  const hasEventDelegateTrigger = triggerTokens.some((token) => toComparableToken(token) === 'event_delegate');
+  if (!hasEventDelegateTrigger) return false;
+  const hasCodeRuntimeTopology = Array.isArray(item.topology)
+    && item.topology.some((hop) => toComparableToken(hop.hop) === 'code_runtime');
+  const hasEvidence = Array.isArray(item.confirmed_chain?.steps) && item.confirmed_chain.steps.length > 0;
+  return hasCodeRuntimeTopology && hasEvidence;
+}
+
+function requireBindingGuard(item: PromotableItem, ruleId: string): void {
+  const bindings = item.resource_bindings;
+  if (isExactPairEventDelegateItem(item) && (!Array.isArray(bindings) || bindings.length === 0)) {
+    throw new Error(`binding_unresolved: exact_pair_binding_missing for rule ${ruleId}`);
+  }
+  assertResolvedBindings(bindings, ruleId);
 }
 
 function toDraftFromCurated(item: PromotableItem): RuleDslDraft {
@@ -172,7 +214,7 @@ function compileRule(ruleId: string, version: string, draft: RuleDslDraft): Comp
 
   assertNoPlaceholderScope(resourceTypes, 'resource_types');
   assertNoPlaceholderScope(hostBaseType, 'host_base_type');
-  assertResolvedBindings(draft.resource_bindings);
+  assertResolvedBindings(draft.resource_bindings, ruleId);
 
   return {
     id: ruleId,
@@ -295,6 +337,11 @@ function buildRuleYaml(rule: CompiledRuntimeRule): string {
       if (binding.host_class_pattern) lines.push(`    host_class_pattern: ${quoteYaml(binding.host_class_pattern)}`);
       if (binding.field_name) lines.push(`    field_name: ${quoteYaml(binding.field_name)}`);
       if (binding.loader_methods?.length) pushList(lines, 'loader_methods', binding.loader_methods, '    ');
+      if (binding.scene_name) lines.push(`    scene_name: ${quoteYaml(binding.scene_name)}`);
+      if (binding.source_class_pattern) lines.push(`    source_class_pattern: ${quoteYaml(binding.source_class_pattern)}`);
+      if (binding.source_method) lines.push(`    source_method: ${quoteYaml(binding.source_method)}`);
+      if (binding.target_class_pattern) lines.push(`    target_class_pattern: ${quoteYaml(binding.target_class_pattern)}`);
+      if (binding.target_method) lines.push(`    target_method: ${quoteYaml(binding.target_method)}`);
     }
   }
 
@@ -323,6 +370,16 @@ async function readCatalog(catalogPath: string): Promise<CatalogShape> {
     if (error?.code === 'ENOENT') {
       return { version: 1, rules: [] };
     }
+    throw error;
+  }
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch (error: any) {
+    if (error?.code === 'ENOENT') return false;
     throw error;
   }
 }
@@ -358,9 +415,17 @@ export async function promoteCuratedRules(input: PromoteInput): Promise<PromoteO
     if (!ruleId) {
       throw new Error('curated item missing rule id');
     }
+    requireEvidenceGuard(item, ruleId);
+    requireBindingGuard(item, ruleId);
+    if (catalog.rules.some((entry) => entry.id === ruleId)) {
+      throw new Error(`duplicate_rule_id: ${ruleId} already exists in catalog`);
+    }
 
     const relativeFile = path.join('approved', `${ruleId}.yaml`).split(path.sep).join('/');
     const absoluteFile = path.join(paths.rulesRoot, relativeFile);
+    if (await fileExists(absoluteFile)) {
+      throw new Error(`duplicate_rule_id: ${ruleId} already exists at ${relativeFile}`);
+    }
     const draft = dslDraftFromCurate && curatedItems.length === 1
       ? { ...dslDraftFromCurate, id: ruleId, version }
       : { ...toDraftFromCurated(item), id: ruleId, version };
@@ -378,12 +443,7 @@ export async function promoteCuratedRules(input: PromoteInput): Promise<PromoteO
       ...(compiledRule.family ? { family: compiledRule.family } : {}),
     };
 
-    const existingIndex = catalog.rules.findIndex((entry) => entry.id === ruleId);
-    if (existingIndex >= 0) {
-      catalog.rules[existingIndex] = nextEntry;
-    } else {
-      catalog.rules.push(nextEntry);
-    }
+    catalog.rules.push(nextEntry);
   }
 
   await fs.mkdir(path.dirname(catalogPath), { recursive: true });

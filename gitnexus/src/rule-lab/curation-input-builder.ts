@@ -1,5 +1,4 @@
-import type { GapHandoffData } from './gap-handoff.js';
-import type { RuleLabCandidate, RuleLabSliceWithHandoff, UnityResourceBinding } from './types.js';
+import type { RuleLabCandidate, RuleLabExactPair, RuleLabSlice, UnityResourceBinding } from './types.js';
 
 interface CurationInputItem {
   id: string;
@@ -62,89 +61,89 @@ function assertResolvedBindingParts(parts: { className: string; methodName: stri
   }
 }
 
-function buildBinding(
-  candidate: RuleLabCandidate,
-  handoff: GapHandoffData,
-): UnityResourceBinding[] {
-  const sourceIds = Array.isArray(candidate.source_gap_candidate_ids)
-    ? candidate.source_gap_candidate_ids
-    : [];
-  const rows = sourceIds
-    .map((sourceId) => handoff.accepted_candidates.find((item) => item.candidate_id === sourceId))
-    .filter((row): row is NonNullable<typeof row> => Boolean(row));
-  if (rows.length === 0) return [];
-  return rows.map((row) => {
-    const source = splitSymbol(row.source_anchor?.symbol);
-    const target = splitSymbol(row.target_anchor?.symbol);
-    assertResolvedBindingParts(source, 'source', row.candidate_id);
-    assertResolvedBindingParts(target, 'target', row.candidate_id);
-    return {
-      kind: candidate.binding_kind === 'method_triggers_scene_load'
-        ? 'method_triggers_scene_load'
-        : 'method_triggers_method',
-      source_class_pattern: source.className,
-      source_method: source.methodName,
-      target_class_pattern: target.className,
-      target_method: target.methodName,
-      description: `Derived from gap candidate ${row.candidate_id}`,
-    } as UnityResourceBinding;
-  });
+function assertResolvedSceneToken(value: string, candidateId: string): string {
+  const token = String(value || '').trim();
+  if (!token) {
+    throw new Error(`binding_unresolved: scene token unresolved for candidate ${candidateId}`);
+  }
+  if (/^unknown/i.test(token)) {
+    throw new Error(`binding_unresolved: scene token contains unknown placeholder for candidate ${candidateId}`);
+  }
+  return token;
 }
 
-function buildConfirmedChain(
-  candidate: RuleLabCandidate,
-  handoff: GapHandoffData,
-): Array<{ hop_type?: string; anchor: string; snippet: string }> {
-  const sourceIds = Array.isArray(candidate.source_gap_candidate_ids)
-    ? candidate.source_gap_candidate_ids
-    : [];
-  const anchorPrefixes = new Set(
-    sourceIds.flatMap((sourceId) => {
-      const row = handoff.accepted_candidates.find((item) => item.candidate_id === sourceId);
-      if (!row) return [];
-      const prefixes: string[] = [];
-      if (String(row.source_anchor?.file || '').trim()) prefixes.push(`${String(row.source_anchor?.file).trim()}:`);
-      if (String(row.target_anchor?.file || '').trim()) prefixes.push(`${String(row.target_anchor?.file).trim()}:`);
-      return prefixes;
-    }),
-  );
-  if (handoff.confirmed_chain_steps.length > 0 && anchorPrefixes.size > 0) {
-    const filtered = handoff.confirmed_chain_steps.filter((step) =>
-      [...anchorPrefixes].some((prefix) => String(step.anchor || '').startsWith(prefix)),
+function buildBinding(candidate: RuleLabCandidate, pair: RuleLabExactPair): UnityResourceBinding[] {
+  const source = splitSymbol(pair.source_anchor.symbol);
+  assertResolvedBindingParts(source, 'source', candidate.id);
+  const kind = candidate.binding_kind === 'method_triggers_scene_load'
+    ? 'method_triggers_scene_load'
+    : 'method_triggers_method';
+  if (kind === 'method_triggers_scene_load') {
+    const sceneName = assertResolvedSceneToken(
+      String(pair.target_anchor.symbol || pair.target_anchor.file || ''),
+      candidate.id,
     );
-    if (filtered.length > 0) return filtered;
-    throw new Error(`proposal-specific confirmed chain missing for source ids: ${sourceIds.join(', ')}`);
+    return [{
+      kind,
+      host_class_pattern: source.className,
+      loader_methods: [source.methodName],
+      scene_name: sceneName,
+      description: `Derived from exact pair ${String(pair.id || candidate.id)}`,
+    }];
   }
-  if (handoff.confirmed_chain_steps.length > 0) return handoff.confirmed_chain_steps;
+  const target = splitSymbol(pair.target_anchor.symbol);
+  assertResolvedBindingParts(target, 'target', candidate.id);
+  return [{
+    kind,
+    source_class_pattern: source.className,
+    source_method: source.methodName,
+    target_class_pattern: target.className,
+    target_method: target.methodName,
+    description: `Derived from exact pair ${String(pair.id || candidate.id)}`,
+  }];
+}
+
+function buildConfirmedChain(candidate: RuleLabCandidate, pair: RuleLabExactPair): Array<{ hop_type?: string; anchor: string; snippet: string }> {
   const hops = (candidate.evidence?.hops || []).filter((hop) => String(hop.anchor || '').trim() && String(hop.snippet || '').trim());
   if (hops.length > 0) return hops;
-  return [{
-    hop_type: 'code_runtime',
-    anchor: '.gitnexus/gap-lab/slice.json:1',
-    snippet: 'derived-from-gap-handoff',
-  }];
+  const sourceAnchor = String(pair.source_anchor.file || '').trim();
+  const targetAnchor = String(pair.target_anchor.file || '').trim();
+  const sourceSnippet = String(pair.source_anchor.symbol || '').trim();
+  const targetSnippet = String(pair.target_anchor.symbol || '').trim();
+  const fallback = [
+    sourceAnchor ? {
+      hop_type: 'code_runtime',
+      anchor: `${sourceAnchor}:${Number(pair.source_anchor.line || 1)}`,
+      snippet: sourceSnippet || 'source',
+    } : undefined,
+    targetAnchor ? {
+      hop_type: 'code_runtime',
+      anchor: `${targetAnchor}:${Number(pair.target_anchor.line || 1)}`,
+      snippet: targetSnippet || 'target',
+    } : undefined,
+  ].filter((item): item is { hop_type: string; anchor: string; snippet: string } => Boolean(item));
+  if (fallback.length === 0) {
+    throw new Error(`confirmed_chain_empty: no evidence or anchor fallback for candidate ${candidate.id}`);
+  }
+  return fallback;
 }
 
 export function buildCurationInput(input: {
   runId: string;
   sliceId: string;
-  slice: RuleLabSliceWithHandoff;
+  slice: RuleLabSlice;
   candidates: RuleLabCandidate[];
-  handoff: GapHandoffData;
 }): CurationInputDocument {
   const curated: CurationInputItem[] = input.candidates.map((candidate) => {
-    const requiredHops = unique((candidate.topology || []).map((hop) => hop.hop));
-    const guaranteed = [
-      `rule proposal derived from gap accepted ids: ${(candidate.source_gap_candidate_ids || []).join(', ')}`,
-    ];
-    const nonGuaranteed = [
-      `does not promote backlog candidates (${input.slice.source_gap_handoff?.promotion_backlog_count || 0})`,
-    ];
-    const bindings = buildBinding(candidate, input.handoff);
-    if (bindings.length === 0) {
-      throw new Error(`binding_unresolved: no resolvable bindings for candidate ${candidate.id}`);
+    const pair = candidate.exact_pair;
+    if (!pair) {
+      throw new Error(`binding_unresolved: exact_pair missing for candidate ${candidate.id}`);
     }
-    const confirmedChain = buildConfirmedChain(candidate, input.handoff);
+    const requiredHops = unique((candidate.topology || []).map((hop) => hop.hop));
+    const guaranteed = unique(candidate.claims?.guarantees || [`exact pair candidate: ${candidate.id}`]);
+    const nonGuaranteed = unique(candidate.claims?.non_guarantees || ['sparse gap path only']);
+    const bindings = buildBinding(candidate, pair);
+    const confirmedChain = buildConfirmedChain(candidate, pair);
     return {
       id: candidate.id,
       rule_id: String(candidate.draft_rule_id || candidate.id),
@@ -166,7 +165,7 @@ export function buildCurationInput(input: {
       claims: {
         guarantees: guaranteed,
         non_guarantees: nonGuaranteed,
-        next_action: `gitnexus query "${input.slice.trigger_family}"`,
+        next_action: String(candidate.claims?.next_action || `gitnexus query "${input.slice.trigger_family}"`),
       },
       confirmed_chain: {
         steps: confirmedChain,

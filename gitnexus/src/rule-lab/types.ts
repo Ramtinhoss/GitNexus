@@ -12,6 +12,7 @@ export interface RuleLabSlice {
   resource_types: string[];
   host_base_type: string[];
   required_hops?: string[];
+  exact_pairs?: RuleLabExactPair[];
 }
 
 export interface RuleLabManifest {
@@ -69,6 +70,7 @@ export interface RuleLabCandidate {
     next_action: string;
   };
   proposal_evidence_keys?: string[];
+  exact_pair?: RuleLabExactPair;
   evidence: {
     hops: RuleLabCandidateHop[];
   };
@@ -88,6 +90,20 @@ export interface RuleLabSourceGapHandoff {
 
 export interface RuleLabSliceWithHandoff extends RuleLabSlice {
   source_gap_handoff?: RuleLabSourceGapHandoff;
+}
+
+export interface RuleLabExactPairAnchor {
+  file: string;
+  line?: number;
+  symbol?: string;
+}
+
+export interface RuleLabExactPair {
+  id?: string;
+  binding_kind?: UnityResourceBinding['kind'];
+  draft_rule_id?: string;
+  source_anchor: RuleLabExactPairAnchor;
+  target_anchor: RuleLabExactPairAnchor;
 }
 
 export interface RuleDslMatch {

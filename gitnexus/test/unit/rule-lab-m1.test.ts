@@ -114,4 +114,125 @@ describe('rule-lab M1 guards', () => {
       await fs.rm(repoRoot, { recursive: true, force: true });
     }
   });
+
+  it('fails hard on duplicate rule id promotion', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-m1-dup-'));
+    try {
+      await setupCuratedSlice(repoRoot, 'slice-a', 'demo.reload.rule.v2', 'reload');
+      await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a', version: '2.0.0' });
+
+      await setupCuratedSlice(repoRoot, 'slice-b', 'demo.reload.rule.v2', 'reload');
+      await expect(
+        promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-b', version: '2.0.0' }),
+      ).rejects.toThrow(/duplicate_rule_id/i);
+    } finally {
+      await fs.rm(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails promote boundary evidence guard when curated confirmed_chain.steps is empty', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-m1-evidence-guard-'));
+    try {
+      const rulesRoot = path.join(repoRoot, '.gitnexus', 'rules');
+      const sliceDir = path.join(rulesRoot, 'lab', 'runs', 'run-x', 'slices', 'slice-a');
+      await fs.mkdir(path.join(rulesRoot, 'approved'), { recursive: true });
+      await fs.mkdir(sliceDir, { recursive: true });
+      await fs.writeFile(path.join(rulesRoot, 'catalog.json'), JSON.stringify({ version: 1, rules: [] }, null, 2), 'utf-8');
+      await fs.writeFile(
+        path.join(sliceDir, 'curated.json'),
+        JSON.stringify({
+          run_id: 'run-x',
+          slice_id: 'slice-a',
+          curated: [
+            {
+              id: 'cand-1',
+              rule_id: 'demo.event.rule.v1',
+              title: 'event rule',
+              match: {
+                trigger_tokens: ['event_delegate'],
+                resource_types: ['syncvar_hook'],
+                host_base_type: ['network_behaviour'],
+              },
+              topology: [
+                { hop: 'code_runtime', from: { entity: 'script' }, to: { entity: 'runtime' }, edge: { kind: 'calls' } },
+              ],
+              closure: {
+                required_hops: ['code_runtime'],
+                failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' },
+              },
+              claims: {
+                guarantees: ['exact pair linked'],
+                non_guarantees: ['sparse gap path only'],
+                next_action: 'gitnexus query "event_delegate"',
+              },
+              confirmed_chain: { steps: [] },
+              guarantees: ['exact pair linked'],
+              non_guarantees: ['sparse gap path only'],
+            },
+          ],
+        }, null, 2),
+        'utf-8',
+      );
+
+      await expect(
+        promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a', version: '1.0.0' }),
+      ).rejects.toThrow(/evidence_guard_failed/i);
+    } finally {
+      await fs.rm(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails promote boundary binding guard when event_delegate exact-pair candidate has no bindings', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-m1-binding-guard-'));
+    try {
+      const rulesRoot = path.join(repoRoot, '.gitnexus', 'rules');
+      const sliceDir = path.join(rulesRoot, 'lab', 'runs', 'run-x', 'slices', 'slice-a');
+      await fs.mkdir(path.join(rulesRoot, 'approved'), { recursive: true });
+      await fs.mkdir(sliceDir, { recursive: true });
+      await fs.writeFile(path.join(rulesRoot, 'catalog.json'), JSON.stringify({ version: 1, rules: [] }, null, 2), 'utf-8');
+      await fs.writeFile(
+        path.join(sliceDir, 'curated.json'),
+        JSON.stringify({
+          run_id: 'run-x',
+          slice_id: 'slice-a',
+          curated: [
+            {
+              id: 'cand-1',
+              rule_id: 'demo.event.rule.v1',
+              title: 'event rule',
+              match: {
+                trigger_tokens: ['event_delegate'],
+                resource_types: ['syncvar_hook'],
+                host_base_type: ['network_behaviour'],
+              },
+              topology: [
+                { hop: 'code_runtime', from: { entity: 'script' }, to: { entity: 'runtime' }, edge: { kind: 'calls' } },
+              ],
+              closure: {
+                required_hops: ['code_runtime'],
+                failure_map: { missing_evidence: 'rule_matched_but_evidence_missing' },
+              },
+              claims: {
+                guarantees: ['exact pair linked'],
+                non_guarantees: ['sparse gap path only'],
+                next_action: 'gitnexus query "event_delegate"',
+              },
+              confirmed_chain: {
+                steps: [{ hop_type: 'code_runtime', anchor: 'Assets/Gameplay/A.cs:10', snippet: 'A.Trigger' }],
+              },
+              guarantees: ['exact pair linked'],
+              non_guarantees: ['sparse gap path only'],
+            },
+          ],
+        }, null, 2),
+        'utf-8',
+      );
+
+      await expect(
+        promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-a', version: '1.0.0' }),
+      ).rejects.toThrow(/binding_unresolved/i);
+    } finally {
+      await fs.rm(repoRoot, { recursive: true, force: true });
+    }
+  });
 });
