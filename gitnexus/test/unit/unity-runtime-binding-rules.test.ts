@@ -74,6 +74,82 @@ function buildSceneGraph() {
   return { graph, initGlobalId, svcAwakeId };
 }
 
+function buildScenePrefabGraph(fieldName: string = 'm_SourcePrefab') {
+  const graph = createKnowledgeGraph();
+
+  const scenePath = 'Assets/NEON/Scene/Global.unity';
+  const prefabPath = 'Assets/NEON/Prefab/Systems/SystemHub.prefab';
+
+  const sceneFileId = generateId('File', scenePath);
+  graph.addNode({
+    id: sceneFileId,
+    label: 'File',
+    properties: { name: 'Global.unity', filePath: scenePath },
+  });
+
+  const prefabFileId = generateId('File', prefabPath);
+  graph.addNode({
+    id: prefabFileId,
+    label: 'File',
+    properties: { name: 'SystemHub.prefab', filePath: prefabPath },
+  });
+
+  const globalClassId = generateId('Class', 'Assets/NEON/Code/Framework/Global.cs:Global');
+  graph.addNode({
+    id: globalClassId,
+    label: 'Class',
+    properties: { name: 'Global', filePath: 'Assets/NEON/Code/Framework/Global.cs' },
+  });
+  const initGlobalId = generateId('Method', 'Assets/NEON/Code/Framework/Global.cs:Global.InitGlobal');
+  graph.addNode({
+    id: initGlobalId,
+    label: 'Method',
+    properties: { name: 'InitGlobal', filePath: 'Assets/NEON/Code/Framework/Global.cs' },
+  });
+  graph.addRelationship({
+    id: generateId('HAS_METHOD', `${globalClassId}->${initGlobalId}`),
+    type: 'HAS_METHOD', sourceId: globalClassId, targetId: initGlobalId, confidence: 1, reason: '',
+  });
+
+  const managerClassId = generateId('Class', 'Assets/NEON/Code/Framework/SystemHubManager.cs:SystemHubManager');
+  graph.addNode({
+    id: managerClassId,
+    label: 'Class',
+    properties: { name: 'SystemHubManager', filePath: 'Assets/NEON/Code/Framework/SystemHubManager.cs' },
+  });
+  const managerStartId = generateId('Method', 'Assets/NEON/Code/Framework/SystemHubManager.cs:SystemHubManager.Start');
+  graph.addNode({
+    id: managerStartId,
+    label: 'Method',
+    properties: { name: 'Start', filePath: 'Assets/NEON/Code/Framework/SystemHubManager.cs' },
+  });
+  graph.addRelationship({
+    id: generateId('HAS_METHOD', `${managerClassId}->${managerStartId}`),
+    type: 'HAS_METHOD', sourceId: managerClassId, targetId: managerStartId, confidence: 1, reason: '',
+  });
+  graph.addRelationship({
+    id: generateId('UNITY_COMPONENT_INSTANCE', `${managerClassId}->${prefabFileId}`),
+    type: 'UNITY_COMPONENT_INSTANCE', sourceId: managerClassId, targetId: prefabFileId, confidence: 1, reason: '',
+  });
+
+  graph.addRelationship({
+    id: generateId('UNITY_ASSET_GUID_REF', `${sceneFileId}->${prefabFileId}:${fieldName}`),
+    type: 'UNITY_ASSET_GUID_REF',
+    sourceId: sceneFileId,
+    targetId: prefabFileId,
+    confidence: 1,
+    reason: JSON.stringify({
+      resourcePath: scenePath,
+      targetResourcePath: prefabPath,
+      guid: '40b55cc0dc3df614cba74807b7502af5',
+      fieldName,
+      sourceLayer: 'scene',
+    }),
+  });
+
+  return { graph, initGlobalId, managerStartId };
+}
+
 describe('method_triggers_scene_load binding processor', () => {
   it('injects CALLS edge from loader to scene component lifecycle', () => {
     const { graph, initGlobalId, svcAwakeId } = buildSceneGraph();
@@ -98,6 +174,109 @@ describe('method_triggers_scene_load binding processor', () => {
     expect(edges.length).toBe(1);
     expect(edges[0].sourceId).toBe(initGlobalId);
     expect(edges[0].targetId).toBe(svcAwakeId);
+  });
+
+  it('injects CALLS edge from loader to prefab component lifecycle via scene m_SourcePrefab chain', () => {
+    const { graph, initGlobalId, managerStartId } = buildScenePrefabGraph();
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_scene_load',
+        host_class_pattern: '^Global$',
+        loader_methods: ['InitGlobal'],
+        scene_name: 'Global',
+        target_entry_points: ['Awake', 'Start', 'OnEnable'],
+      }],
+    });
+
+    const result = applyUnityRuntimeBindingRules(graph, [rule], {} as any);
+    expect(result.edgesInjected).toBe(1);
+
+    const edges = [...graph.iterRelationships()].filter(
+      (r) => r.type === 'CALLS' && r.reason.startsWith('unity-rule-scene-load:'),
+    );
+    expect(edges.length).toBe(1);
+    expect(edges[0].sourceId).toBe(initGlobalId);
+    expect(edges[0].targetId).toBe(managerStartId);
+  });
+
+  it('does not treat non-m_SourcePrefab refs as scene-instantiated prefab lifecycle targets', () => {
+    const { graph } = buildScenePrefabGraph('globalDataAssets');
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_scene_load',
+        host_class_pattern: '^Global$',
+        loader_methods: ['InitGlobal'],
+        scene_name: 'Global',
+        target_entry_points: ['Awake', 'Start', 'OnEnable'],
+      }],
+    });
+    expect(applyUnityRuntimeBindingRules(graph, [rule], {} as any).edgesInjected).toBe(0);
+  });
+
+  it('injects lifecycle edges for nested prefabs reachable from scene m_SourcePrefab chain', () => {
+    const { graph, initGlobalId } = buildScenePrefabGraph();
+    const rootPrefabId = generateId('File', 'Assets/NEON/Prefab/Systems/SystemHub.prefab');
+    const nestedPrefabPath = 'Assets/NEON/Prefab/Systems/SystemHub_Nested.prefab';
+    const nestedPrefabId = generateId('File', nestedPrefabPath);
+    graph.addNode({
+      id: nestedPrefabId,
+      label: 'File',
+      properties: { name: 'SystemHub_Nested.prefab', filePath: nestedPrefabPath },
+    });
+
+    const nestedClassId = generateId('Class', 'Assets/NEON/Code/Framework/NestedHubManager.cs:NestedHubManager');
+    graph.addNode({
+      id: nestedClassId,
+      label: 'Class',
+      properties: { name: 'NestedHubManager', filePath: 'Assets/NEON/Code/Framework/NestedHubManager.cs' },
+    });
+    const nestedAwakeId = generateId('Method', 'Assets/NEON/Code/Framework/NestedHubManager.cs:NestedHubManager.Awake');
+    graph.addNode({
+      id: nestedAwakeId,
+      label: 'Method',
+      properties: { name: 'Awake', filePath: 'Assets/NEON/Code/Framework/NestedHubManager.cs' },
+    });
+    graph.addRelationship({
+      id: generateId('HAS_METHOD', `${nestedClassId}->${nestedAwakeId}`),
+      type: 'HAS_METHOD', sourceId: nestedClassId, targetId: nestedAwakeId, confidence: 1, reason: '',
+    });
+    graph.addRelationship({
+      id: generateId('UNITY_COMPONENT_INSTANCE', `${nestedClassId}->${nestedPrefabId}`),
+      type: 'UNITY_COMPONENT_INSTANCE', sourceId: nestedClassId, targetId: nestedPrefabId, confidence: 1, reason: '',
+    });
+    graph.addRelationship({
+      id: generateId('UNITY_ASSET_GUID_REF', `${rootPrefabId}->${nestedPrefabId}:m_SourcePrefab`),
+      type: 'UNITY_ASSET_GUID_REF',
+      sourceId: rootPrefabId,
+      targetId: nestedPrefabId,
+      confidence: 1,
+      reason: JSON.stringify({
+        resourcePath: 'Assets/NEON/Prefab/Systems/SystemHub.prefab',
+        targetResourcePath: nestedPrefabPath,
+        guid: '11111111111111111111111111111111',
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: 'prefab',
+      }),
+    });
+
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_scene_load',
+        host_class_pattern: '^Global$',
+        loader_methods: ['InitGlobal'],
+        scene_name: 'Global',
+        target_entry_points: ['Awake', 'Start', 'OnEnable'],
+      }],
+    });
+
+    const result = applyUnityRuntimeBindingRules(graph, [rule], {} as any);
+    expect(result.edgesInjected).toBe(2);
+    const edges = [...graph.iterRelationships()].filter(
+      (r) => r.type === 'CALLS' && r.reason.startsWith('unity-rule-scene-load:'),
+    );
+    const edgeTargets = new Set(edges.map((edge) => edge.targetId));
+    expect(edges.every((edge) => edge.sourceId === initGlobalId)).toBe(true);
+    expect(edgeTargets.has(nestedAwakeId)).toBe(true);
   });
 
   it('no edges when scene_name does not match any File node', () => {

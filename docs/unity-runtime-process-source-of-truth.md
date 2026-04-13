@@ -47,7 +47,7 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - 三种绑定处理器 + lifecycle_overrides：`unity-runtime-binding-rules.ts`
      - `asset_ref_loads_components`：资源引用链触发代码执行
      - `method_triggers_field_load`：代码方法触发字段引用资源加载
-     - `method_triggers_scene_load`：代码方法触发场景加载（通过场景文件名匹配 `.unity` File 节点）
+     - `method_triggers_scene_load`：代码方法触发场景加载（通过场景文件名匹配 `.unity` File 节点，并沿 `m_SourcePrefab` 的 `UNITY_ASSET_GUID_REF` 链覆盖场景实例化 prefab）
      - `lifecycle_overrides`：扩展内置 lifecycle 入口
    - 场景文件索引：预构建 lowercase scene name → File node ID 映射，供 `method_triggers_scene_load` 使用
    - 合成边属性：`confidence=0.75`，`reason=unity-rule-{kind}:{ruleId}`

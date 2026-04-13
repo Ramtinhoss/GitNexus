@@ -168,8 +168,8 @@ Source:
 
 `method_triggers_scene_load`
 
-- use when a method deterministically loads a named scene and runtime should jump into components inside that `.unity` file
-- output edge shape: `loader method -> scene component entry method`
+- use when a method deterministically loads a named scene and runtime should jump into components inside that `.unity` file, including components mounted on prefabs instantiated via `PrefabInstance.m_SourcePrefab`
+- output edge shape: `loader method -> (scene component | scene-instantiated prefab component) entry method`
 - reason prefix: `unity-rule-scene-load:`
 
 `method_triggers_method`

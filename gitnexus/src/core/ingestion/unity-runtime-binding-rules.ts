@@ -67,6 +67,7 @@ export function applyUnityRuntimeBindingRules(
     if (rel.type === 'UNITY_ASSET_GUID_REF') assetGuidRefs.push(rel);
     else if (rel.type === 'UNITY_COMPONENT_INSTANCE') componentInstances.push(rel);
   }
+  const prefabSourceTargetsBySource = buildPrefabSourceTargetsBySource(assetGuidRefs);
 
   // Pre-build scene file index: lowercase scene name → fileId[]
   const sceneFilesByName = new Map<string, string[]>();
@@ -83,7 +84,17 @@ export function applyUnityRuntimeBindingRules(
   for (const rule of rules) {
     let ruleEdges = 0;
     for (const binding of rule.resource_bindings ?? []) {
-      ruleEdges += processBinding(binding, rule.id, assetGuidRefs, componentInstances, methodsByClassId, containerNodes, sceneFilesByName, addSyntheticEdge);
+      ruleEdges += processBinding(
+        binding,
+        rule.id,
+        assetGuidRefs,
+        componentInstances,
+        methodsByClassId,
+        containerNodes,
+        sceneFilesByName,
+        prefabSourceTargetsBySource,
+        addSyntheticEdge,
+      );
     }
     if (rule.lifecycle_overrides?.additional_entry_points?.length) {
       ruleEdges += processLifecycleOverrides(rule, methodsByClassId, containerNodes, addSyntheticEdge);
@@ -121,6 +132,7 @@ function processBinding(
   methodsByClassId: Map<string, GraphNode[]>,
   containerNodes: GraphNode[],
   sceneFilesByName: Map<string, string[]>,
+  prefabSourceTargetsBySource: Map<string, string[]>,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   if (binding.kind === 'asset_ref_loads_components') {
@@ -130,7 +142,16 @@ function processBinding(
     return processMethodTriggersFieldLoad(binding, ruleId, assetGuidRefs, componentInstances, methodsByClassId, containerNodes, addEdge);
   }
   if (binding.kind === 'method_triggers_scene_load') {
-    return processMethodTriggersSceneLoad(binding, ruleId, componentInstances, methodsByClassId, containerNodes, sceneFilesByName, addEdge);
+    return processMethodTriggersSceneLoad(
+      binding,
+      ruleId,
+      componentInstances,
+      methodsByClassId,
+      containerNodes,
+      sceneFilesByName,
+      prefabSourceTargetsBySource,
+      addEdge,
+    );
   }
   if (binding.kind === 'method_triggers_method') {
     return processMethodTriggersMethod(binding, ruleId, methodsByClassId, containerNodes, addEdge);
@@ -228,6 +249,7 @@ function processMethodTriggersSceneLoad(
   methodsByClassId: Map<string, GraphNode[]>,
   containerNodes: GraphNode[],
   sceneFilesByName: Map<string, string[]>,
+  prefabSourceTargetsBySource: Map<string, string[]>,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   const classPattern = binding.host_class_pattern ? new RegExp(binding.host_class_pattern) : null;
@@ -251,15 +273,57 @@ function processMethodTriggersSceneLoad(
     if (loaders.length === 0) continue;
 
     for (const sceneFileId of sceneFileIds) {
-      const targetMethods = findMethodsOnResource(sceneFileId, componentInstances, methodsByClassId, entryPoints);
-      for (const loader of loaders) {
-        for (const target of targetMethods) {
-          if (addEdge(loader.id, target.id, `unity-rule-scene-load:${ruleId}`)) count++;
+      const runtimeResourceIds = collectSceneRuntimeResourceIds(sceneFileId, prefabSourceTargetsBySource);
+      for (const runtimeResourceId of runtimeResourceIds) {
+        const targetMethods = findMethodsOnResource(runtimeResourceId, componentInstances, methodsByClassId, entryPoints);
+        for (const loader of loaders) {
+          for (const target of targetMethods) {
+            if (addEdge(loader.id, target.id, `unity-rule-scene-load:${ruleId}`)) count++;
+          }
         }
       }
     }
   }
   return count;
+}
+
+function buildPrefabSourceTargetsBySource(assetGuidRefs: GraphRelationship[]): Map<string, string[]> {
+  const targetsBySource = new Map<string, Set<string>>();
+  for (const ref of assetGuidRefs) {
+    let fieldName = '';
+    try {
+      const parsed = JSON.parse(String(ref.reason || '{}'));
+      fieldName = String(parsed?.fieldName || '');
+    } catch {
+      continue;
+    }
+    if (fieldName !== 'm_SourcePrefab') continue;
+    const targets = targetsBySource.get(ref.sourceId) ?? new Set<string>();
+    targets.add(ref.targetId);
+    targetsBySource.set(ref.sourceId, targets);
+  }
+  const out = new Map<string, string[]>();
+  for (const [sourceId, targets] of targetsBySource.entries()) {
+    out.set(sourceId, [...targets]);
+  }
+  return out;
+}
+
+function collectSceneRuntimeResourceIds(
+  sceneFileId: string,
+  prefabSourceTargetsBySource: Map<string, string[]>,
+): string[] {
+  const visited = new Set<string>([sceneFileId]);
+  const queue = [sceneFileId];
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    for (const targetId of prefabSourceTargetsBySource.get(currentId) ?? []) {
+      if (visited.has(targetId)) continue;
+      visited.add(targetId);
+      queue.push(targetId);
+    }
+  }
+  return [...visited];
 }
 
 function processMethodTriggersMethod(

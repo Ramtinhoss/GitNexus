@@ -12,7 +12,7 @@ Primary path:
 1. Gather user-confirmed exact source/target pair(s).
 2. Run reduced `rule-lab` flow.
 3. Enforce 3 guards before promote.
-4. Verify via analyze + query/context.
+4. Verify via analyze + CLI graph checks (not MCP session query/context).
 
 `gap-lab` slice discovery is legacy and is not the default product workflow.
 
@@ -80,9 +80,20 @@ gitnexus rule-lab promote --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id
 ## Verification
 
 1. Re-run analyze for target repo scope.
-2. Validate retrieval with `query/context`.
-3. Keep closure claims aligned to graph-only semantics.
-4. Under `hydration_policy=strict` with `fallbackToCompact=true`, run parity before final closure conclusion.
+2. Verify synthetic edges with **CLI in a fresh process** (for example `gitnexus cypher` / `gitnexus query`).
+3. Do not use current MCP session `query/context` as synthetic-edge acceptance evidence immediately after analyze/rebuild.
+4. Keep closure claims aligned to graph-only semantics.
+5. Under `hydration_policy=strict` with `fallbackToCompact=true`, run parity before final closure conclusion.
+
+Suggested acceptance check (example):
+
+```bash
+gitnexus cypher --repo "$REPO_ALIAS" \
+  "MATCH (a)-[r:CodeRelation {type:'CALLS'}]->(b)
+   WHERE r.reason STARTS WITH 'unity-rule-'
+   RETURN a.name, b.name, r.reason
+   LIMIT 50"
+```
 
 ## Legacy Note
 
