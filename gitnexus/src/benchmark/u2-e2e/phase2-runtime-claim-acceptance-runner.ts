@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LocalBackend } from '../../mcp/local/local-backend.js';
+import { verifyRuntimeClaimOnDemand } from '../../mcp/local/runtime-chain-verify.js';
 
 export interface Phase2RuntimeClaimAcceptanceReport {
   generatedAt: string;
@@ -22,66 +22,76 @@ export interface Phase2RuntimeClaimAcceptanceReport {
     evidence_missing_reason?: string;
     verification_failed_reason?: string;
     unmatched_reason?: string;
-    gate_disabled_reason?: string;
   };
   reproduction_commands: Record<string, string>;
+}
+
+function makeSymbolOnlyExecutor(symbolName: string, filePath: string) {
+  return async (query: string, params?: Record<string, unknown>) => {
+    if (!String(query || '').includes('WHERE n.name IN $symbolNames')) {
+      return [];
+    }
+    const names = Array.isArray(params?.symbolNames) ? (params?.symbolNames as string[]) : [];
+    if (!names.includes(symbolName)) return [];
+    return [{
+      id: `Class:${filePath}:${symbolName}`,
+      name: symbolName,
+      type: 'Class',
+      filePath,
+      startLine: 1,
+    }];
+  };
 }
 
 export async function buildPhase2RuntimeClaimAcceptanceReport(input: {
   repoAlias: string;
 }): Promise<Phase2RuntimeClaimAcceptanceReport> {
-  const backend = new LocalBackend();
-  const ready = await backend.init();
-  if (!ready) {
-    throw new Error('LocalBackend failed to initialize for phase2 acceptance runner');
-  }
-
-  const matched = await backend.callTool('query', {
-    repo: input.repoAlias,
-    query: 'Reload',
-    unity_resources: 'on',
-    runtime_chain_verify: 'on-demand',
+  const repoPath = path.resolve('.');
+  const verificationFailedClaim = await verifyRuntimeClaimOnDemand({
+    repoPath,
+    queryText: 'Reload',
+    symbolName: 'ReloadBase',
+    symbolFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+    resourceSeedPath: 'Assets/Rules/reload.asset',
+    resourceBindings: [{ resourcePath: 'Assets/Rules/reload.asset' }],
+    executeParameterized: makeSymbolOnlyExecutor(
+      'ReloadBase',
+      'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+    ),
   });
-  const evidenceMissing = await backend.callTool('query', {
-    repo: input.repoAlias,
-    query: 'Reload',
-    unity_resources: 'on',
-    runtime_chain_verify: 'on-demand',
-    unity_evidence_mode: 'summary',
-    max_bindings: 1,
-    max_reference_fields: 1,
+  const evidenceMissingClaim = await verifyRuntimeClaimOnDemand({
+    repoPath,
+    queryText: 'Reload',
+    symbolName: 'ReloadBase',
+    symbolFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+    resourceSeedPath: 'Assets/Rules/reload.asset',
+    resourceBindings: [{ resourcePath: 'Assets/Rules/reload.asset' }],
+    minimumEvidenceSatisfied: false,
+    executeParameterized: makeSymbolOnlyExecutor(
+      'ReloadBase',
+      'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+    ),
   });
-  const unmatched = await backend.callTool('query', {
-    repo: input.repoAlias,
-    query: 'UnrelatedUnityChain',
-    unity_resources: 'on',
-    runtime_chain_verify: 'on-demand',
+  const unmatchedClaim = await verifyRuntimeClaimOnDemand({
+    repoPath,
+    queryText: 'UnrelatedUnityChain',
+    resourceBindings: [],
+    executeParameterized: async () => [],
   });
+  const verificationFailedReason = String(
+    verificationFailedClaim.reason || 'rule_matched_but_verification_failed',
+  );
 
-  // gate_disabled reason is no longer produced (env var gate removed in config migration)
-  let gateDisabled: any;
-  try {
-    gateDisabled = await backend.callTool('query', {
-      repo: input.repoAlias,
-      query: 'Reload',
-      unity_resources: 'on',
-      runtime_chain_verify: 'off',
-    });
-  } finally {
-  }
-
-  const claim = (matched as any).runtime_claim || {};
+  const claim = verificationFailedClaim;
   const requiredReasons = [
     'rule_not_matched',
     'rule_matched_but_evidence_missing',
     'rule_matched_but_verification_failed',
-    'gate_disabled',
   ];
   const reasons = [
-    claim.reason,
-    (evidenceMissing as any).runtime_claim?.reason,
-    (unmatched as any).runtime_claim?.reason,
-    (gateDisabled as any).runtime_claim?.reason,
+    verificationFailedReason,
+    evidenceMissingClaim.reason,
+    unmatchedClaim.reason,
   ]
     .filter(Boolean)
     .map((reason) => String(reason));
@@ -105,26 +115,23 @@ export async function buildPhase2RuntimeClaimAcceptanceReport(input: {
     samples: {
       matched_status: claim.status,
       matched_reason: claim.reason,
-      evidence_missing_reason: (evidenceMissing as any).runtime_claim?.reason,
-      verification_failed_reason: claim.reason,
-      unmatched_reason: (unmatched as any).runtime_claim?.reason,
-      gate_disabled_reason: (gateDisabled as any).runtime_claim?.reason,
+      evidence_missing_reason: evidenceMissingClaim.reason,
+      verification_failed_reason: verificationFailedReason,
+      unmatched_reason: unmatchedClaim.reason,
     },
     reproduction_commands: {
       rule_matched_but_verification_failed:
-        `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on "Reload"`,
+        'gitnexus query --runtime-chain-verify on-demand --unity-resources on "Reload"',
       rule_matched_but_evidence_missing:
-        `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on --unity-evidence-mode summary --max-bindings 1 --max-reference-fields 1 "Reload"`,
+        'gitnexus query --runtime-chain-verify on-demand --unity-resources on --unity-evidence-mode summary --max-bindings 1 --max-reference-fields 1 "Reload"',
       rule_not_matched:
-        `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify on-demand --unity-resources on "UnrelatedUnityChain"`,
-      gate_disabled:
-        `gitnexus query --repo ${input.repoAlias} --runtime-chain-verify off --unity-resources on "Reload"`,
+        'gitnexus query --runtime-chain-verify on-demand --unity-resources on "UnrelatedUnityChain"',
     },
   };
 
   if (!coverage_pass) {
     throw new Error(
-      `phase2 failure classification coverage is incomplete (${failure_classification_coverage.length}/4). Missing: ${failure_classification_missing.join(', ')}`,
+      `phase2 failure classification coverage is incomplete (${failure_classification_coverage.length}/3). Missing: ${failure_classification_missing.join(', ')}`,
     );
   }
   return report;

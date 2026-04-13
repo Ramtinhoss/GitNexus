@@ -6,10 +6,51 @@ import { test } from 'vitest';
 import { RuleRegistryLoadError, loadRuleRegistry } from './runtime-claim-rule-registry.js';
 
 test('loads active runtime claim rules from project catalog', async () => {
-  const repoPath = path.resolve('.');
-  const registry = await loadRuleRegistry(repoPath);
-  assert.equal(registry.activeRules[0].id, 'unity.gungraph.reload.output-getvalue.v1');
-  assert.equal(registry.activeRules[0].version, '1.0.0');
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-runtime-claim-rules-'));
+  const repoPath = path.join(tempRoot, 'repo');
+  const rulesRoot = path.join(repoPath, '.gitnexus', 'rules');
+  await fs.mkdir(path.join(rulesRoot, 'approved'), { recursive: true });
+  await fs.writeFile(
+    path.join(rulesRoot, 'catalog.json'),
+    JSON.stringify({
+      rules: [
+        {
+          id: 'demo.reload.rule.v1',
+          version: '1.2.3',
+          file: 'approved/demo.reload.rule.v1.yaml',
+        },
+      ],
+    }),
+    'utf-8',
+  );
+  await fs.writeFile(
+    path.join(rulesRoot, 'approved', 'demo.reload.rule.v1.yaml'),
+    [
+      'id: demo.reload.rule.v1',
+      'version: 1.2.3',
+      'trigger_family: reload',
+      'resource_types:',
+      '  - asset',
+      'host_base_type:',
+      '  - ReloadBase',
+      'required_hops:',
+      '  - resource',
+      'guarantees:',
+      '  - reload_chain_closed',
+      'non_guarantees:',
+      '  - no_runtime_execution',
+      'next_action: gitnexus query "reload"',
+    ].join('\n'),
+    'utf-8',
+  );
+
+  try {
+    const registry = await loadRuleRegistry(repoPath);
+    assert.equal(registry.activeRules[0].id, 'demo.reload.rule.v1');
+    assert.equal(registry.activeRules[0].version, '1.2.3');
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test('throws rule_catalog_missing when target repo has no catalog (no ancestor fallback)', async () => {
@@ -266,4 +307,3 @@ test('loads v2 verification bundle from explicit compiled path without catalog f
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });
-

@@ -8,7 +8,7 @@ describe('rule-lab cli', () => {
     program.version('test-version');
     attachRuleLabCommands(program);
     const cmds = getRuleLabCommandNames(program);
-    expect(cmds).toEqual(['discover', 'analyze', 'review-pack', 'curate', 'promote', 'regress', 'compile']);
+    expect(cmds).toEqual(['analyze', 'review-pack', 'curate', 'promote', 'regress', 'compile']);
   });
 
   it('uses --rule-version for promote to avoid root --version collision', () => {

@@ -2,7 +2,6 @@ import { writeSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Command } from 'commander';
-import { discoverRuleLabRun } from '../rule-lab/discover.js';
 import { analyzeRuleLabSlice } from '../rule-lab/analyze.js';
 import { buildReviewPack } from '../rule-lab/review-pack.js';
 import { curateRuleLabSlice } from '../rule-lab/curate.js';
@@ -10,10 +9,9 @@ import { promoteCuratedRules } from '../rule-lab/promote.js';
 import { runRuleLabRegress } from '../rule-lab/regress.js';
 import { compileRules } from '../rule-lab/compile.js';
 
-const RULE_LAB_COMMANDS = ['discover', 'analyze', 'review-pack', 'curate', 'promote', 'regress'] as const;
+const RULE_LAB_COMMANDS = ['analyze', 'review-pack', 'curate', 'promote', 'regress'] as const;
 
 type RuleLabHandlerName =
-  | 'ruleLabDiscoverCommand'
   | 'ruleLabAnalyzeCommand'
   | 'ruleLabReviewPackCommand'
   | 'ruleLabCurateCommand'
@@ -48,8 +46,6 @@ export function attachRuleLabCommands(program: Command, lazyFactory?: LazyFactor
     if (lazyFactory) return lazyFactory(handlerName);
 
     switch (handlerName) {
-      case 'ruleLabDiscoverCommand':
-        return (options: any) => ruleLabDiscoverCommand(options);
       case 'ruleLabAnalyzeCommand':
         return (options: any) => ruleLabAnalyzeCommand(options);
       case 'ruleLabReviewPackCommand':
@@ -69,14 +65,7 @@ export function attachRuleLabCommands(program: Command, lazyFactory?: LazyFactor
 
   const root = program
     .command('rule-lab')
-    .description('Offline rule-lab workflow for discover/analyze/review-pack/curate/promote/regress');
-
-  root
-    .command('discover')
-    .option('--repo-path <path>', 'Repository path (default: cwd)')
-    .option('--scope <scope>', 'Discovery scope: full|diff', 'full')
-    .option('--seed <seed>', 'Optional deterministic seed')
-    .action(action('ruleLabDiscoverCommand'));
+    .description('Offline rule-lab workflow for analyze/review-pack/curate/promote/regress');
 
   root
     .command('analyze')
@@ -126,15 +115,6 @@ export function attachRuleLabCommands(program: Command, lazyFactory?: LazyFactor
     .action((options: { repoPath?: string; family?: string }) =>
       compileRules({ repoPath: options.repoPath, family: options.family as any }),
     );
-}
-
-export async function ruleLabDiscoverCommand(options: { repoPath?: string; scope?: 'full' | 'diff'; seed?: string }): Promise<void> {
-  const result = await discoverRuleLabRun({
-    repoPath: resolveRepoPath(options?.repoPath),
-    scope: options?.scope || 'full',
-    seed: options?.seed,
-  });
-  output(result);
 }
 
 export async function ruleLabAnalyzeCommand(options: { repoPath?: string; runId: string; sliceId: string }): Promise<void> {

@@ -85,7 +85,7 @@ Runtime claim closure reminder:
 - Query-time runtime closure is **graph-only** and does not require `verification_rules` / `trigger_tokens` matching.
 - `verification_rules` remains an offline governance/report artifact family.
 - Strong graph hops can coexist with failed closure when verifier-core stays `failed`; report as partial bridge evidence.
-- `gitnexus-unity-rule-gen` gap-lab workflow is an offline authoring/orchestration layer (`.gitnexus/gap-lab/runs/**`) and does not change query-time graph-only closure semantics.
+- `gitnexus-unity-rule-gen` public flow is `approved -> compile -> analyze -> CLI validation`; this does not change query-time graph-only closure semantics.
 - If `hydration_policy=strict` and `hydrationMeta.fallbackToCompact=true`, rerun parity before closure claims.
 
 When task scope includes Unity runtime process semantics, load and follow:

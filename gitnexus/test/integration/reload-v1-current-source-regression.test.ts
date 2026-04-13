@@ -76,7 +76,7 @@ async function writeCuratedSlice(
 }
 
 describe('reload-v1 current-source regressions', () => {
-  it('prefers the GunGraph-scoped reload rule over the first generic reload token match', async () => {
+  it('uses graph-only runtime claim metadata even when multiple promoted reload rules exist', async () => {
     const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'reload-v1-regression-'));
     try {
       await writeCuratedSlice(repoRoot, 'run-x', 'slice-generic', {
@@ -117,7 +117,10 @@ describe('reload-v1 current-source regressions', () => {
         },
       });
 
-      expect(out.rule_id).toBe('demo.reload.gungraph.v2');
+      expect(out.rule_id).toBe('graph-only.runtime-closure.v1');
+      expect(out.rule_version).toBe('1.0.0');
+      expect(out.rule_id).not.toBe('demo.reload.generic.v2');
+      expect(out.rule_id).not.toBe('demo.reload.gungraph.v2');
     } finally {
       await fs.rm(repoRoot, { recursive: true, force: true });
     }

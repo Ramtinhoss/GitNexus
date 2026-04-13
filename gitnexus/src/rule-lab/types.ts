@@ -36,7 +36,6 @@ export interface RuleLabCandidate {
   title: string;
   rule_hint?: string;
   proposal_kind?: 'per_anchor_rule' | 'aggregate_rule';
-  source_gap_candidate_ids?: string[];
   source_slice_id?: string;
   aggregation_mode?: 'per_anchor_rules' | 'aggregate_single_rule';
   binding_kind?: string;
@@ -74,22 +73,6 @@ export interface RuleLabCandidate {
   evidence: {
     hops: RuleLabCandidateHop[];
   };
-}
-
-export interface RuleLabSourceGapHandoff {
-  run_id: string;
-  slice_id: string;
-  discovery_scope_mode: string;
-  user_raw_matches: number;
-  processed_user_matches: number;
-  accepted_candidate_ids: string[];
-  promotion_backlog_count: number;
-  reject_buckets: Record<string, number>;
-  aggregation_mode: 'per_anchor_rules' | 'aggregate_single_rule';
-}
-
-export interface RuleLabSliceWithHandoff extends RuleLabSlice {
-  source_gap_handoff?: RuleLabSourceGapHandoff;
 }
 
 export interface RuleLabExactPairAnchor {

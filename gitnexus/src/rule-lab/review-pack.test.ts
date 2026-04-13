@@ -92,40 +92,15 @@ describe('rule-lab review-pack', () => {
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
 
-  it('renders proposal lineage and backlog summary from source_gap_handoff', async () => {
-    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-review-pack-lineage-'));
+  it('renders decision inputs without lineage-only fields', async () => {
+    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-review-pack-direct-'));
     const sliceDir = path.join(repoRoot, '.gitnexus', 'rules', 'lab', 'runs', 'run-h', 'slices', 'slice-h');
     await fs.mkdir(sliceDir, { recursive: true });
-    await fs.writeFile(
-      path.join(sliceDir, 'slice.json'),
-      JSON.stringify({
-        id: 'slice-h',
-        trigger_family: 'event_delegate',
-        resource_types: ['syncvar_hook'],
-        host_base_type: ['network_behaviour'],
-        source_gap_handoff: {
-          run_id: 'gaplab-20260411-104710',
-          slice_id: 'event_delegate_gap.mirror_syncvar_hook',
-          discovery_scope_mode: 'full_user_code',
-          user_raw_matches: 76,
-          processed_user_matches: 76,
-          accepted_candidate_ids: ['accepted-a', 'accepted-b'],
-          promotion_backlog_count: 73,
-          reject_buckets: {
-            third_party_excluded: 41,
-            unresolvable_handler_symbol: 1,
-          },
-          aggregation_mode: 'per_anchor_rules',
-        },
-      }, null, 2),
-      'utf-8',
-    );
     const rows = [
       {
         id: 'proposal-1',
         title: 'event_delegate proposal accepted-a',
         proposal_kind: 'per_anchor_rule',
-        source_gap_candidate_ids: ['accepted-a'],
         aggregation_mode: 'per_anchor_rules',
         draft_rule_id: 'unity.event.netplayer-gameover-syncvar-hook-ondeadchange.v1',
         binding_kind: 'method_triggers_method',
@@ -136,7 +111,6 @@ describe('rule-lab review-pack', () => {
         id: 'proposal-2',
         title: 'event_delegate proposal accepted-b',
         proposal_kind: 'per_anchor_rule',
-        source_gap_candidate_ids: ['accepted-b'],
         aggregation_mode: 'per_anchor_rules',
         draft_rule_id: 'unity.event.mirrorbattlemgr-createnetplayer-syncvar-hook-changeroomgrid.v1',
         binding_kind: 'method_triggers_method',
@@ -148,10 +122,8 @@ describe('rule-lab review-pack', () => {
 
     const out = await buildReviewPack({ repoPath: repoRoot, runId: 'run-h', sliceId: 'slice-h', maxTokens: 6000 });
     const persisted = await fs.readFile(out.paths.reviewCardsPath, 'utf-8');
-    expect(persisted).toContain('accepted_count: 2');
-    expect(persisted).toContain('backlog_count: 73');
-    expect(persisted).toContain('reject_buckets: {"third_party_excluded":41,"unresolvable_handler_symbol":1}');
-    expect(persisted).toContain('source_gap_candidate_ids: accepted-a, accepted-b');
+    expect(persisted).not.toContain('Handoff Summary');
+    expect(persisted).not.toContain('source_gap_candidate_ids');
     expect(persisted).toContain('draft_rule_ids: unity.event.netplayer-gameover-syncvar-hook-ondeadchange.v1, unity.event.mirrorbattlemgr-createnetplayer-syncvar-hook-changeroomgrid.v1');
 
     await fs.rm(repoRoot, { recursive: true, force: true });

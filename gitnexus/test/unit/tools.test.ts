@@ -11,8 +11,8 @@ import { describe, it, expect } from 'vitest';
 import { GITNEXUS_TOOLS, type ToolDefinition } from '../../src/mcp/tools.js';
 
 describe('GITNEXUS_TOOLS', () => {
-  it('exports exactly 14 tools', () => {
-    expect(GITNEXUS_TOOLS).toHaveLength(14);
+  it('exports exactly 13 tools', () => {
+    expect(GITNEXUS_TOOLS).toHaveLength(13);
   });
 
   it('contains all expected tool names', () => {
@@ -21,7 +21,7 @@ describe('GITNEXUS_TOOLS', () => {
       expect.arrayContaining([
         'list_repos', 'query', 'cypher', 'context',
         'detect_changes', 'rename', 'impact', 'unity_ui_trace',
-        'rule_lab_discover', 'rule_lab_analyze', 'rule_lab_review_pack',
+        'rule_lab_analyze', 'rule_lab_review_pack',
         'rule_lab_curate', 'rule_lab_promote', 'rule_lab_regress',
       ])
     );

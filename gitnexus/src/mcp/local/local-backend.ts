@@ -40,7 +40,6 @@ import {
   cleanupOldKuzuFiles,
   type RegistryEntry,
 } from '../../storage/repo-manager.js';
-import { discoverRuleLabRun } from '../../rule-lab/discover.js';
 import { analyzeRuleLabSlice } from '../../rule-lab/analyze.js';
 import { buildReviewPack } from '../../rule-lab/review-pack.js';
 import { curateRuleLabSlice } from '../../rule-lab/curate.js';
@@ -1280,8 +1279,6 @@ export class LocalBackend {
         return this.detectChanges(repo, params);
       case 'rename':
         return this.rename(repo, params);
-      case 'rule_lab_discover':
-        return this.ruleLabDiscover(repo, params);
       case 'rule_lab_analyze':
         return this.ruleLabAnalyze(repo, params);
       case 'rule_lab_review_pack':
@@ -1331,28 +1328,6 @@ export class LocalBackend {
       });
     } catch (err: any) {
       return { error: err?.message || 'unity_ui_trace failed' };
-    }
-  }
-
-  private async ruleLabDiscover(repo: RepoHandle, params: {
-    scope?: 'full' | 'diff';
-    seed?: string;
-  }): Promise<any> {
-    try {
-      const out = await discoverRuleLabRun({
-        repoPath: repo.repoPath,
-        scope: params?.scope === 'diff' ? 'diff' : 'full',
-        seed: typeof params?.seed === 'string' ? params.seed : undefined,
-      });
-      return {
-        ...out,
-        artifact_paths: {
-          manifest: out.paths.manifestPath,
-          run_root: out.paths.runRoot,
-        },
-      };
-    } catch (err: any) {
-      return { error: err?.message || 'rule_lab_discover failed' };
     }
   }
 

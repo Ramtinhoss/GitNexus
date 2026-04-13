@@ -34,12 +34,14 @@ Status: Active
 
 ```text
 User clue (exact pair) -> rule-lab analyze -> review/curate -> promote
+-> rules/approved/*.yaml -> rule-lab compile -> analyze -> CLI validation
 ```
 
 约束：
 - 输入是明确的 source/target 组合，不是全库穷举发现结果。
 - `rule-lab analyze` 负责产生 proposal candidate + `curation-input.json`。
 - 只有通过 3 guards 的 proposal 才允许进入 promote。
+- 对外验收路径固定为 `approved -> compile -> analyze -> CLI validation`。
 
 ### 3.2 删除的旧机制
 
@@ -104,6 +106,6 @@ User clue (exact pair) -> rule-lab analyze -> review/curate -> promote
 ## 7. 迁移要求
 
 1. 文档与 skill 不再把 `gitnexus gap-lab run` 作为主推荐路径。  
-2. 对外指引统一改为“exact-pair + 3 guards”的 reduced `rule-lab`。  
+2. 对外指引统一改为“exact-pair + 3 guards”，并固定验收为 `approved -> compile -> analyze -> CLI validation`。  
 3. event/delegate 缺口文档统一标注为 analyzer track。  
 4. 若未来删除旧 gap-lab 实现，需同步更新本文件与相关 skills。

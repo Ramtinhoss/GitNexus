@@ -35,18 +35,18 @@ describe('rule-lab MCP tools', () => {
 
   it('exposes rule_lab_* tools in schema and dispatches to backend handlers', async () => {
     const toolNames = GITNEXUS_TOOLS.map((tool) => tool.name);
-    expect(toolNames).toContain('rule_lab_discover');
+    expect(toolNames).not.toContain('rule_lab_discover');
     expect(toolNames).toContain('rule_lab_analyze');
     expect(toolNames).toContain('rule_lab_review_pack');
     expect(toolNames).toContain('rule_lab_curate');
     expect(toolNames).toContain('rule_lab_promote');
     expect(toolNames).toContain('rule_lab_regress');
 
-    const discoverSpy = vi.fn().mockResolvedValue({ artifact_paths: { manifest: '/tmp/manifest.json' } });
-    (backend as any).ruleLabDiscover = discoverSpy;
+    const analyzeSpy = vi.fn().mockResolvedValue({ artifact_paths: { candidates: '/tmp/candidates.jsonl' } });
+    (backend as any).ruleLabAnalyze = analyzeSpy;
 
-    const out = await backend.callTool('rule_lab_discover', { repo: 'test-repo', scope: 'full' });
-    expect(discoverSpy).toHaveBeenCalledTimes(1);
+    const out = await backend.callTool('rule_lab_analyze', { repo: 'test-repo', run_id: 'run-1', slice_id: 'slice-1' });
+    expect(analyzeSpy).toHaveBeenCalledTimes(1);
     expect(out).toHaveProperty('artifact_paths');
   });
 });

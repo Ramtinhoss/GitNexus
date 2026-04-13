@@ -13,7 +13,6 @@ This document defines the current configuration and state file rules used by Git
 | `rules/approved/*.yaml` | `rule-lab-curate` / `rule-lab-promote` | Approved project rule definitions (analyze/retrieval/verification families) | Written during curation/promotion | Rule compiler and analyze/offline governance fallback loaders |
 | `rules/compiled/*.v2.json` | `rule-lab-compile` | Compiled rule bundles by family (`analyze_rules`, `retrieval_rules`, `verification_rules`) | Written by `gitnexus rule-lab compile` | Analyze pipeline (`analyze_rules`), retrieval next-hop hint resolver (`retrieval_rules`), offline governance/report workflows |
 | `rules/lab/runs/**` | `rule-lab-analyze` / `rule-lab-review-pack` / `rule-lab-curate` / `rule-lab-promote` | Reduced Rule Lab artifacts (`manifest.json`, `slice-plan.json`, `slices/*/slice.json`, `candidates.jsonl`, `curation-input.json`, `review-cards.md`, `curated.json`, `dsl-drafts.json`, `dsl-draft.json`) for exact source/target authoring | Written by Rule Lab execution | Rule Lab follow-up commands and promote compiler input |
-| `gap-lab/runs/**` | `legacy gap-lab` | Historical gap-lab slice artifacts kept for compatibility and migration only | Written by legacy flows (non-primary path) | Legacy replay / audit only; not the default product workflow |
 | `rules/reports/*.md` | `rule-lab-regress` | Rule quality and regression reports | Written by regression pass | Human review and CI reports |
 
 ### `meta.json` schema (current)
@@ -173,7 +172,12 @@ gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt --no-reuse-options
   - Binding resolution must fail closed; `UnknownClass` / `UnknownMethod` placeholders are forbidden in `curation-input.json`, `curated.json`, and `approved/*.yaml`.
   - `curation-input.json` and `curated.json` must keep non-empty proposal evidence (`confirmed_chain.steps` or equivalent) before promote.
   - Ambiguous anchors require explicit user choice at authoring/skill layer; no auto-guessing.
-- `gitnexus-unity-rule-gen` now points to reduced rule-lab guidance; `gap-lab/runs/**` artifacts are legacy compatibility state, not primary workflow state.
+- `gitnexus-unity-rule-gen` now points to direct public flow guidance: `approved -> compile -> analyze -> CLI validation`.
+
+## Legacy compatibility note
+
+- Historical `.gitnexus/gap-lab/runs/**` artifacts may exist in older repos.
+- They are migration/audit state only and are not part of the active public workflow contract.
 - Default `clean` removes repo-local index artifacts and unregisters from global registry.
 - Default `clean` does **not** remove `.gitnexus/rules/**`.
 - `clean --include-rules-lab` may remove `.gitnexus/rules/lab/runs/**` and `.gitnexus/rules/reports/*.md` only.

@@ -130,6 +130,7 @@ MCP 工具入口：`rule_lab_analyze` → `rule_lab_review_pack` → `rule_lab_c
 5. event/delegate 大规模缺口属于 analyzer-native 路线，不作为规则作者主路径。
 6. query-time runtime closure remains graph-only；该边界不受 authoring 流程变化影响。
 7. 当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，必须 parity rerun 后再做 closure 结论。
+8. 对外操作闭环固定为：`rules/approved/*.yaml -> rule-lab compile -> analyze -> CLI validation`。
 
 ## 3. 设计与实现对照（阶段）
 
@@ -205,8 +206,9 @@ MCP 工具入口：`rule_lab_analyze` → `rule_lab_review_pack` → `rule_lab_c
    - fail-closed binding resolution（禁止 `UnknownClass` / `UnknownMethod`）
    - non-empty evidence before promote（`confirmed_chain.steps` 为空则阻断）
 5. anchor 歧义处理：必须请求用户离散选择，不允许 analyze 自动猜测目标锚点。
-6. promote/compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配。
-7. 规则族区分保持不变：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）。
+6. promote 后必须执行 `rule-lab compile`，再执行 `analyze` 与 CLI 验证；该链路是公开验收路径。
+7. compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配。
+8. 规则族区分保持不变：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）。
 
 ## 5. 配置方式（V2）
 

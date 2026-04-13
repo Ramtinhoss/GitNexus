@@ -232,7 +232,7 @@ describe('rule-lab analyze (exact pair flow)', () => {
     await fs.rm(repoRoot, { recursive: true, force: true });
   });
 
-  it('ignores legacy parity/coverage/handoff fields when exact_pairs are valid', async () => {
+  it('ignores legacy parity/coverage fields when exact_pairs are valid', async () => {
     const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'rule-lab-analyze-exact-legacy-'));
     const runId = 'run-x';
     const sliceId = 'slice-a';
@@ -261,10 +261,6 @@ describe('rule-lab analyze (exact pair flow)', () => {
       parity_status: {
         status: 'blocked',
         reason: 'parity_missing_rules_slice',
-      },
-      source_gap_handoff: {
-        accepted_candidate_ids: ['legacy-a'],
-        promotion_backlog_count: 999,
       },
     });
 

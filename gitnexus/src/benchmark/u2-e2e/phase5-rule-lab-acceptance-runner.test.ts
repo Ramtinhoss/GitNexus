@@ -11,7 +11,7 @@ const test: any = rawTest;
 
 test('phase5 rule-lab acceptance runner emits complete stage coverage', async () => {
   const report = await buildPhase5RuleLabAcceptanceReport({ repoAlias: 'GitNexus' });
-  assert.equal(report.stage_coverage.length, 6);
+  assert.equal(report.stage_coverage.length, 5);
   assert.equal(typeof report.metrics.precision, 'number');
 });
 
@@ -28,7 +28,6 @@ test('phase5 gate fails when anti-hardcode scan or dsl lint fails', async () => 
     reportPath,
     JSON.stringify({
       stage_coverage: [
-        { stage: 'discover', status: 'passed' },
         { stage: 'analyze', status: 'passed' },
         { stage: 'review-pack', status: 'passed' },
         { stage: 'curate', status: 'passed' },

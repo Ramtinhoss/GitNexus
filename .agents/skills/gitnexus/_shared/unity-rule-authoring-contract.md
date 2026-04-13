@@ -1,15 +1,17 @@
-# Unity Rule Authoring Contract (Post-Rollback)
+# Unity Rule Authoring Contract
 
 ## Scope
 
-This contract defines the stable authoring expectations for
-`gitnexus-unity-rule-gen` after gap-lab rollback.
+This contract defines the stable public authoring workflow for
+`gitnexus-unity-rule-gen`.
 
-`gap-lab` naming is retained in this filename for compatibility only.
+The only public path is direct rule authoring and validation:
+
+`approved/*.yaml -> rule-lab compile -> analyze -> CLI validation`
 
 ## Workflow Position
 
-1. `gap-lab` is deprecated as the primary product workflow.
+1. `gap-lab` is historical context only and not part of the active workflow.
 2. Default authoring path is reduced `rule-lab` for sparse irregular gaps.
 3. Query-time runtime closure remains graph-only.
 
@@ -40,8 +42,8 @@ Auto-guessing ambiguous anchors is forbidden.
 
 Primary artifacts are under `.gitnexus/rules/lab/runs/<run_id>/...`.
 
-`gap-lab/runs/**` may exist as legacy migration state, but is not required for
-new reduced-rule-lab loops and must not be treated as a required parity gate.
+Run/slice identifiers are internal artifact locators. Public operator guidance must
+not require run orchestration as the primary flow.
 
 ## Event/Delegate Boundary
 
@@ -56,6 +58,7 @@ Rule authoring is only for sparse, explicitly scoped residual gaps.
 ## Verification Contract
 
 1. Promote only after mandatory guards pass.
-2. Verify using analyze + `query/context` retrieval evidence.
-3. Under `hydration_policy=strict` with `fallbackToCompact=true`, parity rerun
+2. Compile approved rules before analyze.
+3. Verify in a fresh CLI process (`gitnexus cypher` / `gitnexus query`).
+4. Under `hydration_policy=strict` with `fallbackToCompact=true`, parity rerun
    is required before final closure conclusion.

@@ -5,7 +5,6 @@
 
 import { Command } from 'commander';
 import { createRequire } from 'node:module';
-import { attachGapLabCommands } from './gap-lab.js';
 import { createLazyAction } from './lazy-action.js';
 import { attachRuleLabCommands } from './rule-lab.js';
 
@@ -82,10 +81,6 @@ program
 
 attachRuleLabCommands(program, (handlerName) =>
   createLazyAction(() => import('./rule-lab.js'), handlerName),
-);
-
-attachGapLabCommands(program, (handlerName) =>
-  createLazyAction(() => import('./gap-lab.js'), handlerName),
 );
 
 program

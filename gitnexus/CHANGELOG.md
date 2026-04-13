@@ -13,6 +13,7 @@ All notable changes to GitNexus will be documented in this file.
 - Added first-class `gitnexus gap-lab run` orchestration with exit code `1` for coverage-gate blocked slices and exit code `2` for hard errors.
 
 ### Changed
+- Breaking/public-surface: switched Unity rule authoring guidance to direct flow only (`approved -> compile -> analyze -> CLI validation`), removed active gap-lab orchestration guidance from docs/skills, and renamed shared contract docs to `unity-rule-authoring-contract.md` (source + setup-installed copy).
 - Updated config/state ownership documentation to include `.gitnexus/gap-lab/runs/**` artifacts and owner responsibilities.
 - Updated Unity runtime source-of-truth and guide docs to state that gap-lab is an offline authoring/orchestration layer and query-time runtime closure remains graph-only.
 - Updated `rule-lab analyze` preflight: enforce C0 run-artifact parity and C2.6 coverage gate before C3 candidate generation.

@@ -34,19 +34,6 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
-async function resolveWorkspaceRulesRoot(): Promise<string> {
-  const candidates = [
-    path.resolve('.gitnexus/rules'),
-    path.resolve('../.gitnexus/rules'),
-  ];
-  for (const candidate of candidates) {
-    if (await fileExists(path.join(candidate, 'catalog.json'))) {
-      return candidate;
-    }
-  }
-  return candidates[0];
-}
-
 function makeExecuteParameterized(repoPath: string): (query: string, params?: Record<string, unknown>) => Promise<any[]> {
   return async (query, params) => {
     const q = String(query || '');
@@ -256,25 +243,14 @@ describe('runtime chain verify', () => {
     await fs.rm(repoPath, { recursive: true, force: true });
   });
 
-  it('runtime chain gaps are actionable under matched rule execution', async () => {
+  it('runtime chain gaps are actionable under graph-only verification', async () => {
     const out = await verifyRuntimeChainOnDemand({
       repoPath: await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-gaps-')),
       queryText: 'Reload',
+      symbolName: 'ReloadBase',
+      symbolFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
       executeParameterized: async () => [],
       resourceBindings: [],
-      rule: {
-        id: 'demo.reload.strict.v2',
-        version: '2.0.0',
-        trigger_family: 'reload',
-        resource_types: ['asset'],
-        host_base_type: ['ReloadBase'],
-        required_hops: ['resource', 'guid_map', 'code_loader', 'code_runtime'],
-        guarantees: ['strict_chain_closed'],
-        non_guarantees: ['strict_no_runtime_execution'],
-        next_action: 'node strict',
-        file_path: '.gitnexus/rules/approved/demo.reload.strict.v2.yaml',
-      },
-      requiredHops: ['resource', 'guid_map', 'code_loader', 'code_runtime'],
     });
     expect(out?.gaps.length).toBeGreaterThan(0);
     expect(out?.gaps.every((gap) => !!gap.next_command)).toBe(true);
@@ -311,44 +287,72 @@ describe('runtime chain verify', () => {
     expect(out.gaps.every((gap) => !gap.next_command.includes('Reload NEON.Game.Graph.Nodes.Reloads'))).toBe(true);
   });
 
-  it('accepts seed-to-mapped resource equivalence for resource hop verification', async () => {
+  it('accepts seed-to-mapped resource equivalence for bind segment in graph-only verifier', async () => {
     const repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-mapped-resource-'));
-    const out = await verifyRuntimeChainOnDemand({
+    const out = await verifyRuntimeClaimOnDemand({
       repoPath,
       queryText: 'EnergyByAttackCount Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/0_初始武器/1_weapon_0_james_new.asset',
+      symbolName: 'EnergyNode',
+      symbolFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs',
       resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/0_初始武器/1_weapon_0_james_new.asset',
       mappedSeedTargets: ['Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_0_james1.asset'],
-      executeParameterized: async () => [],
       resourceBindings: [{ resourcePath: 'Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_0_james1.asset' }],
-      rule: {
-        id: 'demo.energy.seed-map.v1',
-        version: '1.0.0',
-        trigger_family: 'energy',
-        resource_types: ['asset'],
-        host_base_type: ['GunGraphNode'],
-        required_hops: ['resource'],
-        guarantees: ['seed_mapped_resource_is_accepted'],
-        non_guarantees: ['does_not_verify_full_runtime_order'],
-        next_action: 'node mapped-resource',
-        file_path: '.gitnexus/rules/approved/demo.energy.seed-map.v1.yaml',
+      executeParameterized: async (query: string) => {
+        const q = String(query || '');
+        if (q.includes('WHERE n.name IN $symbolNames')) {
+          return [{
+            id: 'Class:Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs:EnergyNode',
+            name: 'EnergyNode',
+            type: 'Class',
+            filePath: 'Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs',
+            startLine: 1,
+          }];
+        }
+        if (q.includes("MATCH (s {id: $symbolId})-[r:CodeRelation {type: 'CALLS'}]->(t)")) {
+          return [{
+            sourceId: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs:Apply',
+            sourceName: 'Apply',
+            sourceFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs',
+            sourceStartLine: 22,
+            targetId: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyRuntime.cs:Run',
+            targetName: 'Run',
+            targetFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyRuntime.cs',
+            targetStartLine: 10,
+            reason: 'unity-rule-method-bridge:demo.energy.seed-map.v1',
+          }];
+        }
+        if (
+          q.includes("MATCH (n {id: $symbolId})-[:CodeRelation {type: 'HAS_METHOD'}]->(m)")
+          && q.includes("MATCH (m)-[r:CodeRelation {type: 'CALLS'}]->(t)")
+        ) {
+          return [{
+            sourceId: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs:Bootstrap',
+            sourceName: 'Bootstrap',
+            sourceFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs',
+            sourceStartLine: 8,
+            targetId: 'Method:Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs:Apply',
+            targetName: 'Apply',
+            targetFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Energy/EnergyNode.cs',
+            targetStartLine: 22,
+            reason: 'static-call',
+          }];
+        }
+        return [];
       },
-      requiredHops: ['resource'],
     });
 
-    expect(out?.status).toBe('verified_full');
-    expect(out?.gaps.length).toBe(0);
-    expect(out?.hops[0]?.note || '').toContain('mapped resource equivalence');
+    expect(out.rule_id).toBe('graph-only.runtime-closure.v1');
+    expect(out.status).toBe('verified_full');
+    expect(out.gaps.length).toBe(0);
     await fs.rm(repoPath, { recursive: true, force: true });
   });
 
   it('phase2 runtime claim returns explicit rule_not_matched', async () => {
-    const workspaceRulesRoot = await resolveWorkspaceRulesRoot();
     const out = await verifyRuntimeClaimOnDemand({
       repoPath: path.resolve('.'),
       queryText: 'CompletelyUnrelatedChain',
       executeParameterized: async () => [],
       resourceBindings: [],
-      rulesRoot: workspaceRulesRoot,
     });
     expect(out.status).toBe('failed');
     expect(out.reason).toBe('rule_not_matched');
@@ -394,35 +398,34 @@ describe('runtime chain verify', () => {
     await fs.rm(repoPath, { recursive: true, force: true });
   });
 
-  it('phase2 runtime claim uses bootstrap reload rule metadata', async () => {
+  it('phase2 runtime claim uses graph-only metadata', async () => {
     const repoPath = await makeTempRepo();
-    const workspaceRulesRoot = await resolveWorkspaceRulesRoot();
     const out = await verifyRuntimeClaimOnDemand({
       repoPath,
       queryText: 'Reload NEON.Game.Graph.Nodes.Reloads',
+      symbolName: 'ReloadBase',
+      symbolFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
       executeParameterized: makeExecuteParameterized(repoPath),
+      resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
       resourceBindings: [{ resourcePath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
-      rulesRoot: workspaceRulesRoot,
     });
-    expect(out.rule_id).toBe('unity.gungraph.reload.output-getvalue.v1');
+    expect(out.rule_id).toBe('graph-only.runtime-closure.v1');
     expect(out.rule_version).toBe('1.0.0');
   });
 
   it('phase2 next_action remains shell-parsable when unmatched', async () => {
-    const workspaceRulesRoot = await resolveWorkspaceRulesRoot();
     const out = await verifyRuntimeClaimOnDemand({
       repoPath: path.resolve('.'),
       queryText: 'CompletelyUnrelatedChain',
       executeParameterized: async () => [],
       resourceBindings: [],
-      rulesRoot: workspaceRulesRoot,
     });
     expect(out.reason).toBe('rule_not_matched');
     expect(typeof out.next_action).toBe('string');
     expect(hasBalancedShellQuotes(String(out.next_action || ''))).toBe(true);
   });
 
-  it('phase2 runtime claim required_hops are rule-driven', async () => {
+  it('phase2 runtime claim is stable under different rulesRoot values (graph-only)', async () => {
     const repoPath = await makeTempRepo();
     const executeParameterized = makeExecuteParameterized(repoPath);
     const strictExecuteParameterized = async (query: string, params?: Record<string, unknown>) => {
@@ -477,6 +480,9 @@ describe('runtime chain verify', () => {
     const strict = await verifyRuntimeClaimOnDemand({
       repoPath,
       queryText: 'Reload NEON.Game.Graph.Nodes.Reloads',
+      symbolName: 'ReloadBase',
+      symbolFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+      resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
       executeParameterized: strictExecuteParameterized,
       resourceBindings: [{ resourcePath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
       rulesRoot: strictRulesRoot,
@@ -484,19 +490,22 @@ describe('runtime chain verify', () => {
     const relaxed = await verifyRuntimeClaimOnDemand({
       repoPath,
       queryText: 'Reload NEON.Game.Graph.Nodes.Reloads',
+      symbolName: 'ReloadBase',
+      symbolFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+      resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
       executeParameterized,
       resourceBindings: [{ resourcePath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
       rulesRoot: relaxedRulesRoot,
     });
 
-    expect(strict.status).toBe('verified_partial');
-    expect(strict.evidence_level).toBe('verified_segment');
-    expect(relaxed.status).toBe('verified_full');
-    expect(relaxed.evidence_level).toBe('verified_chain');
+    expect(strict.rule_id).toBe('graph-only.runtime-closure.v1');
+    expect(relaxed.rule_id).toBe('graph-only.runtime-closure.v1');
+    expect(strict.status).toBe(relaxed.status);
+    expect(strict.evidence_level).toBe(relaxed.evidence_level);
     await fs.rm(repoPath, { recursive: true, force: true });
   });
 
-  it('phase2 runtime claim guarantees/non_guarantees come from matched rule', async () => {
+  it('phase2 runtime claim guarantees/non_guarantees follow graph-only contract', async () => {
     const repoPath = await makeTempRepo();
     const rulesRoot = await writeRules(repoPath, {
       'approved/demo.reload.claim-semantics.v1.yaml': [
@@ -547,18 +556,22 @@ describe('runtime chain verify', () => {
     const out = await verifyRuntimeClaimOnDemand({
       repoPath,
       queryText: 'Reload runtime start sequence',
+      symbolName: 'ReloadBase',
+      symbolFilePath: 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs',
+      resourceSeedPath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset',
       executeParameterized: makeExecuteParameterized(repoPath),
       resourceBindings: [{ resourcePath: 'Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset' }],
       rulesRoot,
     });
-    expect(out.rule_id).toBe('demo.reload.claim-semantics.v1');
-    expect(out.rule_version).toBe('2.0.0');
-    expect(out.guarantees).toEqual(['custom_guarantee_from_rule']);
-    expect(out.non_guarantees).toEqual(['custom_non_guarantee_from_rule']);
+    expect(out.rule_id).toBe('graph-only.runtime-closure.v1');
+    expect(out.non_guarantees).toContain('no_runtime_execution');
+    expect(out.non_guarantees).toContain('no_dynamic_data_flow_proof');
+    expect(out.non_guarantees).toContain('no_state_transition_proof');
+    expect(out.non_guarantees).not.toContain('custom_non_guarantee_from_rule');
     await fs.rm(repoPath, { recursive: true, force: true });
   });
 
-  it('phase2 non-reload trigger family executes rule-driven verifier', async () => {
+  it('phase2 without structured anchors returns rule_not_matched', async () => {
     const repoPath = await makeTempRepo();
     const rulesRoot = await writeRules(repoPath, {
       'approved/demo.startup.v1.yaml': [
@@ -585,10 +598,8 @@ describe('runtime chain verify', () => {
       resourceBindings: [{ resourcePath: 'Assets/Custom/Rules/startup.asset' }],
       rulesRoot,
     });
-    expect(out.rule_id).toBe('demo.startup.v1');
-    expect(out.status).toBe('verified_full');
-    expect(out.evidence_level).toBe('verified_segment');
-    expect(out.reason).toBeUndefined();
+    expect(out.rule_id).toBe('none');
+    expect(out.reason).toBe('rule_not_matched');
     await fs.rm(repoPath, { recursive: true, force: true });
   });
 
@@ -625,7 +636,7 @@ describe('runtime chain verify', () => {
     await fs.rm(repoPath, { recursive: true, force: true });
   });
 
-  it('phase5 rule-lab promoted rule is loadable', async () => {
+  it('phase5 promote artifacts do not alter query-time graph-only rule identity', async () => {
     const repoPath = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-rule-lab-promote-'));
     const sliceDir = path.join(repoPath, '.gitnexus', 'rules', 'lab', 'runs', 'run-x', 'slices', 'slice-a');
     await fs.mkdir(sliceDir, { recursive: true });
@@ -655,11 +666,28 @@ describe('runtime chain verify', () => {
     const out = await verifyRuntimeClaimOnDemand({
       repoPath,
       queryText: 'Startup Graph Trigger',
-      executeParameterized: async () => [],
+      symbolName: 'StartupNode',
+      symbolFilePath: 'Assets/Rules/StartupNode.cs',
+      resourceSeedPath: 'Assets/Rules/startup.asset',
+      executeParameterized: async (query: string) => {
+        if (String(query || '').includes('WHERE n.name IN $symbolNames')) {
+          return [{
+            id: 'Class:Assets/Rules/StartupNode.cs:StartupNode',
+            name: 'StartupNode',
+            type: 'Class',
+            filePath: 'Assets/Rules/StartupNode.cs',
+            startLine: 1,
+          }];
+        }
+        return [];
+      },
       resourceBindings: [{ resourcePath: 'Assets/Rules/startup.asset' }],
     });
 
-    expect(out.rule_id).toBe('demo.startup.v1');
+    expect(out.rule_id).toBe('graph-only.runtime-closure.v1');
+    expect(out.rule_id).not.toBe('demo.startup.v1');
+    expect(out.status).toBe('verified_partial');
+    expect(out.evidence_level).toBe('verified_segment');
     expect(out.reason).toBeUndefined();
     await fs.rm(repoPath, { recursive: true, force: true });
   });
