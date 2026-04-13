@@ -102,13 +102,13 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - `status: 'failed'` 可伴随 `evidence_level: 'none' | 'clue' | 'verified_segment'`（精度优先降级）
    - `runtime_claim` 统一输出失败分类：`rule_not_matched | rule_matched_but_evidence_missing | rule_matched_but_verification_failed`
 
-### 2.4 Phase 5 Offline Rule Lab（Discover → Analyze → Review → Curate → Promote → Regress）
+### 2.4 Phase 5 Offline Rule Lab（Reduced: Analyze → Review → Curate → Promote → Regress）
 
-MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_review_pack` → `rule_lab_curate` → `rule_lab_promote` → `rule_lab_regress`
+MCP 工具入口：`rule_lab_analyze` → `rule_lab_review_pack` → `rule_lab_curate` → `rule_lab_promote` → `rule_lab_regress`
 
 1. Rule Lab 模块分层（`gitnexus/src/rule-lab/`）：
    - 路径与 run/slice 约定：`paths.ts:32-56`
-   - discover → analyze → review-pack → curate → promote → regress
+   - reduced 流程：analyze → review-pack → curate → promote → regress
 2. 规则族区分：
    - `family: 'analyze_rules'`：索引阶段注入合成边（`loadAnalyzeRules`）
    - `family: 'verification_rules'`：离线治理与报告用途（Rule Lab / artifact），不再作为 query-time closure 匹配门槛
@@ -117,23 +117,18 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
    - promote 写入 `.gitnexus/rules/catalog.json` + `approved/*.yaml`
    - `verification_rules` 供离线治理与回归对照，不参与 query-time graph-only closure
 
-### 2.5 Gap-Lab Slice Workflow Boundary（Authoring / Orchestration）
+### 2.5 Rule Authoring Boundary（Post-Rollback）
 
-1. `gitnexus-unity-rule-gen` 的 gap-lab slice 流程是 **offline authoring/orchestration layer**，用于生成与验收规则，不是 query-time verifier。
-2. gap-lab 产物路径为 `.gitnexus/gap-lab/runs/<run_id>/...`，用于跨会话恢复（focus、checkpoint、inventory、decision、slice evidence）。
-3. query-time runtime closure remains graph-only；gap-lab 不改变 `runtime_chain_verify=on-demand` 的 graph-only closure 语义。
-4. 当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，必须 parity rerun 后再做 closure 结论（无论是否经过 gap-lab authoring）。
-5. C1 发现流程采用穷尽链路：`C1a lexical universe -> C1b scope classification -> C1c symbol resolution -> C1d missing-edge verification`，推荐入口为 `gitnexus gap-lab run --repo-path <repo> --run-id <run> --slice-id <slice> --gap-subtype <subtype>`；用户线索仅作为 seed，不是排它检索范围。
-6. C1d duplicate-prevention 以 `.gitnexus/rules/approved/*.yaml` 中已批准规则的 `resource_bindings` 为真理源，不依赖 graph state 做“已覆盖”判定。
-7. C0 parity gate 为 analyze 前置：`gap-lab` 与 `rules/lab` 的同 run/slice 工件不一致时必须阻断。
-8. C2.6 coverage gate 为 C3 前置，且 **candidate-derived coverage** 为真理源：`processed_user_matches` / `user_raw_matches` 必须从 `slice.candidates.jsonl` 派生，`slice.json.coverage_gate` 只是派生缓存；若摘要计数与候选行漂移，必须标记 `candidate_audit_drift` 并阻断。
-9. 默认 `full_user_code` scope 禁止 exemplar/module locality 驱动的排除理由；`out_of_focus_scope`、`deferred_non_clue_module` 等理由只有在显式 `explicit_discovery_scope_override` 下才允许出现。
-10. `promotion_backlog` 是 **eligible** 候选状态，不是 rejection bucket；“本轮不提升”必须与“候选无效”分离。
-11. Gap-lab C1 持久化采用 balanced-slim 工件模型：`slice.json`、`slice.candidates.jsonl`、`inventory.jsonl`、`decisions.jsonl`；不保留 standalone universe/scope/coverage 工件。
-12. Gap-lab 与 Rule-lab 之间采用两层候选语义：
-   - `gap-lab slice.candidates.jsonl` = exhaustive candidate universe（完整候选真理源）
-   - `rules/lab .../candidates.jsonl` = proposal candidates（由 accepted candidates + aggregation_mode 派生）
-13. Rule-lab downstream `slice.json` 必须包含 `source_gap_handoff`，用于 machine-auditable `universe -> accepted -> proposal` reduction 说明。
+1. `gap-lab` 已从产品主流程退役，不再作为默认 authoring/orchestration 路径。
+2. Unity 规则创作主路径是 reduced `rule-lab`，输入为用户确认后的 `exact source/target pair`。
+3. reduced `rule-lab` 仅保留 3 个 guard：
+   - duplicate-prevention（对比 `.gitnexus/rules/approved/*.yaml`）
+   - fail-closed binding resolution
+   - non-empty evidence before promote
+4. anchor 歧义必须由用户在 authoring/skill 层选择，不允许自动猜测。
+5. event/delegate 大规模缺口属于 analyzer-native 路线，不作为规则作者主路径。
+6. query-time runtime closure remains graph-only；该边界不受 authoring 流程变化影响。
+7. 当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，必须 parity rerun 后再做 closure 结论。
 
 ## 3. 设计与实现对照（阶段）
 
@@ -199,23 +194,18 @@ MCP 工具入口：`rule_lab_discover` → `rule_lab_analyze` → `rule_lab_revi
 6. 严格策略回退语义：若 `strict` 因成本/上限回退到 compact（`fallbackToCompact=true`），则对外结果视为 `policy-adjusted`，并要求 parity 重跑后再做 closure 结论。
 7. `resource_path_prefix` / seed contract：类符号 + 资源路径联合检索为主路径
 
-### 4.4 Phase 5 Offline Rule Lab 合约
+### 4.4 Phase 5 Offline Rule Lab 合约（Reduced）
 
-1. Rule Lab 六阶段生命周期：discover → analyze → review_pack → curate → promote → regress
+1. Rule Lab 生命周期（reduced）：analyze → review_pack → curate → promote → regress
 2. Artifact 路径：`.gitnexus/rules/lab/runs/<run_id>/...`
-3. Rule-lab `analyze` 输出必须区分 proposal candidates 与 exhaustive gap candidates：
-   - `candidates.jsonl` 中每个 proposal candidate 必须显式携带 `source_gap_candidate_ids`、`aggregation_mode`、`draft_rule_id`
-   - `slice.json` 中必须持久化 `source_gap_handoff`（`accepted_candidate_ids`、`promotion_backlog_count`、`reject_buckets` 等）
-4. Rule-lab downstream artifact 需要可解释 `universe -> accepted -> proposal`：
-   - `review-cards.md` 至少包含 `accepted_count`、`backlog_count`、`source_gap_candidate_ids`
-   - `curation-input.json` 必须由 proposal candidates 自动生成并保证 `confirmed_chain.steps` 非空
-   - 多候选切片必须持久化 `dsl-drafts.json`；`dsl-draft.json` 仅作为兼容别名（多候选时带 warning）
-   - proposal 的 `binding_kind` 必须从 handoff `default_binding_kinds` 或 accepted-candidate metadata 派生，禁止硬编码默认值
-   - `aggregate_single_rule` 必须保留全部 accepted anchors 的 lineage（`source_gap_candidate_ids`、merged bindings、guarantees）
-   - proposal-level closure evidence 必须 proposal-specific；不得直接复制混合 slice-wide chain
-   - unresolved binding 必须 fail-closed：`UnknownClass` / `UnknownMethod` 不得出现在 curation/promote artifact
-5. promote/compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配
-6. 规则族区分：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）
+3. reduced `rule-lab` 输入契约：只处理用户确认的 `exact source/target pair`（或其显式集合）。
+4. reduced `rule-lab` 必须执行 3 guards：
+   - duplicate-prevention（已覆盖 pair 阻断）
+   - fail-closed binding resolution（禁止 `UnknownClass` / `UnknownMethod`）
+   - non-empty evidence before promote（`confirmed_chain.steps` 为空则阻断）
+5. anchor 歧义处理：必须请求用户离散选择，不允许 analyze 自动猜测目标锚点。
+6. promote/compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配。
+7. 规则族区分保持不变：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）。
 
 ## 5. 配置方式（V2）
 
