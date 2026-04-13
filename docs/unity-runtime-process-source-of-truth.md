@@ -51,6 +51,7 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
      - `lifecycle_overrides`：扩展内置 lifecycle 入口
    - 场景文件索引：预构建 lowercase scene name → File node ID 映射，供 `method_triggers_scene_load` 使用
    - 合成边属性：`confidence=0.75`，`reason=unity-rule-{kind}:{ruleId}`
+   - 构建结束输出 `rule_binding.*` 诊断摘要（含 `rule_binding.agent_report: should_report=<bool>`）；该信号用于提示 agent 是否应汇报异常，不对执行路径做限流/中断
 4. Process 生成（Phase 6）：
    - 基于 CALLS tracing，标注 `processSubtype` 和 `runtimeChainConfidence`：`pipeline.ts:490-525`
    - 生命周期 metadata 按 Unity resource-binding flow 条件持久化（Unity 自动检测命中 `Assets/*.cs` 时开启）：`pipeline.ts:446`

@@ -2,6 +2,7 @@ import { GraphNode, GraphRelationship, KnowledgeGraph } from '../core/graph/type
 import { CommunityDetectionResult } from '../core/ingestion/community-processor.js';
 import { ProcessDetectionResult } from '../core/ingestion/process-processor.js';
 import type { UnityResourceProcessingResult } from '../core/ingestion/unity-resource-processor.js';
+import type { UnityRuntimeBindingResult } from '../core/ingestion/unity-runtime-binding-rules.js';
 import type { ScopeSelectionDiagnostics } from '../core/ingestion/scope-filter.js';
 
 export type PipelinePhase = 'idle' | 'extracting' | 'structure' | 'parsing' | 'imports' | 'calls' | 'heritage' | 'communities' | 'processes' | 'enriching' | 'complete' | 'error';
@@ -45,6 +46,7 @@ export interface PipelineResult {
   communityResult?: CommunityDetectionResult;
   processResult?: ProcessDetectionResult;
   unityResult?: UnityResourceProcessingResult;
+  unityRuleBindingResult?: UnityRuntimeBindingResult;
   scopeDiagnostics?: ScopeSelectionDiagnostics;
   csharpPreprocDiagnostics?: CSharpPreprocDiagnostics;
 }
@@ -54,6 +56,7 @@ export interface PipelineRuntimeSummary {
   communityResult?: CommunityDetectionResult;
   processResult?: ProcessDetectionResult;
   unityResult?: UnityResourceProcessingResult;
+  unityRuleBindingResult?: UnityRuntimeBindingResult;
   scopeDiagnostics?: ScopeSelectionDiagnostics;
   csharpPreprocDiagnostics?: CSharpPreprocDiagnostics;
 }

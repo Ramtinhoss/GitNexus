@@ -82,8 +82,11 @@ gitnexus rule-lab promote --repo-path "$REPO_PATH" --run-id "$RUN_ID" --slice-id
 1. Re-run analyze for target repo scope.
 2. Verify synthetic edges with **CLI in a fresh process** (for example `gitnexus cypher` / `gitnexus query`).
 3. Do not use current MCP session `query/context` as synthetic-edge acceptance evidence immediately after analyze/rebuild.
-4. Keep closure claims aligned to graph-only semantics.
-5. Under `hydration_policy=strict` with `fallbackToCompact=true`, run parity before final closure conclusion.
+4. Inspect analyze summary `rule_binding.*` diagnostics:
+   - `rule_binding.agent_report: should_report=false` → no anomaly to report.
+   - `rule_binding.agent_report: should_report=true` → summarize `rule_binding.anomaly:*` in your run report.
+5. Keep closure claims aligned to graph-only semantics.
+6. Under `hydration_policy=strict` with `fallbackToCompact=true`, run parity before final closure conclusion.
 
 Suggested acceptance check (example):
 

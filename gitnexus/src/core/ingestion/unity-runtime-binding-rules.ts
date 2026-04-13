@@ -7,9 +7,45 @@ import { generateId } from '../../lib/utils.js';
 export interface UnityRuntimeBindingResult {
   edgesInjected: number;
   ruleResults: Array<{ ruleId: string; edgesInjected: number }>;
+  diagnostics: UnityRuntimeBindingDiagnostics;
 }
 
 const RULE_EDGE_CONFIDENCE = 0.75;
+const RULE_ANOMALY_PREVIEW_LIMIT = 5;
+
+export interface UnityRuntimeBindingDiagnostics {
+  rulesEvaluated: number;
+  bindingsEvaluated: number;
+  bindingsByKind: Record<string, number>;
+  methodLookupCalls: number;
+  methodLookupCacheHits: number;
+  sceneRuntimeTraversalCalls: number;
+  sceneRuntimeTraversalCacheHits: number;
+  sceneRuntimeResourcesVisited: number;
+  anomalies: string[];
+  shouldAgentReport: boolean;
+  agentReportReason: string;
+  summary: string[];
+}
+
+interface RuleBindingDiagnosticsState {
+  rulesEvaluated: number;
+  bindingsEvaluated: number;
+  bindingsByKind: Record<string, number>;
+  methodLookupCalls: number;
+  methodLookupCacheHits: number;
+  sceneRuntimeTraversalCalls: number;
+  sceneRuntimeTraversalCacheHits: number;
+  sceneRuntimeResourcesVisited: number;
+  anomalySet: Set<string>;
+}
+
+interface RuleBindingExecutionState {
+  methodsByResourceId: Map<string, GraphNode[]>;
+  resourceMethodLookupCache: Map<string, GraphNode[]>;
+  sceneRuntimeResourceIdsCache: Map<string, string[]>;
+  diagnostics: RuleBindingDiagnosticsState;
+}
 
 export function applyUnityRuntimeBindingRules(
   graph: KnowledgeGraph,
@@ -68,6 +104,23 @@ export function applyUnityRuntimeBindingRules(
     else if (rel.type === 'UNITY_COMPONENT_INSTANCE') componentInstances.push(rel);
   }
   const prefabSourceTargetsBySource = buildPrefabSourceTargetsBySource(assetGuidRefs);
+  const methodsByResourceId = buildMethodsByResourceId(componentInstances, methodsByClassId);
+  const executionState: RuleBindingExecutionState = {
+    methodsByResourceId,
+    resourceMethodLookupCache: new Map<string, GraphNode[]>(),
+    sceneRuntimeResourceIdsCache: new Map<string, string[]>(),
+    diagnostics: {
+      rulesEvaluated: rules.length,
+      bindingsEvaluated: 0,
+      bindingsByKind: {},
+      methodLookupCalls: 0,
+      methodLookupCacheHits: 0,
+      sceneRuntimeTraversalCalls: 0,
+      sceneRuntimeTraversalCacheHits: 0,
+      sceneRuntimeResourcesVisited: 0,
+      anomalySet: new Set<string>(),
+    },
+  };
 
   // Pre-build scene file index: lowercase scene name → fileId[]
   const sceneFilesByName = new Map<string, string[]>();
@@ -84,6 +137,9 @@ export function applyUnityRuntimeBindingRules(
   for (const rule of rules) {
     let ruleEdges = 0;
     for (const binding of rule.resource_bindings ?? []) {
+      executionState.diagnostics.bindingsEvaluated += 1;
+      executionState.diagnostics.bindingsByKind[binding.kind] =
+        (executionState.diagnostics.bindingsByKind[binding.kind] || 0) + 1;
       ruleEdges += processBinding(
         binding,
         rule.id,
@@ -93,6 +149,7 @@ export function applyUnityRuntimeBindingRules(
         containerNodes,
         sceneFilesByName,
         prefabSourceTargetsBySource,
+        executionState,
         addSyntheticEdge,
       );
     }
@@ -103,24 +160,36 @@ export function applyUnityRuntimeBindingRules(
     ruleResults.push({ ruleId: rule.id, edgesInjected: ruleEdges });
   }
 
-  return { edgesInjected: totalEdges, ruleResults };
+  return {
+    edgesInjected: totalEdges,
+    ruleResults,
+    diagnostics: finalizeRuleBindingDiagnostics(executionState.diagnostics, totalEdges),
+  };
 }
 
 function findMethodsOnResource(
   resourceFileId: string,
-  componentInstances: GraphRelationship[],
-  methodsByClassId: Map<string, GraphNode[]>,
+  executionState: RuleBindingExecutionState,
   entryPoints: string[],
 ): GraphNode[] {
-  const results: GraphNode[] = [];
-  const entrySet = new Set(entryPoints);
-  for (const ci of componentInstances) {
-    if (ci.targetId !== resourceFileId) continue;
-    const classId = ci.sourceId;
-    for (const method of methodsByClassId.get(classId) ?? []) {
-      if (entrySet.has(method.properties.name)) results.push(method);
-    }
+  executionState.diagnostics.methodLookupCalls += 1;
+  const cacheKey = `${resourceFileId}::${entryPoints.join('|')}`;
+  const cached = executionState.resourceMethodLookupCache.get(cacheKey);
+  if (cached) {
+    executionState.diagnostics.methodLookupCacheHits += 1;
+    return cached;
   }
+  const methods = executionState.methodsByResourceId.get(resourceFileId) ?? [];
+  if (methods.length === 0) {
+    executionState.resourceMethodLookupCache.set(cacheKey, []);
+    return [];
+  }
+  const entrySet = new Set(entryPoints);
+  const results: GraphNode[] = [];
+  for (const method of methods) {
+    if (entrySet.has(method.properties.name)) results.push(method);
+  }
+  executionState.resourceMethodLookupCache.set(cacheKey, results);
   return results;
 }
 
@@ -133,13 +202,29 @@ function processBinding(
   containerNodes: GraphNode[],
   sceneFilesByName: Map<string, string[]>,
   prefabSourceTargetsBySource: Map<string, string[]>,
+  executionState: RuleBindingExecutionState,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   if (binding.kind === 'asset_ref_loads_components') {
-    return processAssetRefLoadsComponents(binding, ruleId, assetGuidRefs, componentInstances, methodsByClassId, addEdge);
+    return processAssetRefLoadsComponents(
+      binding,
+      ruleId,
+      assetGuidRefs,
+      executionState,
+      addEdge,
+    );
   }
   if (binding.kind === 'method_triggers_field_load') {
-    return processMethodTriggersFieldLoad(binding, ruleId, assetGuidRefs, componentInstances, methodsByClassId, containerNodes, addEdge);
+    return processMethodTriggersFieldLoad(
+      binding,
+      ruleId,
+      assetGuidRefs,
+      componentInstances,
+      methodsByClassId,
+      containerNodes,
+      executionState,
+      addEdge,
+    );
   }
   if (binding.kind === 'method_triggers_scene_load') {
     return processMethodTriggersSceneLoad(
@@ -150,12 +235,14 @@ function processBinding(
       containerNodes,
       sceneFilesByName,
       prefabSourceTargetsBySource,
+      executionState,
       addEdge,
     );
   }
   if (binding.kind === 'method_triggers_method') {
     return processMethodTriggersMethod(binding, ruleId, methodsByClassId, containerNodes, addEdge);
   }
+  addAnomaly(executionState.diagnostics, `rule=${ruleId}: unsupported resource_binding kind "${binding.kind}"`);
   return 0;
 }
 
@@ -163,14 +250,19 @@ function processAssetRefLoadsComponents(
   binding: UnityResourceBinding,
   ruleId: string,
   assetGuidRefs: GraphRelationship[],
-  componentInstances: GraphRelationship[],
-  methodsByClassId: Map<string, GraphNode[]>,
+  executionState: RuleBindingExecutionState,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   let count = 0;
   const pattern = binding.ref_field_pattern ? new RegExp(binding.ref_field_pattern) : null;
   const entryPoints = binding.target_entry_points ?? [];
-  if (!pattern || entryPoints.length === 0) return 0;
+  if (!pattern || entryPoints.length === 0) {
+    addAnomaly(
+      executionState.diagnostics,
+      `rule=${ruleId}: asset_ref_loads_components missing ref_field_pattern or target_entry_points`,
+    );
+    return 0;
+  }
 
   const runtimeRootId = generateId('Method', 'unity-runtime-root');
 
@@ -182,7 +274,7 @@ function processAssetRefLoadsComponents(
     } catch { continue; }
     if (!pattern.test(fieldName)) continue;
 
-    const targetMethods = findMethodsOnResource(ref.targetId, componentInstances, methodsByClassId, entryPoints);
+    const targetMethods = findMethodsOnResource(ref.targetId, executionState, entryPoints);
     for (const method of targetMethods) {
       if (addEdge(runtimeRootId, method.id, `unity-rule-resource-load:${ruleId}`)) count++;
     }
@@ -197,6 +289,7 @@ function processMethodTriggersFieldLoad(
   componentInstances: GraphRelationship[],
   methodsByClassId: Map<string, GraphNode[]>,
   containerNodes: GraphNode[],
+  executionState: RuleBindingExecutionState,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   let count = 0;
@@ -205,7 +298,13 @@ function processMethodTriggersFieldLoad(
   const entryPoints = binding.target_entry_points ?? [];
   const defaultEntryPoints = ['OnEnable', 'Awake', 'Start'];
   const resolvedEntryPoints = entryPoints.length > 0 ? entryPoints : defaultEntryPoints;
-  if (!classPattern || loaderMethodNames.size === 0) return 0;
+  if (!classPattern || loaderMethodNames.size === 0) {
+    addAnomaly(
+      executionState.diagnostics,
+      `rule=${ruleId}: method_triggers_field_load missing host_class_pattern or loader_methods`,
+    );
+    return 0;
+  }
 
   // Build asset ref index by source file
   const refsBySource = new Map<string, GraphRelationship[]>();
@@ -230,7 +329,7 @@ function processMethodTriggersFieldLoad(
     // Follow asset refs from those resource files
     for (const resourceFileId of resourceFileIds) {
       for (const ref of refsBySource.get(resourceFileId) ?? []) {
-        const targetMethods = findMethodsOnResource(ref.targetId, componentInstances, methodsByClassId, resolvedEntryPoints);
+        const targetMethods = findMethodsOnResource(ref.targetId, executionState, resolvedEntryPoints);
         for (const loader of loaders) {
           for (const target of targetMethods) {
             if (addEdge(loader.id, target.id, `unity-rule-loader-bridge:${ruleId}`)) count++;
@@ -250,6 +349,7 @@ function processMethodTriggersSceneLoad(
   containerNodes: GraphNode[],
   sceneFilesByName: Map<string, string[]>,
   prefabSourceTargetsBySource: Map<string, string[]>,
+  executionState: RuleBindingExecutionState,
   addEdge: (s: string, t: string, reason: string) => boolean,
 ): number {
   const classPattern = binding.host_class_pattern ? new RegExp(binding.host_class_pattern) : null;
@@ -260,10 +360,19 @@ function processMethodTriggersSceneLoad(
     ? binding.target_entry_points!
     : defaultEntryPoints;
 
-  if (!classPattern || loaderMethodNames.size === 0 || !sceneName) return 0;
+  if (!classPattern || loaderMethodNames.size === 0 || !sceneName) {
+    addAnomaly(
+      executionState.diagnostics,
+      `rule=${ruleId}: method_triggers_scene_load missing host_class_pattern, loader_methods, or scene_name`,
+    );
+    return 0;
+  }
 
   const sceneFileIds = sceneFilesByName.get(sceneName.toLowerCase()) ?? [];
-  if (sceneFileIds.length === 0) return 0;
+  if (sceneFileIds.length === 0) {
+    addAnomaly(executionState.diagnostics, `rule=${ruleId}: scene "${sceneName}" not found in File(.unity) index`);
+    return 0;
+  }
 
   let count = 0;
   for (const cls of containerNodes) {
@@ -273,9 +382,13 @@ function processMethodTriggersSceneLoad(
     if (loaders.length === 0) continue;
 
     for (const sceneFileId of sceneFileIds) {
-      const runtimeResourceIds = collectSceneRuntimeResourceIds(sceneFileId, prefabSourceTargetsBySource);
+      const runtimeResourceIds = getSceneRuntimeResourceIds(
+        sceneFileId,
+        prefabSourceTargetsBySource,
+        executionState,
+      );
       for (const runtimeResourceId of runtimeResourceIds) {
-        const targetMethods = findMethodsOnResource(runtimeResourceId, componentInstances, methodsByClassId, entryPoints);
+        const targetMethods = findMethodsOnResource(runtimeResourceId, executionState, entryPoints);
         for (const loader of loaders) {
           for (const target of targetMethods) {
             if (addEdge(loader.id, target.id, `unity-rule-scene-load:${ruleId}`)) count++;
@@ -285,6 +398,21 @@ function processMethodTriggersSceneLoad(
     }
   }
   return count;
+}
+
+function buildMethodsByResourceId(
+  componentInstances: GraphRelationship[],
+  methodsByClassId: Map<string, GraphNode[]>,
+): Map<string, GraphNode[]> {
+  const methodsByResourceId = new Map<string, GraphNode[]>();
+  for (const componentRef of componentInstances) {
+    const methods = methodsByClassId.get(componentRef.sourceId) ?? [];
+    if (methods.length === 0) continue;
+    const list = methodsByResourceId.get(componentRef.targetId) ?? [];
+    list.push(...methods);
+    methodsByResourceId.set(componentRef.targetId, list);
+  }
+  return methodsByResourceId;
 }
 
 function buildPrefabSourceTargetsBySource(assetGuidRefs: GraphRelationship[]): Map<string, string[]> {
@@ -324,6 +452,23 @@ function collectSceneRuntimeResourceIds(
     }
   }
   return [...visited];
+}
+
+function getSceneRuntimeResourceIds(
+  sceneFileId: string,
+  prefabSourceTargetsBySource: Map<string, string[]>,
+  executionState: RuleBindingExecutionState,
+): string[] {
+  executionState.diagnostics.sceneRuntimeTraversalCalls += 1;
+  const cached = executionState.sceneRuntimeResourceIdsCache.get(sceneFileId);
+  if (cached) {
+    executionState.diagnostics.sceneRuntimeTraversalCacheHits += 1;
+    return cached;
+  }
+  const ids = collectSceneRuntimeResourceIds(sceneFileId, prefabSourceTargetsBySource);
+  executionState.sceneRuntimeResourceIdsCache.set(sceneFileId, ids);
+  executionState.diagnostics.sceneRuntimeResourcesVisited += ids.length;
+  return ids;
 }
 
 function processMethodTriggersMethod(
@@ -380,4 +525,52 @@ function processLifecycleOverrides(
     }
   }
   return count;
+}
+
+function addAnomaly(diagnostics: RuleBindingDiagnosticsState, message: string): void {
+  diagnostics.anomalySet.add(message);
+}
+
+function finalizeRuleBindingDiagnostics(
+  diagnostics: RuleBindingDiagnosticsState,
+  edgesInjected: number,
+): UnityRuntimeBindingDiagnostics {
+  const anomalies = [...diagnostics.anomalySet];
+  const shouldAgentReport = anomalies.length > 0;
+  const bindingsByKind = Object.fromEntries(
+    Object.entries(diagnostics.bindingsByKind).sort(([a], [b]) => a.localeCompare(b)),
+  );
+  const kindSummary = Object.entries(bindingsByKind)
+    .map(([kind, count]) => `${kind}=${count}`)
+    .join(', ') || 'none';
+  const summary = [
+    `rule_binding.summary: rules=${diagnostics.rulesEvaluated}, bindings=${diagnostics.bindingsEvaluated}, edges=${edgesInjected}`,
+    `rule_binding.bindings_by_kind: ${kindSummary}`,
+    `rule_binding.lookup: method_calls=${diagnostics.methodLookupCalls}, cache_hits=${diagnostics.methodLookupCacheHits}`,
+    `rule_binding.scene_closure: traversals=${diagnostics.sceneRuntimeTraversalCalls}, cache_hits=${diagnostics.sceneRuntimeTraversalCacheHits}, visited_resources=${diagnostics.sceneRuntimeResourcesVisited}`,
+    `rule_binding.agent_report: should_report=${shouldAgentReport} reason="${shouldAgentReport ? 'rule-binding anomalies detected' : 'no anomalies detected'}"`,
+  ];
+  if (anomalies.length > 0) {
+    summary.push(`rule_binding.anomalies: count=${anomalies.length}`);
+    for (const anomaly of anomalies.slice(0, RULE_ANOMALY_PREVIEW_LIMIT)) {
+      summary.push(`rule_binding.anomaly: ${anomaly}`);
+    }
+    if (anomalies.length > RULE_ANOMALY_PREVIEW_LIMIT) {
+      summary.push(`rule_binding.anomaly: ... ${anomalies.length - RULE_ANOMALY_PREVIEW_LIMIT} more`);
+    }
+  }
+  return {
+    rulesEvaluated: diagnostics.rulesEvaluated,
+    bindingsEvaluated: diagnostics.bindingsEvaluated,
+    bindingsByKind,
+    methodLookupCalls: diagnostics.methodLookupCalls,
+    methodLookupCacheHits: diagnostics.methodLookupCacheHits,
+    sceneRuntimeTraversalCalls: diagnostics.sceneRuntimeTraversalCalls,
+    sceneRuntimeTraversalCacheHits: diagnostics.sceneRuntimeTraversalCacheHits,
+    sceneRuntimeResourcesVisited: diagnostics.sceneRuntimeResourcesVisited,
+    anomalies,
+    shouldAgentReport,
+    agentReportReason: shouldAgentReport ? 'rule-binding anomalies detected' : 'no anomalies detected',
+    summary,
+  };
 }

@@ -20,7 +20,13 @@ import { generateAIContextFiles } from './ai-context.js';
 import { generateSkillFiles, type GeneratedSkillInfo } from './skill-gen.js';
 import fs from 'fs/promises';
 import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
-import { formatCSharpPreprocDiagnosticsSummary, formatFallbackSummary, formatUnityDiagnosticsSummary, resolveFallbackStats } from './analyze-summary.js';
+import {
+  formatCSharpPreprocDiagnosticsSummary,
+  formatFallbackSummary,
+  formatUnityDiagnosticsSummary,
+  formatUnityRuleBindingSummary,
+  resolveFallbackStats,
+} from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
 import { enforceSyncManifestConsistency, resolveScopeManifestForAnalyze, type SyncManifestPolicy } from './sync-manifest.js';
@@ -512,6 +518,10 @@ export const analyzeCommand = async (
   }
   const unitySummaryLines = formatUnityDiagnosticsSummary(pipelineRuntime.unityResult?.diagnostics);
   for (const line of unitySummaryLines) {
+    console.log(`  ${line}`);
+  }
+  const unityRuleBindingSummaryLines = formatUnityRuleBindingSummary(pipelineRuntime.unityRuleBindingResult);
+  for (const line of unityRuleBindingSummaryLines) {
     console.log(`  ${line}`);
   }
   const csharpPreprocSummaryLines = formatCSharpPreprocDiagnosticsSummary(pipelineRuntime.csharpPreprocDiagnostics);

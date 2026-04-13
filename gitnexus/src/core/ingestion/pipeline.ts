@@ -427,6 +427,7 @@ export const runPipelineFromRepo = async (
     let communityResult: Awaited<ReturnType<typeof processCommunities>> | undefined;
     let processResult: Awaited<ReturnType<typeof processProcesses>> | undefined;
     let unityResult: Awaited<ReturnType<typeof processUnityResources>> | undefined;
+    let unityRuleBindingResult: ReturnType<typeof applyUnityRuntimeBindingRules> | undefined;
 
     if (!options?.skipGraphPhases) {
       // ── Phase 4.5: Method Resolution Order ──────────────────────────────
@@ -524,17 +525,42 @@ export const runPipelineFromRepo = async (
       // Phase 5.7: rule-driven binding injection (Phase 3)
       try {
         const analyzeRules = await loadAnalyzeRules(repoPath);
-        if (analyzeRules.length > 0) {
-          const bindingResult = applyUnityRuntimeBindingRules(graph, analyzeRules, unityConfig.config);
-          if (isDev && bindingResult.edgesInjected > 0) {
-            console.log(
-              `[UnityRuleBinding] injected ${bindingResult.edgesInjected} edges from ${analyzeRules.length} rule(s)`,
-            );
-          }
+        const bindingResult = applyUnityRuntimeBindingRules(graph, analyzeRules, unityConfig.config);
+        unityRuleBindingResult = bindingResult;
+        if (isDev && bindingResult.edgesInjected > 0) {
+          console.log(
+            `[UnityRuleBinding] injected ${bindingResult.edgesInjected} edges from ${analyzeRules.length} rule(s)`,
+          );
         }
       } catch (err) {
         // rule catalog missing or invalid — skip silently
         console.warn(`[UnityRuleBinding] failed to load or apply analyze rules: ${err instanceof Error ? err.message : String(err)}`);
+        const reason = err instanceof Error ? err.message : String(err);
+        unityRuleBindingResult = {
+          edgesInjected: 0,
+          ruleResults: [],
+          diagnostics: {
+            rulesEvaluated: 0,
+            bindingsEvaluated: 0,
+            bindingsByKind: {},
+            methodLookupCalls: 0,
+            methodLookupCacheHits: 0,
+            sceneRuntimeTraversalCalls: 0,
+            sceneRuntimeTraversalCacheHits: 0,
+            sceneRuntimeResourcesVisited: 0,
+            anomalies: [`failed to load/apply analyze rules: ${reason}`],
+            shouldAgentReport: true,
+            agentReportReason: 'failed to load/apply analyze rules',
+            summary: [
+              'rule_binding.summary: rules=0, bindings=0, edges=0',
+              'rule_binding.bindings_by_kind: none',
+              'rule_binding.lookup: method_calls=0, cache_hits=0',
+              'rule_binding.scene_closure: traversals=0, cache_hits=0, visited_resources=0',
+              'rule_binding.agent_report: should_report=true reason="failed to load/apply analyze rules"',
+              `rule_binding.anomaly: failed to load/apply analyze rules: ${reason}`,
+            ],
+          },
+        };
       }
 
       // ── Phase 6: Processes ─────────────────────────────────────────────
@@ -634,6 +660,7 @@ export const runPipelineFromRepo = async (
       communityResult,
       processResult,
       unityResult,
+      unityRuleBindingResult,
       scopeDiagnostics: scopeSelection.diagnostics,
       csharpPreprocDiagnostics,
     };

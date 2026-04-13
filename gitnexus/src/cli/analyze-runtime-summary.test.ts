@@ -8,6 +8,7 @@ test('toPipelineRuntimeSummary drops graph reference and preserves reporting fie
     communityResult: { stats: { totalCommunities: 3 } },
     processResult: { stats: { totalProcesses: 2 } },
     unityResult: { diagnostics: ['scanContext: scripts=1'] },
+    unityRuleBindingResult: { edgesInjected: 1, ruleResults: [], diagnostics: { summary: [] } },
     csharpPreprocDiagnostics: {
       enabled: true,
       defineSymbolCount: 2,
@@ -22,5 +23,6 @@ test('toPipelineRuntimeSummary drops graph reference and preserves reporting fie
   assert.equal('graph' in out, false);
   assert.equal(out.totalFileCount, 12);
   assert.equal(out.communityResult?.stats.totalCommunities, 3);
+  assert.equal(out.unityRuleBindingResult?.edgesInjected, 1);
   assert.equal(out.csharpPreprocDiagnostics?.normalizedFiles, 1);
 });

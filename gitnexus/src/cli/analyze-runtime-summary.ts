@@ -6,6 +6,7 @@ export function toPipelineRuntimeSummary(input: PipelineResult): PipelineRuntime
     communityResult: input.communityResult,
     processResult: input.processResult,
     unityResult: input.unityResult,
+    unityRuleBindingResult: input.unityRuleBindingResult,
     scopeDiagnostics: input.scopeDiagnostics,
     csharpPreprocDiagnostics: input.csharpPreprocDiagnostics,
   };

@@ -293,6 +293,41 @@ describe('method_triggers_scene_load binding processor', () => {
     expect(applyUnityRuntimeBindingRules(graph, [rule], {} as any).edgesInjected).toBe(0);
   });
 
+  it('emits diagnostics with shouldAgentReport=false when no anomaly exists', () => {
+    const { graph } = buildSceneGraph();
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_scene_load',
+        host_class_pattern: '^Global$',
+        loader_methods: ['InitGlobal'],
+        scene_name: 'Global',
+        target_entry_points: ['Awake'],
+      }],
+    });
+    const result = applyUnityRuntimeBindingRules(graph, [rule], {} as any);
+    expect(result.diagnostics.shouldAgentReport).toBe(false);
+    expect(result.diagnostics.anomalies.length).toBe(0);
+    expect(result.diagnostics.summary.some((line) => line.includes('rule_binding.agent_report: should_report=false'))).toBe(true);
+  });
+
+  it('emits diagnostics with shouldAgentReport=true when scene file cannot be resolved', () => {
+    const { graph } = buildSceneGraph();
+    const rule = makeRule({
+      resource_bindings: [{
+        kind: 'method_triggers_scene_load',
+        host_class_pattern: '^Global$',
+        loader_methods: ['InitGlobal'],
+        scene_name: 'MissingScene',
+        target_entry_points: ['Awake'],
+      }],
+    });
+    const result = applyUnityRuntimeBindingRules(graph, [rule], {} as any);
+    expect(result.edgesInjected).toBe(0);
+    expect(result.diagnostics.shouldAgentReport).toBe(true);
+    expect(result.diagnostics.anomalies.some((line) => line.includes('scene "MissingScene" not found'))).toBe(true);
+    expect(result.diagnostics.summary.some((line) => line.includes('rule_binding.agent_report: should_report=true'))).toBe(true);
+  });
+
   it('no edges when no .unity File node exists in graph', () => {
     const graph = createKnowledgeGraph();
     const classId = generateId('Class', 'Foo.cs:Global');
