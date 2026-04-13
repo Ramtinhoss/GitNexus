@@ -3,7 +3,14 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     globalSetup: ['test/global-setup.ts'],
-    include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
+    include: [
+      'test/**/*.test.ts',
+      'src/cli/rule-lab.test.ts',
+      'src/rule-lab/**/*.test.ts',
+      'src/mcp/local/process-confidence.test.ts',
+      'src/mcp/local/runtime-chain-*.test.ts',
+      'src/mcp/local/runtime-claim*.test.ts',
+    ],
     testTimeout: 30000,
     hookTimeout: 120000,
     pool: 'forks',

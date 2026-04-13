@@ -309,7 +309,7 @@ test('detects Unity hosts through transitive inheritance chains', () => {
   assert.ok(gunGraphHost.methods.length > 0);
 });
 
-test('prioritizes gameplay lifecycle hosts when synthetic edge budget is tight', () => {
+test('respects global lifecycle edge budget without emitting loader bridges', () => {
   const graph = createKnowledgeGraph();
 
   for (let i = 0; i < 6; i += 1) {
@@ -344,22 +344,18 @@ test('prioritizes gameplay lifecycle hosts when synthetic edge budget is tight',
     maxSyntheticEdgesTotal: 8,
   });
 
-  const runtimeEdges = [...graph.iterRelationships()].filter(
-    (edge) =>
-      edge.type === 'CALLS' &&
-      (edge.reason === 'unity-lifecycle-synthetic' || edge.reason === 'unity-runtime-loader-synthetic'),
+  const lifecycleEdges = [...graph.iterRelationships()].filter(
+    (edge) => edge.type === 'CALLS' && edge.reason === 'unity-lifecycle-synthetic',
   );
-  const targets = new Set(runtimeEdges.map((edge) => edge.targetId));
+  const loaderEdges = [...graph.iterRelationships()].filter(
+    (edge) => edge.type === 'CALLS' && edge.reason === 'unity-runtime-loader-synthetic',
+  );
 
   assert.equal(result.syntheticEdgeCount, 8);
-  assert.equal(
-    [...targets].some((id) => id.includes('Assets/NEON/Code/Game/Core/GunGraphMB.cs')),
-    true,
-  );
-  assert.equal(
-    [...targets].some((id) => id.includes('Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadConfig.cs')),
-    true,
-  );
+  assert.equal(result.lifecycleEdgeCount, 8);
+  assert.equal(result.loaderEdgeCount, 0);
+  assert.equal(lifecycleEdges.length, 8);
+  assert.equal(loaderEdges.length, 0);
 });
 
 test('resolves named class inheritance targets when direct target node lookup is ambiguous', () => {
@@ -422,7 +418,7 @@ test('resolves named class inheritance targets when direct target node lookup is
   assert.equal(gunGraphHost.baseType, 'ScriptableObject');
 });
 
-test('emits deterministic runtime loader bridge chain after pre-bridge budget is exhausted', () => {
+test('lifecycle phase does not emit runtime-loader bridge edges', () => {
   const graph = createKnowledgeGraph();
 
   addClass(graph, {
@@ -523,45 +519,21 @@ test('emits deterministic runtime loader bridge chain after pre-bridge budget is
     maxSyntheticEdgesTotal: 10,
   });
 
-  const syntheticEdges = [...graph.iterRelationships()].filter(
+  const syntheticLoaderEdges = [...graph.iterRelationships()].filter(
     (edge) => edge.type === 'CALLS' && edge.reason === 'unity-runtime-loader-synthetic',
   );
-  const syntheticPairs = new Set(syntheticEdges.map((edge) => `${edge.sourceId}->${edge.targetId}`));
+  const lifecycleEdges = [...graph.iterRelationships()].filter(
+    (edge) => edge.type === 'CALLS' && edge.reason === 'unity-lifecycle-synthetic',
+  );
 
-  assert.equal(result.syntheticEdgeCount, 10);
-  assert.equal(
-    syntheticPairs.has(
-      `${generateId('Method', 'Assets/NEON/Code/Game/Core/GunGraphMB.cs:GunGraphMB.RegisterGraphEvents')}->${generateId('Method', 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:GunGraph.RegisterEvents')}`,
-    ),
-    true,
-  );
-  assert.equal(
-    syntheticPairs.has(
-      `${generateId('Method', 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:GunGraph.RegisterEvents')}->${generateId('Method', 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:GunGraph.StartRoutineWithEvents')}`,
-    ),
-    true,
-  );
-  assert.equal(
-    syntheticPairs.has(
-      `${generateId('Method', 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:GunGraph.StartRoutineWithEvents')}->${generateId('Method', 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase.GetValue')}`,
-    ),
-    true,
-  );
-  assert.equal(
-    syntheticPairs.has(
-      `${generateId('Method', 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase.GetValue')}->${generateId('Method', 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase.CheckReload')}`,
-    ),
-    true,
-  );
-  assert.equal(
-    syntheticPairs.has(
-      `${generateId('Method', 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadBase.CheckReload')}->${generateId('Method', 'Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:Reload.ReloadRoutine')}`,
-    ),
-    true,
-  );
+  assert.equal(result.syntheticEdgeCount, 3);
+  assert.equal(result.lifecycleEdgeCount, 3);
+  assert.equal(result.loaderEdgeCount, 0);
+  assert.equal(lifecycleEdges.length, 3);
+  assert.equal(syntheticLoaderEdges.length, 0);
 });
 
-test('preserves bridge budget when accepted host count exceeds synthetic edge cap', () => {
+test('lifecycle edge cap does not rely on runtime-loader bridge injection', () => {
   const graph = createKnowledgeGraph();
 
   for (let i = 0; i < 20; i += 1) {
@@ -666,16 +638,9 @@ test('preserves bridge budget when accepted host count exceeds synthetic edge ca
     maxSyntheticEdgesTotal: 12,
   });
 
-  const syntheticPairs = new Set(
-    [...graph.iterRelationships()]
-      .filter((edge) => edge.type === 'CALLS' && edge.reason === 'unity-runtime-loader-synthetic')
-      .map((edge) => `${edge.sourceId}->${edge.targetId}`),
+  const loaderEdges = [...graph.iterRelationships()].filter(
+    (edge) => edge.type === 'CALLS' && edge.reason === 'unity-runtime-loader-synthetic',
   );
 
-  assert.equal(
-    syntheticPairs.has(
-      `${generateId('Method', 'Assets/NEON/Code/Game/Core/GunGraphMB.cs:GunGraphMB.RegisterGraphEvents')}->${generateId('Method', 'Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs:GunGraph.RegisterEvents')}`,
-    ),
-    true,
-  );
+  assert.equal(loaderEdges.length, 0);
 });

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { FileContentCache, toCodeElementCsvRow } from './csv-generator.js';
 
-test('FileContentCache evicts oldest entries when byte budget is exceeded', async () => {
-  const cache = new FileContentCache('/tmp/repo', 10);
+test('FileContentCache evicts oldest entries when max entry count is exceeded', async () => {
+  const cache = new FileContentCache('/tmp/repo', 1);
   cache.setForTest('a.cs', '123456');
   cache.setForTest('b.cs', '123456');
   assert.equal(cache.hasForTest('a.cs'), false);
