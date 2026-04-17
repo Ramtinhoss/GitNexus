@@ -4,23 +4,22 @@ All notable changes to GitNexus will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-04-17
+
+> Stable release notes comparing `v1.5.0` -> `v1.5.1`.
+
 ### Added
-- Added gap-lab slice-driven Unity rule generation workflow for `gitnexus-unity-rule-gen`, including mandatory focus-lock, single-slice execution loop, resumable checkpointing, and authenticity evidence gates.
-- Added shared Unity gap-lab contract docs at `gitnexus/skills/_shared/unity-gap-lab-contract.md` and installed mirror path for setup distribution.
-- Added integration contract coverage for gap-lab skill semantics, source/installed parity, anti-placeholder checks, closure evidence guards, and changelog sync requirements.
-- Added exhaustive gap-lab discovery building blocks: subtype pattern library, repo-wide lexical scanner (`rg`-first with fallback), ownership scope classifier, candidate resolver, missing-edge verifier, parity gate, and balanced-slim artifact writer.
-- Added exhaustive gap-lab integration coverage for lexical universe generation, parity blocking, semantic coverage-gate blocking, anti-placeholder protection, and slim artifact persistence guarantees.
-- Added first-class `gitnexus gap-lab run` orchestration with exit code `1` for coverage-gate blocked slices and exit code `2` for hard errors.
+- Added a reduced Rule Lab authoring flow for `gitnexus-unity-rule-gen`, with exact source/target slice handling, mandatory focus-lock, resumable checkpoints, and authenticity evidence gates.
+- Added shared Unity rule-authoring contract docs plus setup-installed mirror coverage so agent workflows and distributed skills stay in sync.
+- Added exhaustive discovery and coverage-gate support for reduced Rule Lab authoring, including lexical scanning, ownership classification, missing-edge verification, balanced-slim candidate artifacts, and hard blocking when evidence quality is insufficient.
 
 ### Changed
-- Breaking/public-surface: switched Unity rule authoring guidance to direct flow only (`approved -> compile -> analyze -> CLI validation`), removed active gap-lab orchestration guidance from docs/skills, and renamed shared contract docs to `unity-rule-authoring-contract.md` (source + setup-installed copy).
-- Updated config/state ownership documentation to include `.gitnexus/gap-lab/runs/**` artifacts and owner responsibilities.
-- Updated Unity runtime source-of-truth and guide docs to state that gap-lab is an offline authoring/orchestration layer and query-time runtime closure remains graph-only.
-- Updated `rule-lab analyze` preflight: enforce C0 run-artifact parity and C2.6 coverage gate before C3 candidate generation.
-- Updated gap-lab persistence contract to balanced-slim artifacts with `slices/<slice_id>.candidates.jsonl` and explicit non-accepted `reason_code` semantics.
-- Added clue and scope contract correction for gap-lab: split `slice_focus`, `discovery_scope`, `search_seeds`, and `validation_exemplars`, and require explicit scope overrides before narrowing.
-- Added candidate-derived coverage audit and default-scope anti-exemplar filtering guards, including `candidate_audit_drift` blocking and `promotion_backlog` eligibility semantics.
-- Updated gap-lab C1d duplicate suppression to use approved rule artifacts under `.gitnexus/rules/approved/*.yaml` instead of graph state, and hardened gap-handoff schema validation with field-path diagnostics.
+- Simplified the public Unity rule-authoring workflow to the direct path only: `approved -> compile -> analyze -> CLI validation`, and aligned docs, skills, and setup-installed artifacts to that contract.
+- Tightened Rule Lab preflight and artifact contracts with run-artifact parity checks, coverage gates before candidate generation, balanced-slim persistence, and explicit scope/seed/exemplar semantics.
+- Updated config and source-of-truth docs to clarify that reduced Rule Lab is an offline authoring layer while query-time runtime-chain closure remains graph-only.
+
+### Fixed
+- Fixed duplicate suppression and approval handoff validation so reduced Rule Lab compares against approved YAML artifacts instead of graph state and fails with clearer field-path diagnostics.
 
 ## [1.5.0] - 2026-04-06
 
