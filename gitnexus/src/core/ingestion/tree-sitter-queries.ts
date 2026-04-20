@@ -672,13 +672,22 @@ export const GDSCRIPT_QUERIES = `
     (type (identifier) @heritage.extends))) @heritage
 
 ; ── Preload/Load (imports) ──────────────────────────────────────────────────
-; Note: Standard tree-sitter doesn't support #any-of?, so we use separate patterns
+; Only preload("res://...") and load("res://...") are real imports.
+; Generic call expressions must NOT be tagged @import to avoid double-classifying
+; call sites as imports (which corrupts import resolution and call routing).
 (call
-  (identifier) @import.source) @import
+  function: (identifier) @_preload
+  arguments: (arguments (string) @import.source)) @import
+(#eq? @_preload "preload")
+
+(call
+  function: (identifier) @_load
+  arguments: (arguments (string) @import.source)) @import
+(#eq? @_load "load")
 
 ; ── Function Calls ──────────────────────────────────────────────────────────
 (call
-  (identifier) @call.name) @call
+  function: (identifier) @call.name) @call
 
 `;
 
