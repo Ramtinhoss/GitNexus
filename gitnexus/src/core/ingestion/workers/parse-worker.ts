@@ -11,14 +11,18 @@ import Go from 'tree-sitter-go';
 import Rust from 'tree-sitter-rust';
 import PHP from 'tree-sitter-php';
 import Ruby from 'tree-sitter-ruby';
-import GDScript from 'tree-sitter-gdscript';
 import { createRequire } from 'node:module';
 import { SupportedLanguages } from '../../../config/supported-languages.js';
 import { LANGUAGE_QUERIES } from '../tree-sitter-queries.js';
 import { getTreeSitterBufferSize, TREE_SITTER_MAX_BUFFER } from '../constants.js';
 
-// tree-sitter-swift is an optionalDependency — may not be installed
 const _require = createRequire(import.meta.url);
+
+// tree-sitter-gdscript is an optionalDependency — may not be installed
+let GDScript: any = null;
+try { GDScript = _require('tree-sitter-gdscript'); } catch {}
+
+// tree-sitter-swift is an optionalDependency — may not be installed
 let Swift: any = null;
 try { Swift = _require('tree-sitter-swift'); } catch {}
 
@@ -187,7 +191,7 @@ const languageMap: Record<string, any> = {
   [SupportedLanguages.PHP]: PHP.php_only,
   [SupportedLanguages.Ruby]: Ruby,
   ...(Swift ? { [SupportedLanguages.Swift]: Swift } : {}),
-  [SupportedLanguages.GDScript]: GDScript,
+  ...(GDScript ? { [SupportedLanguages.GDScript]: GDScript } : {}),
 };
 
 /**
