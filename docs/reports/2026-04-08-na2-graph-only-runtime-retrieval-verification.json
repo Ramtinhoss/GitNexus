@@ -1,0 +1,52 @@
+{
+  "report_date": "2026-04-08T11:32:41+08:00",
+  "scope": "Validate graph-only runtime retrieval on na2 after dev-link and session restart",
+  "repo_alias": "na2",
+  "repo_name": "neonspark-core",
+  "repo_path": "/Volumes/Shuttle/unity-projects/neonspark",
+  "scenario_report": "/Volumes/Shuttle/unity-projects/neonspark/Docs/Reports/2026-04-05-gitnexus-weapon-powerup-equip-chain-rule-gen-report.md",
+  "query_text": "1_weapon_orb_key WeaponPowerUp HoldPickup EquipWithEvent Equip",
+  "environment": {
+    "gitnexus_version": "1.5.0",
+    "gitnexus_bin": "/opt/homebrew/bin/gitnexus",
+    "global_link_target": "/Users/nantasmac/projects/agentic/GitNexus/gitnexus",
+    "mcp_session_restarted": true,
+    "index": {
+      "indexed_at": "2026-04-08T03:20:21.071Z",
+      "files": 8009,
+      "nodes": 100512,
+      "edges": 454362,
+      "processes": 300
+    }
+  },
+  "mcp_query_result": {
+    "runtime_claim": {
+      "rule_id": "graph-only.runtime-closure.v1",
+      "status": "failed",
+      "evidence_level": "none",
+      "hop_count": 15,
+      "gap_count": 4
+    },
+    "gap_reasons": [
+      "anchor segment missing",
+      "bind segment missing",
+      "bridge segment missing",
+      "runtime segment missing"
+    ]
+  },
+  "graph_evidence_check": {
+    "query": "MATCH (a)-[r:CodeRelation {type:'CALLS'}]->(b) WHERE r.reason CONTAINS 'unity-rule-method-bridge:unity.weapon-powerup-equip-chain.v2' RETURN count(r) AS bridge_edges, collect(a.name + '->' + b.name)[0..10] AS samples",
+    "bridge_edges": 2,
+    "samples": [
+      "HoldPickup->PickItUp",
+      "EquipWithEvent->Equip"
+    ]
+  },
+  "verdict": {
+    "query_time_trigger_dependency_removed": true,
+    "case_chain_closed_without_trigger_dependency": false,
+    "status": "not_passed"
+  },
+  "blocker": "Graph-only closure/candidate logic does not close this chain even though method-bridge edges exist in graph."
+}
+

@@ -24,6 +24,42 @@ export interface SymbolScenarioResult {
   };
 }
 
+export interface Phase5ConfidenceCalibrationCounts {
+  totalEvaluated: number;
+  falseNegativeCount: number;
+  falseConfidenceCount: number;
+  lowConfidenceHintCovered: number;
+  lowConfidenceCount: number;
+  fallbackCovered: number;
+}
+
+export interface Phase5BaselineSnapshot extends Partial<Phase5ConfidenceCalibrationCounts> {
+  artifactPath: string;
+  gitCommit: string;
+  sha256: string;
+}
+
+export interface Phase5ConfidenceCalibrationSummary {
+  lowConfidenceHintCoverage: number;
+  falseConfidenceFailures: number;
+  falseNegativeFallbackCoverage: number;
+  falseNegativeRateBaselinePct: number;
+  falseNegativeRateCurrentPct: number;
+  falseNegativeRateDeltaPct: number;
+  falseConfidenceRateBaselinePct: number;
+  falseConfidenceRateCurrentPct: number;
+  falseConfidenceRateDeltaPct: number;
+  baseline: {
+    artifactPath: string;
+    gitCommit: string;
+    sha256: string;
+  };
+}
+
+export function containsPlaceholderLeak(value: unknown): boolean {
+  return /TODO|TBD|placeholder|<symbol-or-query>/i.test(String(value || ''));
+}
+
 function stringify(value: unknown): string {
   try {
     return JSON.stringify(value ?? null);
@@ -81,16 +117,97 @@ function hasDeepDiveEvidence(output: any): boolean {
   return processSymbols + definitions + candidates + rows + byDepth + impacted + incomingRefs + outgoingRefs > 0;
 }
 
+function hasQueryUnityEvidence(output: any): boolean {
+  const symbols = [
+    ...(Array.isArray(output?.process_symbols) ? output.process_symbols : []),
+    ...(Array.isArray(output?.definitions) ? output.definitions : []),
+  ];
+  return symbols.some((symbol: any) => {
+    const bindings = Array.isArray(symbol?.resourceBindings) ? symbol.resourceBindings.length : 0;
+    const scalarFields = Array.isArray(symbol?.serializedFields?.scalarFields) ? symbol.serializedFields.scalarFields.length : 0;
+    const referenceFields = Array.isArray(symbol?.serializedFields?.referenceFields) ? symbol.serializedFields.referenceFields.length : 0;
+    return bindings + scalarFields + referenceFields > 0;
+  });
+}
+
+function normalizeRate(count: number, total: number): number {
+  if (!Number.isFinite(total) || total <= 0) return 0;
+  const pct = (count / total) * 100;
+  return Number(pct.toFixed(3));
+}
+
+export function summarizePhase5ConfidenceCalibration(input: {
+  current: Phase5ConfidenceCalibrationCounts;
+  baseline: Phase5BaselineSnapshot;
+}): Phase5ConfidenceCalibrationSummary {
+  const artifactPath = String(input.baseline?.artifactPath || '').trim();
+  const gitCommit = String(input.baseline?.gitCommit || '').trim();
+  const sha256 = String(input.baseline?.sha256 || '').trim();
+  if (!artifactPath || !gitCommit || !sha256) {
+    throw new Error('baseline provenance missing: artifactPath/gitCommit/sha256 are required');
+  }
+
+  const baselineTotal = Number(input.baseline.totalEvaluated || input.current.totalEvaluated || 0);
+  const baselineFalseNegative = Number(input.baseline.falseNegativeCount || 0);
+  const baselineFalseConfidence = Number(input.baseline.falseConfidenceCount || 0);
+  const current = input.current;
+
+  const falseNegativeRateBaselinePct = normalizeRate(baselineFalseNegative, baselineTotal);
+  const falseNegativeRateCurrentPct = normalizeRate(current.falseNegativeCount, current.totalEvaluated);
+  const falseConfidenceRateBaselinePct = normalizeRate(baselineFalseConfidence, baselineTotal);
+  const falseConfidenceRateCurrentPct = normalizeRate(current.falseConfidenceCount, current.totalEvaluated);
+
+  return {
+    lowConfidenceHintCoverage: normalizeRate(current.lowConfidenceHintCovered, current.lowConfidenceCount),
+    falseConfidenceFailures: current.falseConfidenceCount,
+    falseNegativeFallbackCoverage: current.fallbackCovered,
+    falseNegativeRateBaselinePct,
+    falseNegativeRateCurrentPct,
+    falseNegativeRateDeltaPct: Number((falseNegativeRateCurrentPct - falseNegativeRateBaselinePct).toFixed(3)),
+    falseConfidenceRateBaselinePct,
+    falseConfidenceRateCurrentPct,
+    falseConfidenceRateDeltaPct: Number((falseConfidenceRateCurrentPct - falseConfidenceRateBaselinePct).toFixed(3)),
+    baseline: {
+      artifactPath,
+      gitCommit,
+      sha256,
+    },
+  };
+}
+
+interface DeepDiveExecution {
+  tool: SymbolScenario['deepDivePlan'][number]['tool'];
+  input: Record<string, unknown>;
+  output: any;
+}
+
 function assertScenario(
   scenario: SymbolScenario,
   contextOnOutput: any,
-  deepDiveOutputs: any[],
+  deepDiveExecutions: DeepDiveExecution[],
+  contextUnityHydration: 'compact' | 'parity',
 ): { pass: boolean; failures: string[] } {
   const failures: string[] = [];
   const bindings = Array.isArray(contextOnOutput?.resourceBindings) ? contextOnOutput.resourceBindings : [];
   const hasBindings = bindings.length > 0;
   const hasResolvedReferences = bindings.some((binding: any) => Array.isArray(binding?.resolvedReferences) && binding.resolvedReferences.length > 0);
   const hasAssetTypeBinding = bindings.some((binding: any) => typeof binding?.resourceType === 'string' && binding.resourceType.length > 0);
+  const hydrationMeta = contextOnOutput?.hydrationMeta && typeof contextOnOutput.hydrationMeta === 'object'
+    ? contextOnOutput.hydrationMeta
+    : null;
+
+  if (!hydrationMeta) {
+    failures.push(`${scenario.symbol}: context(on) must include hydrationMeta`);
+  } else if (contextUnityHydration === 'compact') {
+    if (typeof hydrationMeta.needsParityRetry !== 'boolean') {
+      failures.push(`${scenario.symbol}: context(on) hydrationMeta.needsParityRetry must be boolean`);
+    }
+    if (hydrationMeta.isComplete === false && hydrationMeta.needsParityRetry !== true) {
+      failures.push(`${scenario.symbol}: context(on) incomplete compact response must set hydrationMeta.needsParityRetry=true`);
+    }
+  } else if (hydrationMeta.isComplete !== true) {
+    failures.push(`${scenario.symbol}: context(on) parity response must set hydrationMeta.isComplete=true`);
+  }
 
   if (scenario.symbol === 'MainUIManager' || scenario.symbol === 'PlayerActor') {
     if (!hasBindings) {
@@ -108,9 +225,51 @@ function assertScenario(
     if (!hasBindings) {
       failures.push('AssetRef: context(on) must include resourceBindings');
     }
-    const deepDiveEvidence = deepDiveOutputs.some((output) => hasDeepDiveEvidence(output));
+    const deepDiveEvidence = deepDiveExecutions.some((step) => hasDeepDiveEvidence(step.output));
     if (!deepDiveEvidence) {
       failures.push('AssetRef: deep-dive must provide usage/dependency evidence');
+    }
+  }
+
+  const queryOnRuns = deepDiveExecutions.filter(
+    (step) => step.tool === 'query' && String(step.input?.unity_resources || '').toLowerCase() === 'on',
+  );
+  if (queryOnRuns.length > 0) {
+    const hasUnityEvidenceFromQueryOn = queryOnRuns.some((step) => hasQueryUnityEvidence(step.output));
+    if (!hasUnityEvidenceFromQueryOn) {
+      failures.push(`${scenario.symbol}: query(on) must include unity serialized/resource evidence`);
+    }
+
+    for (const step of queryOnRuns) {
+      const processes = Array.isArray(step.output?.processes) ? step.output.processes : [];
+      const hasUnityEvidence = hasQueryUnityEvidence(step.output);
+      if (hasUnityEvidence && processes.length === 0) {
+        failures.push(`${scenario.symbol}: empty process query(on) with unity evidence must emit confidence-guided fallback clue`);
+      }
+
+      for (const processRow of processes) {
+        const confidence = String(processRow?.confidence || '').toLowerCase();
+        const evidenceMode = String(processRow?.evidence_mode || '').toLowerCase();
+        const processSubtype = String(processRow?.process_subtype || '').toLowerCase();
+
+        if (confidence === 'low') {
+          const hint = processRow?.verification_hint;
+          const action = String(hint?.action || '').trim();
+          const target = String(hint?.target || '').trim();
+          const nextCommand = String(hint?.next_command || '').trim();
+          if (!action || !target || !nextCommand) {
+            failures.push(`${scenario.symbol}: low confidence query(on) row missing verification_hint action/target/next_command`);
+          } else if (!/parity|asset|meta/i.test(nextCommand)) {
+            failures.push(`${scenario.symbol}: low confidence verification_hint must include parity/manual asset-meta guidance`);
+          } else if (containsPlaceholderLeak(nextCommand)) {
+            failures.push(`${scenario.symbol}: low confidence verification_hint leaks placeholder command text`);
+          }
+        }
+
+        if (evidenceMode === 'direct_step' && processSubtype === 'static_calls' && confidence !== 'high') {
+          failures.push(`${scenario.symbol}: direct static chain rows must remain high confidence`);
+        }
+      }
     }
   }
 
@@ -121,16 +280,17 @@ function assertScenario(
 }
 
 async function invokeTool(runner: ToolRunner, tool: SymbolScenario['deepDivePlan'][number]['tool'], input: Record<string, unknown>): Promise<any> {
+  const params = withLegacyFullProfile(tool, input);
   if (tool === 'query') {
-    return runner.query(input);
+    return runner.query(params);
   }
   if (tool === 'context') {
-    return runner.context(input);
+    return runner.context(params);
   }
   if (tool === 'impact') {
-    return runner.impact(input);
+    return runner.impact(params);
   }
-  return runner.cypher(input);
+  return runner.cypher(params);
 }
 
 function selectDisambiguationUid(symbol: string, output: any): string | undefined {
@@ -155,14 +315,15 @@ async function runContextWithDisambiguation(
   scenario: SymbolScenario,
   input: Record<string, unknown>,
 ): Promise<any> {
-  const first = await runner.context(input);
+  const normalizedInput = withLegacyFullProfile('context', input);
+  const first = await runner.context(normalizedInput);
   if (first?.status !== 'ambiguous') {
     return first;
   }
 
   const hint = typeof scenario.contextFileHint === 'string' ? scenario.contextFileHint.trim() : '';
   if (hint) {
-    const hinted = await runner.context({ ...input, file_path: hint });
+    const hinted = await runner.context(withLegacyFullProfile('context', { ...input, file_path: hint }));
     if (hinted?.status !== 'ambiguous') {
       return hinted;
     }
@@ -170,7 +331,7 @@ async function runContextWithDisambiguation(
 
   const uid = selectDisambiguationUid(scenario.symbol, first);
   if (uid) {
-    return runner.context({ ...input, uid });
+    return runner.context(withLegacyFullProfile('context', { ...input, uid }));
   }
   return first;
 }
@@ -191,12 +352,17 @@ export async function runSymbolScenario(
   const contextOff = await runContextWithDisambiguation(runner, scenario, contextOffInput);
   steps.push(buildMetric('context-off', 'context', performance.now() - t0, contextOffInput, contextOff));
 
-  const contextOnInput = { ...baseContextInput, unity_resources: 'on' };
+  const contextUnityHydration = scenario.contextUnityHydration === 'parity' ? 'parity' : 'compact';
+  const contextOnInput = {
+    ...baseContextInput,
+    unity_resources: 'on',
+    unity_hydration_mode: contextUnityHydration,
+  };
   const t1 = performance.now();
   const contextOn = await runContextWithDisambiguation(runner, scenario, contextOnInput);
   steps.push(buildMetric('context-on', 'context', performance.now() - t1, contextOnInput, contextOn));
 
-  const deepDiveOutputs: any[] = [];
+  const deepDiveExecutions: DeepDiveExecution[] = [];
   for (let i = 0; i < scenario.deepDivePlan.length; i += 1) {
     const step = scenario.deepDivePlan[i];
     const input: Record<string, unknown> = { ...(step.input || {}) };
@@ -205,13 +371,23 @@ export async function runSymbolScenario(
     }
     const ts = performance.now();
     const output = await invokeTool(runner, step.tool, input);
-    deepDiveOutputs.push(output);
+    deepDiveExecutions.push({ tool: step.tool, input, output });
     steps.push(buildMetric(`deep-dive-${i + 1}`, step.tool, performance.now() - ts, input, output));
   }
 
   return {
     symbol: scenario.symbol,
     steps,
-    assertions: assertScenario(scenario, contextOn, deepDiveOutputs),
+    assertions: assertScenario(scenario, contextOn, deepDiveExecutions, contextUnityHydration),
   };
+}
+
+function withLegacyFullProfile(
+  tool: SymbolScenario['deepDivePlan'][number]['tool'] | 'context',
+  input: Record<string, unknown>,
+): Record<string, unknown> {
+  if ((tool === 'query' || tool === 'context') && !('response_profile' in input)) {
+    return { ...input, response_profile: 'full' };
+  }
+  return input;
 }

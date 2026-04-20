@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-04-02T01:52:36.193Z",
+  "repoAlias": "GitNexus",
+  "claim_fields_presence": {
+    "rule_id": true,
+    "rule_version": true,
+    "scope": true,
+    "guarantees": true,
+    "non_guarantees": true
+  },
+  "failure_classification_coverage": [
+    "rule_not_matched",
+    "gate_disabled"
+  ],
+  "samples": {
+    "matched_status": "verified_partial",
+    "unmatched_reason": "rule_not_matched",
+    "gate_disabled_reason": "gate_disabled"
+  }
+}

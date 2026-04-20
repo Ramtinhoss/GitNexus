@@ -1,0 +1,77 @@
+import { describe, it, expect } from 'vitest';
+import { normalizeCSharpPreprocessorBranches } from '../../src/core/tree-sitter/csharp-preproc-normalizer.js';
+
+describe('normalizeCSharpPreprocessorBranches', () => {
+  it('keeps the matching #if branch and strips inactive branches', () => {
+    const source = [
+      'class Demo {',
+      '#if FOO',
+      '  void UseFoo() {}',
+      '#elif BAR',
+      '  void UseBar() {}',
+      '#else',
+      '  void UseDefault() {}',
+      '#endif',
+      '}',
+    ].join('\n');
+
+    const out = normalizeCSharpPreprocessorBranches(source, new Set(['FOO']));
+    expect(out.normalizedText).toContain('void UseFoo() {}');
+    expect(out.normalizedText).not.toContain('void UseBar() {}');
+    expect(out.normalizedText).not.toContain('void UseDefault() {}');
+    expect(out.changed).toBe(true);
+  });
+
+  it('handles nested #if/#else blocks using the provided define set', () => {
+    const source = [
+      '#if OUTER',
+      'int x = 1;',
+      '#if INNER',
+      'int y = 2;',
+      '#else',
+      'int y = 3;',
+      '#endif',
+      '#else',
+      'int x = 0;',
+      '#endif',
+    ].join('\n');
+
+    const out = normalizeCSharpPreprocessorBranches(source, new Set(['OUTER']));
+    expect(out.normalizedText).toContain('int x = 1;');
+    expect(out.normalizedText).toContain('int y = 3;');
+    expect(out.normalizedText).not.toContain('int y = 2;');
+    expect(out.normalizedText).not.toContain('int x = 0;');
+  });
+
+  it('treats undefined symbols as false and falls back to #else branch', () => {
+    const source = [
+      '#if UNITY_EDITOR',
+      'int mode = 1;',
+      '#else',
+      'int mode = 0;',
+      '#endif',
+    ].join('\n');
+
+    const out = normalizeCSharpPreprocessorBranches(source, new Set());
+    expect(out.normalizedText).toContain('int mode = 0;');
+    expect(out.normalizedText).not.toContain('int mode = 1;');
+    expect(out.diagnostics.undefinedSymbols).toEqual(['UNITY_EDITOR']);
+  });
+
+  it('preserves source line count for stable diagnostics mapping', () => {
+    const source = [
+      'line-1',
+      '#if FLAG',
+      'line-3',
+      '#else',
+      'line-5',
+      '#endif',
+      'line-7',
+    ].join('\n');
+
+    const out = normalizeCSharpPreprocessorBranches(source, new Set(['FLAG']));
+    expect(out.normalizedText.split('\n').length).toBe(source.split('\n').length);
+    expect(out.normalizedText.split('\n')[2]).toBe('line-3');
+    expect(out.normalizedText.split('\n')[4]).toBe('');
+  });
+});

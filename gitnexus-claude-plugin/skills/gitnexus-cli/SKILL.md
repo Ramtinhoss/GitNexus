@@ -5,14 +5,39 @@ description: "Use when the user needs to run GitNexus CLI commands like analyze/
 
 # GitNexus CLI Commands
 
-All commands work via `npx` — no global install required.
+Use one command alias in the session so every CLI/MCP call stays on one version line. After `setup`, treat `~/.gitnexus/config.json` as the only npx version source.
+
+```bash
+if command -v gitnexus >/dev/null 2>&1; then
+  GN="gitnexus"
+else
+  GITNEXUS_CLI_SPEC="$(
+    node -e 'const fs=require("fs");const os=require("os");const path=require("path");
+    try {
+      const raw=fs.readFileSync(path.join(os.homedir(),".gitnexus","config.json"),"utf8");
+      const parsed=JSON.parse(raw);
+      const spec=typeof parsed.cliPackageSpec==="string" && parsed.cliPackageSpec.trim()
+        ? parsed.cliPackageSpec.trim()
+        : typeof parsed.cliVersion==="string" && parsed.cliVersion.trim()
+          ? `@veewo/gitnexus@${parsed.cliVersion.trim()}`
+          : "";
+      if (spec) process.stdout.write(spec);
+    } catch {}'
+  )"
+  if [ -z "$GITNEXUS_CLI_SPEC" ]; then
+    echo "Missing GitNexus CLI package spec in ~/.gitnexus/config.json. Run gitnexus setup --cli-spec <packageSpec> first." >&2
+    exit 1
+  fi
+  GN="npx -y ${GITNEXUS_CLI_SPEC}"
+fi
+```
 
 ## Commands
 
 ### analyze — Build or refresh the index
 
 ```bash
-npx gitnexus analyze
+$GN analyze
 ```
 
 Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and generates CLAUDE.md / AGENTS.md context files.
@@ -27,7 +52,7 @@ Run from the project root. This parses all source files, builds the knowledge gr
 ### status — Check index freshness
 
 ```bash
-npx gitnexus status
+$GN status
 ```
 
 Shows whether the current repo has a GitNexus index, when it was last updated, and symbol/relationship counts. Use this to check if re-indexing is needed.
@@ -35,7 +60,7 @@ Shows whether the current repo has a GitNexus index, when it was last updated, a
 ### clean — Delete the index
 
 ```bash
-npx gitnexus clean
+$GN clean
 ```
 
 Deletes the `.gitnexus/` directory and unregisters the repo from the global registry. Use before re-indexing if the index is corrupt or after removing GitNexus from a project.
@@ -48,7 +73,7 @@ Deletes the `.gitnexus/` directory and unregisters the repo from the global regi
 ### wiki — Generate documentation from the graph
 
 ```bash
-npx gitnexus wiki
+$GN wiki
 ```
 
 Generates repository documentation from the knowledge graph using an LLM. Requires an API key (saved to `~/.gitnexus/config.json` on first use).
@@ -65,7 +90,7 @@ Generates repository documentation from the knowledge graph using an LLM. Requir
 ### list — Show all indexed repos
 
 ```bash
-npx gitnexus list
+$GN list
 ```
 
 Lists all repositories registered in `~/.gitnexus/registry.json`. The MCP `list_repos` tool provides the same information.

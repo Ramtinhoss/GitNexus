@@ -2,6 +2,7 @@ import { GraphNode, GraphRelationship, KnowledgeGraph } from '../core/graph/type
 import { CommunityDetectionResult } from '../core/ingestion/community-processor.js';
 import { ProcessDetectionResult } from '../core/ingestion/process-processor.js';
 import type { UnityResourceProcessingResult } from '../core/ingestion/unity-resource-processor.js';
+import type { UnityRuntimeBindingResult } from '../core/ingestion/unity-runtime-binding-rules.js';
 import type { ScopeSelectionDiagnostics } from '../core/ingestion/scope-filter.js';
 
 export type PipelinePhase = 'idle' | 'extracting' | 'structure' | 'parsing' | 'imports' | 'calls' | 'heritage' | 'communities' | 'processes' | 'enriching' | 'complete' | 'error';
@@ -21,19 +22,43 @@ export interface PipelineProgress {
 export interface PipelineRunOptions {
   includeExtensions?: string[];
   scopeRules?: string[];
+  csharpDefineCsproj?: string;
+}
+
+export interface CSharpPreprocDiagnostics {
+  enabled: boolean;
+  sourcePath?: string;
+  defineSymbolCount: number;
+  normalizedFiles: number;
+  fallbackFiles: number;
+  skippedFiles: number;
+  expressionErrors: number;
+  undefinedSymbols: string[];
 }
 
 // Original result type (used internally in pipeline)
 export interface PipelineResult {
   graph: KnowledgeGraph;
-  /** Absolute path to the repo root — used for lazy file reads during KuzuDB loading */
+  /** Absolute path to the repo root — used for lazy file reads during LadybugDB loading */
   repoPath: string;
   /** Total files scanned (for stats) */
   totalFileCount: number;
   communityResult?: CommunityDetectionResult;
   processResult?: ProcessDetectionResult;
   unityResult?: UnityResourceProcessingResult;
+  unityRuleBindingResult?: UnityRuntimeBindingResult;
   scopeDiagnostics?: ScopeSelectionDiagnostics;
+  csharpPreprocDiagnostics?: CSharpPreprocDiagnostics;
+}
+
+export interface PipelineRuntimeSummary {
+  totalFileCount: number;
+  communityResult?: CommunityDetectionResult;
+  processResult?: ProcessDetectionResult;
+  unityResult?: UnityResourceProcessingResult;
+  unityRuleBindingResult?: UnityRuntimeBindingResult;
+  scopeDiagnostics?: ScopeSelectionDiagnostics;
+  csharpPreprocDiagnostics?: CSharpPreprocDiagnostics;
 }
 
 // Serializable version for Web Worker communication

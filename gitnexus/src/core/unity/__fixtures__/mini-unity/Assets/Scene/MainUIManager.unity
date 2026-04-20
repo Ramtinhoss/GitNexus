@@ -13,6 +13,7 @@ MonoBehaviour:
   mainUIDocument: {fileID: 11400000, guid: 33333333333333333333333333333333, type: 2}
 --- !u!1001 &3000
 PrefabInstance:
+  m_SourcePrefab: {fileID: 100100000, guid: 99999999999999999999999999999999, type: 3}
   m_Modification:
     m_Modifications:
     - target: {fileID: 11400000}

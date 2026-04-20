@@ -1,4 +1,4 @@
-import { closeKuzu } from '../mcp/core/kuzu-adapter.js';
+import { closeLbug } from '../mcp/core/lbug-adapter.js';
 import { LocalBackend } from '../mcp/local/local-backend.js';
 
 export async function createToolRunner() {
@@ -13,7 +13,7 @@ export async function createToolRunner() {
     context: (params: any) => backend.callTool('context', params),
     impact: (params: any) => backend.callTool('impact', params),
     close: async () => {
-      await closeKuzu();
+      await closeLbug();
     },
   };
 }

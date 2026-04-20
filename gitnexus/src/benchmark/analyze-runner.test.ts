@@ -38,3 +38,12 @@ test('buildAnalyzeArgs forwards alias and scope options', () => {
     'Packages/com.veewo.*',
   ]);
 });
+
+test('buildAnalyzeArgs omits --extensions when not explicitly provided', () => {
+  const args = buildAnalyzeArgs('/repo/path', {
+    repoAlias: 'neonspark-v1-subset',
+    scopeManifest: '/tmp/scope-manifest.txt',
+  } as any);
+
+  assert.equal(args.includes('--extensions'), false);
+});

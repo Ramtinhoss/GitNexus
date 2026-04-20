@@ -22,7 +22,7 @@ description: Analyze blast radius before making code changes
 4. Assess risk and report to user
 ```
 
-> If "Index is stale" → run `npx gitnexus analyze` in terminal.
+> If "Index is stale" → resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze` in terminal.
 
 ## Checklist
 

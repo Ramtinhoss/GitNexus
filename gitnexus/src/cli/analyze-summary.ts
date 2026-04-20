@@ -1,7 +1,36 @@
+import type { CSharpPreprocDiagnostics } from '../types/pipeline.js';
+import type { UnityRuntimeBindingResult } from '../core/ingestion/unity-runtime-binding-rules.js';
+
 export interface FallbackInsertStats {
   attempted: number;
   succeeded: number;
   failed: number;
+}
+
+export function formatCSharpPreprocDiagnosticsSummary(
+  diagnostics: CSharpPreprocDiagnostics | undefined,
+  previewLimit: number = 5,
+): string[] {
+  if (!diagnostics?.enabled) return [];
+
+  const lines = [
+    `CSharp Preproc: defines=${diagnostics.defineSymbolCount}, normalized=${diagnostics.normalizedFiles}, fallback=${diagnostics.fallbackFiles}, skipped=${diagnostics.skippedFiles}, exprErrors=${diagnostics.expressionErrors}`,
+  ];
+
+  if (diagnostics.sourcePath) {
+    lines.push(`- source: ${diagnostics.sourcePath}`);
+  }
+
+  if (diagnostics.undefinedSymbols.length > 0) {
+    const limit = previewLimit > 0 ? previewLimit : diagnostics.undefinedSymbols.length;
+    const preview = diagnostics.undefinedSymbols.slice(0, limit);
+    lines.push(`- undefined symbols: ${preview.join(', ')}`);
+    if (diagnostics.undefinedSymbols.length > preview.length) {
+      lines.push(`... ${diagnostics.undefinedSymbols.length - preview.length} more`);
+    }
+  }
+
+  return lines;
 }
 
 export function formatUnityDiagnosticsSummary(
@@ -24,6 +53,33 @@ export function formatUnityDiagnosticsSummary(
     lines.push(`... ${diagnostics.length - preview.length} more`);
   }
 
+  return lines;
+}
+
+export function formatUnityRuleBindingSummary(
+  result: UnityRuntimeBindingResult | undefined,
+  previewLimit: number = 3,
+): string[] {
+  if (!result) return [];
+  const diagnostics = result.diagnostics;
+  const lines = ['Unity Rule Binding Diagnostics:'];
+  for (const message of diagnostics.summary) {
+    if (!message.startsWith('rule_binding.anomaly:')) {
+      lines.push(`- ${message}`);
+    }
+  }
+  const anomalies = diagnostics.anomalies;
+  if (anomalies.length === 0) {
+    return lines;
+  }
+  lines.push(`- rule_binding.anomalies: count=${anomalies.length}`);
+  const limit = previewLimit > 0 ? previewLimit : anomalies.length;
+  for (const message of anomalies.slice(0, limit)) {
+    lines.push(`- rule_binding.anomaly: ${message}`);
+  }
+  if (anomalies.length > limit) {
+    lines.push(`- rule_binding.anomaly: ... ${anomalies.length - limit} more`);
+  }
   return lines;
 }
 
@@ -57,4 +113,32 @@ export function formatFallbackSummary(
   }
 
   return lines;
+}
+
+export function resolveFallbackStats(
+  warnings: string[] | undefined,
+  stats: FallbackInsertStats | undefined,
+): FallbackInsertStats {
+  if (stats) {
+    return stats;
+  }
+
+  if (!warnings || warnings.length === 0) {
+    return {
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+  }
+
+  const attempted = warnings.reduce((sum, warning) => {
+    const match = warning.match(/\((\d+)\s+edges\)/);
+    return sum + (match ? Number.parseInt(match[1] || '0', 10) : 0);
+  }, 0);
+
+  return {
+    attempted,
+    succeeded: 0,
+    failed: attempted,
+  };
 }

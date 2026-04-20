@@ -1,0 +1,48 @@
+CMD: env GITNEXUS_HOME=/tmp/gitnexus-prefab-stream-on NODE_OPTIONS=--max-old-space-size=12288 node /Users/nantasmac/projects/agentic/GitNexus/.worktrees/plan-prefab-source-streaming-memory-2026-04-10/gitnexus/dist/cli/index.js analyze . --force --no-reuse-options --scope-manifest /Volumes/Shuttle/unity-projects/neonharness/.gitnexus/sync-manifest.txt --sync-manifest-policy keep --csharp-define-csproj /Volumes/Shuttle/unity-projects/neonharness/UxmlGenerator/UxmlGenerator/UxmlGenerator.csproj
+
+  GitNexus Analyzer
+
+[2K  Skipped 3044 large files (>512KB, likely generated/vendored)
+[2K[UnityRuleBinding] failed to load or apply analyze rules: Runtime claim rule catalog not found: /Volumes/Shuttle/unity-projects/neonharness/.gitnexus/rules/catalog.json
+
+  Repository indexed successfully (121.7s)
+
+  Repo Name: neonspark-core
+  Repo Alias: neonspark-core
+  Scope Rules: 2
+  Scoped Files: 8062
+  Scope Overlap Files: 0 (0 duplicate matches removed)
+  Scope Collisions: none
+  Unity Diagnostics: 12 message(s)
+  - scanContext: scripts=8793, guids=7404, resources=15197
+  - prefab-source: emitted=56445
+  - prefab_source.rows_parsed=100260
+  ... 9 more
+  CSharp Preproc: defines=0, normalized=1373, fallback=2, skipped=6689, exprErrors=588
+  - source: /Volumes/Shuttle/unity-projects/neonharness/UxmlGenerator/UxmlGenerator/UxmlGenerator.csproj
+  - undefined symbols: ADD_SHADER_FUNCTION_HEADERS, ADRESSABLES_1_2_0_OR_NEWER, ALL_UNLOCK, ASE_CONSOLE_WINDOW, BONUS_BOSS_COINS
+  ... 251 more
+  106,404 nodes | 519,117 edges | 5334 clusters | 300 flows
+  LadybugDB 27.3s | FTS 11.2s | Embeddings off (use --embeddings to enable)
+  File filter: .cs, .meta
+  /Volumes/Shuttle/unity-projects/neonharness
+  Context: AGENTS.md (updated), CLAUDE.md (updated), .agents/skills/gitnexus/ (7 skills)
+
+      122.19 real       156.10 user        21.54 sys
+          6629556224  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+             1760688  page reclaims
+                1181  page faults
+                   0  swaps
+               15708  block input operations
+                4767  block output operations
+                   1  messages sent
+                   1  messages received
+                   0  signals received
+              132403  voluntary context switches
+             1539150  involuntary context switches
+       2692181193635  instructions retired
+        663475024566  cycles elapsed
+          9268100832  peak memory footprint

@@ -1,0 +1,136 @@
+{
+  "runAt": "2026-03-31T23:08:03+08:00",
+  "repoAlias": "neonspark-core",
+  "indexedCommit": "6acfa27b69e9a2b216e3940f546d5dc4c5a8174d",
+  "flagStates": {
+    "syntheticCalls": "on",
+    "processPersistPrimaryAnalyze": "on",
+    "processPersistFlagOffQueryProbe": "off"
+  },
+  "executedCommands": [
+    "npm --prefix gitnexus run build",
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST=on node gitnexus/dist/cli/index.js analyze /Volumes/Shuttle/projects/neonspark --force --no-reuse-options --repo-alias neonspark-core",
+    "node gitnexus/dist/cli/index.js cypher -r neonspark-core \"MATCH (p:Process) WHERE p.processSubtype = 'unity_lifecycle' RETURN count(p) AS cnt\"",
+    "node gitnexus/dist/cli/index.js cypher -r neonspark-core \"MATCH (n)-[r:CodeRelation {type:'STEP_IN_PROCESS'}]->(p:Process {id:'proc_0_unity_runtime_root'}) RETURN n.id AS node_id, r.step AS step, r.reason AS reason, r.confidence AS confidence ORDER BY step\"",
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST=on node gitnexus/dist/cli/index.js context -r neonspark-core --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\" --unity-resources on --unity-hydration parity ReloadBase",
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST=on node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity \"GunGraph RegisterEvents StartRoutineWithEvents\"",
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on GITNEXUS_UNITY_LIFECYCLE_PROCESS_PERSIST=off node gitnexus/dist/cli/index.js query -r neonspark-core --unity-resources on --unity-hydration parity \"Reload NEON.Game.Graph.Nodes.Reloads\""
+  ],
+  "persistedLifecycleProcessCount": 8,
+  "sampledProcessDetailPayloads": [
+    {
+      "processId": "proc_0_unity_runtime_root",
+      "processSubtype": "unity_lifecycle",
+      "runtimeChainConfidence": "medium",
+      "steps": [
+        {
+          "step": 1,
+          "node_id": "Method:unity-runtime-root",
+          "reason": "unity-lifecycle-synthetic",
+          "confidence": 0.72
+        },
+        {
+          "step": 2,
+          "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Payloads/ParticlePayload.cs:OnDestroy",
+          "reason": "unity-runtime-loader-synthetic",
+          "confidence": 0.68
+        },
+        {
+          "step": 3,
+          "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Payloads/ParticlePayload.cs:GetValue",
+          "reason": "unity-runtime-loader-synthetic",
+          "confidence": 0.68
+        },
+        {
+          "step": 4,
+          "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+          "reason": "same-file",
+          "confidence": 0.95
+        },
+        {
+          "step": 5,
+          "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadRoutine",
+          "reason": "same-file",
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "source": "context() ReloadBase",
+      "process": {
+        "id": "proc_0_unity_runtime_root",
+        "name": "Unity-runtime-root → ReloadRoutine",
+        "process_subtype": "unity_lifecycle",
+        "runtime_chain_confidence": "medium",
+        "step_index": 4,
+        "step_count": 5,
+        "evidence_mode": "method_projected",
+        "confidence": "medium"
+      }
+    }
+  ],
+  "queryComparisons": {
+    "flagOnSample": {
+      "search": "GunGraph RegisterEvents StartRoutineWithEvents",
+      "topProcess": {
+        "id": "proc_7_unity_runtime_root",
+        "process_type": "cross_community",
+        "process_subtype": "unity_lifecycle",
+        "runtime_chain_confidence": "medium",
+        "step_count": 5
+      }
+    },
+    "flagOffSample": {
+      "search": "Reload NEON.Game.Graph.Nodes.Reloads",
+      "topProcess": {
+        "id": "proc_7_unity_runtime_root",
+        "process_type": "cross_community",
+        "process_subtype": "unity_lifecycle",
+        "runtime_chain_confidence": "medium",
+        "step_count": 5
+      }
+    }
+  },
+  "backwardCompat": {
+    "legacyFieldsChecked": [
+      "processes[].id",
+      "processes[].summary",
+      "processes[].process_type",
+      "processes[].step_count"
+    ],
+    "flagOnLegacyFieldsPresent": true,
+    "flagOffLegacyFieldsPresent": true,
+    "regressionDetected": false,
+    "notes": "Flag-off query against an index analyzed with persist=on still exposes additive lifecycle metadata, while legacy fields remain stable."
+  },
+  "confirmed_chain": {
+    "source": "restitched from proc_0_unity_runtime_root STEP_IN_PROCESS rows",
+    "steps": [
+      {
+        "step": 1,
+        "node_id": "Method:unity-runtime-root",
+        "reason": "unity-lifecycle-synthetic"
+      },
+      {
+        "step": 2,
+        "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Payloads/ParticlePayload.cs:OnDestroy",
+        "reason": "unity-runtime-loader-synthetic"
+      },
+      {
+        "step": 3,
+        "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Payloads/ParticlePayload.cs:GetValue",
+        "reason": "unity-runtime-loader-synthetic"
+      },
+      {
+        "step": 4,
+        "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+        "reason": "same-file"
+      },
+      {
+        "step": 5,
+        "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadRoutine",
+        "reason": "same-file"
+      }
+    ]
+  }
+}

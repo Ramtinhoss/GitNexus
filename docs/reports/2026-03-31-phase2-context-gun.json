@@ -1,0 +1,440 @@
+{
+  "status": "found",
+  "symbol": {
+    "uid": "Class:Assets/NEON/Code/Game/Core/Gun.cs:Gun",
+    "name": "Gun",
+    "filePath": "Assets/NEON/Code/Game/Core/Gun.cs",
+    "startLine": 92,
+    "endLine": 92
+  },
+  "incoming": {
+    "extends": [
+      {
+        "uid": "Class:Assets/NEON/Code/Game/MinionGun.cs:MinionGun",
+        "name": "MinionGun",
+        "filePath": "Assets/NEON/Code/Game/MinionGun.cs"
+      }
+    ],
+    "calls": [
+      {
+        "uid": "Method:Assets/NEON/VeewoUI/Elements/PlayerData.cs:CalScoreAndNum",
+        "name": "CalScoreAndNum",
+        "filePath": "Assets/NEON/VeewoUI/Elements/PlayerData.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMgr/MirrorGlobalMgr.cs:GetEndedSelfPlayerInfo",
+        "name": "GetEndedSelfPlayerInfo",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonMgr/MirrorGlobalMgr.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.cs:ApplyStateReconnectDataWhenReady",
+        "name": "ApplyStateReconnectDataWhenReady",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.SyncGraph.cs:RpcSyncGunVariable",
+        "name": "RpcSyncGunVariable",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.SyncGraph.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.SyncGraph.cs:RpcSyncAttackDir",
+        "name": "RpcSyncAttackDir",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.SyncGraph.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.PlayerState.cs:InitPlayerState",
+        "name": "InitPlayerState",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.PlayerState.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.PlayerState.cs:OnGunGraphVariableChange",
+        "name": "OnGunGraphVariableChange",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.PlayerState.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/GunParts/ModifyGraphVariableBase.cs:SetVarToGraph",
+        "name": "SetVarToGraph",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/GunParts/ModifyGraphVariableBase.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/GunParts/ManaAddEnergyPowerUp.cs:SetVarToGraph",
+        "name": "SetVarToGraph",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/GunParts/ManaAddEnergyPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/GunParts/GunPartsAddTempVariablePowerUp.cs:PickItUp",
+        "name": "PickItUp",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/GunParts/GunPartsAddTempVariablePowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/GunParts/GunPartsAddTempVariablePowerUp.cs:RemoveGraphValue",
+        "name": "RemoveGraphValue",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/GunParts/GunPartsAddTempVariablePowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/GunParts/BubbleBlowerPowerUp.cs:OnMeleeAttack",
+        "name": "OnMeleeAttack",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/GunParts/BubbleBlowerPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/UI/BombSelector.cs:HandleSelectButton",
+        "name": "HandleSelectButton",
+        "filePath": "Assets/NEON/Code/UI/BombSelector.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/MinionGun.cs:Start",
+        "name": "Start",
+        "filePath": "Assets/NEON/Code/Game/MinionGun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/MonsterMark/MonsterMarkDropPickup.cs:OnDestroy",
+        "name": "OnDestroy",
+        "filePath": "Assets/NEON/Code/Game/MonsterMark/MonsterMarkDropPickup.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Launchers/BulletLauncher.cs:CreateBullet",
+        "name": "CreateBullet",
+        "filePath": "Assets/NEON/Code/Game/Launchers/BulletLauncher.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Launchers/BeamLauncher.cs:_Attack",
+        "name": "_Attack",
+        "filePath": "Assets/NEON/Code/Game/Launchers/BeamLauncher.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:Fire",
+        "name": "Fire",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopAttackRoutine",
+        "name": "StopAttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopAttackRoutineIfNecessary",
+        "name": "StopAttackRoutineIfNecessary",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:DelayStopAttackRoutine",
+        "name": "DelayStopAttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopFire",
+        "name": "StopFire",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopFireForRoomTransition",
+        "name": "StopFireForRoomTransition",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:ResetStateForRoomTransition",
+        "name": "ResetStateForRoomTransition",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:FireGrenade",
+        "name": "FireGrenade",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:ResetGunState",
+        "name": "ResetGunState",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:HandleChargeSound",
+        "name": "HandleChargeSound",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:OnLauncherBeginFire",
+        "name": "OnLauncherBeginFire",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:GunAttackRoutine",
+        "name": "GunAttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:MeleeAttackRoutine",
+        "name": "MeleeAttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:MeleeLauncherAttack",
+        "name": "MeleeLauncherAttack",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:Update",
+        "name": "Update",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:RefreshMeleeDamageInfo",
+        "name": "RefreshMeleeDamageInfo",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Bullets/SunflowerGenerator.cs:CalculateRpmMultiplier",
+        "name": "CalculateRpmMultiplier",
+        "filePath": "Assets/NEON/Code/Game/Bullets/SunflowerGenerator.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Bullets/SunflowerGenerator.cs:FireAttack",
+        "name": "FireAttack",
+        "filePath": "Assets/NEON/Code/Game/Bullets/SunflowerGenerator.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Bullets/SunflowerGenerator.cs:LifeCoroutine",
+        "name": "LifeCoroutine",
+        "filePath": "Assets/NEON/Code/Game/Bullets/SunflowerGenerator.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Bullets/Bomb.cs:ExpandAngleRandom",
+        "name": "ExpandAngleRandom",
+        "filePath": "Assets/NEON/Code/Game/Bullets/Bomb.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:UnEquip",
+        "name": "UnEquip",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:RevokePickup",
+        "name": "RevokePickup",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/SunPowerUp.cs:GetPowerUpObject",
+        "name": "GetPowerUpObject",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/SunPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/RandomPerUseGoldPowerup.cs:CheckRoutine",
+        "name": "CheckRoutine",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/RandomPerUseGoldPowerup.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/PressEnergyTank.cs:GetValue",
+        "name": "GetValue",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/PressEnergyTank.cs"
+      },
+      {
+        "uid": "File:Assets/NEON/Code/Game/Core/Gun.cs",
+        "name": "Gun.cs",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      }
+    ]
+  },
+  "outgoing": {
+    "has_method": [
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:GetBaseDamage",
+        "name": "GetBaseDamage",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      }
+    ],
+    "calls": [
+      {
+        "uid": "Method:Assets/Veewo/Framework/Foundation/NewEventHub.cs:Raise",
+        "name": "Raise",
+        "filePath": "Assets/Veewo/Framework/Foundation/NewEventHub.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.SyncGraph.cs:CmdSyncAttackDir",
+        "name": "CmdSyncAttackDir",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.SyncGraph.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Managers/PlayerInputManager.cs:GetCalcControllerInputAimAxis",
+        "name": "GetCalcControllerInputAimAxis",
+        "filePath": "Assets/NEON/Code/Game/Managers/PlayerInputManager.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Framework/Neon.cs:Warn",
+        "name": "Warn",
+        "filePath": "Assets/NEON/Code/Framework/Neon.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Framework/Global.cs:SetVariable",
+        "name": "SetVariable",
+        "filePath": "Assets/NEON/Code/Framework/Global.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Mover.cs:AddExternalForce",
+        "name": "AddExternalForce",
+        "filePath": "Assets/NEON/Code/Game/Core/Mover.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/GunGraphMB.cs:StopFire",
+        "name": "StopFire",
+        "filePath": "Assets/NEON/Code/Game/Core/GunGraphMB.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:TryGetCurGraphVariable",
+        "name": "TryGetCurGraphVariable",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:GetCurGraphVariableKeys",
+        "name": "GetCurGraphVariableKeys",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:RefreshAttackDir",
+        "name": "RefreshAttackDir",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopAttackRoutine",
+        "name": "StopAttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopAttackRoutineIfNecessary",
+        "name": "StopAttackRoutineIfNecessary",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:DelayStopAttackRoutine",
+        "name": "DelayStopAttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopFire",
+        "name": "StopFire",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopFireForRoomTransition",
+        "name": "StopFireForRoomTransition",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:ResetStateForRoomTransition",
+        "name": "ResetStateForRoomTransition",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:ShouldPreserveChargeOnRoomTransition",
+        "name": "ShouldPreserveChargeOnRoomTransition",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:CanUseBomb",
+        "name": "CanUseBomb",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:HandleShotSound",
+        "name": "HandleShotSound",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopBeamContinuousShotSound",
+        "name": "StopBeamContinuousShotSound",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopChargeShotSound",
+        "name": "StopChargeShotSound",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:GunAttackRoutine",
+        "name": "GunAttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:MeleeAttackRoutine",
+        "name": "MeleeAttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:CanContinuousAttack",
+        "name": "CanContinuousAttack",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:SetCurMeleeDamageInfo",
+        "name": "SetCurMeleeDamageInfo",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:ResetExMeleeMult",
+        "name": "ResetExMeleeMult",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:ResetExMeleeLauncherMult",
+        "name": "ResetExMeleeLauncherMult",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/Plugins/FMOD/src/fmod_studio.cs:stop",
+        "name": "stop",
+        "filePath": "Assets/Plugins/FMOD/src/fmod_studio.cs"
+      },
+      {
+        "uid": "Method:Packages/com.veewo.veenode/Veewo/Graph/Editor/GraphEditor.cs:AddVariable",
+        "name": "AddVariable",
+        "filePath": "Packages/com.veewo.veenode/Veewo/Graph/Editor/GraphEditor.cs"
+      },
+      {
+        "uid": "Method:Assets/Plugins/vTabs/VTabsLibs.cs:RoundToInt",
+        "name": "RoundToInt",
+        "filePath": "Assets/Plugins/vTabs/VTabsLibs.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs:Seconds",
+        "name": "Seconds",
+        "filePath": "Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs"
+      },
+      {
+        "uid": "Class:Assets/Plugins/FMOD/src/ParamRef.cs:ParamRef",
+        "name": "ParamRef",
+        "filePath": "Assets/Plugins/FMOD/src/ParamRef.cs"
+      },
+      {
+        "uid": "Class:Assets/NEON/Code/Framework/GlobalVar.cs:stringFloat",
+        "name": "stringFloat",
+        "filePath": "Assets/NEON/Code/Framework/GlobalVar.cs"
+      }
+    ]
+  },
+  "directIncoming": {
+    "extends": [
+      {
+        "uid": "Class:Assets/NEON/Code/Game/MinionGun.cs:MinionGun",
+        "name": "MinionGun",
+        "filePath": "Assets/NEON/Code/Game/MinionGun.cs"
+      }
+    ]
+  },
+  "directOutgoing": {
+    "has_method": [
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:GetBaseDamage",
+        "name": "GetBaseDamage",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      }
+    ]
+  },
+  "processes": [
+    {
+      "id": "proc_156_getvalue",
+      "name": "GetValue → SetVariable",
+      "step_index": 4,
+      "step_count": 5,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    }
+  ]
+}

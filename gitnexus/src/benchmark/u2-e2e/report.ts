@@ -34,6 +34,7 @@ export interface U2RetrievalSummary {
     totalDurationMs: number;
   };
   serializedTypeEdgeCount?: number;
+  resourceSummaryEdgeCount?: number;
   characterListAssetRefSprite?: U2CharacterListAssetRefSpriteSummary;
   failures?: string[];
 }
@@ -116,6 +117,7 @@ export function buildRetrievalSummaryMarkdown(summary?: U2RetrievalSummary): str
     `- Total Tokens (est): ${summary.tokenSummary?.totalTokensEst ?? 0}`,
     `- Total Duration: ${formatMs(summary.tokenSummary?.totalDurationMs)}`,
     `- UNITY_SERIALIZED_TYPE_IN Edges: ${typeof summary.serializedTypeEdgeCount === 'number' ? summary.serializedTypeEdgeCount : 'n/a'}`,
+    `- UNITY_RESOURCE_SUMMARY Edges: ${typeof summary.resourceSummaryEdgeCount === 'number' ? summary.resourceSummaryEdgeCount : 'n/a'}`,
     `- CharacterList AssetRef Sprite Instances: ${summary.characterListAssetRefSprite?.spriteAssetRefInstances ?? 'n/a'}`,
     `- CharacterList AssetRef Sprite Ratio: ${
       typeof summary.characterListAssetRefSprite?.spriteRatioInNonEmpty === 'number'
@@ -170,6 +172,7 @@ export function buildFinalVerdictMarkdown(input: FinalVerdictInput): string {
     `- Total Tokens (est): ${summary?.tokenSummary?.totalTokensEst ?? 0}`,
     `- Total Duration: ${formatMs(summary?.tokenSummary?.totalDurationMs)}`,
     `- UNITY_SERIALIZED_TYPE_IN Edges: ${typeof summary?.serializedTypeEdgeCount === 'number' ? summary.serializedTypeEdgeCount : 'n/a'}`,
+    `- UNITY_RESOURCE_SUMMARY Edges: ${typeof summary?.resourceSummaryEdgeCount === 'number' ? summary.resourceSummaryEdgeCount : 'n/a'}`,
     `- CharacterList AssetRef Sprite Instances: ${summary?.characterListAssetRefSprite?.spriteAssetRefInstances ?? 'n/a'}`,
     `- CharacterList AssetRef Sprite Ratio: ${
       typeof summary?.characterListAssetRefSprite?.spriteRatioInNonEmpty === 'number'

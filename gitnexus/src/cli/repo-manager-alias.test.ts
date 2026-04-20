@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { readRegistry, registerRepo } from '../storage/repo-manager.js';
+import { loadMeta, readRegistry, registerRepo, saveMeta } from '../storage/repo-manager.js';
 
 function makeMeta(repoPath: string, lastCommit: string) {
   return {
@@ -42,4 +42,32 @@ test('registerRepo stores alias and rejects collisions on different paths', asyn
       process.env.GITNEXUS_HOME = originalHome;
     }
   }
+});
+
+test('saveMeta/loadMeta persists analyzeOptions for future re-index reuse', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-meta-'));
+  const storagePath = path.join(tmpDir, '.gitnexus');
+
+  await saveMeta(storagePath, {
+    repoPath: tmpDir,
+    repoId: 'neonspark-v1-subset',
+    lastCommit: 'abc1234',
+    indexedAt: '2026-03-12T00:00:00.000Z',
+    analyzeOptions: {
+      includeExtensions: ['.cs'],
+      scopeRules: ['Assets/NEON/Code'],
+      repoAlias: 'neonspark-v1-subset',
+      embeddings: true,
+    },
+    stats: { files: 1, nodes: 2, edges: 3 },
+  });
+
+  const meta = await loadMeta(storagePath);
+  assert.deepEqual(meta?.analyzeOptions, {
+    includeExtensions: ['.cs'],
+    scopeRules: ['Assets/NEON/Code'],
+    repoAlias: 'neonspark-v1-subset',
+    embeddings: true,
+  });
+  assert.equal(meta?.repoId, 'neonspark-v1-subset');
 });

@@ -1,0 +1,100 @@
+{
+  "generated_at": "2026-04-02T10:19:24.179Z",
+  "repo_alias": "GitNexus",
+  "repo_path": "/Volumes/Shuttle/projects/agentic/GitNexus",
+  "run_id": "a1625eaf903d",
+  "stage_coverage": [
+    {
+      "stage": "discover",
+      "command": "gitnexus rule-lab discover --scope full",
+      "status": "passed"
+    },
+    {
+      "stage": "analyze",
+      "command": "gitnexus rule-lab analyze --run-id a1625eaf903d --slice-id slice-dfaf9b4215",
+      "status": "passed"
+    },
+    {
+      "stage": "review-pack",
+      "command": "gitnexus rule-lab review-pack --run-id a1625eaf903d --slice-id slice-dfaf9b4215 --max-tokens 6000",
+      "status": "passed"
+    },
+    {
+      "stage": "curate",
+      "command": "gitnexus rule-lab curate --run-id a1625eaf903d --slice-id slice-dfaf9b4215 --input-path /Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/lab/runs/a1625eaf903d/slices/slice-dfaf9b4215/curation-input.json",
+      "status": "passed"
+    },
+    {
+      "stage": "promote",
+      "command": "gitnexus rule-lab promote --run-id a1625eaf903d --slice-id slice-dfaf9b4215",
+      "status": "passed"
+    },
+    {
+      "stage": "regress",
+      "command": "gitnexus rule-lab regress --precision 0.93 --coverage 0.85 --run-id a1625eaf903d",
+      "status": "passed"
+    }
+  ],
+  "metrics": {
+    "precision": 0.93,
+    "coverage": 0.85,
+    "probe_pass_rate": 1,
+    "token_budget": 586
+  },
+  "authenticity_checks": {
+    "static_no_hardcoded_reload": {
+      "pass": true,
+      "blocked_symbols": []
+    },
+    "dsl_lint_pass": true
+  },
+  "failure_classifications": [
+    {
+      "code": "rule_not_matched",
+      "retry_hint": "confirm trigger_family tokens and rerun discover/analyze/promote",
+      "repro_command": "gitnexus rule-lab analyze --run-id a1625eaf903d --slice-id <slice_id>"
+    },
+    {
+      "code": "rule_matched_but_evidence_missing",
+      "retry_hint": "add stronger confirmed_chain anchors in curation input and promote again",
+      "repro_command": "gitnexus rule-lab curate --run-id a1625eaf903d --slice-id <slice_id> --input-path <curation-input.json>"
+    },
+    {
+      "code": "precision_below_threshold",
+      "retry_hint": "trim noisy rules or tighten curation semantics before regress",
+      "repro_command": "gitnexus rule-lab regress --precision 0.85 --coverage 0.92 --run-id a1625eaf903d"
+    },
+    {
+      "code": "coverage_below_threshold",
+      "retry_hint": "add additional approved rules/slices and rerun regress",
+      "repro_command": "gitnexus rule-lab regress --precision 0.95 --coverage 0.70 --run-id a1625eaf903d"
+    },
+    {
+      "code": "probe_pass_rate_below_threshold",
+      "retry_hint": "re-run regress with refreshed probes and inspect replay commands",
+      "repro_command": "gitnexus rule-lab regress --precision 0.95 --coverage 0.90 --run-id a1625eaf903d"
+    },
+    {
+      "code": "static_hardcode_detected",
+      "retry_hint": "remove project-specific reload fallback constants/branches from runtime verifier",
+      "repro_command": "rg -n \"RESOURCE_ASSET_PATH|GRAPH_ASSET_PATH|RELOAD_GUID|shouldVerifyReloadChain|verifyReloadRuntimeChain\" gitnexus/src/mcp/local/runtime-chain-verify.ts"
+    },
+    {
+      "code": "dsl_lint_failed",
+      "retry_hint": "fix promoted DSL placeholders and rerun promote/regress",
+      "repro_command": "gitnexus rule-lab promote --run-id a1625eaf903d --slice-id <slice_id>"
+    }
+  ],
+  "artifact_paths": {
+    "manifest": "/Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/lab/runs/a1625eaf903d/manifest.json",
+    "candidates": "/Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/lab/runs/a1625eaf903d/slices/slice-dfaf9b4215/candidates.jsonl",
+    "review_cards": "/Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/lab/runs/a1625eaf903d/slices/slice-dfaf9b4215/review-cards.md",
+    "curation_input": "/Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/lab/runs/a1625eaf903d/slices/slice-dfaf9b4215/curation-input.json",
+    "curated": "/Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/lab/runs/a1625eaf903d/slices/slice-dfaf9b4215/curated.json",
+    "catalog": "/Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/catalog.json",
+    "promoted_files": [
+      "/Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/approved/demo.startup.v1.yaml"
+    ],
+    "regress_report": "/Volumes/Shuttle/projects/agentic/GitNexus/.gitnexus/rules/reports/a1625eaf903d-regress.md"
+  }
+}

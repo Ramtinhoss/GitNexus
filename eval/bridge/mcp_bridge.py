@@ -150,7 +150,7 @@ class MCPBridge:
                     cwd=self.repo_path,
                 )
                 if result.returncode == 0:
-                    return cmd  # Will use "npx gitnexus mcp"
+                    return cmd  # Will use "npx -y @veewo/gitnexus@latest mcp"
             except Exception:
                 continue
 

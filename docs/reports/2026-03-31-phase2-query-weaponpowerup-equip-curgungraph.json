@@ -1,0 +1,174 @@
+{
+  "processes": [
+    {
+      "id": "proc_263_onmount",
+      "summary": "OnMount → GetCurrentEquipped",
+      "priority": 0.07,
+      "symbol_count": 1,
+      "process_type": "cross_community",
+      "step_count": 4,
+      "evidence_mode": "direct_step",
+      "confidence": "high"
+    }
+  ],
+  "process_symbols": [
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs:GetCurrentEquipped",
+      "name": "GetCurrentEquipped",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs",
+      "startLine": 70,
+      "endLine": 70,
+      "module": "Views",
+      "process_id": "proc_263_onmount",
+      "step_index": 4,
+      "process_evidence_mode": "direct_step",
+      "process_confidence": "high"
+    }
+  ],
+  "definitions": [
+    {
+      "id": "Property:Assets/NEON/Code/Game/Core/GunGraphMB.cs:CurGunGraph",
+      "name": "CurGunGraph",
+      "filePath": "Assets/NEON/Code/Game/Core/GunGraphMB.cs",
+      "startLine": 95,
+      "endLine": 95
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/Core/GunGraphMB.cs:NEON.Game",
+      "name": "NEON.Game",
+      "filePath": "Assets/NEON/Code/Game/Core/GunGraphMB.cs",
+      "startLine": 14,
+      "endLine": 14
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/Core/GunGraphMB.cs:GunGraphMB",
+      "name": "GunGraphMB",
+      "filePath": "Assets/NEON/Code/Game/Core/GunGraphMB.cs",
+      "startLine": 16,
+      "endLine": 16
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:WeaponPowerUp",
+      "name": "WeaponPowerUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+      "startLine": 15,
+      "endLine": 15
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:Equip",
+      "name": "Equip",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+      "startLine": 45,
+      "endLine": 45
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs:UnEquip",
+      "name": "UnEquip",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+      "startLine": 117,
+      "endLine": 117,
+      "module": "PowerUps"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs:RegisterEquipButtonCallbacks",
+      "name": "RegisterEquipButtonCallbacks",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs",
+      "startLine": 50,
+      "endLine": 50
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs:UnregisterEquipButtonCallbacks",
+      "name": "UnregisterEquipButtonCallbacks",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs",
+      "startLine": 61,
+      "endLine": 61
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs:OnEquipButtonClicked",
+      "name": "OnEquipButtonClicked",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/AresArsenalScreenNew.Logic.cs",
+      "startLine": 71,
+      "endLine": 71
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:Equip",
+      "name": "Equip",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs",
+      "startLine": 75,
+      "endLine": 75,
+      "module": "ColdWeapon"
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:HybridWeaponPowerUp",
+      "name": "HybridWeaponPowerUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs",
+      "startLine": 57,
+      "endLine": 57,
+      "module": "ColdWeapon"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs:EquipGun",
+      "name": "EquipGun",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/HybridWeaponPowerUp.cs",
+      "startLine": 105,
+      "endLine": 105
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/MultipleLauncher.cs:LoadWeaponPowerUp",
+      "name": "LoadWeaponPowerUp",
+      "filePath": "Assets/NEON/Code/Game/MultipleLauncher.cs",
+      "startLine": 69,
+      "endLine": 69,
+      "module": "Game"
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/MultipleLauncher.cs:MultipleLauncher",
+      "name": "MultipleLauncher",
+      "filePath": "Assets/NEON/Code/Game/MultipleLauncher.cs",
+      "startLine": 14,
+      "endLine": 14
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/MultipleLauncher.cs:Start",
+      "name": "Start",
+      "filePath": "Assets/NEON/Code/Game/MultipleLauncher.cs",
+      "startLine": 30,
+      "endLine": 30
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs:EquipItem",
+      "name": "EquipItem",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs",
+      "startLine": 41,
+      "endLine": 41
+    },
+    {
+      "id": "Method:Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs:GetEquippedSprite",
+      "name": "GetEquippedSprite",
+      "filePath": "Assets/NEON/Code/VeewoUI/Shell/Views/IDressUpPresenter.cs",
+      "startLine": 80,
+      "endLine": 80
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Bettery.cs:LoadWeaponPowerUp",
+      "name": "LoadWeaponPowerUp",
+      "filePath": "Assets/NEON/Code/Game/Bettery.cs",
+      "startLine": 240,
+      "endLine": 240
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/Bettery.cs:Bettery",
+      "name": "Bettery",
+      "filePath": "Assets/NEON/Code/Game/Bettery.cs",
+      "startLine": 13,
+      "endLine": 13
+    },
+    {
+      "id": "Enum:Assets/NEON/Code/Game/Bettery.cs:BetteryStatus",
+      "name": "BetteryStatus",
+      "filePath": "Assets/NEON/Code/Game/Bettery.cs",
+      "startLine": 15,
+      "endLine": 15
+    }
+  ]
+}

@@ -1,0 +1,559 @@
+{
+  "status": "found",
+  "symbol": {
+    "uid": "Class:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:PlayerActor",
+    "name": "PlayerActor",
+    "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs",
+    "startLine": 99,
+    "endLine": 99
+  },
+  "incoming": {
+    "calls": [
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/Decorations/SkinPowerUp.cs:ChangeClothes",
+        "name": "ChangeClothes",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/Decorations/SkinPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/Decorations/DecoratePowerUp.cs:ChangeClothes",
+        "name": "ChangeClothes",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/Decorations/DecoratePowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs:LevelUpWeapon",
+        "name": "LevelUpWeapon",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/DualColdWeaponPowerUp.cs:OnSwitchWeapon",
+        "name": "OnSwitchWeapon",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/DualColdWeaponPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/ColdWeaponPowerUp.cs:Equip",
+        "name": "Equip",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/ColdWeaponPowerUp.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireAddEnergy.cs:SwitchRoutine",
+        "name": "SwitchRoutine",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/FireAddEnergy.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMirror/Bar/OfflinePlayer.cs:OriginalStart",
+        "name": "OriginalStart",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonMirror/Bar/OfflinePlayer.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMirror/Bar/OfflinePlayer.cs:EnableOfflinePlayer",
+        "name": "EnableOfflinePlayer",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonMirror/Bar/OfflinePlayer.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMirror/Bar/MirrorRoomPlayer.cs:RpcChangeDeSkinID",
+        "name": "RpcChangeDeSkinID",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonMirror/Bar/MirrorRoomPlayer.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMirror/Bar/MirrorRoomPlayer.cs:ChangeSkin",
+        "name": "ChangeSkin",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonMirror/Bar/MirrorRoomPlayer.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonMirror/Bar/MirrorRoomPlayer.cs:OnStartClient",
+        "name": "OnStartClient",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonMirror/Bar/MirrorRoomPlayer.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/GameModes/BarMode/BarMode.cs:InitPlayer",
+        "name": "InitPlayer",
+        "filePath": "Assets/NEON/Code/Game/GameModes/BarMode/BarMode.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Bar/BarTrainCenter/BarTrainingRoomDoor.cs:UnEquipWeapon",
+        "name": "UnEquipWeapon",
+        "filePath": "Assets/NEON/Code/Game/Bar/BarTrainCenter/BarTrainingRoomDoor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:Awake",
+        "name": "Awake",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:InitHearts",
+        "name": "InitHearts",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:SetChangeSkinAndMinions",
+        "name": "SetChangeSkinAndMinions",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:Do_ChangeSkin",
+        "name": "Do_ChangeSkin",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:LoadSkinPowerUp",
+        "name": "LoadSkinPowerUp",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:ChangeSkin",
+        "name": "ChangeSkin",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:ChangeClothes",
+        "name": "ChangeClothes",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:ChangeFirearmsAnimator",
+        "name": "ChangeFirearmsAnimator",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:SwitchToColdWeaponAnimator",
+        "name": "SwitchToColdWeaponAnimator",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:SwitchToWeaponAnimator",
+        "name": "SwitchToWeaponAnimator",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:ForceStopMove",
+        "name": "ForceStopMove",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:OnDestroy",
+        "name": "OnDestroy",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Room.cs:RoomTransition",
+        "name": "RoomTransition",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Room.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPickup",
+        "name": "HoldPickup",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldPowerUp",
+        "name": "HoldPowerUp",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs:HoldBelief",
+        "name": "HoldBelief",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Pickup.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Input&Control.cs:HandleInputDir",
+        "name": "HandleInputDir",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Input&Control.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.FixedUpdate.cs:ProcessForce",
+        "name": "ProcessForce",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.FixedUpdate.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.FixedUpdate.cs:ProcessWeapons",
+        "name": "ProcessWeapons",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.FixedUpdate.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.AuxiliaryLine.cs:ChangeThrowAnimation",
+        "name": "ChangeThrowAnimation",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.AuxiliaryLine.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.AuxiliaryLine.cs:ReductionThrowAnimation",
+        "name": "ReductionThrowAnimation",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.AuxiliaryLine.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillTeleportToTarget.cs:SkillBegin",
+        "name": "SkillBegin",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillTeleportToTarget.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillCassie.cs:StopPlayerInput",
+        "name": "StopPlayerInput",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillCassie.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/Skills/SecSkillBuildLauncherPlatform.cs:SkillBegin",
+        "name": "SkillBegin",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/Skills/SecSkillBuildLauncherPlatform.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Graph/Nodes/Payloads/Modify/ChangeToMeleeAnimator.cs:AttackRoutine",
+        "name": "AttackRoutine",
+        "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Payloads/Modify/ChangeToMeleeAnimator.cs"
+      }
+    ]
+  },
+  "outgoing": {
+    "extends": [
+      {
+        "uid": "Property:Assets/NEON/Code/Game/Managers/InputManager.cs:Actor",
+        "name": "Actor",
+        "filePath": "Assets/NEON/Code/Game/Managers/InputManager.cs"
+      }
+    ],
+    "implements": [
+      {
+        "uid": "Interface:Assets/NEON/Code/Game/Abstract/ICanNetSpawn.cs:ICanNetSpawn",
+        "name": "ICanNetSpawn",
+        "filePath": "Assets/NEON/Code/Game/Abstract/ICanNetSpawn.cs"
+      },
+      {
+        "uid": "Interface:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:IExternalForceHandler",
+        "name": "IExternalForceHandler",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      }
+    ],
+    "calls": [
+      {
+        "uid": "Method:Assets/Veewo/Framework/Foundation/NewEventHub.cs:RaiseAsync",
+        "name": "RaiseAsync",
+        "filePath": "Assets/Veewo/Framework/Foundation/NewEventHub.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.SpawnPooled.cs:SyncPoolableEffect",
+        "name": "SyncPoolableEffect",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.SpawnPooled.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.Condition.cs:SetTeamPlayer",
+        "name": "SetTeamPlayer",
+        "filePath": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.Condition.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/Decorations/DecorateSystem.cs:GetSkinGameObject",
+        "name": "GetSkinGameObject",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/Decorations/DecorateSystem.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.Affix.cs:DrawAffixesOnSpawn",
+        "name": "DrawAffixesOnSpawn",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.Affix.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/VeewoUI/UIGeneralFunction.cs:ChangeLayerIterative",
+        "name": "ChangeLayerIterative",
+        "filePath": "Assets/NEON/Code/VeewoUI/UIGeneralFunction.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Managers/SpriteManager.cs:DismissAllSpriteAttacks",
+        "name": "DismissAllSpriteAttacks",
+        "filePath": "Assets/NEON/Code/Game/Managers/SpriteManager.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Managers/PlayerInputManager.cs:DisablePlayerInput",
+        "name": "DisablePlayerInput",
+        "filePath": "Assets/NEON/Code/Game/Managers/PlayerInputManager.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Managers/PlayerInputManager.cs:EnablePlayerInput",
+        "name": "EnablePlayerInput",
+        "filePath": "Assets/NEON/Code/Game/Managers/PlayerInputManager.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Managers/InputManager.cs:Awake",
+        "name": "Awake",
+        "filePath": "Assets/NEON/Code/Game/Managers/InputManager.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Framework/Neon.cs:Warn",
+        "name": "Warn",
+        "filePath": "Assets/NEON/Code/Framework/Neon.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Destructable/GenericDestructable.cs:EndingWaitTimeCanBody",
+        "name": "EndingWaitTimeCanBody",
+        "filePath": "Assets/NEON/Code/Game/Destructable/GenericDestructable.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Destructable/GenericDestructable.cs:StartWaitTimeCanBody",
+        "name": "StartWaitTimeCanBody",
+        "filePath": "Assets/NEON/Code/Game/Destructable/GenericDestructable.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/RoomMB.cs:MoveLocalPlayerIntoNearestDoor",
+        "name": "MoveLocalPlayerIntoNearestDoor",
+        "filePath": "Assets/NEON/Code/Game/Core/RoomMB.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Mover.cs:AddForce",
+        "name": "AddForce",
+        "filePath": "Assets/NEON/Code/Game/Core/Mover.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Hitbox.cs:SetupHitboxes",
+        "name": "SetupHitboxes",
+        "filePath": "Assets/NEON/Code/Game/Core/Hitbox.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:StopFire",
+        "name": "StopFire",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Core/Gun.cs:FireGrenade",
+        "name": "FireGrenade",
+        "filePath": "Assets/NEON/Code/Game/Core/Gun.cs"
+      },
+      {
+        "uid": "Method:Assets/Plugins/Mirror/Components/NetworkAnimator.cs:SetAnimator",
+        "name": "SetAnimator",
+        "filePath": "Assets/Plugins/Mirror/Components/NetworkAnimator.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs:SetPlayer",
+        "name": "SetPlayer",
+        "filePath": "Assets/NEON/Code/Game/AllMinionManager/MinionsManager.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/StatBoost.cs:ApplyGunGraphics",
+        "name": "ApplyGunGraphics",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/StatBoost.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/PowerUps/StatBoost.cs:ChangeAppearance",
+        "name": "ChangeAppearance",
+        "filePath": "Assets/NEON/Code/Game/PowerUps/StatBoost.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs:GetCharacterData",
+        "name": "GetCharacterData",
+        "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Combat.cs:ResetCurMonsterKilledCount",
+        "name": "ResetCurMonsterKilledCount",
+        "filePath": "Assets/NEON/Code/Game/Managers/PlayerState/NEONPlayerState.Combat.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs:Seconds",
+        "name": "Seconds",
+        "filePath": "Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs:EndOfFrame",
+        "name": "EndOfFrame",
+        "filePath": "Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs:FixedUpdate",
+        "name": "FixedUpdate",
+        "filePath": "Assets/NEON/Code/Framework/Helpers/WaitForHelper.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:Start",
+        "name": "Start",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:InitHearts",
+        "name": "InitHearts",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:StopHurtFlashRoutine",
+        "name": "StopHurtFlashRoutine",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:SetMinionTrans",
+        "name": "SetMinionTrans",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:Do_ChangeSkin",
+        "name": "Do_ChangeSkin",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:LoadSkinPowerUp",
+        "name": "LoadSkinPowerUp",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:AddPowerUps",
+        "name": "AddPowerUps",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:ChangeSkin",
+        "name": "ChangeSkin",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:ResetCurrentSkinSpriteColor",
+        "name": "ResetCurrentSkinSpriteColor",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:ChangeFirearmsAnimator",
+        "name": "ChangeFirearmsAnimator",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.UseSkillBlink.cs:UseSkillBlink",
+        "name": "UseSkillBlink",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.UseSkillBlink.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.UseSkillBlink.cs:BlinkRoutine",
+        "name": "BlinkRoutine",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.UseSkillBlink.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.States.cs:StatesStart",
+        "name": "StatesStart",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.States.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Skills.cs:SetPassiveSkill",
+        "name": "SetPassiveSkill",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Skills.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Skills.cs:LoadCurSkinSkill",
+        "name": "LoadCurSkinSkill",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Skills.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Relife.cs:DeathSequence",
+        "name": "DeathSequence",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Relife.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Other.cs:AdjustColliderPosition",
+        "name": "AdjustColliderPosition",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Other.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Input&Control.cs:ResetInput",
+        "name": "ResetInput",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.Input&Control.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.FixedUpdate.cs:UpdateInteractableRoutine",
+        "name": "UpdateInteractableRoutine",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.FixedUpdate.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.DoOnHit.cs:DoFlashing",
+        "name": "DoFlashing",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.DoOnHit.cs"
+      },
+      {
+        "uid": "Method:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.DanceBuff.cs:InitDanceBuffListeners",
+        "name": "InitDanceBuffListeners",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.DanceBuff.cs"
+      },
+      {
+        "uid": "Struct:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:BattleStateChangedEvent",
+        "name": "BattleStateChangedEvent",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Function:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:ChangeFirearmsAnimatorRoutine",
+        "name": "ChangeFirearmsAnimatorRoutine",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Function:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:StopMove",
+        "name": "StopMove",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "uid": "Function:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:WaitUntilOnGround",
+        "name": "WaitUntilOnGround",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      }
+    ]
+  },
+  "directIncoming": {},
+  "directOutgoing": {
+    "extends": [
+      {
+        "uid": "Property:Assets/NEON/Code/Game/Managers/InputManager.cs:Actor",
+        "name": "Actor",
+        "filePath": "Assets/NEON/Code/Game/Managers/InputManager.cs"
+      }
+    ],
+    "implements": [
+      {
+        "uid": "Interface:Assets/NEON/Code/Game/Abstract/ICanNetSpawn.cs:ICanNetSpawn",
+        "name": "ICanNetSpawn",
+        "filePath": "Assets/NEON/Code/Game/Abstract/ICanNetSpawn.cs"
+      },
+      {
+        "uid": "Interface:Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs:IExternalForceHandler",
+        "name": "IExternalForceHandler",
+        "filePath": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      }
+    ]
+  },
+  "processes": [
+    {
+      "id": "proc_206_onstartclient",
+      "name": "OnStartClient → SetPlayerActor",
+      "step_index": 2,
+      "step_count": 4,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    },
+    {
+      "id": "proc_207_onstartclient",
+      "name": "OnStartClient → SetPlayerActor",
+      "step_index": 2,
+      "step_count": 4,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    },
+    {
+      "id": "proc_97_onstartclient",
+      "name": "OnStartClient → RoundToInt",
+      "step_index": 2,
+      "step_count": 5,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    },
+    {
+      "id": "proc_205_onstartclient",
+      "name": "OnStartClient → ResetInteractableBroadcastCache",
+      "step_index": 2,
+      "step_count": 4,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    },
+    {
+      "id": "proc_203_onstartclient",
+      "name": "OnStartClient → FixedUpdate",
+      "step_index": 2,
+      "step_count": 4,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    },
+    {
+      "id": "proc_204_onstartclient",
+      "name": "OnStartClient → IsHoldingObject",
+      "step_index": 2,
+      "step_count": 4,
+      "evidence_mode": "method_projected",
+      "confidence": "medium"
+    }
+  ]
+}

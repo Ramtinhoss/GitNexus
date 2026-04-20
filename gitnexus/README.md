@@ -2,7 +2,7 @@
 
 **Graph-powered code intelligence for AI agents.** Index any codebase into a knowledge graph, then query it via MCP or CLI.
 
-Works with **Cursor**, **Claude Code**, **Codex**, **Windsurf**, **Cline**, **OpenCode**, and any MCP-compatible tool.
+Works with **Cursor**, **Claude Code**, **Windsurf**, **Cline**, **OpenCode**, and any MCP-compatible tool.
 
 [![npm version](https://img.shields.io/npm/v/gitnexus.svg)](https://www.npmjs.com/package/gitnexus)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
@@ -18,32 +18,18 @@ AI coding tools don't understand your codebase structure. They edit a function w
 ## Quick Start
 
 ```bash
-# Index your repo (run from repo root)
-npx gitnexus analyze
+npm install -g @veewo/gitnexus
+gitnexus setup --cli-spec @veewo/gitnexus
+gitnexus analyze
 ```
 
-That's it. This indexes the codebase, updates `AGENTS.md` / `CLAUDE.md` context files, and (when using project scope) installs repo-local agent skills.
+That's it. This indexes the codebase, installs agent skills, registers Claude Code hooks, and creates `AGENTS.md` / `CLAUDE.md` context files — all in one command.
 
-To configure MCP + skills, run `npx gitnexus setup --agent <claude|opencode|codex>` once (default global mode), or add `--scope project` for project-local mode.
+After `setup`, repository workflows resolve any npx package fallback from `~/.gitnexus/config.json` instead of defaulting to `@latest`.
 
-`gitnexus setup` requires an agent selection:
-- `--agent claude`: configure Claude MCP only
-- `--agent opencode`: configure OpenCode MCP only
-- `--agent codex`: configure Codex MCP only
+To configure MCP for your editor, run `gitnexus setup --cli-spec <packageSpec>` once — or set it up manually below.
 
-It also supports two scopes:
-- `global` (default): writes MCP to the selected agent's global config + installs global skills
-- `project`: writes MCP to the selected agent's project-local config + installs repo-local skills
-
-## Team Deployment and Distribution
-
-For small-team rollout (single stable channel only), follow:
-- [CLI Deployment and Distribution](../docs/cli-release-distribution.md)
-
-Key links:
-- [npm publish workflow](../.github/workflows/publish.yml)
-- [CLI package config](./package.json)
-- [Agent install + acceptance runbook](../INSTALL-GUIDE.md)
+`gitnexus setup` auto-detects your editors and writes the correct global MCP config. You only need to run it once.
 
 ### Editor Support
 
@@ -51,7 +37,6 @@ Key links:
 |--------|-----|--------|---------------------|---------|
 | **Claude Code** | Yes | Yes | Yes (PreToolUse) | **Full** |
 | **Cursor** | Yes | Yes | — | MCP + Skills |
-| **Codex** | Yes | Yes | — | MCP + Skills |
 | **Windsurf** | Yes | — | — | MCP |
 | **OpenCode** | Yes | Yes | — | MCP + Skills |
 
@@ -70,7 +55,7 @@ If you prefer to configure manually instead of using `gitnexus setup`:
 ### Claude Code (full support — MCP + skills + hooks)
 
 ```bash
-claude mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
+claude mcp add gitnexus -- gitnexus mcp
 ```
 
 ### Cursor / Windsurf
@@ -81,8 +66,8 @@ Add to `~/.cursor/mcp.json` (global — works for all projects):
 {
   "mcpServers": {
     "gitnexus": {
-      "command": "npx",
-      "args": ["-y", "@veewo/gitnexus@latest", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     }
   }
 }
@@ -90,23 +75,17 @@ Add to `~/.cursor/mcp.json` (global — works for all projects):
 
 ### OpenCode
 
-Add to `~/.config/opencode/opencode.json`:
+Add to `~/.config/opencode/config.json`:
 
 ```json
 {
   "mcp": {
     "gitnexus": {
-      "type": "local",
-      "command": ["npx", "-y", "@veewo/gitnexus@latest", "mcp"]
+      "command": "gitnexus",
+      "args": ["mcp"]
     }
   }
 }
-```
-
-### Codex
-
-```bash
-codex mcp add gitnexus -- npx -y @veewo/gitnexus@latest mcp
 ```
 
 ## How It Works
@@ -120,7 +99,7 @@ GitNexus builds a complete knowledge graph of your codebase through a multi-phas
 5. **Processes** — Traces execution flows from entry points through call chains
 6. **Search** — Builds hybrid search indexes for fast retrieval
 
-The result is a **KuzuDB graph database** stored locally in `.gitnexus/` with full-text search and semantic embeddings.
+The result is a **LadybugDB graph database** stored locally in `.gitnexus/` with full-text search and semantic embeddings.
 
 ## MCP Tools
 
@@ -160,14 +139,11 @@ Your AI agent gets these tools automatically:
 ## CLI Commands
 
 ```bash
-gitnexus setup --agent claude                     # Global setup for Claude
-gitnexus setup --agent codex                      # Global setup for Codex
-gitnexus setup --scope project --agent opencode   # Project-local setup for OpenCode
+gitnexus setup                    # Configure MCP for your editors (one-time)
 gitnexus analyze [path]           # Index a repository (or update stale index)
 gitnexus analyze --force          # Force full re-index
-gitnexus analyze --embeddings     # Enable semantic embeddings (off by default)
-gitnexus analyze --scope-prefix Assets/NEON/Code --scope-prefix Packages/com.veewo.*  # Scoped multi-directory indexing
-gitnexus analyze --scope-manifest .gitnexus/sync-manifest.txt --repo-alias neonspark-v1-subset  # Scoped indexing + stable repo alias
+gitnexus analyze --embeddings     # Enable embedding generation (slower, better search)
+gitnexus analyze --verbose        # Log skipped files when parsers are unavailable
 gitnexus mcp                     # Start MCP server (stdio) — serves all indexed repos
 gitnexus serve                   # Start local HTTP server (multi-repo) for web UI
 gitnexus list                    # List all indexed repositories
@@ -176,37 +152,7 @@ gitnexus clean                   # Delete index for current repo
 gitnexus clean --all --force     # Delete all indexes
 gitnexus wiki [path]             # Generate LLM-powered docs from knowledge graph
 gitnexus wiki --model <model>    # Wiki with custom LLM model (default: gpt-4o-mini)
-gitnexus unity-bindings <symbol> --target-path <path> [--json]  # Experimental Unity C# <-> prefab/scene/asset cross-reference
-gitnexus context <symbol> --unity-resources on                   # Include graph-native Unity resource data (opt-in)
-gitnexus query <symbol> --unity-resources on                     # Enrich query symbol hits with Unity resource data (opt-in)
-gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile quick --target-path ../benchmarks/fixtures/unity-mini
-gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile full --target-path ../benchmarks/fixtures/unity-mini
 ```
-
-For scoped indexing, `analyze` logs scope overlap dedupe counts and any normalized path collisions to help diagnose multi-directory merge safety.
-
-Unity resource retrieval is opt-in on `query/context` via `unity_resources: off|on|auto` (default: `off`). Use `--unity-resources on` when you need `resourceBindings`, `serializedFields`, `resolvedReferences`, and `unityDiagnostics` in output.
-
-## Unity Benchmark
-
-Run reproducible Unity/C# accuracy and regression checks:
-
-```bash
-gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile quick --target-path ../benchmarks/fixtures/unity-mini
-gitnexus benchmark-unity ../benchmarks/unity-baseline/v1 --profile full --target-path ../benchmarks/fixtures/unity-mini
-```
-
-Reports are written to `.gitnexus/benchmark/benchmark-report.json` and `.gitnexus/benchmark/benchmark-summary.md`.
-
-Hard gates:
-
-| Metric | Threshold |
-|--------|-----------|
-| Query precision | `>= 0.90` |
-| Query recall | `>= 0.85` |
-| Context/impact F1 | `>= 0.80` |
-| Smoke pass rate | `= 1.00` |
-| Analyze time regression | `<= +15%` |
 
 ## Multi-Repo Support
 
@@ -214,7 +160,27 @@ GitNexus supports indexing multiple repositories. Each `gitnexus analyze` regist
 
 ## Supported Languages
 
-TypeScript, JavaScript, Python, Java, C, C++, C#, Go, Rust
+TypeScript, JavaScript, Python, Java, C, C++, C#, Go, Rust, PHP, Kotlin, Swift, Ruby
+
+### Language Feature Matrix
+
+| Language | Imports | Named Bindings | Exports | Heritage | Type Annotations | Constructor Inference | Config | Frameworks | Entry Points |
+|----------|---------|----------------|---------|----------|-----------------|---------------------|--------|------------|-------------|
+| TypeScript | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| JavaScript | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
+| Python | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Java | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| Kotlin | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| C# | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Go | ✓ | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Rust | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+| PHP | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ruby | ✓ | — | ✓ | ✓ | — | ✓ | — | ✓ | ✓ |
+| Swift | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| C | — | — | ✓ | — | ✓ | ✓ | — | ✓ | ✓ |
+| C++ | — | — | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
+
+**Imports** — cross-file import resolution · **Named Bindings** — `import { X as Y }` / re-export tracking · **Exports** — public/exported symbol detection · **Heritage** — class inheritance, interfaces, mixins · **Type Annotations** — explicit type extraction for receiver resolution · **Constructor Inference** — infer receiver type from constructor calls (`self`/`this` resolution included for all languages) · **Config** — language toolchain config parsing (tsconfig, go.mod, etc.) · **Frameworks** — AST-based framework pattern detection · **Entry Points** — entry point scoring heuristics
 
 ## Agent Skills
 
@@ -225,13 +191,7 @@ GitNexus ships with skill files that teach AI agents how to use the tools effect
 - **Impact Analysis** — Analyze blast radius before changes
 - **Refactoring** — Plan safe refactors using dependency mapping
 
-Installation rules:
-
-- `gitnexus setup` controls skill scope:
-  - requires `--agent <claude|opencode|codex>`
-  - default `global`: installs to `~/.agents/skills/gitnexus/`
-  - `--scope project`: installs to `.agents/skills/gitnexus/` in current repo
-- `gitnexus analyze` always updates `AGENTS.md` / `CLAUDE.md`; skill install follows configured setup scope.
+Installed automatically by both `gitnexus analyze` (per-repo) and `gitnexus setup` (global).
 
 ## Requirements
 

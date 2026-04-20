@@ -1,0 +1,337 @@
+{
+  "version": "phase0-2026-03-31",
+  "createdAt": "2026-03-31T06:15:49.274Z",
+  "repos": [
+    "neonspark",
+    "neonnew-core",
+    "unity-mini-phase0"
+  ],
+  "unityFocusedQueries": [
+    "Reload runtime chain",
+    "WeaponPowerUp Equip CurGunGraph",
+    "GunGraph RegisterEvents StartRoutineWithEvents",
+    "OnPlayerShooting OnPlayerStopShooting reload",
+    "ScriptableObject graph node runtime",
+    "MonoBehaviour Awake Start Update OnEnable",
+    "Pickup PickItUp EquipWithEvent",
+    "IGraphEvent Register Unregister"
+  ],
+  "symbolSamples": {
+    "neonspark": [
+      {
+        "name": "Reload",
+        "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "name": "ReloadBase",
+        "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      },
+      {
+        "name": "WeaponPowerUp",
+        "file": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
+      },
+      {
+        "name": "FirearmsPowerUp",
+        "file": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs"
+      },
+      {
+        "name": "GunGraphMB",
+        "file": "Assets/NEON/Code/Game/Core/GunGraphMB.cs"
+      },
+      {
+        "name": "GunGraph",
+        "file": "Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs"
+      },
+      {
+        "name": "GunOutput",
+        "file": "Assets/NEON/Code/Game/Graph/Nodes/GunOutput.cs"
+      },
+      {
+        "name": "Pickup",
+        "file": "Assets/NEON/Code/Game/PowerUps/Pickup.cs"
+      },
+      {
+        "name": "PlayerActor",
+        "file": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "name": "Gun",
+        "file": "Assets/NEON/Code/Game/Core/Gun.cs"
+      }
+    ],
+    "neonnew-core": [
+      {
+        "name": "Reload",
+        "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs"
+      },
+      {
+        "name": "ReloadBase",
+        "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs"
+      },
+      {
+        "name": "WeaponPowerUp",
+        "file": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs"
+      },
+      {
+        "name": "FirearmsPowerUp",
+        "file": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs"
+      },
+      {
+        "name": "GunGraphMB",
+        "file": "Assets/NEON/Code/Game/Core/GunGraphMB.cs"
+      },
+      {
+        "name": "GunGraph",
+        "file": "Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs"
+      },
+      {
+        "name": "GunOutput",
+        "file": "Assets/NEON/Code/Game/Graph/Nodes/GunOutput.cs"
+      },
+      {
+        "name": "Pickup",
+        "file": "Assets/NEON/Code/Game/PowerUps/Pickup.cs"
+      },
+      {
+        "name": "PlayerActor",
+        "file": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs"
+      },
+      {
+        "name": "Gun",
+        "file": "Assets/NEON/Code/Game/Core/Gun.cs"
+      }
+    ],
+    "unity-mini-phase0": [
+      {
+        "name": "Minion",
+        "file": "Assets/Scripts/Minion.cs"
+      },
+      {
+        "name": "MinionFactory",
+        "file": "Assets/Scripts/MinionFactory.cs"
+      },
+      {
+        "name": "MinionsManager",
+        "file": "Assets/Scripts/MinionsManager.cs"
+      }
+    ]
+  },
+  "lifecycleSamplesByRepo": {
+    "neonspark": {
+      "Awake": [
+        {
+          "name": "Awake",
+          "file": "Assets/Scripts/TransformToScreenShaderSync.cs",
+          "line": 21
+        },
+        {
+          "name": "Awake",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 16
+        },
+        {
+          "name": "Awake",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 66
+        }
+      ],
+      "Start": [
+        {
+          "name": "Start",
+          "file": "Assets/zTest/Steam/SteamInventoryTest.cs",
+          "line": 18
+        },
+        {
+          "name": "Start",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 23
+        },
+        {
+          "name": "Start",
+          "file": "Assets/Scripts/TestScipts/BulletReflection.cs",
+          "line": 9
+        }
+      ],
+      "Update": [
+        {
+          "name": "Update",
+          "file": "Assets/Veewo/UnityTests/PlayModeTests/PlayModeBridgeTests.cs",
+          "line": 191
+        },
+        {
+          "name": "Update",
+          "file": "Assets/Scripts/TransformToScreenShaderSync.cs",
+          "line": 43
+        },
+        {
+          "name": "Update",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 42
+        }
+      ],
+      "FixedUpdate": [
+        {
+          "name": "FixedUpdate",
+          "file": "Assets/NEON/Code/Behaviors/UselessScript/JumpOffScreenAttack.cs",
+          "line": 47
+        },
+        {
+          "name": "FixedUpdate",
+          "file": "Assets/NEON/Code/NetworkCode/NeonPlayer/NetPlayer.cs",
+          "line": 991
+        },
+        {
+          "name": "FixedUpdate",
+          "file": "Assets/NEON/Code/Behaviors/Actions/NewNodes/JumpOffScreenAttack2.cs",
+          "line": 61
+        }
+      ],
+      "OnEnable": [
+        {
+          "name": "OnEnable",
+          "file": "Assets/Scripts/TestScipts/LinePosEditor.cs",
+          "line": 18
+        },
+        {
+          "name": "OnEnable",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 136
+        },
+        {
+          "name": "OnEnable",
+          "file": "Assets/Plugins/I2/Localization/Scripts/Utils/SetLanguageDropdown.cs",
+          "line": 10
+        }
+      ],
+      "OnDisable": [
+        {
+          "name": "OnDisable",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 155
+        },
+        {
+          "name": "OnDisable",
+          "file": "Assets/NEON/Code/VeewoUI/UiToolkitUIManager.cs",
+          "line": 113
+        },
+        {
+          "name": "OnDisable",
+          "file": "Assets/NEON/Code/VeewoUI/Tutorial/TutChooseModeScreen.cs",
+          "line": 39
+        }
+      ]
+    },
+    "neonnew-core": {
+      "Awake": [
+        {
+          "name": "Awake",
+          "file": "Assets/Scripts/TransformToScreenShaderSync.cs",
+          "line": 21
+        },
+        {
+          "name": "Awake",
+          "file": "Assets/Scripts/SpriteCameraSync.cs",
+          "line": 24
+        },
+        {
+          "name": "Awake",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 16
+        }
+      ],
+      "Start": [
+        {
+          "name": "Start",
+          "file": "Assets/zTest/Steam/SteamInventoryTest.cs",
+          "line": 18
+        },
+        {
+          "name": "Start",
+          "file": "Assets/Veewo/TestServer/TestServer.cs",
+          "line": 156
+        },
+        {
+          "name": "Start",
+          "file": "Assets/Editor/AutoBuilder.cs",
+          "line": 562
+        }
+      ],
+      "Update": [
+        {
+          "name": "Update",
+          "file": "Assets/Veewo/UnityTests/PlayModeTests/PlayModeBridgeTests.cs",
+          "line": 191
+        },
+        {
+          "name": "Update",
+          "file": "Assets/Scripts/TransformToScreenShaderSync.cs",
+          "line": 43
+        },
+        {
+          "name": "Update",
+          "file": "Assets/Scripts/TestScipts/SpiderWire.cs",
+          "line": 42
+        }
+      ],
+      "FixedUpdate": [
+        {
+          "name": "FixedUpdate",
+          "file": "Assets/Plugins/NiceTouch/Demos/MovementDemo/Scripts/MMControlsMovementDemoPlayer.cs",
+          "line": 65
+        },
+        {
+          "name": "FixedUpdate",
+          "file": "Assets/Plugins/unity-ui-extensions/Scripts/ToolTips/ToolTip.cs",
+          "line": 98
+        },
+        {
+          "name": "FixedUpdate",
+          "file": "Assets/Plugins/Mirror/Runtime/NetworkLoop.cs",
+          "line": 18
+        }
+      ],
+      "OnEnable": [
+        {
+          "name": "OnEnable",
+          "file": "Assets/Scripts/TestScipts/LinePosEditor.cs",
+          "line": 18
+        },
+        {
+          "name": "OnEnable",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 136
+        },
+        {
+          "name": "OnEnable",
+          "file": "Assets/Veewo/TestServer/Editor/AutoTestTools.cs",
+          "line": 119
+        }
+      ],
+      "OnDisable": [
+        {
+          "name": "OnDisable",
+          "file": "Assets/Scripts/Steamworks.NET/SteamManager.cs",
+          "line": 155
+        },
+        {
+          "name": "OnDisable",
+          "file": "Assets/Veewo/TestServer/InputTrace/Editor/InputRecorderWindow.cs",
+          "line": 309
+        },
+        {
+          "name": "OnDisable",
+          "file": "Assets/Veewo/TestServer/Editor/AutoTestTools.cs",
+          "line": 128
+        }
+      ]
+    },
+    "unity-mini-phase0": {
+      "Awake": [],
+      "Start": [],
+      "Update": [],
+      "FixedUpdate": [],
+      "OnEnable": [],
+      "OnDisable": []
+    }
+  }
+}

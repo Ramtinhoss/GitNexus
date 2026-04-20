@@ -9,18 +9,29 @@ import { execFileSync } from 'child_process';
 import v8 from 'v8';
 import cliProgress from 'cli-progress';
 import { runPipelineFromRepo } from '../core/ingestion/pipeline.js';
-import { initKuzu, loadGraphToKuzu, getKuzuStats, executeQuery, executeWithReusedStatement, closeKuzu, createFTSIndex, loadCachedEmbeddings } from '../core/kuzu/kuzu-adapter.js';
+import { initLbug, loadGraphToLbug, getLbugStats, executeQuery, executeWithReusedStatement, closeLbug, createFTSIndex, loadCachedEmbeddings } from '../core/lbug/lbug-adapter.js';
 // Embedding imports are lazy (dynamic import) so onnxruntime-node is never
 // loaded when embeddings are not requested. This avoids crashes on Node
 // versions whose ABI is not yet supported by the native binary (#89).
 // disposeEmbedder intentionally not called — ONNX Runtime segfaults on cleanup (see #38)
-import { getStoragePaths, saveMeta, loadMeta, addToGitignore, registerRepo, getGlobalRegistryPath, loadCLIConfig } from '../storage/repo-manager.js';
+import { getStoragePaths, saveMeta, loadMeta, addToGitignore, registerRepo, getGlobalRegistryPath, loadCLIConfig, cleanupOldKuzuFiles, type RepoMeta } from '../storage/repo-manager.js';
 import { getCurrentCommit, isGitRepo, getGitRoot } from '../storage/git.js';
 import { generateAIContextFiles } from './ai-context.js';
+import { generateSkillFiles, type GeneratedSkillInfo } from './skill-gen.js';
 import fs from 'fs/promises';
-import { registerClaudeHook } from './claude-hooks.js';
-import { normalizeRepoAlias, parseExtensionList, resolveAnalyzeScopeRules } from './analyze-options.js';
-import { formatFallbackSummary, formatUnityDiagnosticsSummary } from './analyze-summary.js';
+import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
+import {
+  formatCSharpPreprocDiagnosticsSummary,
+  formatFallbackSummary,
+  formatUnityDiagnosticsSummary,
+  formatUnityRuleBindingSummary,
+  resolveFallbackStats,
+} from './analyze-summary.js';
+import { resolveChildProcessExit } from './exit-code.js';
+import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
+import { enforceSyncManifestConsistency, resolveScopeManifestForAnalyze, type SyncManifestPolicy } from './sync-manifest.js';
+import type { PipelineResult } from '../types/pipeline.js';
+import type { UnityParitySeed } from '../core/ingestion/unity-parity-seed.js';
 
 const HEAP_MB = 8192;
 const HEAP_FLAG = `--max-old-space-size=${HEAP_MB}`;
@@ -39,7 +50,11 @@ function ensureHeap(): boolean {
       env: { ...process.env, NODE_OPTIONS: `${nodeOpts} ${HEAP_FLAG}`.trim() },
     });
   } catch (e: any) {
-    process.exitCode = e.status ?? 1;
+    const resolved = resolveChildProcessExit(e, 1);
+    if (resolved.bySignal && resolved.signal) {
+      console.error(`  analyze subprocess terminated by signal ${resolved.signal}`);
+    }
+    process.exitCode = resolved.code;
   }
   return true;
 }
@@ -49,8 +64,13 @@ export interface AnalyzeOptions {
   embeddings?: boolean;
   extensions?: string;
   repoAlias?: string;
+  csharpDefineCsproj?: string;
   scopeManifest?: string;
   scopePrefix?: string[];
+  syncManifestPolicy?: SyncManifestPolicy;
+  reuseOptions?: boolean;
+  skills?: boolean;
+  verbose?: boolean;
 }
 
 /** Threshold: auto-skip embeddings for repos with more nodes than this */
@@ -66,7 +86,7 @@ const PHASE_LABELS: Record<string, string> = {
   communities: 'Detecting communities',
   processes: 'Detecting processes',
   complete: 'Pipeline complete',
-  kuzu: 'Loading into KuzuDB',
+  lbug: 'Loading into LadybugDB',
   fts: 'Creating search indexes',
   embeddings: 'Generating embeddings',
   done: 'Done',
@@ -78,23 +98,11 @@ export const analyzeCommand = async (
 ) => {
   if (ensureHeap()) return;
 
-  console.log('\n  GitNexus Analyzer\n');
-
-  let includeExtensions: string[] = [];
-  let scopeRules: string[] = [];
-  let repoAlias: string | undefined;
-  try {
-    includeExtensions = parseExtensionList(options?.extensions);
-    scopeRules = await resolveAnalyzeScopeRules({
-      scopeManifest: options?.scopeManifest,
-      scopePrefix: options?.scopePrefix,
-    });
-    repoAlias = normalizeRepoAlias(options?.repoAlias);
-  } catch (error: any) {
-    console.log(`  ${error?.message || String(error)}\n`);
-    process.exitCode = 1;
-    return;
+  if (options?.verbose) {
+    process.env.GITNEXUS_VERBOSE = '1';
   }
+
+  console.log('\n  GitNexus Analyzer\n');
 
   let repoPath: string;
   if (inputPath) {
@@ -115,20 +123,97 @@ export const analyzeCommand = async (
     return;
   }
 
-  const { storagePath, kuzuPath } = getStoragePaths(repoPath);
+  const { storagePath, lbugPath } = getStoragePaths(repoPath);
+
+  // Clean up stale KuzuDB files from before the LadybugDB migration.
+  // If kuzu existed but lbug doesn't, we're doing a migration re-index — say so.
+  const kuzuResult = await cleanupOldKuzuFiles(storagePath);
+  if (kuzuResult.found && kuzuResult.needsReindex) {
+    console.log('  Migrating from KuzuDB to LadybugDB — rebuilding index...\n');
+  }
+
   const currentCommit = getCurrentCommit(repoPath);
   const existingMeta = await loadMeta(storagePath);
+  let hasLbugIndex = false;
+  try {
+    await fs.stat(lbugPath);
+    hasLbugIndex = true;
+  } catch {
+    hasLbugIndex = false;
+  }
 
-  if (
-    existingMeta &&
-    !options?.force &&
-    existingMeta.lastCommit === currentCommit &&
-    includeExtensions.length === 0 &&
-    scopeRules.length === 0 &&
-    !repoAlias
-  ) {
-    console.log('  Already up to date\n');
+  let includeExtensions: string[] = [];
+  let scopeRules: string[] = [];
+  let repoAlias: string | undefined;
+  let embeddingsEnabled = false;
+  try {
+    const scopeManifest = await resolveScopeManifestForAnalyze(repoPath, {
+      scopeManifest: options?.scopeManifest,
+      scopePrefix: options?.scopePrefix,
+    });
+
+    await enforceSyncManifestConsistency({
+      manifestPath: scopeManifest,
+      extensions: options?.extensions,
+      repoAlias: options?.repoAlias,
+      embeddings: options?.embeddings,
+      policy: options?.syncManifestPolicy,
+      stdinIsTTY: Boolean(process.stdin.isTTY),
+    });
+
+    const effectiveOptions = await resolveEffectiveAnalyzeOptions({
+      extensions: options?.extensions,
+      scopeManifest,
+      scopePrefix: options?.scopePrefix,
+      repoAlias: options?.repoAlias,
+      embeddings: options?.embeddings,
+      reuseOptions: options?.reuseOptions,
+    }, existingMeta?.analyzeOptions);
+    includeExtensions = effectiveOptions.includeExtensions;
+    scopeRules = effectiveOptions.scopeRules;
+    repoAlias = effectiveOptions.repoAlias;
+    embeddingsEnabled = effectiveOptions.embeddings;
+  } catch (error: any) {
+    console.log(`  ${error?.message || String(error)}\n`);
+    process.exitCode = 1;
     return;
+  }
+
+  if (existingMeta && !hasLbugIndex && !options?.force) {
+    console.log('  Existing metadata found, but LadybugDB index file is missing — rebuilding index...\n');
+  }
+
+  if (existingMeta && hasLbugIndex && !options?.force && existingMeta.lastCommit === currentCommit && !options?.skills) {
+    const hasScopePrefixInput = Array.isArray(options?.scopePrefix)
+      ? options.scopePrefix.length > 0
+      : Boolean(options?.scopePrefix);
+    const hasCliOverrides =
+      options?.extensions !== undefined ||
+      Boolean(options?.scopeManifest) ||
+      hasScopePrefixInput ||
+      options?.repoAlias !== undefined ||
+      options?.embeddings !== undefined ||
+      options?.reuseOptions === false;
+
+    if (!hasCliOverrides) {
+      console.log('  Already up to date\n');
+      return;
+    }
+
+    if (
+      options?.reuseOptions !== false &&
+      includeExtensions.length === 0 &&
+      scopeRules.length === 0 &&
+      !repoAlias &&
+      !embeddingsEnabled
+    ) {
+      console.log('  Already up to date\n');
+      return;
+    }
+  }
+
+  if (process.env.GITNEXUS_NO_GITIGNORE) {
+    console.log('  GITNEXUS_NO_GITIGNORE is set — skipping .gitignore (still reading .gitnexusignore)\n');
   }
 
   // Single progress bar for entire pipeline
@@ -152,7 +237,7 @@ export const analyzeCommand = async (
     aborted = true;
     bar.stop();
     console.log('\n  Interrupted — cleaning up...');
-    closeKuzu().catch(() => {}).finally(() => process.exit(130));
+    closeLbug().catch(() => {}).finally(() => process.exit(130));
   };
   process.on('SIGINT', sigintHandler);
 
@@ -199,22 +284,27 @@ export const analyzeCommand = async (
   let cachedEmbeddingNodeIds = new Set<string>();
   let cachedEmbeddings: Array<{ nodeId: string; embedding: number[] }> = [];
 
-  if (options?.embeddings && existingMeta && !options?.force) {
+  if (embeddingsEnabled && existingMeta && !options?.force) {
     try {
       updateBar(0, 'Caching embeddings...');
-      await initKuzu(kuzuPath);
+      await initLbug(lbugPath);
       const cached = await loadCachedEmbeddings();
       cachedEmbeddingNodeIds = cached.embeddingNodeIds;
       cachedEmbeddings = cached.embeddings;
-      await closeKuzu();
+      await closeLbug();
     } catch {
-      try { await closeKuzu(); } catch {}
+      try { await closeLbug(); } catch {}
     }
   }
 
   // ── Phase 1: Full Pipeline (0–60%) ─────────────────────────────────
-  let pipelineResult;
+  let pipelineResult: PipelineResult | undefined;
   try {
+    const pipelineRunOptions = buildPipelineRunOptionsForAnalyze(
+      { includeExtensions, scopeRules },
+      options,
+    );
+
     pipelineResult = await runPipelineFromRepo(
       repoPath,
       (progress) => {
@@ -222,7 +312,7 @@ export const analyzeCommand = async (
         const scaled = Math.round(progress.percent * 0.6);
         updateBar(scaled, phaseLabel);
       },
-      { includeExtensions, scopeRules },
+      pipelineRunOptions,
     );
   } catch (error: any) {
     clearInterval(elapsedTimer);
@@ -236,25 +326,28 @@ export const analyzeCommand = async (
     return;
   }
 
-  // ── Phase 2: KuzuDB (60–85%) ──────────────────────────────────────
-  updateBar(60, 'Loading into KuzuDB...');
+  // ── Phase 2: LadybugDB (60–85%) ──────────────────────────────────────
+  updateBar(60, 'Loading into LadybugDB...');
 
-  await closeKuzu();
-  const kuzuFiles = [kuzuPath, `${kuzuPath}.wal`, `${kuzuPath}.lock`];
-  for (const f of kuzuFiles) {
+  await closeLbug();
+  const lbugFiles = [lbugPath, `${lbugPath}.wal`, `${lbugPath}.lock`];
+  for (const f of lbugFiles) {
     try { await fs.rm(f, { recursive: true, force: true }); } catch {}
   }
 
-  const t0Kuzu = Date.now();
-  await initKuzu(kuzuPath);
-  let kuzuMsgCount = 0;
-  const kuzuResult = await loadGraphToKuzu(pipelineResult.graph, pipelineResult.repoPath, storagePath, (msg) => {
-    kuzuMsgCount++;
-    const progress = Math.min(84, 60 + Math.round((kuzuMsgCount / (kuzuMsgCount + 10)) * 24));
+  const t0Lbug = Date.now();
+  await initLbug(lbugPath);
+  let lbugMsgCount = 0;
+  const lbugResult = await loadGraphToLbug(pipelineResult.graph, pipelineResult.repoPath, storagePath, (msg) => {
+    lbugMsgCount++;
+    const progress = Math.min(84, 60 + Math.round((lbugMsgCount / (lbugMsgCount + 10)) * 24));
     updateBar(progress, msg);
   });
-  const kuzuTime = ((Date.now() - t0Kuzu) / 1000).toFixed(1);
-  const kuzuWarnings = kuzuResult.warnings;
+  const pipelineForSkills = pipelineResult;
+  const pipelineRuntime = toPipelineRuntimeSummary(pipelineResult);
+  pipelineResult = undefined;
+  const lbugTime = ((Date.now() - t0Lbug) / 1000).toFixed(1);
+  const lbugWarnings = lbugResult.warnings;
 
   // ── Phase 3: FTS (85–90%) ─────────────────────────────────────────
   updateBar(85, 'Creating search indexes...');
@@ -288,12 +381,12 @@ export const analyzeCommand = async (
   }
 
   // ── Phase 4: Embeddings (90–98%) ──────────────────────────────────
-  const stats = await getKuzuStats();
+  const stats = await getLbugStats();
   let embeddingTime = '0.0';
   let embeddingSkipped = true;
   let embeddingSkipReason = 'off (use --embeddings to enable)';
 
-  if (options?.embeddings) {
+  if (embeddingsEnabled) {
     if (stats.nodes > EMBEDDING_NODE_LIMIT) {
       embeddingSkipReason = `skipped (${stats.nodes.toLocaleString()} nodes > ${EMBEDDING_NODE_LIMIT.toLocaleString()} limit)`;
     } else {
@@ -322,47 +415,69 @@ export const analyzeCommand = async (
   // ── Phase 5: Finalize (98–100%) ───────────────────────────────────
   updateBar(98, 'Saving metadata...');
 
-  const meta = {
+  // Count embeddings in the index (cached + newly generated)
+  let embeddingCount = 0;
+  try {
+    const embResult = await executeQuery(`MATCH (e:CodeEmbedding) RETURN count(e) AS cnt`);
+    embeddingCount = embResult?.[0]?.cnt ?? 0;
+  } catch { /* table may not exist if embeddings never ran */ }
+
+  const meta: RepoMeta = {
     repoPath,
     lastCommit: currentCommit,
     indexedAt: new Date().toISOString(),
+    analyzeOptions: {
+      includeExtensions,
+      scopeRules,
+      repoAlias,
+      embeddings: embeddingsEnabled,
+    },
     stats: {
-      files: pipelineResult.totalFileCount,
+      files: pipelineRuntime.totalFileCount,
       nodes: stats.nodes,
       edges: stats.edges,
-      communities: pipelineResult.communityResult?.stats.totalCommunities,
-      processes: pipelineResult.processResult?.stats.totalProcesses,
+      communities: pipelineRuntime.communityResult?.stats.totalCommunities,
+      processes: pipelineRuntime.processResult?.stats.totalProcesses,
+      embeddings: embeddingCount,
     },
   };
-  await saveMeta(storagePath, meta);
   const registeredRepo = await registerRepo(repoPath, meta, { repoAlias });
+  meta.repoId = registeredRepo.name;
+  await saveMeta(storagePath, meta);
+  await persistUnityParitySeed(storagePath, pipelineRuntime.unityResult?.paritySeed);
   await addToGitignore(repoPath);
-
-  const hookResult = await registerClaudeHook();
 
   const projectName = path.basename(repoPath);
   let aggregatedClusterCount = 0;
-  if (pipelineResult.communityResult?.communities) {
+  if (pipelineRuntime.communityResult?.communities) {
     const groups = new Map<string, number>();
-    for (const c of pipelineResult.communityResult.communities) {
+    for (const c of pipelineRuntime.communityResult.communities) {
       const label = c.heuristicLabel || c.label || 'Unknown';
       groups.set(label, (groups.get(label) || 0) + c.symbolCount);
     }
     aggregatedClusterCount = Array.from(groups.values()).filter(count => count >= 5).length;
   }
 
+  let generatedSkills: GeneratedSkillInfo[] = [];
+  if (options?.skills && pipelineForSkills.communityResult) {
+    updateBar(99, 'Generating skill files...');
+    const skillResult = await generateSkillFiles(repoPath, projectName, pipelineForSkills);
+    generatedSkills = skillResult.skills;
+  }
+
+  const cliConfig = await loadCLIConfig();
   const aiContext = await generateAIContextFiles(repoPath, storagePath, projectName, {
-    files: pipelineResult.totalFileCount,
+    files: pipelineRuntime.totalFileCount,
     nodes: stats.nodes,
     edges: stats.edges,
-    communities: pipelineResult.communityResult?.stats.totalCommunities,
+    communities: pipelineRuntime.communityResult?.stats.totalCommunities,
     clusters: aggregatedClusterCount,
-    processes: pipelineResult.processResult?.stats.totalProcesses,
+    processes: pipelineRuntime.processResult?.stats.totalProcesses,
   }, {
-    skillScope: ((await loadCLIConfig()).setupScope === 'global') ? 'global' : 'project',
-  });
+    skillScope: (cliConfig.setupScope === 'global') ? 'global' : 'project',
+  }, generatedSkills);
 
-  await closeKuzu();
+  await closeLbug();
   // Note: we intentionally do NOT call disposeEmbedder() here.
   // ONNX Runtime's native cleanup segfaults on macOS and some Linux configs.
   // Since the process exits immediately after, Node.js reclaims everything.
@@ -385,9 +500,9 @@ export const analyzeCommand = async (
   console.log(`  Repo Name: ${registeredRepo.name}`);
   console.log(`  Repo Alias: ${registeredRepo.alias || 'none'}`);
   console.log(`  Scope Rules: ${scopeRules.length}`);
-  console.log(`  Scoped Files: ${pipelineResult.totalFileCount}`);
-  if (scopeRules.length > 0 && pipelineResult.scopeDiagnostics) {
-    const diagnostics = pipelineResult.scopeDiagnostics;
+  console.log(`  Scoped Files: ${pipelineRuntime.totalFileCount}`);
+  if (scopeRules.length > 0 && pipelineRuntime.scopeDiagnostics) {
+    const diagnostics = pipelineRuntime.scopeDiagnostics;
     console.log(`  Scope Overlap Files: ${diagnostics.overlapFiles} (${diagnostics.dedupedMatchCount} duplicate matches removed)`);
     if (diagnostics.normalizedCollisions.length === 0) {
       console.log('  Scope Collisions: none');
@@ -401,12 +516,20 @@ export const analyzeCommand = async (
       }
     }
   }
-  const unitySummaryLines = formatUnityDiagnosticsSummary(pipelineResult.unityResult?.diagnostics);
+  const unitySummaryLines = formatUnityDiagnosticsSummary(pipelineRuntime.unityResult?.diagnostics);
   for (const line of unitySummaryLines) {
     console.log(`  ${line}`);
   }
-  console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineResult.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineResult.processResult?.stats.totalProcesses || 0} flows`);
-  console.log(`  KuzuDB ${kuzuTime}s | FTS ${ftsTime}s | Embeddings ${embeddingSkipped ? embeddingSkipReason : embeddingTime + 's'}`);
+  const unityRuleBindingSummaryLines = formatUnityRuleBindingSummary(pipelineRuntime.unityRuleBindingResult);
+  for (const line of unityRuleBindingSummaryLines) {
+    console.log(`  ${line}`);
+  }
+  const csharpPreprocSummaryLines = formatCSharpPreprocDiagnosticsSummary(pipelineRuntime.csharpPreprocDiagnostics);
+  for (const line of csharpPreprocSummaryLines) {
+    console.log(`  ${line}`);
+  }
+  console.log(`  ${stats.nodes.toLocaleString()} nodes | ${stats.edges.toLocaleString()} edges | ${pipelineRuntime.communityResult?.stats.totalCommunities || 0} clusters | ${pipelineRuntime.processResult?.stats.totalProcesses || 0} flows`);
+  console.log(`  LadybugDB ${lbugTime}s | FTS ${ftsTime}s | Embeddings ${embeddingSkipped ? embeddingSkipReason : embeddingTime + 's'}`);
   if (includeExtensions.length > 0) {
     console.log(`  File filter: ${includeExtensions.join(', ')}`);
   }
@@ -416,17 +539,15 @@ export const analyzeCommand = async (
     console.log(`  Context: ${aiContext.files.join(', ')}`);
   }
 
-  if (hookResult.registered) {
-    console.log(`  Hooks: ${hookResult.message}`);
-  }
-
-  // Show fallback summary with pair-level preview and explicit outcomes
-  if (kuzuWarnings.length > 0) {
-    const fallbackLines = formatFallbackSummary(kuzuWarnings, kuzuResult.fallbackStats);
+  if (lbugWarnings.length > 0) {
+    const fallbackStats = resolveFallbackStats(lbugWarnings, lbugResult.fallbackInsertStats);
+    const fallbackLines = formatFallbackSummary(
+      lbugWarnings,
+      fallbackStats,
+    );
     for (const line of fallbackLines) {
       console.log(`  ${line}`);
     }
-    console.log('  Note: schema pair coverage should be updated when fallback failures are non-zero');
   }
 
   try {
@@ -437,10 +558,39 @@ export const analyzeCommand = async (
 
   console.log('');
 
-  // ONNX Runtime registers native atexit hooks that segfault during process
-  // shutdown on macOS (#38) and some Linux configs (#40). Force-exit to
-  // bypass them when embeddings were loaded.
-  if (!embeddingSkipped) {
-    process.exit(0);
-  }
+  // LadybugDB's native module holds open handles that prevent Node from exiting.
+  // ONNX Runtime also registers native atexit hooks that segfault on some
+  // platforms (#38, #40). Force-exit to ensure clean termination.
+  process.exit(0);
 };
+
+export function buildPipelineRunOptionsForAnalyze(
+  resolvedOptions: { includeExtensions: string[]; scopeRules: string[] },
+  options?: AnalyzeOptions,
+): {
+  includeExtensions: string[];
+  scopeRules: string[];
+  csharpDefineCsproj?: string;
+} {
+  return {
+    includeExtensions: resolvedOptions.includeExtensions,
+    scopeRules: resolvedOptions.scopeRules,
+    ...(options?.csharpDefineCsproj
+      ? { csharpDefineCsproj: options.csharpDefineCsproj }
+      : {}),
+  };
+}
+
+async function persistUnityParitySeed(
+  storagePath: string,
+  seed: UnityParitySeed | undefined,
+): Promise<void> {
+  const seedPath = path.join(storagePath, 'unity-parity-seed.json');
+  if (!seed) {
+    try {
+      await fs.rm(seedPath, { force: true });
+    } catch {}
+    return;
+  }
+  await fs.writeFile(seedPath, JSON.stringify(seed), 'utf-8');
+}

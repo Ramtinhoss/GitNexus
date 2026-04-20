@@ -1,0 +1,75 @@
+import type { AgentContextToolStep } from '../agent-context/types.js';
+
+export const AGENT_SAFE_CASE_KEYS = ['weapon_powerup', 'reload'] as const;
+export type AgentSafeCaseKey = (typeof AGENT_SAFE_CASE_KEYS)[number];
+
+export const AGENT_SAFE_TRACK_KEYS = [
+  'workflow_replay_full',
+  'workflow_replay_slim',
+  'same_script_full',
+  'same_script_slim',
+  'subagent_live',
+] as const;
+export type AgentSafeTrackKey = (typeof AGENT_SAFE_TRACK_KEYS)[number];
+
+export interface SemanticTuple {
+  resource_anchor: string;
+  symbol_anchor: string;
+  proof_edge?: string;
+  proof_edges?: string[];
+  closure_status: 'not_verified_full' | 'verified_partial' | 'verified_full' | 'failed';
+}
+
+export interface SemanticDriftMetrics {
+  anchor_top1_pass: boolean;
+  recommended_follow_up_hit: boolean;
+  post_narrowing_anchor_pass: boolean;
+  post_narrowing_follow_up_hit: boolean;
+  ambiguity_detour_count: number;
+  placeholder_leak_detected: boolean;
+  heuristic_top_summary_detected: boolean;
+  live_tool_evidence_pass: boolean;
+  freeze_ready: boolean;
+  guid_invariance_pass: boolean;
+  tier_envelope: {
+    facts_present: boolean;
+    closure_present: boolean;
+    clues_present: boolean;
+    semantic_order_pass: boolean;
+    summary_source: string;
+  };
+}
+
+export interface AgentSafeLiveTask {
+  objective: string;
+  symbol_seed: string;
+  resource_seed: string;
+}
+
+export interface AgentSafeBenchmarkCase {
+  label: string;
+  start_query: string;
+  retry_query: string;
+  start_query_input?: Record<string, unknown>;
+  retry_query_input?: Record<string, unknown>;
+  proof_contexts: string[];
+  proof_cypher: string;
+  tool_plan: AgentContextToolStep[];
+  live_task: AgentSafeLiveTask;
+  semantic_tuple: SemanticTuple;
+}
+
+export interface AgentSafeBenchmarkThresholds {
+  workflowReplay: {
+    maxSteps: number;
+  };
+  tokenReduction: {
+    weapon_powerup: number;
+    reload: number;
+  };
+}
+
+export interface AgentSafeBenchmarkSuite {
+  thresholds: AgentSafeBenchmarkThresholds;
+  cases: Record<AgentSafeCaseKey, AgentSafeBenchmarkCase>;
+}

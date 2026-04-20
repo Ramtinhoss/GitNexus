@@ -9,6 +9,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { type GeneratedSkillInfo } from './skill-gen.js';
 
 // ESM equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -29,31 +30,44 @@ const GITNEXUS_END_MARKER = '<!-- gitnexus:end -->';
 
 /**
  * Generate the full GitNexus context content.
- * 
- * Design principles (learned from real agent behavior):
- * - AGENTS.md is the ROUTER — it tells the agent WHICH skill to read
- * - Skills contain the actual workflows — AGENTS.md does NOT duplicate them
- * - Bold **IMPORTANT** block + "Skills — Read First" heading — agents skip soft suggestions
- * - One-line quick start (read context resource) gives agents an entry point
- * - Tools/Resources sections are labeled "Reference" — agents treat them as lookup, not workflow
+ *
+ * Design principles (learned from real agent behavior and industry research):
+ * - Inline critical workflows — skills are skipped 56% of the time (Vercel eval data)
+ * - Use RFC 2119 language (MUST, NEVER, ALWAYS) — models follow imperative rules
+ * - Three-tier boundaries (Always/When/Never) — proven to change model behavior
+ * - Keep under 120 lines — adherence degrades past 150 lines
+ * - Exact tool commands with parameters — vague directives get ignored
+ * - Self-review checklist — forces model to verify its own work
  */
-function generateGitNexusContent(projectName: string, stats: RepoStats, skillScope: SkillScope): string {
+function generateGitNexusContent(
+  projectName: string,
+  stats: RepoStats,
+  skillScope: SkillScope,
+  generatedSkills?: GeneratedSkillInfo[],
+): string {
   const skillRoot = skillScope === 'global'
     ? '~/.agents/skills/gitnexus'
     : '.agents/skills/gitnexus';
+  const generatedRows = (generatedSkills && generatedSkills.length > 0)
+    ? `\n${generatedSkills.map((s) =>
+      `| Work in the ${s.label} area (${s.symbolCount} symbols) | \`.claude/skills/generated/${s.name}/SKILL.md\` |`,
+    ).join('\n')}`
+    : '';
 
   return `${GITNEXUS_START_MARKER}
 # GitNexus MCP
-
-This project is indexed by GitNexus as **${projectName}** (${stats.nodes || 0} symbols, ${stats.edges || 0} relationships, ${stats.processes || 0} execution flows).
 
 ## Always Start Here
 
 1. **Read \`gitnexus://repo/{name}/context\`** — codebase overview + check index freshness
 2. **Match your task to a skill below** and **read that skill file**
 3. **Follow the skill's workflow and checklist**
+4. **Follow config/state file rules:** \`docs/gitnexus-config-files.md\`
+5. **If user asks to release/publish a specific version and this repo has \`DISTRIBUTION.md\`, execute that workflow in full-release mode by default** (unless user explicitly asks \`prepare-only\` or \`publish-only\`).
 
-> If step 1 warns the index is stale, run \`npx gitnexus analyze\` in the terminal first.
+> If step 1 warns the index is stale, ask user whether to rebuild index via \`gitnexus analyze\` when local CLI exists; otherwise resolve the pinned npx package spec from \`~/.gitnexus/config.json\` (\`cliPackageSpec\` first, then \`cliVersion\`) and run \`npx -y <resolved-spec> analyze\` (it reuses previous analyze scope/options by default; add \`--no-reuse-options\` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
+> \`query/context\` slim guidance is narrowing-first: inspect \`decision.recommended_follow_up\`, \`missing_proof_targets\`, and \`suggested_context_targets\` before upgrading to \`response_profile=full\`.
+> Query-time runtime closure is graph-only and does not require \`verification_rules\` / \`trigger_tokens\`; if you need hydration diagnostics such as \`needsParityRetry\` or strict fallback state, rerun with \`response_profile=full\` and then use parity before closure claims.
 
 ## Skills
 
@@ -65,6 +79,7 @@ This project is indexed by GitNexus as **${projectName}** (${stats.nodes || 0} s
 | Rename / extract / split / refactor | \`${skillRoot}/gitnexus-refactoring/SKILL.md\` |
 | Tools, resources, schema reference | \`${skillRoot}/gitnexus-guide/SKILL.md\` |
 | Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |
+| Create Unity analyze_rules interactively | \`${skillRoot}/gitnexus-unity-rule-gen/SKILL.md\` |${generatedRows}
 
 ${GITNEXUS_END_MARKER}`;
 }
@@ -105,7 +120,7 @@ async function upsertGitNexusSection(
   const startIdx = existingContent.indexOf(GITNEXUS_START_MARKER);
   const endIdx = existingContent.indexOf(GITNEXUS_END_MARKER);
 
-  if (startIdx !== -1 && endIdx !== -1) {
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
     // Replace existing section
     const before = existingContent.substring(0, startIdx);
     const after = existingContent.substring(endIdx + GITNEXUS_END_MARKER.length);
@@ -127,6 +142,7 @@ async function upsertGitNexusSection(
 async function installSkills(repoPath: string): Promise<string[]> {
   const skillsDir = path.join(repoPath, '.agents', 'skills', 'gitnexus');
   const installedSkills: string[] = [];
+  const packageSkillsRoot = path.join(__dirname, '..', '..', 'skills');
 
   // Skill definitions bundled with the package
   const skills = [
@@ -154,6 +170,10 @@ async function installSkills(repoPath: string): Promise<string[]> {
       name: 'gitnexus-cli',
       description: 'Use when the user needs to run GitNexus CLI commands like analyze/index a repo, check status, clean the index, generate a wiki, or list indexed repos. Examples: "Index this repo", "Reanalyze the codebase", "Generate a wiki"',
     },
+    {
+      name: 'gitnexus-unity-rule-gen',
+      description: 'Use when the user wants to create Unity analyze_rules for a Unity project repo — interactively collecting chain clues, exploring the graph, generating rule YAML, compiling, and verifying. Examples: "Create unity rules", "Generate analyze rules", "Add resource binding rules for this Unity project"',
+    },
   ];
 
   for (const skill of skills) {
@@ -165,7 +185,7 @@ async function installSkills(repoPath: string): Promise<string[]> {
       await fs.mkdir(skillDir, { recursive: true });
 
       // Try to read from package skills directory
-      const packageSkillPath = path.join(__dirname, '..', '..', 'skills', `${skill.name}.md`);
+      const packageSkillPath = path.join(packageSkillsRoot, `${skill.name}.md`);
       let skillContent: string;
 
       try {
@@ -193,7 +213,30 @@ Use GitNexus tools to accomplish this task.
     }
   }
 
+  // Shared workflow contracts (if bundled).
+  const packageSharedDir = path.join(packageSkillsRoot, '_shared');
+  try {
+    await fs.access(packageSharedDir);
+    await copyDirRecursive(packageSharedDir, path.join(skillsDir, '_shared'));
+  } catch {
+    // Optional: older bundles may not include shared docs.
+  }
+
   return installedSkills;
+}
+
+async function copyDirRecursive(src: string, dest: string): Promise<void> {
+  await fs.mkdir(dest, { recursive: true });
+  const entries = await fs.readdir(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      await copyDirRecursive(srcPath, destPath);
+    } else {
+      await fs.copyFile(srcPath, destPath);
+    }
+  }
 }
 
 /**
@@ -207,9 +250,15 @@ export async function generateAIContextFiles(
   options?: {
     skillScope?: SkillScope;
   },
+  generatedSkills?: GeneratedSkillInfo[]
 ): Promise<{ files: string[] }> {
   const skillScope: SkillScope = options?.skillScope === 'global' ? 'global' : 'project';
-  const content = generateGitNexusContent(projectName, stats, skillScope);
+  const content = generateGitNexusContent(
+    projectName,
+    stats,
+    skillScope,
+    generatedSkills,
+  );
   const createdFiles: string[] = [];
 
   // Create AGENTS.md (standard for Cursor, Windsurf, OpenCode, Codex, Cline, etc.)

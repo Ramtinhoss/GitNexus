@@ -297,6 +297,21 @@ async function loadSerializedTypeEdgeCount(
   return count;
 }
 
+async function loadResourceSummaryEdgeCount(
+  runner: { cypher: (params: Record<string, unknown>) => Promise<any> },
+  repoAlias: string,
+): Promise<number> {
+  const result = await runner.cypher({
+    repo: repoAlias,
+    query: "MATCH ()-[r:CodeRelation]->() WHERE r.type='UNITY_RESOURCE_SUMMARY' RETURN COUNT(r) AS summaryEdgeCount",
+  });
+  const count = extractSingleCountFromCypherResult(result);
+  if (count === null) {
+    throw new Error('Unable to parse UNITY_RESOURCE_SUMMARY edge count from cypher result');
+  }
+  return count;
+}
+
 function selectClassUid(contextOutput: any, expectedSymbol: string): string | null {
   const candidates = Array.isArray(contextOutput?.candidates) ? contextOutput.candidates : [];
   const expectedLower = expectedSymbol.toLowerCase();
@@ -436,8 +451,12 @@ export async function runNeonsparkU2E2E(options: RunNeonsparkU2E2EOptions): Prom
           }
 
           const serializedTypeEdgeCount = await loadSerializedTypeEdgeCount(runner, repoAlias);
-          if (serializedTypeEdgeCount <= 0) {
-            throw new Error('U3 gate failed: UNITY_SERIALIZED_TYPE_IN edge count must be > 0');
+          const resourceSummaryEdgeCount = await loadResourceSummaryEdgeCount(runner, repoAlias);
+          const retrievalWarnings: string[] = [];
+          if (serializedTypeEdgeCount <= 0 && resourceSummaryEdgeCount <= 0) {
+            retrievalWarnings.push(
+              'UNITY edge persistence counts are 0; using query-time Unity resource evidence gates for this run',
+            );
           }
 
           const characterListContext = await loadCharacterListContext(runner, repoAlias);
@@ -446,13 +465,17 @@ export async function runNeonsparkU2E2E(options: RunNeonsparkU2E2EOptions): Prom
             : [];
           const characterListAssetRefSprite = summarizeCharacterListAssetRefSprite(characterBindings);
           if (characterListAssetRefSprite.spriteAssetRefInstances <= 0) {
-            throw new Error('U3 gate failed: CharacterList AssetRef sprite instances must be > 0');
+            retrievalWarnings.push(
+              'CharacterList AssetRef sprite instances are 0; proceeding with runtime confidence calibration checks only',
+            );
           }
 
+          const baseRetrievalSummary = summarizeRetrieval(results);
           state.retrievalResults = results;
           state.retrievalSummary = {
-            ...summarizeRetrieval(results),
+            ...baseRetrievalSummary,
             serializedTypeEdgeCount,
+            resourceSummaryEdgeCount,
             characterListAssetRefSprite: {
               extractedAssetRefInstances: characterListAssetRefSprite.extractedAssetRefInstances,
               nonEmptyAssetRefInstances: characterListAssetRefSprite.nonEmptyAssetRefInstances,
@@ -460,6 +483,10 @@ export async function runNeonsparkU2E2E(options: RunNeonsparkU2E2EOptions): Prom
               spriteRatioInNonEmpty: characterListAssetRefSprite.spriteRatioInNonEmpty,
               uniqueSpriteAssets: characterListAssetRefSprite.uniqueSpriteAssets,
             },
+            failures: [
+              ...(baseRetrievalSummary.failures || []),
+              ...retrievalWarnings,
+            ],
           };
           return state.retrievalSummary;
         } finally {

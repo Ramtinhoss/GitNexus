@@ -36,20 +36,20 @@ _gitnexus_call() {
     case "$tool" in
         query)
             local q=$(echo "$json_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('query',''))" 2>/dev/null)
-            npx gitnexus query "$q" 2>&1
+            npx -y @veewo/gitnexus@latest query "$q" 2>&1
             ;;
         context)
             local n=$(echo "$json_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))" 2>/dev/null)
-            npx gitnexus context "$n" 2>&1
+            npx -y @veewo/gitnexus@latest context "$n" 2>&1
             ;;
         impact)
             local t=$(echo "$json_body" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('target',''))" 2>/dev/null)
             local d=$(echo "$json_body" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('direction','upstream'))" 2>/dev/null)
-            npx gitnexus impact "$t" --direction "$d" 2>&1
+            npx -y @veewo/gitnexus@latest impact "$t" --direction "$d" 2>&1
             ;;
         cypher)
             local cq=$(echo "$json_body" | python3 -c "import sys,json; print(json.load(sys.stdin).get('query',''))" 2>/dev/null)
-            npx gitnexus cypher "$cq" 2>&1
+            npx -y @veewo/gitnexus@latest cypher "$cq" 2>&1
             ;;
         *)
             echo "Unknown tool: $tool" >&2

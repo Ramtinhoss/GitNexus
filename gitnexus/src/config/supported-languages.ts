@@ -7,9 +7,10 @@ export enum SupportedLanguages {
     CPlusPlus = 'cpp',
     CSharp = 'csharp',
     Go = 'go',
+    Ruby = 'ruby',
     Rust = 'rust',
     PHP = 'php',
+    Kotlin = 'kotlin',
+    Swift = 'swift',
     GDScript = 'gdscript',
-    // Ruby = 'ruby',
-    // Swift = 'swift',
 }

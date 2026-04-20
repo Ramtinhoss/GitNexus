@@ -1,0 +1,104 @@
+import {
+  deriveConfidence,
+  type ProcessConfidence,
+  type ProcessEvidenceMode,
+} from './process-confidence.js';
+import {
+  deriveRuntimeChainEvidenceLevel,
+  type RuntimeChainEvidenceLevel,
+} from './runtime-chain-evidence.js';
+
+export interface ProcessEvidenceRow {
+  pid: string;
+  label: string;
+  step: number;
+  stepCount: number;
+  [key: string]: unknown;
+}
+
+export interface ProjectedProcessEvidenceRow extends ProcessEvidenceRow {
+  viaMethodId?: string;
+}
+
+export interface MergedProcessEvidenceRow extends ProcessEvidenceRow {
+  evidence_mode: ProcessEvidenceMode;
+  confidence: ProcessConfidence;
+  runtime_chain_evidence_level: RuntimeChainEvidenceLevel;
+}
+
+function asFingerprintToken(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => asFingerprintToken(item)).join(',');
+  }
+  const obj = value as Record<string, unknown>;
+  const ordered: Record<string, unknown> = {};
+  for (const key of Object.keys(obj).sort()) {
+    ordered[key] = obj[key];
+  }
+  return JSON.stringify(ordered);
+}
+
+export function deriveEvidenceFingerprint(...parts: unknown[]): string {
+  return parts
+    .map((part) => asFingerprintToken(part))
+    .filter((token) => token.length > 0)
+    .join('::');
+}
+
+const normalizeProcessConfidence = (
+  raw: unknown,
+  fallback: ProcessConfidence,
+): ProcessConfidence => {
+  if (raw === 'high' || raw === 'medium' || raw === 'low') return raw;
+  return fallback;
+};
+
+export function mergeProcessEvidence(input: {
+  directRows: ProcessEvidenceRow[];
+  projectedRows: ProjectedProcessEvidenceRow[];
+}): MergedProcessEvidenceRow[] {
+  const byPid = new Map<string, MergedProcessEvidenceRow>();
+
+  for (const row of input.projectedRows) {
+    byPid.set(row.pid, {
+      ...row,
+      pid: row.pid,
+      label: row.label,
+      step: row.step,
+      stepCount: row.stepCount,
+      evidence_mode: 'method_projected',
+      confidence: deriveConfidence({
+        evidenceMode: 'method_projected',
+        processSubtype: String((row as any).processSubtype || ''),
+      }),
+      runtime_chain_evidence_level: deriveRuntimeChainEvidenceLevel({ mode: 'none' }),
+    });
+  }
+
+  for (const row of input.directRows) {
+    const derivedDefault = deriveConfidence({
+      evidenceMode: 'direct_step',
+      processSubtype: String((row as any).processSubtype || ''),
+    });
+    const persistedConfidence = normalizeProcessConfidence(
+      (row as any).runtimeChainConfidence ?? (row as any).runtime_chain_confidence,
+      derivedDefault,
+    );
+    byPid.set(row.pid, {
+      ...row,
+      pid: row.pid,
+      label: row.label,
+      step: row.step,
+      stepCount: row.stepCount,
+      evidence_mode: 'direct_step',
+      confidence: persistedConfidence,
+      runtime_chain_evidence_level: deriveRuntimeChainEvidenceLevel({ mode: 'none' }),
+    });
+  }
+
+  return [...byPid.values()];
+}

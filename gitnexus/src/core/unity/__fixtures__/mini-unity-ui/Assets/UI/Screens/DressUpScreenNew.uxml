@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <Style src="project://database/Assets/UI/Styles/DressUpScreenNew.uss?fileID=7433441132597879392&amp;guid=eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&amp;type=3" />
+  <ui:VisualElement name="dressup-root" class="dressup-screen">
+    <Template src="project://database/Assets/UI/Components/TooltipBox.uxml?fileID=9197481965408888&amp;guid=cccccccccccccccccccccccccccccccc&amp;type=3" />
+  </ui:VisualElement>
+</ui:UXML>

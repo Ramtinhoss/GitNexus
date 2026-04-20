@@ -1,0 +1,46 @@
+{
+  "generatedAt": "2026-04-02T02:11:00.123Z",
+  "repoAlias": "GitNexus",
+  "repeatability": {
+    "fast": {
+      "consistent": true,
+      "runCount": 3,
+      "mismatchCount": 0
+    },
+    "balanced": {
+      "consistent": true,
+      "runCount": 3,
+      "mismatchCount": 0
+    },
+    "strict": {
+      "consistent": true,
+      "runCount": 3,
+      "mismatchCount": 0
+    }
+  },
+  "policy_mapping": {
+    "fast": {
+      "requested": "compact",
+      "effective": "compact"
+    },
+    "balanced": {
+      "requested": "compact",
+      "escalation": "parity_on_missing_evidence"
+    },
+    "strict": {
+      "requested": "parity",
+      "downgradeOnFallback": "verified_partial/verified_segment"
+    }
+  },
+  "missing_evidence_contract": {
+    "requiresArray": true,
+    "populatedWhenIncomplete": true
+  },
+  "contractCompatibility": {
+    "needsParityRetryRetained": true
+  },
+  "warmup_cache_state": {
+    "parityWarmupEnv": "off",
+    "note": "repeatability sampled under current runtime/cache state"
+  }
+}

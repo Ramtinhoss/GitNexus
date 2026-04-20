@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { glob } from 'glob';
-import { shouldIgnorePath } from '../../config/ignore-service.js';
+import { createIgnoreFilter, shouldIgnorePath } from '../../config/ignore-service.js';
 
 export interface FileEntry {
   path: string;
@@ -23,6 +23,7 @@ const READ_CONCURRENCY = 32;
 
 /** Skip files larger than 512KB — they're usually generated/vendored and crash tree-sitter */
 const MAX_FILE_SIZE = 512 * 1024;
+const UNITY_RESOURCE_GLOBS = ['**/*.prefab', '**/*.unity', '**/*.asset'];
 
 /**
  * Phase 1: Scan repository — stat files to get paths + sizes, no content loaded.
@@ -32,13 +33,14 @@ export const walkRepositoryPaths = async (
   repoPath: string,
   onProgress?: (current: number, total: number, filePath: string) => void
 ): Promise<ScannedFile[]> => {
-  const files = await glob('**/*', {
+  const ignoreFilter = await createIgnoreFilter(repoPath);
+
+  const filtered = await glob('**/*', {
     cwd: repoPath,
     nodir: true,
     dot: false,
+    ignore: ignoreFilter,
   });
-
-  const filtered = files.filter(file => !shouldIgnorePath(file));
   const entries: ScannedFile[] = [];
   let processed = 0;
   let skippedLarge = 0;
@@ -73,6 +75,24 @@ export const walkRepositoryPaths = async (
   }
 
   return entries;
+};
+
+/**
+ * Scan Unity resource files used by binding enrichment.
+ * This path scan intentionally does not apply the 512KB source-size cap,
+ * because bindings often live in large serialized assets.
+ */
+export const walkUnityResourcePaths = async (repoPath: string): Promise<string[]> => {
+  const files = await glob(UNITY_RESOURCE_GLOBS, {
+    cwd: repoPath,
+    nodir: true,
+    dot: false,
+  });
+
+  return files
+    .filter(file => !shouldIgnorePath(file))
+    .map(file => file.replace(/\\/g, '/'))
+    .sort((left, right) => left.localeCompare(right));
 };
 
 /**

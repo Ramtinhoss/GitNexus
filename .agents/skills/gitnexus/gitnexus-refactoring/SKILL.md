@@ -19,10 +19,15 @@ description: "Use when the user wants to rename, extract, split, move, or restru
 1. gitnexus_impact({target: "X", direction: "upstream"})  → Map all dependents
 2. gitnexus_query({query: "X"})                            → Find execution flows involving X
 3. gitnexus_context({name: "X"})                           → See all incoming/outgoing refs
-4. Plan update order: interfaces → implementations → callers → tests
+4. (Unity symbols) validate compact/parity retrieval completeness
+5. Plan update order: interfaces → implementations → callers → tests
 ```
 
-> If "Index is stale" → run `npx gitnexus analyze` in terminal.
+> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
+
+When refactoring scope includes Unity runtime process semantics (runtime chain linkage/confidence or process closure), load and follow:
+
+- `_shared/unity-runtime-process-contract.md`
 
 ## Checklists
 
@@ -40,6 +45,8 @@ description: "Use when the user wants to rename, extract, split, move, or restru
 
 ```
 - [ ] gitnexus_context({name: target}) — see all incoming/outgoing refs
+- [ ] For Unity targets: `unity_resources: "on"`, `unity_hydration_mode: "compact"` first
+- [ ] If `hydrationMeta.needsParityRetry === true`, rerun with `unity_hydration_mode: "parity"` before extraction
 - [ ] gitnexus_impact({target, direction: "upstream"}) — find all external callers
 - [ ] Define new module interface
 - [ ] Extract code, update imports
@@ -51,6 +58,7 @@ description: "Use when the user wants to rename, extract, split, move, or restru
 
 ```
 - [ ] gitnexus_context({name: target}) — understand all callees
+- [ ] For Unity targets: ensure final verification run uses parity when compact requests retry
 - [ ] Group callees by responsibility
 - [ ] gitnexus_impact({target, direction: "upstream"}) — map callers to update
 - [ ] Create new functions/services
@@ -119,3 +127,11 @@ RETURN caller.name, caller.filePath ORDER BY caller.filePath
    → Affected: LoginFlow, TokenRefresh
    → Risk: MEDIUM — run tests for these flows
 ```
+
+## Runtime-Chain Closure Guard
+
+- Treat runtime-chain outputs as two layers:
+  - `verifier-core`: binary verifier result (`verified_full` | `failed`)
+  - `policy-adjusted`: user-visible result after hydration policy is applied
+- If `hydration_policy=strict` and `hydrationMeta.fallbackToCompact=true`, the result is downgraded policy-adjusted output and is not closure.
+- In that downgraded state, rerun with parity before final conclusions.

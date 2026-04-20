@@ -21,7 +21,7 @@ description: Plan safe refactors using blast radius and dependency mapping
 4. Plan update order: interfaces → implementations → callers → tests
 ```
 
-> If "Index is stale" → run `npx gitnexus analyze` in terminal.
+> If "Index is stale" → resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze` in terminal.
 
 ## Checklists
 

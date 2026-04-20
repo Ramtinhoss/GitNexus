@@ -1,0 +1,148 @@
+{
+  "processes": [],
+  "process_symbols": [],
+  "definitions": [
+    {
+      "id": "Class:Assets/NEON/Code/Behaviors/Actions/PetActions/GungrapShotForOlaola.cs:GungrapShotForOlaola",
+      "name": "GungrapShotForOlaola",
+      "filePath": "Assets/NEON/Code/Behaviors/Actions/PetActions/GungrapShotForOlaola.cs",
+      "startLine": 14,
+      "endLine": 14
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Behaviors/Actions/PetActions/GungrapShotForOlaola.cs:SetGunGraphVariable",
+      "name": "SetGunGraphVariable",
+      "filePath": "Assets/NEON/Code/Behaviors/Actions/PetActions/GungrapShotForOlaola.cs",
+      "startLine": 171,
+      "endLine": 171
+    },
+    {
+      "id": "File:Assets/NEON/Code/Behaviors/Actions/PetActions/GungrapShotForOlaola.cs",
+      "name": "GungrapShotForOlaola.cs",
+      "filePath": "Assets/NEON/Code/Behaviors/Actions/PetActions/GungrapShotForOlaola.cs"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/ScriptableAssets/GuncoreLevel/GuncoreLevelSpec.cs:NEON.Game.ScriptableAssets.GuncoreLevel",
+      "name": "NEON.Game.ScriptableAssets.GuncoreLevel",
+      "filePath": "Assets/NEON/Code/Game/ScriptableAssets/GuncoreLevel/GuncoreLevelSpec.cs",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/ScriptableAssets/GuncoreLevel/GuncoreLevelSpec.cs:GuncoreLevelSpec",
+      "name": "GuncoreLevelSpec",
+      "filePath": "Assets/NEON/Code/Game/ScriptableAssets/GuncoreLevel/GuncoreLevelSpec.cs",
+      "startLine": 7,
+      "endLine": 7
+    },
+    {
+      "id": "File:Assets/NEON/Code/Game/ScriptableAssets/GuncoreLevel/GuncoreLevelSpec.cs",
+      "name": "GuncoreLevelSpec.cs",
+      "filePath": "Assets/NEON/Code/Game/ScriptableAssets/GuncoreLevel/GuncoreLevelSpec.cs"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Behaviors/Actions/StormSpawnLightningChain.cs:InitGunGraphMB",
+      "name": "InitGunGraphMB",
+      "filePath": "Assets/NEON/Code/Behaviors/Actions/StormSpawnLightningChain.cs",
+      "startLine": 69,
+      "endLine": 69
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Behaviors/Actions/StormSpawnLightningChain.cs:NEON.Behaviors",
+      "name": "NEON.Behaviors",
+      "filePath": "Assets/NEON/Code/Behaviors/Actions/StormSpawnLightningChain.cs",
+      "startLine": 13,
+      "endLine": 13
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Behaviors/Actions/StormSpawnLightningChain.cs:StormSpawnLightningChain",
+      "name": "StormSpawnLightningChain",
+      "filePath": "Assets/NEON/Code/Behaviors/Actions/StormSpawnLightningChain.cs",
+      "startLine": 16,
+      "endLine": 16
+    },
+    {
+      "id": "Method:Assets/NEON/Sony/NP/SonyNpTus.cs:SetVariables",
+      "name": "SetVariables",
+      "filePath": "Assets/NEON/Sony/NP/SonyNpTus.cs",
+      "startLine": 123,
+      "endLine": 123,
+      "module": "NP"
+    },
+    {
+      "id": "Method:Assets/NEON/Sony/NP/SonyNpTus.cs:SetVariablesVirtualUser",
+      "name": "SetVariablesVirtualUser",
+      "filePath": "Assets/NEON/Sony/NP/SonyNpTus.cs",
+      "startLine": 152,
+      "endLine": 152,
+      "module": "NP"
+    },
+    {
+      "id": "Method:Assets/NEON/Sony/NP/SonyNpTus.cs:TryAndSetVariable",
+      "name": "TryAndSetVariable",
+      "filePath": "Assets/NEON/Sony/NP/SonyNpTus.cs",
+      "startLine": 394,
+      "endLine": 394,
+      "module": "NP"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Graph/Graphs/MeleeGraph.cs:SetVariable",
+      "name": "SetVariable",
+      "filePath": "Assets/NEON/Code/Game/Graph/Graphs/MeleeGraph.cs",
+      "startLine": 145,
+      "endLine": 145,
+      "module": "Charge"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/Graph/Graphs/MeleeGraph.cs:NEON.Game.Graph",
+      "name": "NEON.Game.Graph",
+      "filePath": "Assets/NEON/Code/Game/Graph/Graphs/MeleeGraph.cs",
+      "startLine": 14,
+      "endLine": 14
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/Graph/Graphs/MeleeGraph.cs:MeleeGraph",
+      "name": "MeleeGraph",
+      "filePath": "Assets/NEON/Code/Game/Graph/Graphs/MeleeGraph.cs",
+      "startLine": 17,
+      "endLine": 17,
+      "module": "Graphs"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/AttackNearestTargetInRange.cs:NEON.Game",
+      "name": "NEON.Game",
+      "filePath": "Assets/NEON/Code/Game/AttackNearestTargetInRange.cs",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/AttackNearestTargetInRange.cs:AttackNearestTargetInRange",
+      "name": "AttackNearestTargetInRange",
+      "filePath": "Assets/NEON/Code/Game/AttackNearestTargetInRange.cs",
+      "startLine": 7,
+      "endLine": 7
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/AttackNearestTargetInRange.cs:OnTriggerExit2D",
+      "name": "OnTriggerExit2D",
+      "filePath": "Assets/NEON/Code/Game/AttackNearestTargetInRange.cs",
+      "startLine": 19,
+      "endLine": 19
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Charge/CostBombChargeNode.cs:GetValue",
+      "name": "GetValue",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Charge/CostBombChargeNode.cs",
+      "startLine": 48,
+      "endLine": 48
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Charge/CostBombChargeNode.cs:OnGunFiring",
+      "name": "OnGunFiring",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Charge/CostBombChargeNode.cs",
+      "startLine": 24,
+      "endLine": 24,
+      "module": "Charge"
+    }
+  ]
+}

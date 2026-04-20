@@ -108,13 +108,13 @@ Result:
 Original scoped real-repo command from the design discussion:
 
 ```bash
-gitnexus analyze --repo-alias neonspark-unity-acceptance --scope-prefix Assets/NEON/Code/VeewoUI/MainUIManager.cs --extensions .cs --force
+npx -y @veewo/gitnexus@latest analyze --repo-alias neonspark-unity-acceptance --scope-prefix Assets/NEON/Code/VeewoUI/MainUIManager.cs --extensions .cs --force
 ```
 
 In this repository workspace, that exact scope prefix does not exist, so an equivalent local scoped sample was used:
 
 ```bash
-npx gitnexus analyze --repo-alias neonspark-unity-acceptance-local --scope-prefix gitnexus/src/core/unity/__fixtures__/mini-unity/Assets --extensions .cs --force
+npx -y @veewo/gitnexus@latest analyze --repo-alias neonspark-unity-acceptance-local --scope-prefix gitnexus/src/core/unity/__fixtures__/mini-unity/Assets --extensions .cs --force
 ```
 
 Observed summary:

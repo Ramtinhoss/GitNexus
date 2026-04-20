@@ -51,8 +51,45 @@ Returns results grouped by process (execution flow):
 - processes: ranked execution flows with relevance priority
 - process_symbols: all symbols in those flows with file locations and module (functional area)
 - definitions: standalone types/interfaces not in any process
+- processes[].evidence_mode: direct_step | method_projected
+- processes[].confidence: high | medium | low
+- processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
+- processes[].runtime_chain_confidence: high | medium | low
+- processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
+- processes[].verification_hint: { action, target, next_command } (required when confidence=low)
+- process_symbols[].process_evidence_mode: direct_step | method_projected
+- process_symbols[].process_confidence: high | medium | low
+- process_symbols[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
+- process_symbols[].runtime_chain_confidence: high | medium | low
+- process_symbols[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
+- process_symbols[].verification_hint: { action, target, next_command }
 
-Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.`,
+Default response_profile=slim shape:
+- summary, candidates, process_hints, resource_hints, decision, upgrade_hints, runtime_preview
+- facts, closure, clues, tier_envelope
+- missing_proof_targets, suggested_context_targets
+- read order in strict-anchor mode: facts -> closure -> clues
+- suggested_context_targets[]: { name, uid?, filePath?, why } for direct context disambiguation
+- upgrade_hints may include exact \`context --uid\` follow-ups when same-name symbols are ambiguous
+- decision.recommended_follow_up prefers narrowing hints (for example resource_path_prefix/name) before response_profile=full fallback
+- response_profile=slim is the default and sufficient for all normal agent workflows
+- response_profile=full is for debugging and deep evidence inspection only
+- recommended runtime retrieval sequence: discovery -> seed narrowing -> closure verification
+- strong graph hops can coexist with failed closure when verifier-core remains failed
+
+Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank Fusion.
+Supports optional scope controls for noisy codebases:
+- scope_preset=unity-gameplay to prioritize project gameplay code and suppress plugin-heavy paths.
+- scope_preset=unity-all (default behavior) to keep full Unity search scope.
+
+Includes optional Unity retrieval contract:
+- Set unity_resources=on|auto to include Unity resource evidence.
+- Default unity_hydration_mode=compact (fast path).
+- Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.
+- Runtime-chain semantics are two-layered:
+  - verifier-core: binary (verified_full | failed)
+  - policy-adjusted: query-visible result; under strict policy fallback (hydrationMeta.fallbackToCompact=true) this may downgrade to partial semantics.
+- Returns next_hops[] with ranked follow-up actions when Unity evidence is available.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -62,10 +99,67 @@ Hybrid ranking: BM25 keyword + semantic vector search, ranked by Reciprocal Rank
         limit: { type: 'number', description: 'Max processes to return (default: 5)', default: 5 },
         max_symbols: { type: 'number', description: 'Max symbols per process (default: 10)', default: 10 },
         include_content: { type: 'boolean', description: 'Include full symbol source code (default: false)', default: false },
+        response_profile: {
+          type: 'string',
+          enum: ['slim', 'full'],
+          description: 'Response payload profile: slim (default, sufficient for normal workflows) or full (debug-only for deep evidence inspection).',
+          default: 'slim',
+        },
+        scope_preset: {
+          type: 'string',
+          enum: ['unity-gameplay', 'unity-all'],
+          description: 'Optional retrieval preset. unity-gameplay reduces plugin/package noise in Unity projects.',
+        },
         unity_resources: {
           type: 'string',
           enum: ['off', 'on', 'auto'],
           description: 'Unity resource retrieval mode (default: off)',
+          default: 'off',
+        },
+        unity_hydration_mode: {
+          type: 'string',
+          enum: ['parity', 'compact'],
+          description: 'Execution-mode input for Unity hydration (default: compact). Can be overridden by hydration_policy; inspect hydrationMeta.requestedMode/effectiveMode/reason.',
+          default: 'compact',
+        },
+        unity_evidence_mode: {
+          type: 'string',
+          enum: ['summary', 'focused', 'full'],
+          description: 'Unity evidence payload mode (default: summary)',
+          default: 'summary',
+        },
+        hydration_policy: {
+          type: 'string',
+          enum: ['fast', 'balanced', 'strict'],
+          description: 'Hydration strategy policy (high-priority). strict->parity, fast->compact, balanced->uses unity_hydration_mode and may escalate to parity on missing evidence.',
+          default: 'balanced',
+        },
+        resource_path_prefix: {
+          type: 'string',
+          description: 'Optional resource-path prefix filter applied to Unity evidence bindings',
+        },
+        binding_kind: {
+          type: 'string',
+          description: 'Optional Unity binding kind filter (for example: direct, component, scriptable_object)',
+        },
+        max_bindings: {
+          type: 'number',
+          description: 'Optional cap for number of returned evidence bindings',
+        },
+        max_reference_fields: {
+          type: 'number',
+          description: 'Optional cap for number of reference fields returned per binding',
+        },
+        resource_seed_mode: {
+          type: 'string',
+          enum: ['strict', 'balanced'],
+          description: 'Resource-seed policy for Unity retrieval hints. strict prioritizes user-provided asset path and deterministic mapped assets.',
+          default: 'balanced',
+        },
+        runtime_chain_verify: {
+          type: 'string',
+          enum: ['off', 'on-demand'],
+          description: 'Explicit runtime chain verification mode (default: off)',
           default: 'off',
         },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
@@ -84,7 +178,7 @@ SCHEMA:
 - Nodes: File, Folder, Function, Class, Interface, Method, CodeElement, Community, Process
 - Multi-language nodes (use backticks): \`Struct\`, \`Enum\`, \`Trait\`, \`Impl\`, etc.
 - All edges via single CodeRelation table with 'type' property
-- Edge types: CONTAINS, DEFINES, CALLS, IMPORTS, EXTENDS, IMPLEMENTS, MEMBER_OF, STEP_IN_PROCESS
+- Edge types: CONTAINS, DEFINES, CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, OVERRIDES, MEMBER_OF, STEP_IN_PROCESS
 - Edge properties: type (STRING), confidence (DOUBLE), reason (STRING), step (INT32)
 
 EXAMPLES:
@@ -96,6 +190,15 @@ EXAMPLES:
 
 • Trace a process:
   MATCH (s)-[r:CodeRelation {type: 'STEP_IN_PROCESS'}]->(p:Process) WHERE p.heuristicLabel = "UserLogin" RETURN s.name, r.step ORDER BY r.step
+
+• Find all methods of a class:
+  MATCH (c:Class {name: "UserService"})-[r:CodeRelation {type: 'HAS_METHOD'}]->(m:Method) RETURN m.name, m.parameterCount, m.returnType
+
+• Find method overrides (MRO resolution):
+  MATCH (winner:Method)-[r:CodeRelation {type: 'OVERRIDES'}]->(loser:Method) RETURN winner.name, winner.filePath, loser.filePath, r.reason
+
+• Detect diamond inheritance:
+  MATCH (d:Class)-[:CodeRelation {type: 'EXTENDS'}]->(b1), (d)-[:CodeRelation {type: 'EXTENDS'}]->(b2), (b1)-[:CodeRelation {type: 'EXTENDS'}]->(a), (b2)-[:CodeRelation {type: 'EXTENDS'}]->(a) WHERE b1 <> b2 RETURN d.name, b1.name, b2.name, a.name
 
 OUTPUT: Returns { markdown, row_count } — results formatted as a Markdown table for easy reading.
 
@@ -115,13 +218,42 @@ TIPS:
   },
   {
     name: 'context',
-    description: `360-degree view of a single code symbol.
+description: `360-degree view of a single code symbol.
 Shows categorized incoming/outgoing references (calls, imports, extends, implements), process participation, and file location.
 
 WHEN TO USE: After query() to understand a specific symbol in depth. When you need to know all callers, callees, and what execution flows a symbol participates in.
 AFTER THIS: Use impact() if planning changes, or READ gitnexus://repo/{name}/process/{processName} for full execution trace.
 
-Handles disambiguation: if multiple symbols share the same name, returns candidates for you to pick from. Use uid param for zero-ambiguity lookup from prior results.`,
+Handles disambiguation: if multiple symbols share the same name, returns candidates for you to pick from. Use uid param for zero-ambiguity lookup from prior results.
+
+Process participation metadata:
+- processes[].evidence_mode: direct_step | method_projected
+- processes[].confidence: high | medium | low
+- processes[].process_subtype: unity_lifecycle | static_calls (when persisted metadata exists)
+- processes[].runtime_chain_confidence: high | medium | low
+- processes[].runtime_chain_evidence_level: none | clue | verified_segment | verified_chain
+- processes[].verification_hint: { action, target, next_command } (required when confidence=low)
+
+Default response_profile=slim shape:
+- summary, symbol, incoming, outgoing, processes, resource_hints, verification_hint, upgrade_hints, runtime_preview
+- facts, closure, clues, tier_envelope
+- missing_proof_targets, suggested_context_targets
+- read order in strict-anchor mode: facts -> closure -> clues
+- suggested_context_targets[]: { name, uid?, filePath?, why } for direct context disambiguation
+- upgrade_hints may include exact \`context --uid\` follow-ups when same-name symbols are ambiguous
+- response_profile=slim is the default and sufficient for all normal agent workflows
+- response_profile=full is for debugging and deep evidence inspection only
+- recommended runtime retrieval sequence: discovery -> seed narrowing -> closure verification
+- strong graph hops can coexist with failed closure when verifier-core remains failed
+
+Unity retrieval contract:
+- Set unity_resources=on|auto to include Unity resource evidence.
+- Default unity_hydration_mode=compact (fast path).
+- Check response hydrationMeta: when needsParityRetry=true, rerun with unity_hydration_mode=parity for completeness.
+- Runtime-chain semantics are two-layered:
+  - verifier-core: binary (verified_full | failed)
+  - policy-adjusted: context-visible result; under strict policy fallback (hydrationMeta.fallbackToCompact=true) this may downgrade to partial semantics.
+- Returns next_hops[] with ranked follow-up actions when Unity evidence is available.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -129,10 +261,62 @@ Handles disambiguation: if multiple symbols share the same name, returns candida
         uid: { type: 'string', description: 'Direct symbol UID from prior tool results (zero-ambiguity lookup)' },
         file_path: { type: 'string', description: 'File path to disambiguate common names' },
         include_content: { type: 'boolean', description: 'Include full symbol source code (default: false)', default: false },
+        response_profile: {
+          type: 'string',
+          enum: ['slim', 'full'],
+          description: 'Response payload profile: slim (default, sufficient for normal workflows) or full (debug-only for deep evidence inspection).',
+          default: 'slim',
+        },
         unity_resources: {
           type: 'string',
           enum: ['off', 'on', 'auto'],
           description: 'Unity resource retrieval mode (default: off)',
+          default: 'off',
+        },
+        unity_hydration_mode: {
+          type: 'string',
+          enum: ['parity', 'compact'],
+          description: 'Execution-mode input for Unity hydration (default: compact). Can be overridden by hydration_policy; inspect hydrationMeta.requestedMode/effectiveMode/reason.',
+          default: 'compact',
+        },
+        unity_evidence_mode: {
+          type: 'string',
+          enum: ['summary', 'focused', 'full'],
+          description: 'Unity evidence payload mode (default: summary)',
+          default: 'summary',
+        },
+        hydration_policy: {
+          type: 'string',
+          enum: ['fast', 'balanced', 'strict'],
+          description: 'Hydration strategy policy (high-priority). strict->parity, fast->compact, balanced->uses unity_hydration_mode and may escalate to parity on missing evidence.',
+          default: 'balanced',
+        },
+        resource_path_prefix: {
+          type: 'string',
+          description: 'Optional resource-path prefix filter applied to Unity evidence bindings',
+        },
+        binding_kind: {
+          type: 'string',
+          description: 'Optional Unity binding kind filter (for example: direct, component, scriptable_object)',
+        },
+        max_bindings: {
+          type: 'number',
+          description: 'Optional cap for number of returned evidence bindings',
+        },
+        max_reference_fields: {
+          type: 'number',
+          description: 'Optional cap for number of reference fields returned per binding',
+        },
+        resource_seed_mode: {
+          type: 'string',
+          enum: ['strict', 'balanced'],
+          description: 'Resource-seed policy for Unity retrieval hints. strict prioritizes user-provided asset path and deterministic mapped assets.',
+          default: 'balanced',
+        },
+        runtime_chain_verify: {
+          type: 'string',
+          enum: ['off', 'on-demand'],
+          description: 'Explicit runtime chain verification mode (default: off)',
           default: 'off',
         },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
@@ -184,6 +368,109 @@ Each edit is tagged with confidence:
     },
   },
   {
+    name: 'unity_ui_trace',
+    description: `Resolve Unity UI evidence chains (query-time only, no graph writes).
+
+Supports three goals:
+- asset_refs: which prefab/asset points to a target UXML
+- template_refs: which UXML templates are referenced by a target UXML
+- selector_bindings: static C# selector bindings traced to USS selectors
+
+Selector matching modes for selector_bindings:
+- balanced (default): match class tokens inside composite selectors (higher recall)
+- strict: only exact \`.className\` selectors (higher precision)
+
+Output enforces unique-result policy and includes path+line evidence hops.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: 'Target C# class or UXML path' },
+        goal: {
+          type: 'string',
+          enum: ['asset_refs', 'template_refs', 'selector_bindings'],
+          description: 'Trace goal',
+        },
+        selector_mode: {
+          type: 'string',
+          enum: ['strict', 'balanced'],
+          description: 'Selector matching mode for selector_bindings (default: balanced)',
+        },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['target', 'goal'],
+    },
+  },
+  {
+    name: 'rule_lab_analyze',
+    description: `Analyze one Rule Lab slice and emit anchor-backed candidates.jsonl.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        run_id: { type: 'string', description: 'Rule Lab run id' },
+        slice_id: { type: 'string', description: 'Rule Lab slice id' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['run_id', 'slice_id'],
+    },
+  },
+  {
+    name: 'rule_lab_review_pack',
+    description: `Pack analyzed candidates into review cards with token budget enforcement.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        run_id: { type: 'string', description: 'Rule Lab run id' },
+        slice_id: { type: 'string', description: 'Rule Lab slice id' },
+        max_tokens: { type: 'number', description: 'Token budget cap (default: 6000)', default: 6000 },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['run_id', 'slice_id'],
+    },
+  },
+  {
+    name: 'rule_lab_curate',
+    description: `Validate human-curated semantic closure input and persist curated artifacts for promotion.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        run_id: { type: 'string', description: 'Rule Lab run id' },
+        slice_id: { type: 'string', description: 'Rule Lab slice id' },
+        input_path: { type: 'string', description: 'Absolute or repo-relative path to curation input JSON' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['run_id', 'slice_id', 'input_path'],
+    },
+  },
+  {
+    name: 'rule_lab_promote',
+    description: `Promote curated candidates into approved YAML rules and upsert catalog.json entries.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        run_id: { type: 'string', description: 'Rule Lab run id' },
+        slice_id: { type: 'string', description: 'Rule Lab slice id' },
+        version: { type: 'string', description: 'Promoted rule version (default: 1.0.0)', default: '1.0.0' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['run_id', 'slice_id'],
+    },
+  },
+  {
+    name: 'rule_lab_regress',
+    description: `Evaluate Rule Lab precision/coverage gates and optionally persist a regression report.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        precision: { type: 'number', description: 'Observed precision metric' },
+        coverage: { type: 'number', description: 'Observed coverage metric' },
+        probes_path: { type: 'string', description: 'Optional path to a JSON array of regression probes with bucket metadata' },
+        run_id: { type: 'string', description: 'Optional run id for report naming' },
+        repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },
+      },
+      required: ['precision', 'coverage'],
+    },
+  },
+  {
     name: 'impact',
     description: `Analyze the blast radius of changing a code symbol.
 Returns affected symbols grouped by depth, plus risk assessment, affected execution flows, and affected modules.
@@ -203,7 +490,7 @@ Depth groups:
 - d=2: LIKELY AFFECTED (indirect)
 - d=3: MAY NEED TESTING (transitive)
 
-EdgeType: CALLS, IMPORTS, EXTENDS, IMPLEMENTS
+EdgeType: CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, OVERRIDES
 Confidence: 1.0 = certain, <0.8 = fuzzy match`,
     inputSchema: {
       type: 'object',
@@ -213,7 +500,7 @@ Confidence: 1.0 = certain, <0.8 = fuzzy match`,
         file_path: { type: 'string', description: 'Optional file path filter to disambiguate target name' },
         direction: { type: 'string', description: 'upstream (what depends on this) or downstream (what this depends on)' },
         maxDepth: { type: 'number', description: 'Max relationship depth (default: 3)', default: 3 },
-        relationTypes: { type: 'array', items: { type: 'string' }, description: 'Filter: CALLS, IMPORTS, EXTENDS, IMPLEMENTS (default: usage-based)' },
+        relationTypes: { type: 'array', items: { type: 'string' }, description: 'Filter: CALLS, IMPORTS, EXTENDS, IMPLEMENTS, HAS_METHOD, OVERRIDES (default: usage-based)' },
         includeTests: { type: 'boolean', description: 'Include test files (default: false)' },
         minConfidence: { type: 'number', description: 'Minimum confidence 0-1 (default: 0.3)' },
         repo: { type: 'string', description: 'Repository name or path. Omit if only one repo is indexed.' },

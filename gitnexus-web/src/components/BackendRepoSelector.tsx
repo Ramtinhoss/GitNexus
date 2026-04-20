@@ -68,7 +68,7 @@ export const BackendRepoSelector = ({
           <p className="text-sm mb-2">No indexed repositories found</p>
           <p className="text-xs">
             Run{' '}
-            <code className="px-1 py-0.5 bg-elevated rounded">gitnexus analyze</code>{' '}
+            <code className="px-1 py-0.5 bg-elevated rounded">npx -y @veewo/gitnexus@latest analyze</code>{' '}
             in a repository
           </p>
         </div>

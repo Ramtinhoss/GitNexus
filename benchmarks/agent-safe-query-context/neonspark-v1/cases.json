@@ -1,0 +1,124 @@
+{
+  "weapon_powerup": {
+    "label": "weapon_powerup",
+    "start_query": "weapon powerup equip chain",
+    "retry_query": "1_weapon_orb_key.asset WeaponPowerUp HoldPickup EquipWithEvent Equip",
+    "start_query_input": {
+      "query": "weapon powerup equip chain",
+      "unity_resources": "on"
+    },
+    "retry_query_input": {
+      "query": "WeaponPowerUp HoldPickup EquipWithEvent Equip",
+      "unity_resources": "on",
+      "resource_path_prefix": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
+    },
+    "proof_contexts": [
+      "HoldPickup",
+      "EquipWithEvent"
+    ],
+    "proof_cypher": "MATCH (src)-[:CodeRelation {type: 'CALLS'}]->(dst) WHERE (src.name = 'HoldPickup' AND dst.name = 'PickItUp') OR (src.name = 'EquipWithEvent' AND dst.name = 'Equip') RETURN src.name, dst.name",
+    "live_task": {
+      "objective": "pickup/equip bridge proof",
+      "symbol_seed": "WeaponPowerUp",
+      "resource_seed": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
+    },
+    "tool_plan": [
+      {
+        "tool": "query",
+        "input": {
+          "query": "WeaponPowerUp HoldPickup EquipWithEvent Equip",
+          "repo": "neonspark-core",
+          "unity_resources": "on",
+          "resource_path_prefix": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset"
+        }
+      },
+      {
+        "tool": "context",
+        "input": {
+          "name": "HoldPickup",
+          "repo": "neonspark-core",
+          "unity_resources": "on"
+        }
+      },
+      {
+        "tool": "context",
+        "input": {
+          "name": "EquipWithEvent",
+          "repo": "neonspark-core",
+          "unity_resources": "on"
+        }
+      },
+      {
+        "tool": "cypher",
+        "input": {
+          "query": "MATCH (src)-[:CodeRelation {type: 'CALLS'}]->(dst) WHERE (src.name = 'HoldPickup' AND dst.name = 'PickItUp') OR (src.name = 'EquipWithEvent' AND dst.name = 'Equip') RETURN src.name, dst.name",
+          "repo": "neonspark-core"
+        }
+      }
+    ],
+    "semantic_tuple": {
+      "resource_anchor": "Assets/NEON/DataAssets/Powerups/1_newWeapon/0_pick/法器_Orb/1_weapon_orb_key.asset",
+      "symbol_anchor": "WeaponPowerUp",
+      "proof_edges": [
+        "HoldPickup -> WeaponPowerUp.PickItUp",
+        "EquipWithEvent -> WeaponPowerUp.Equip"
+      ],
+      "closure_status": "not_verified_full"
+    }
+  },
+  "reload": {
+    "label": "reload",
+    "start_query": "reload getvalue checkreload",
+    "retry_query": "Gungraph_use/1_weapon_orb_key.asset ReloadBase GetValue CheckReload",
+    "start_query_input": {
+      "query": "reload getvalue checkreload",
+      "unity_resources": "on"
+    },
+    "retry_query_input": {
+      "query": "ReloadBase GetValue CheckReload",
+      "unity_resources": "on",
+      "resource_path_prefix": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+    },
+    "proof_contexts": [
+      "ReloadBase"
+    ],
+    "proof_cypher": "MATCH (src)-[:CodeRelation {type: 'CALLS'}]->(dst) WHERE src.name = 'GetValue' AND dst.name = 'CheckReload' RETURN src.name, dst.name",
+    "live_task": {
+      "objective": "reload call proof",
+      "symbol_seed": "ReloadBase",
+      "resource_seed": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+    },
+    "tool_plan": [
+      {
+        "tool": "query",
+        "input": {
+          "query": "ReloadBase GetValue CheckReload",
+          "repo": "neonspark-core",
+          "unity_resources": "on",
+          "resource_path_prefix": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset"
+        }
+      },
+      {
+        "tool": "context",
+        "input": {
+          "name": "ReloadBase",
+          "repo": "neonspark-core",
+          "unity_resources": "on"
+        }
+      },
+      {
+        "tool": "cypher",
+        "input": {
+          "query": "MATCH (src)-[:CodeRelation {type: 'CALLS'}]->(dst) WHERE src.name = 'GetValue' AND dst.name = 'CheckReload' RETURN src.name, dst.name",
+          "repo": "neonspark-core"
+        }
+      }
+    ],
+    "semantic_tuple": {
+      "resource_anchor": "Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset",
+      "symbol_anchor": "ReloadBase",
+      "proof_edge": "ReloadBase.GetValue -> ReloadBase.CheckReload",
+      "closure_status": "not_verified_full"
+    }
+  }
+}

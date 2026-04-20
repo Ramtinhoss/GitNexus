@@ -9,11 +9,14 @@ import type { UnityScanContext } from './scan-context.js';
 import { parseUnityYamlObjects, type UnityObjectBlock, type UnityObjectType } from './yaml-object-graph.js';
 
 export type UnityBindingKind = 'direct' | 'prefab-instance' | 'nested' | 'variant' | 'scene-override';
+const MAX_CACHED_RESOURCE_BYTES = 512 * 1024;
 
 export interface ResolveInput {
   repoRoot: string;
   symbol: string;
   scanContext?: UnityScanContext;
+  resourcePathAllowlist?: string[];
+  deepParseLargeResources?: boolean;
 }
 
 export interface UnityScalarField {
@@ -76,6 +79,7 @@ export interface ResolvedUnityBinding {
   resourceType: 'prefab' | 'scene' | 'asset';
   bindingKind: UnityBindingKind;
   componentObjectId: string;
+  lightweight?: boolean;
   evidence: UnityBindingEvidence;
   serializedFields: UnitySerializedFields;
   resolvedReferences: UnityResolvedReference[];
@@ -94,17 +98,33 @@ export interface ResolveOutput {
 export async function resolveUnityBindings(input: ResolveInput): Promise<ResolveOutput> {
   const scriptPath = await resolveSymbolScriptPath(input.repoRoot, input.symbol, input.scanContext);
   const scriptGuid = await resolveScriptGuid(input.repoRoot, scriptPath, input.scanContext);
-  const hits = input.scanContext
+  const rawHits = input.scanContext
     ? (input.scanContext.guidToResourceHits.get(scriptGuid) ?? [])
     : await findGuidHits(input.repoRoot, scriptGuid);
+  const hits = applyResourceAllowlist(rawHits, input.resourcePathAllowlist);
   const resourceBindings: ResolvedUnityBinding[] = [];
   const unityDiagnostics: string[] = [];
+  const resourceSizeCache = new Map<string, boolean>();
 
   for (const hit of hits) {
+    const shouldUseLightweightBinding = !input.deepParseLargeResources
+      && await isLargeResourceForDeepParse(
+        input.repoRoot,
+        hit.resourcePath,
+        resourceSizeCache,
+      );
+    if (shouldUseLightweightBinding) {
+      resourceBindings.push(createLightweightBinding(hit));
+      continue;
+    }
+
     const blocks = await getResourceBlocks(input.repoRoot, hit.resourcePath, input.scanContext);
-    const matchedComponents = blocks.filter(
-      (block) => block.objectType === 'MonoBehaviour' && block.fields.m_Script?.includes(scriptGuid),
-    );
+    const matchedComponents = blocks.filter((block) => {
+      if (block.objectType !== 'MonoBehaviour') return false;
+      const scriptRefGuid = extractGuidFromScriptField(block.fields.m_Script || '');
+      if (!scriptRefGuid) return false;
+      return scriptRefGuid.toLowerCase() === scriptGuid.toLowerCase();
+    });
 
     if (matchedComponents.length === 0) {
       unityDiagnostics.push(`No MonoBehaviour block matched script guid ${scriptGuid} in ${hit.resourcePath}.`);
@@ -137,6 +157,56 @@ export async function resolveUnityBindings(input: ResolveInput): Promise<Resolve
     serializedFields: aggregateSerializedFields(resourceBindings),
     unityDiagnostics,
   };
+}
+
+function applyResourceAllowlist(
+  hits: UnityResourceGuidHit[],
+  allowlist?: string[],
+): UnityResourceGuidHit[] {
+  if (!allowlist || allowlist.length === 0) {
+    return hits;
+  }
+
+  const normalizedAllowlist = new Set(allowlist.map((value) => normalizePath(value)));
+  return hits.filter((hit) => normalizedAllowlist.has(normalizePath(hit.resourcePath)));
+}
+
+function createLightweightBinding(hit: UnityResourceGuidHit): ResolvedUnityBinding {
+  return {
+    resourcePath: hit.resourcePath,
+    resourceType: hit.resourceType,
+    bindingKind: hit.resourceType === 'scene' ? 'scene-override' : 'direct',
+    componentObjectId: `line-${hit.line}`,
+    lightweight: true,
+    evidence: {
+      line: hit.line,
+      lineText: hit.lineText,
+    },
+    serializedFields: {
+      scalarFields: [],
+      referenceFields: [],
+    },
+    resolvedReferences: [],
+    assetRefPaths: [],
+  };
+}
+
+async function isLargeResourceForDeepParse(
+  repoRoot: string,
+  resourcePath: string,
+  cache: Map<string, boolean>,
+): Promise<boolean> {
+  const normalizedPath = normalizePath(resourcePath);
+  const cached = cache.get(normalizedPath);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const absolutePath = path.join(repoRoot, normalizedPath);
+  const stat = await fs.stat(absolutePath);
+  const isLarge = stat.size > MAX_CACHED_RESOURCE_BYTES;
+  cache.set(normalizedPath, isLarge);
+  return isLarge;
 }
 
 export function hasCoverage(resultSet: ResolveOutput[]): { hasScalar: boolean; hasReference: boolean } {
@@ -211,9 +281,16 @@ async function getResourceBlocks(
   }
 
   const absoluteResourcePath = path.join(repoRoot, normalizedResourcePath);
+  let allowCache = Boolean(scanContext);
+  if (allowCache) {
+    const stat = await fs.stat(absoluteResourcePath);
+    allowCache = stat.size <= MAX_CACHED_RESOURCE_BYTES;
+  }
   const raw = await fs.readFile(absoluteResourcePath, 'utf-8');
   const blocks = parseUnityYamlObjects(raw);
-  scanContext?.resourceDocCache.set(normalizedResourcePath, blocks);
+  if (allowCache) {
+    scanContext?.resourceDocCache.set(normalizedResourcePath, blocks);
+  }
   return blocks;
 }
 
@@ -530,6 +607,10 @@ function baseLayerName(resourceType: 'prefab' | 'scene' | 'asset'): string {
 function extractFileId(rawValue?: string): string | undefined {
   if (!rawValue) return undefined;
   return rawValue.match(/fileID:\s*(\d+)/)?.[1];
+}
+
+function extractGuidFromScriptField(rawValue: string): string | undefined {
+  return rawValue.match(/guid:\s*([0-9a-f]{32})/i)?.[1];
 }
 
 function parseObjectReference(rawValue: string): { fileId?: string; guid?: string; resolvedAssetPath?: string } | null {

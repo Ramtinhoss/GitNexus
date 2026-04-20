@@ -1,16 +1,19 @@
-import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { generateId } from '../../lib/utils.js';
-import type { KnowledgeGraph, GraphNode, GraphRelationship } from '../graph/types.js';
+import type { KnowledgeGraph, GraphNode } from '../graph/types.js';
 import type { UnityScanContext, UnitySymbolDeclaration } from '../unity/scan-context.js';
 import { buildUnityScanContext } from '../unity/scan-context.js';
 import { resolveUnityBindings } from '../unity/resolver.js';
+import { buildUnityParitySeed, type UnityParitySeed } from './unity-parity-seed.js';
+import { resolveUnityConfig } from '../config/unity-config.js';
 
 export interface UnityResourceProcessingResult {
   processedSymbols: number;
   bindingCount: number;
   componentCount: number;
   diagnostics: string[];
+  prefabSourceStats: PrefabSourcePassStats;
+  paritySeed?: UnityParitySeed;
   timingsMs: {
     scanContext: number;
     resolve: number;
@@ -32,7 +35,18 @@ export interface UnityResourceProcessingDeps {
   resolveBindings?: typeof resolveUnityBindings;
 }
 
+interface PrefabSourcePassStats {
+  rowsParsed: number;
+  rowsFilteredZeroGuid: number;
+  rowsFilteredPlaceholder: number;
+  rowsFilteredUnresolved: number;
+  rowsDeduped: number;
+  rowsEmitted: number;
+  fileErrors: number;
+}
+
 const UNITY_DIAGNOSTIC_SAMPLE_LIMIT = 3;
+const PREFAB_SOURCE_PASS_DISABLE_ENV = 'GITNEXUS_DISABLE_PREFAB_SOURCE_PASS';
 
 export async function processUnityResources(
   graph: KnowledgeGraph,
@@ -71,6 +85,7 @@ export async function processUnityResources(
   let scanContextMs = 0;
   let resolveMs = 0;
   let graphWriteMs = 0;
+  let prefabSourceStats: PrefabSourcePassStats = initPrefabSourcePassStats();
 
   try {
     const tScanContextStart = performance.now();
@@ -91,6 +106,21 @@ export async function processUnityResources(
     diagnostics.push(
       `scanContext: scripts=${scanContext.symbolToScriptPath.size}, guids=${scanContext.scriptPathToGuid.size}, resources=${uniqueResourcePaths.size}`,
     );
+    if (isPrefabSourcePassDisabledByEnv()) {
+      diagnostics.push(`prefab-source: skipped (env ${PREFAB_SOURCE_PASS_DISABLE_ENV}=1)`);
+    } else {
+      const tPrefabSourceStart = performance.now();
+      prefabSourceStats = await emitPrefabSourceGuidRefsFromScanContext(graph, scanContext);
+      graphWriteMs += performance.now() - tPrefabSourceStart;
+      diagnostics.push(`prefab-source: emitted=${prefabSourceStats.rowsEmitted}`);
+      diagnostics.push(`prefab_source.rows_parsed=${prefabSourceStats.rowsParsed}`);
+      diagnostics.push(`prefab_source.rows_filtered_zero_guid=${prefabSourceStats.rowsFilteredZeroGuid}`);
+      diagnostics.push(`prefab_source.rows_filtered_placeholder=${prefabSourceStats.rowsFilteredPlaceholder}`);
+      diagnostics.push(`prefab_source.rows_filtered_unresolved=${prefabSourceStats.rowsFilteredUnresolved}`);
+      diagnostics.push(`prefab_source.rows_deduped=${prefabSourceStats.rowsDeduped}`);
+      diagnostics.push(`prefab_source.rows_emitted=${prefabSourceStats.rowsEmitted}`);
+      diagnostics.push(`prefab_source.file_errors=${prefabSourceStats.fileErrors}`);
+    }
     symbolsWithResourceHits = collectSymbolsWithResourceHits(scanContext);
   } catch (error) {
     if (scanContextMs === 0) {
@@ -147,36 +177,79 @@ export async function processUnityResources(
 
       processedSymbols += 1;
 
+      const tWriteStart = performance.now();
+      const summaryBySource = new Map<string, Map<string, { resourceType: string; bindingKinds: Set<string>; lightweight: boolean }>>();
+      const appendSummary = (
+        sourceNodeId: string,
+        binding: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number],
+      ) => {
+        const normalizedPath = normalizePath(binding.resourcePath);
+        const perPath = summaryBySource.get(sourceNodeId) || new Map<string, { resourceType: string; bindingKinds: Set<string>; lightweight: boolean }>();
+        const existing = perPath.get(normalizedPath) || {
+          resourceType: binding.resourceType,
+          bindingKinds: new Set<string>(),
+          lightweight: true,
+        };
+        existing.resourceType = binding.resourceType || existing.resourceType;
+        existing.bindingKinds.add(binding.bindingKind);
+        existing.lightweight = existing.lightweight && Boolean(binding.lightweight);
+        perPath.set(normalizedPath, existing);
+        summaryBySource.set(sourceNodeId, perPath);
+      };
+
       for (const binding of resolved.resourceBindings) {
-        const tWriteStart = performance.now();
         bindingCount += 1;
         componentCount += 1;
-
-        const resourceFileNode = ensureResourceFileNode(graph, binding.resourcePath);
-        const componentNode = createComponentNode(symbol, binding, payloadMode);
-        graph.addNode(componentNode);
-
+        const resourceFileId = ensureResourceFileNode(graph, binding.resourcePath);
+        const componentPayload = buildUnityPayload(binding, payloadMode);
         graph.addRelationship({
-          id: generateId('UNITY_COMPONENT_IN', `${classNode.id}:${binding.componentObjectId}->${resourceFileNode.id}`),
-          type: 'UNITY_COMPONENT_IN',
-          sourceId: classNode.id,
-          targetId: resourceFileNode.id,
-          confidence: 1.0,
-          reason: binding.bindingKind,
-        });
-
-        graph.addRelationship({
-          id: generateId('UNITY_COMPONENT_INSTANCE', `${classNode.id}->${componentNode.id}`),
+          id: generateId('UNITY_COMPONENT_INSTANCE', `${classNode.id}->${resourceFileId}:${binding.componentObjectId}`),
           type: 'UNITY_COMPONENT_INSTANCE',
           sourceId: classNode.id,
-          targetId: componentNode.id,
+          targetId: resourceFileId,
           confidence: 1.0,
-          reason: binding.bindingKind,
+          reason: JSON.stringify(componentPayload),
+        });
+        graph.addRelationship({
+          id: generateId('UNITY_GRAPH_NODE_SCRIPT_REF', `${resourceFileId}->${classNode.id}`),
+          type: 'UNITY_GRAPH_NODE_SCRIPT_REF',
+          sourceId: resourceFileId,
+          targetId: classNode.id,
+          confidence: 1.0,
+          reason: JSON.stringify({
+            resourcePath: normalizePath(binding.resourcePath),
+            resourceType: binding.resourceType,
+            bindingKind: binding.bindingKind,
+            componentObjectId: binding.componentObjectId,
+          }),
         });
 
-        const serializableTypeLinking = linkSerializableTypeEdges(
-          graph,
-          componentNode,
+        for (const ref of binding.resolvedReferences || []) {
+          const targetAssetPath = normalizePath(String(ref.target?.assetPath || '').trim());
+          const referenceGuid = String(ref.guid || '').trim();
+          if (!targetAssetPath || !referenceGuid) continue;
+          const sourceFileId = ensureResourceFileNode(graph, binding.resourcePath);
+          const targetFileId = ensureResourceFileNode(graph, targetAssetPath);
+          graph.addRelationship({
+            id: generateId('UNITY_ASSET_GUID_REF', `${sourceFileId}->${targetFileId}:${ref.fieldName}:${referenceGuid}:${String(ref.fileId || '')}`),
+            type: 'UNITY_ASSET_GUID_REF',
+            sourceId: sourceFileId,
+            targetId: targetFileId,
+            confidence: 1.0,
+            reason: JSON.stringify({
+              resourcePath: normalizePath(binding.resourcePath),
+              targetResourcePath: targetAssetPath,
+              guid: referenceGuid.toLowerCase(),
+              fileId: String(ref.fileId || ''),
+              fieldName: ref.fieldName,
+              sourceLayer: ref.sourceLayer || 'unknown',
+            }),
+          });
+        }
+
+        appendSummary(classNode.id, binding);
+
+        const serializableTypeLinking = collectSerializableTypeTargetsForBinding(
           symbol,
           binding,
           scanContext,
@@ -187,8 +260,43 @@ export async function processUnityResources(
         for (const hitSymbol of serializableTypeLinking.symbols) {
           serializedTypeSymbols.add(hitSymbol);
         }
-        graphWriteMs += performance.now() - tWriteStart;
+        for (const link of serializableTypeLinking.links) {
+          appendSummary(link.targetClassId, binding);
+          graph.addRelationship({
+            id: generateId('UNITY_SERIALIZED_TYPE_IN', `${classNode.id}->${link.targetClassId}:${normalizePath(binding.resourcePath)}:${link.fieldName}`),
+            type: 'UNITY_SERIALIZED_TYPE_IN',
+            sourceId: classNode.id,
+            targetId: link.targetClassId,
+            confidence: 1.0,
+            reason: JSON.stringify({
+              hostSymbol: symbol,
+              declaredType: link.declaredType,
+              fieldName: link.fieldName,
+              sourceLayer: link.sourceLayer,
+              resourcePath: normalizePath(binding.resourcePath),
+            }),
+          });
+        }
       }
+
+      for (const [sourceNodeId, perPath] of summaryBySource.entries()) {
+        for (const [resourcePath, summary] of perPath.entries()) {
+          const resourceFileId = generateId('File', resourcePath);
+          graph.addRelationship({
+            id: generateId('UNITY_RESOURCE_SUMMARY', `${sourceNodeId}->${resourceFileId}`),
+            type: 'UNITY_RESOURCE_SUMMARY',
+            sourceId: sourceNodeId,
+            targetId: resourceFileId,
+            confidence: 1.0,
+            reason: JSON.stringify({
+              resourceType: summary.resourceType,
+              bindingKinds: [...summary.bindingKinds.values()].sort(),
+              lightweight: true,
+            }),
+          });
+        }
+      }
+      graphWriteMs += performance.now() - tWriteStart;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       resolveErrorBySymbol.set(symbol, message);
@@ -215,6 +323,8 @@ export async function processUnityResources(
     bindingCount,
     componentCount,
     diagnostics,
+    prefabSourceStats,
+    paritySeed: scanContext ? buildUnityParitySeed(scanContext) : undefined,
     timingsMs: {
       scanContext: roundMs(scanContextMs),
       resolve: roundMs(resolveMs),
@@ -256,48 +366,7 @@ function normalizePath(filePath: string): string {
 
 function resolveUnityPayloadMode(explicit?: UnityPayloadMode): UnityPayloadMode {
   if (explicit) return explicit;
-  const envMode = String(process.env.GITNEXUS_UNITY_PAYLOAD_MODE || '').trim().toLowerCase();
-  if (envMode === 'full') return 'full';
-  return 'compact';
-}
-
-function ensureResourceFileNode(graph: KnowledgeGraph, resourcePath: string): GraphNode {
-  const normalizedResourcePath = resourcePath.replace(/\\/g, '/');
-  const fileId = generateId('File', normalizedResourcePath);
-  const existing = graph.getNode(fileId);
-  if (existing) {
-    return existing;
-  }
-
-  const node: GraphNode = {
-    id: fileId,
-    label: 'File',
-    properties: {
-      name: path.basename(normalizedResourcePath),
-      filePath: normalizedResourcePath,
-    },
-  };
-  graph.addNode(node);
-  return node;
-}
-
-function createComponentNode(
-  symbol: string,
-  binding: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number],
-  payloadMode: UnityPayloadMode,
-): GraphNode {
-  const payload = buildUnityPayload(binding, payloadMode);
-  return {
-    id: generateId('CodeElement', `${binding.resourcePath}:${binding.componentObjectId}`),
-    label: 'CodeElement',
-    properties: {
-      name: `${symbol}@${binding.componentObjectId}`,
-      filePath: binding.resourcePath,
-      startLine: binding.evidence.line,
-      endLine: binding.evidence.line,
-      description: JSON.stringify(payload),
-    },
-  };
+  return resolveUnityConfig().config.payloadMode ?? 'compact';
 }
 
 function buildUnityPayload(
@@ -308,9 +377,13 @@ function buildUnityPayload(
     bindingKind: binding.bindingKind,
     componentObjectId: binding.componentObjectId,
   };
+  if (binding.lightweight) {
+    payload.lightweight = true;
+  }
 
-  if (binding.serializedFields.scalarFields.length > 0 || binding.serializedFields.referenceFields.length > 0) {
-    payload.serializedFields = binding.serializedFields;
+  const serializedFields = compactSerializedFieldsForStorage(binding.serializedFields);
+  if (serializedFields.scalarFields.length > 0 || serializedFields.referenceFields.length > 0) {
+    payload.serializedFields = serializedFields;
   }
   if (binding.resolvedReferences && binding.resolvedReferences.length > 0) {
     payload.resolvedReferences = binding.resolvedReferences;
@@ -326,6 +399,25 @@ function buildUnityPayload(
   }
 
   return payload;
+}
+
+function compactSerializedFieldsForStorage(
+  input: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number]['serializedFields'],
+): Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number]['serializedFields'] {
+  return {
+    scalarFields: input.scalarFields.map((field) => ({
+      name: field.name,
+      sourceLayer: field.sourceLayer,
+      value: field.value,
+      valueType: field.valueType,
+    })),
+    referenceFields: input.referenceFields.map((field) => ({
+      name: field.name,
+      guid: field.guid,
+      fileId: field.fileId,
+      sourceLayer: field.sourceLayer,
+    })),
+  };
 }
 
 function buildCanonicalClassNodeIndex(
@@ -351,11 +443,15 @@ interface SerializableTypeLinkingStats {
   edgeCount: number;
   missCount: number;
   symbols: Set<string>;
+  links: Array<{
+    targetClassId: string;
+    fieldName: string;
+    declaredType: string;
+    sourceLayer: string;
+  }>;
 }
 
-function linkSerializableTypeEdges(
-  graph: KnowledgeGraph,
-  componentNode: GraphNode,
+function collectSerializableTypeTargetsForBinding(
   hostSymbol: string,
   binding: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'][number],
   scanContext: UnityScanContext | undefined,
@@ -365,6 +461,7 @@ function linkSerializableTypeEdges(
     edgeCount: 0,
     missCount: 0,
     symbols: new Set<string>(),
+    links: [],
   };
   if (!scanContext) return stats;
 
@@ -390,13 +487,11 @@ function linkSerializableTypeEdges(
       continue;
     }
 
-    graph.addRelationship({
-      id: generateId('UNITY_SERIALIZED_TYPE_IN', `${serializableNode.id}->${componentNode.id}:${fieldName}`),
-      type: 'UNITY_SERIALIZED_TYPE_IN',
-      sourceId: serializableNode.id,
-      targetId: componentNode.id,
-      confidence: 1.0,
-      reason: JSON.stringify({ hostSymbol, fieldName, declaredType, sourceLayer }),
+    stats.links.push({
+      targetClassId: serializableNode.id,
+      fieldName,
+      declaredType,
+      sourceLayer,
     });
     stats.edgeCount += 1;
     stats.symbols.add(declaredType);
@@ -420,6 +515,47 @@ function collectBindingFieldSources(
     }
   }
   return fieldSources;
+}
+
+function ensureResourceFileNode(graph: KnowledgeGraph, resourcePath: string): string {
+  const normalizedPath = normalizePath(resourcePath);
+  const fileId = generateId('File', normalizedPath);
+  if (!graph.getNode(fileId)) {
+    graph.addNode({
+      id: fileId,
+      label: 'File',
+      properties: {
+        name: normalizedPath.split('/').pop() || normalizedPath,
+        filePath: normalizedPath,
+      },
+    });
+  }
+  return fileId;
+}
+
+function collectResourceSummaryRows(
+  bindings: Awaited<ReturnType<typeof resolveUnityBindings>>['resourceBindings'],
+): Array<{ resourcePath: string; resourceType: string; bindingKinds: string[]; lightweight: boolean }> {
+  const summaryByPath = new Map<string, { resourceType: string; bindingKinds: Set<string>; lightweight: boolean }>();
+  for (const binding of bindings) {
+    const resourcePath = normalizePath(binding.resourcePath);
+    const row = summaryByPath.get(resourcePath) || {
+      resourceType: binding.resourceType,
+      bindingKinds: new Set<string>(),
+      lightweight: true,
+    };
+    row.resourceType = binding.resourceType || row.resourceType;
+    row.bindingKinds.add(binding.bindingKind);
+    row.lightweight = row.lightweight && Boolean(binding.lightweight);
+    summaryByPath.set(resourcePath, row);
+  }
+
+  return [...summaryByPath.entries()].map(([resourcePath, value]) => ({
+    resourcePath,
+    resourceType: value.resourceType,
+    bindingKinds: [...value.bindingKinds.values()].sort(),
+    lightweight: value.lightweight,
+  }));
 }
 
 function roundMs(value: number): number {
@@ -485,4 +621,102 @@ function classifyUnityDiagnostic(message: string): UnityDiagnosticCategory {
     return 'missing-meta-guid';
   }
   return 'other';
+}
+
+async function emitPrefabSourceGuidRefsFromScanContext(
+  graph: KnowledgeGraph,
+  scanContext: UnityScanContext,
+): Promise<PrefabSourcePassStats> {
+  const stats = initPrefabSourcePassStats();
+  const dedupeBySource = new Map<string, Set<string>>();
+  const iterable: AsyncIterable<UnityScanContext['prefabSourceRefs'][number]> =
+    typeof scanContext.streamPrefabSourceRefs === 'function'
+      ? scanContext.streamPrefabSourceRefs({
+        hooks: {
+          onFileError: () => {
+            stats.fileErrors += 1;
+          },
+        },
+      })
+      : (async function* () {
+        for (const row of scanContext.prefabSourceRefs || []) {
+          yield row;
+        }
+      })();
+
+  for await (const row of iterable) {
+    stats.rowsParsed += 1;
+    const source = normalizePath(String(row.sourceResourcePath || '').trim());
+    const guid = String(row.targetGuid || '').trim().toLowerCase();
+    if (!guid || guid === '00000000000000000000000000000000') {
+      stats.rowsFilteredZeroGuid += 1;
+      continue;
+    }
+
+    const hintedTarget = normalizePath(String(row.targetResourcePath || '').trim());
+    if (hintedTarget === '__PLACEHOLDER__') {
+      stats.rowsFilteredPlaceholder += 1;
+      continue;
+    }
+
+    const resolvedTarget = hintedTarget
+      || normalizePath(scanContext.assetGuidToPath?.get(guid) || scanContext.assetGuidToPath?.get(guid.toLowerCase()) || '');
+    if (!resolvedTarget || !resolvedTarget.endsWith('.prefab')) {
+      stats.rowsFilteredUnresolved += 1;
+      continue;
+    }
+    if (!source) {
+      stats.rowsFilteredUnresolved += 1;
+      continue;
+    }
+
+    const perSourceDedupe = dedupeBySource.get(source) || new Set<string>();
+    const dedupeKey = `${resolvedTarget}|m_SourcePrefab|${guid}|${String(row.fileId || '').trim()}|${row.sourceLayer === 'scene' ? 'scene' : 'prefab'}`;
+    if (perSourceDedupe.has(dedupeKey)) {
+      stats.rowsDeduped += 1;
+      continue;
+    }
+    perSourceDedupe.add(dedupeKey);
+    dedupeBySource.set(source, perSourceDedupe);
+
+    const sourceFileId = ensureResourceFileNode(graph, source);
+    const targetFileId = ensureResourceFileNode(graph, resolvedTarget);
+    graph.addRelationship({
+      id: generateId(
+        'UNITY_ASSET_GUID_REF',
+        `${sourceFileId}->${targetFileId}:m_SourcePrefab:${guid}:${String(row.fileId || '')}`,
+      ),
+      type: 'UNITY_ASSET_GUID_REF',
+      sourceId: sourceFileId,
+      targetId: targetFileId,
+      confidence: 1.0,
+      reason: JSON.stringify({
+        resourcePath: source,
+        targetResourcePath: resolvedTarget,
+        guid,
+        fileId: String(row.fileId || ''),
+        fieldName: 'm_SourcePrefab',
+        sourceLayer: row.sourceLayer === 'scene' ? 'scene' : 'prefab',
+      }),
+    });
+    stats.rowsEmitted += 1;
+  }
+  return stats;
+}
+
+function initPrefabSourcePassStats(): PrefabSourcePassStats {
+  return {
+    rowsParsed: 0,
+    rowsFilteredZeroGuid: 0,
+    rowsFilteredPlaceholder: 0,
+    rowsFilteredUnresolved: 0,
+    rowsDeduped: 0,
+    rowsEmitted: 0,
+    fileErrors: 0,
+  };
+}
+
+function isPrefabSourcePassDisabledByEnv(): boolean {
+  const value = String(process.env[PREFAB_SOURCE_PASS_DISABLE_ENV] || '').trim().toLowerCase();
+  return value === '1' || value === 'true' || value === 'yes' || value === 'on';
 }

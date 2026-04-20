@@ -57,3 +57,21 @@ MonoBehaviour:
   assert.equal(mono.fields['- {fileID'], undefined);
   assert.equal(mono.fields.needPause, '0');
 });
+
+test('parseUnityYamlObjects supports negative object ids in headers', () => {
+  const yamlWithNegativeIds = `--- !u!114 &-8618438378761226257
+MonoBehaviour:
+  m_Script: {fileID: 11500000, guid: 1b63118991a192f4d8ac217fd7fe49ce, type: 3}
+  m_Name: Energy By Attack Count
+--- !u!114 &11400000
+MonoBehaviour:
+  m_Name: Graph Root
+`;
+
+  const blocks = parseUnityYamlObjects(yamlWithNegativeIds);
+  assert.equal(blocks.length, 2);
+  assert.equal(blocks[0]?.objectId, '-8618438378761226257');
+  assert.equal(blocks[0]?.objectType, 'MonoBehaviour');
+  assert.match(blocks[0]?.fields.m_Script || '', /guid:\s*1b63118991a192f4d8ac217fd7fe49ce/);
+  assert.equal(blocks[1]?.objectId, '11400000');
+});

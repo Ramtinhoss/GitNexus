@@ -441,7 +441,7 @@ Expected: all PASS.
 **Step 4: Run manual acceptance on real repo samples**
 
 Run:
-1. `cd /Volumes/Shuttle/unity-projects/neonspark && npx gitnexus analyze`
+1. `cd /Volumes/Shuttle/unity-projects/neonspark && npx -y /npx -y /gitnexus analyze`
 2. `gitnexus unity-bindings Global --target-path /Volumes/Shuttle/unity-projects/neonspark`
 3. `gitnexus unity-bindings BattleMode --target-path /Volumes/Shuttle/unity-projects/neonspark`
 4. `gitnexus unity-bindings PlayerActor --target-path /Volumes/Shuttle/unity-projects/neonspark`

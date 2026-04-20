@@ -23,7 +23,7 @@ description: "Use when the user wants to know what will break if they change som
 4. Assess risk and report to user
 ```
 
-> If "Index is stale" → run `npx gitnexus analyze` in terminal.
+> If "Index is stale" → run `gitnexus analyze` when local CLI exists; otherwise resolve the pinned npx package spec from `~/.gitnexus/config.json` and run `npx -y <resolved-cli-spec> analyze`.
 
 ## Checklist
 
@@ -31,10 +31,18 @@ description: "Use when the user wants to know what will break if they change som
 - [ ] gitnexus_impact({target, direction: "upstream"}) to find dependents
 - [ ] Review d=1 items first (these WILL BREAK)
 - [ ] Check high-confidence (>0.8) dependencies
+- [ ] For Unity symbols, verify `context(..., unity_resources: "on")` hydration completeness
+- [ ] If compact response has `hydrationMeta.needsParityRetry === true`, rerun in parity before final risk call
 - [ ] READ processes to check affected execution flows
 - [ ] gitnexus_detect_changes() for pre-commit check
 - [ ] Assess risk level and report to user
 ```
+
+## Unity Runtime Process Trigger
+
+When impact analysis depends on Unity runtime process closure or confidence interpretation, load and follow:
+
+- `_shared/unity-runtime-process-contract.md`
 
 ## Understanding Output
 
@@ -95,3 +103,11 @@ gitnexus_detect_changes({scope: "staged"})
 
 3. Risk: 2 direct callers, 2 processes = MEDIUM
 ```
+
+## Runtime-Chain Closure Guard
+
+- Treat runtime-chain outputs as two layers:
+  - `verifier-core`: binary verifier result (`verified_full` | `failed`)
+  - `policy-adjusted`: user-visible result after hydration policy is applied
+- If `hydration_policy=strict` and `hydrationMeta.fallbackToCompact=true`, the result is downgraded policy-adjusted output and is not closure.
+- In that downgraded state, rerun with parity before final conclusions.

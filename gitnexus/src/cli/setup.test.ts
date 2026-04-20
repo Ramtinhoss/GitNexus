@@ -11,30 +11,38 @@ const execFileAsync = promisify(execFile);
 const here = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(here, '..', '..');
 const cliPath = path.join(packageRoot, 'dist', 'cli', 'index.js');
-const packageName = JSON.parse(
-  await fs.readFile(path.join(packageRoot, 'package.json'), 'utf-8'),
-) as { name?: string };
-const expectedMcpPackage = `${packageName.name || 'gitnexus'}@latest`;
 
 async function runSetup(args: string[], env: NodeJS.ProcessEnv, cwd = packageRoot) {
   return execFileAsync(process.execPath, [cliPath, 'setup', ...args], { cwd, env });
 }
 
-test('setup requires --agent', async () => {
+test('setup without --agent uses legacy Cursor install path', async () => {
   const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
 
   try {
-    try {
-      await runSetup([], {
-        ...process.env,
-        HOME: fakeHome,
-        USERPROFILE: fakeHome,
-      });
-      assert.fail('expected setup without --agent to fail');
-    } catch (err: any) {
-      assert.equal(typeof err?.stdout, 'string');
-      assert.match(err.stdout as string, /Missing --agent/);
-    }
+    await fs.mkdir(path.join(fakeHome, '.cursor'), { recursive: true });
+
+    await runSetup([], {
+      ...process.env,
+      HOME: fakeHome,
+      USERPROFILE: fakeHome,
+    });
+
+    const cursorMcpPath = path.join(fakeHome, '.cursor', 'mcp.json');
+    const cursorSkillPath = path.join(fakeHome, '.cursor', 'skills', 'gitnexus-cli', 'SKILL.md');
+    const configPath = path.join(fakeHome, '.gitnexus', 'config.json');
+
+    const cursorMcpRaw = await fs.readFile(cursorMcpPath, 'utf-8');
+    const cursorMcp = JSON.parse(cursorMcpRaw) as {
+      mcpServers?: Record<string, { command?: string; args?: string[] }>;
+    };
+    assert.equal(cursorMcp.mcpServers?.gitnexus?.command, 'gitnexus');
+    assert.deepEqual(cursorMcp.mcpServers?.gitnexus?.args, ['mcp']);
+    await fs.access(cursorSkillPath);
+
+    const configRaw = await fs.readFile(configPath, 'utf-8');
+    const config = JSON.parse(configRaw) as { setupScope?: string };
+    assert.equal(config.setupScope, 'global');
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
   }
@@ -60,6 +68,26 @@ test('setup rejects invalid --agent', async () => {
   }
 });
 
+test('setup rejects using --cli-spec and --cli-version together', async () => {
+  const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
+
+  try {
+    try {
+      await runSetup(['--agent', 'opencode', '--cli-spec', '@veewo/gitnexus@1.4.7-rc', '--cli-version', '1.4.7-rc'], {
+        ...process.env,
+        HOME: fakeHome,
+        USERPROFILE: fakeHome,
+      });
+      assert.fail('expected setup with conflicting CLI options to fail');
+    } catch (err: any) {
+      assert.equal(typeof err?.stdout, 'string');
+      assert.match(err.stdout as string, /Use either --cli-spec or --cli-version/);
+    }
+  } finally {
+    await fs.rm(fakeHome, { recursive: true, force: true });
+  }
+});
+
 test('setup installs global skills under ~/.agents/skills/gitnexus', async () => {
   const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
 
@@ -78,9 +106,18 @@ test('setup installs global skills under ~/.agents/skills/gitnexus', async () =>
       'gitnexus-exploring',
       'SKILL.md',
     );
+    const sharedRuntimeContractPath = path.join(
+      fakeHome,
+      '.agents',
+      'skills',
+      'gitnexus',
+      '_shared',
+      'unity-runtime-process-contract.md',
+    );
     const configPath = path.join(fakeHome, '.gitnexus', 'config.json');
 
     await fs.access(skillPath);
+    await fs.access(sharedRuntimeContractPath);
     const configRaw = await fs.readFile(configPath, 'utf-8');
     const config = JSON.parse(configRaw) as { setupScope?: string };
     assert.equal(config.setupScope, 'global');
@@ -133,7 +170,7 @@ process.exit(0);
     const parsed = JSON.parse(raw) as { args: string[] };
 
     assert.deepEqual(parsed.args.slice(0, 4), ['mcp', 'add', 'gitnexus', '--']);
-    assert.ok(parsed.args.includes(expectedMcpPackage));
+    assert.ok(parsed.args.includes('gitnexus'));
     assert.ok(parsed.args.includes('mcp'));
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
@@ -161,7 +198,42 @@ test('setup configures OpenCode MCP in ~/.config/opencode/opencode.json', async 
     };
 
     assert.equal(opencodeConfig.mcp?.gitnexus?.type, 'local');
-    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['npx', '-y', expectedMcpPackage, 'mcp']);
+    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['gitnexus', 'mcp']);
+  } finally {
+    await fs.rm(fakeHome, { recursive: true, force: true });
+  }
+});
+
+test('setup --cli-version pins MCP package spec and persists it in config', async () => {
+  const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
+
+  try {
+    const opencodeDir = path.join(fakeHome, '.config', 'opencode');
+    await fs.mkdir(opencodeDir, { recursive: true });
+
+    await runSetup(['--agent', 'opencode', '--cli-version', '1.4.7-rc'], {
+      ...process.env,
+      HOME: fakeHome,
+      USERPROFILE: fakeHome,
+    });
+
+    const opencodeConfigPath = path.join(opencodeDir, 'opencode.json');
+    const opencodeRaw = await fs.readFile(opencodeConfigPath, 'utf-8');
+    const opencodeConfig = JSON.parse(opencodeRaw) as {
+      mcp?: Record<string, { type?: string; command?: string[] }>;
+    };
+
+    const configPath = path.join(fakeHome, '.gitnexus', 'config.json');
+    const savedConfigRaw = await fs.readFile(configPath, 'utf-8');
+    const savedConfig = JSON.parse(savedConfigRaw) as {
+      cliPackageSpec?: string;
+      cliVersion?: string;
+    };
+
+    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['gitnexus', 'mcp']);
+    // Version is persisted to config, not MCP entry:
+    assert.equal(savedConfig.cliPackageSpec, '@veewo/gitnexus@1.4.7-rc');
+    assert.equal(savedConfig.cliVersion, '1.4.7-rc');
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
   }
@@ -191,7 +263,7 @@ test('setup keeps using legacy ~/.config/opencode/config.json when it already ex
 
     assert.equal(legacyConfig.existing, true);
     assert.equal(legacyConfig.mcp?.gitnexus?.type, 'local');
-    assert.deepEqual(legacyConfig.mcp?.gitnexus?.command, ['npx', '-y', expectedMcpPackage, 'mcp']);
+    assert.deepEqual(legacyConfig.mcp?.gitnexus?.command, ['gitnexus', 'mcp']);
     await assert.rejects(fs.access(preferredConfigPath));
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
@@ -240,9 +312,10 @@ test('setup --scope project --agent claude writes only .mcp.json', async () => {
     const opencodeConfigPath = path.join(fakeRepo, 'opencode.json');
 
     const projectMcpRaw = await fs.readFile(projectMcpPath, 'utf-8');
-    const projectMcp = JSON.parse(projectMcpRaw) as { mcpServers?: Record<string, { command?: string }> };
+    const projectMcp = JSON.parse(projectMcpRaw) as { mcpServers?: Record<string, { command?: string; args?: string[] }> };
 
-    assert.equal(projectMcp.mcpServers?.gitnexus?.command, 'npx');
+    assert.equal(projectMcp.mcpServers?.gitnexus?.command, 'gitnexus');
+    assert.deepEqual(projectMcp.mcpServers?.gitnexus?.args, ['mcp']);
     await assert.rejects(fs.access(codexConfigPath));
     await assert.rejects(fs.access(opencodeConfigPath));
   } finally {
@@ -271,9 +344,96 @@ test('setup --scope project --agent codex writes only .codex/config.toml', async
     const codexConfigRaw = await fs.readFile(codexConfigPath, 'utf-8');
 
     assert.match(codexConfigRaw, /\[mcp_servers\.gitnexus\]/);
-    assert.match(codexConfigRaw, /command = "npx"/);
+    assert.match(codexConfigRaw, /command = "gitnexus"/);
+    assert.match(codexConfigRaw, /args = \["mcp"\]/);
     await assert.rejects(fs.access(projectMcpPath));
     await assert.rejects(fs.access(opencodeConfigPath));
+  } finally {
+    await fs.rm(fakeHome, { recursive: true, force: true });
+    await fs.rm(fakeRepo, { recursive: true, force: true });
+  }
+});
+
+test('setup --scope project --agent codex replaces existing gitnexus table without duplicate keys', async () => {
+  const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
+  const fakeRepo = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-repo-'));
+
+  try {
+    await execFileAsync('git', ['init'], { cwd: fakeRepo });
+
+    const codexConfigPath = path.join(fakeRepo, '.codex', 'config.toml');
+    await fs.mkdir(path.dirname(codexConfigPath), { recursive: true });
+    await fs.writeFile(
+      codexConfigPath,
+      [
+        '[mcp_servers.gitnexus]',
+        'command = "npx"',
+        'args = ["-y", "oldpkg@latest", "mcp"]',
+        '',
+        '[profiles.default]',
+        'model = "gpt-5"',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+
+    await runSetup(['--scope', 'project', '--agent', 'codex'], {
+      ...process.env,
+      HOME: fakeHome,
+      USERPROFILE: fakeHome,
+    }, fakeRepo);
+
+    const codexConfigRaw = await fs.readFile(codexConfigPath, 'utf-8');
+    const tableMatches = codexConfigRaw.match(/^\[mcp_servers\.gitnexus\]$/gm) || [];
+    assert.equal(tableMatches.length, 1);
+
+    const gitnexusTableMatch = codexConfigRaw.match(
+      /^\[mcp_servers\.gitnexus\][\s\S]*?(?=^\[[^\]]+\]|(?![\s\S]))/m,
+    );
+    assert.ok(gitnexusTableMatch, 'expected [mcp_servers.gitnexus] table');
+    const gitnexusTable = gitnexusTableMatch[0];
+
+    assert.equal((gitnexusTable.match(/^command\s*=/gm) || []).length, 1);
+    assert.equal((gitnexusTable.match(/^args\s*=/gm) || []).length, 1);
+    assert.match(gitnexusTable, /command = "gitnexus"/);
+    assert.doesNotMatch(gitnexusTable, /oldpkg@latest/);
+    assert.match(codexConfigRaw, /^\[profiles\.default\]$/m);
+  } finally {
+    await fs.rm(fakeHome, { recursive: true, force: true });
+    await fs.rm(fakeRepo, { recursive: true, force: true });
+  }
+});
+
+test('setup --scope project --agent codex is idempotent across repeated runs', async () => {
+  const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-home-'));
+  const fakeRepo = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-setup-repo-'));
+
+  try {
+    await execFileAsync('git', ['init'], { cwd: fakeRepo });
+
+    const env = {
+      ...process.env,
+      HOME: fakeHome,
+      USERPROFILE: fakeHome,
+    };
+
+    await runSetup(['--scope', 'project', '--agent', 'codex'], env, fakeRepo);
+    await runSetup(['--scope', 'project', '--agent', 'codex'], env, fakeRepo);
+
+    const codexConfigPath = path.join(fakeRepo, '.codex', 'config.toml');
+    const codexConfigRaw = await fs.readFile(codexConfigPath, 'utf-8');
+    const tableMatches = codexConfigRaw.match(/^\[mcp_servers\.gitnexus\]$/gm) || [];
+    assert.equal(tableMatches.length, 1);
+
+    const gitnexusTableMatch = codexConfigRaw.match(
+      /^\[mcp_servers\.gitnexus\][\s\S]*?(?=^\[[^\]]+\]|(?![\s\S]))/m,
+    );
+    assert.ok(gitnexusTableMatch, 'expected [mcp_servers.gitnexus] table');
+    const gitnexusTable = gitnexusTableMatch[0];
+
+    assert.equal((gitnexusTable.match(/^command\s*=/gm) || []).length, 1);
+    assert.equal((gitnexusTable.match(/^args\s*=/gm) || []).length, 1);
+    assert.match(gitnexusTable, /command = "gitnexus"/);
   } finally {
     await fs.rm(fakeHome, { recursive: true, force: true });
     await fs.rm(fakeRepo, { recursive: true, force: true });
@@ -322,7 +482,7 @@ test('setup --scope project --agent opencode writes only opencode.json', async (
     const config = JSON.parse(configRaw) as { setupScope?: string };
 
     assert.equal(opencodeConfig.mcp?.gitnexus?.type, 'local');
-    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['npx', '-y', expectedMcpPackage, 'mcp']);
+    assert.deepEqual(opencodeConfig.mcp?.gitnexus?.command, ['gitnexus', 'mcp']);
     await assert.rejects(fs.access(projectMcpPath));
     await assert.rejects(fs.access(codexConfigPath));
     await fs.access(localSkillPath);

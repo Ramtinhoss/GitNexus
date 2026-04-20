@@ -8,7 +8,7 @@ Owner: benchmark pipeline
 
 Current `neonspark-v1` flow fails at analyze stage for fixture-based execution:
 
-1. `gitnexus analyze <fixture-path>` requires target path to be a Git worktree.
+1. `npx -y /gitnexus analyze <fixture-path>` requires target path to be a Git worktree.
 2. Fixture path is not a Git repo, so analyze exits with `Not a git repository`.
 3. Existing workaround (`sync fixture + analyze fixture`) adds unnecessary data copy cost and operational complexity.
 
@@ -73,7 +73,7 @@ Choose **Option B**.
 
 ### 5.1 New Analyze CLI Parameters
 
-Add to `gitnexus analyze`:
+Add to `npx -y /gitnexus analyze`:
 
 1. `--repo-alias <name>`
 2. `--scope-manifest <path>`

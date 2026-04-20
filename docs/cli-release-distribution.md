@@ -5,9 +5,9 @@ This document defines the team release process for distributing GitNexus as a CL
 ## Goal
 
 - Teammates can install one stable CLI package from npm.
-- After install, they can run `gitnexus analyze` in any repository.
+- After install, they can run `npx -y @veewo/gitnexus@latest analyze` in any repository.
 - Agent skills are available through:
-  - repo-local install by `gitnexus analyze` to `.agents/skills/gitnexus/`
+  - repo-local install by `npx -y @veewo/gitnexus@latest analyze` to `.agents/skills/gitnexus/`
   - global install by `gitnexus setup` to `~/.agents/skills/gitnexus/`
 
 ## Scope
@@ -73,11 +73,11 @@ Replace upstream package with team package:
 - `npm install -g @veewo/gitnexus`
 
 No-install mode:
-- `npx -y @veewo/gitnexus analyze`
+- `npx -y @veewo/gitnexus@latest analyze`
 
 Typical first-time usage in a project:
 1. `gitnexus setup`
-2. `gitnexus analyze`
+2. `npx -y @veewo/gitnexus@latest analyze`
 
 ## Rollback Strategy (Single Channel)
 
@@ -102,7 +102,7 @@ Validated in this repository with `@veewo/gitnexus@1.3.4`:
 - `npm publish --access public` succeeds
 - `npm view @veewo/gitnexus version --registry=https://registry.npmjs.org` returns expected version
 - `npx -y @veewo/gitnexus@latest --version` returns expected version
-- Fresh global install can run `gitnexus analyze`
+- Fresh global install can run `npx -y @veewo/gitnexus@latest analyze`
 
 ## Troubleshooting
 

@@ -1,0 +1,116 @@
+{
+  "generatedAt": "2026-03-31T08:50:46.155Z",
+  "repo": "neonspark",
+  "symbolChecks": [
+    {
+      "name": "Reload",
+      "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs",
+      "status": "found",
+      "processCount": 0
+    },
+    {
+      "name": "ReloadBase",
+      "file": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs",
+      "status": "found",
+      "processCount": 0
+    },
+    {
+      "name": "WeaponPowerUp",
+      "file": "Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs",
+      "status": "found",
+      "processCount": 0
+    },
+    {
+      "name": "FirearmsPowerUp",
+      "file": "Assets/NEON/Code/Game/PowerUps/ColdWeapon/FirearmsPowerUp.cs",
+      "status": "unknown",
+      "processCount": 0
+    },
+    {
+      "name": "GunGraphMB",
+      "file": "Assets/NEON/Code/Game/Core/GunGraphMB.cs",
+      "status": "found",
+      "processCount": 0
+    },
+    {
+      "name": "GunGraph",
+      "file": "Assets/NEON/Code/Game/Graph/Graphs/GunGraph.cs",
+      "status": "found",
+      "processCount": 0
+    },
+    {
+      "name": "GunOutput",
+      "file": "Assets/NEON/Code/Game/Graph/Nodes/GunOutput.cs",
+      "status": "found",
+      "processCount": 0
+    },
+    {
+      "name": "Pickup",
+      "file": "Assets/NEON/Code/Game/PowerUps/Pickup.cs",
+      "status": "found",
+      "processCount": 0
+    },
+    {
+      "name": "PlayerActor",
+      "file": "Assets/NEON/Code/Game/Actors/PlayerActor/PlayerActor.cs",
+      "status": "found",
+      "processCount": 6
+    },
+    {
+      "name": "Gun",
+      "file": "Assets/NEON/Code/Game/Core/Gun.cs",
+      "status": "found",
+      "processCount": 1
+    }
+  ],
+  "queryChecks": [
+    {
+      "query": "Reload runtime chain",
+      "processCount": 0,
+      "processSymbolsCount": 0
+    },
+    {
+      "query": "WeaponPowerUp Equip CurGunGraph",
+      "processCount": 1,
+      "processSymbolsCount": 1
+    },
+    {
+      "query": "GunGraph RegisterEvents StartRoutineWithEvents",
+      "processCount": 0,
+      "processSymbolsCount": 0
+    },
+    {
+      "query": "OnPlayerShooting OnPlayerStopShooting reload",
+      "processCount": 0,
+      "processSymbolsCount": 0
+    },
+    {
+      "query": "ScriptableObject graph node runtime",
+      "processCount": 3,
+      "processSymbolsCount": 1
+    },
+    {
+      "query": "MonoBehaviour Awake Start Update OnEnable",
+      "processCount": 0,
+      "processSymbolsCount": 0
+    },
+    {
+      "query": "Pickup PickItUp EquipWithEvent",
+      "processCount": 0,
+      "processSymbolsCount": 0
+    },
+    {
+      "query": "IGraphEvent Register Unregister",
+      "processCount": 0,
+      "processSymbolsCount": 0
+    }
+  ],
+  "metrics": {
+    "symbolNonEmptyRatio": 0.2,
+    "queryProcessSymbolsNonEmptyRatio": 0.25,
+    "symbolNonEmptyCount": 2,
+    "queryProcessSymbolsNonEmptyCount": 2,
+    "symbolTotal": 10,
+    "queryTotal": 8
+  }
+}

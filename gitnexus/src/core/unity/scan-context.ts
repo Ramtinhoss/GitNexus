@@ -1,14 +1,20 @@
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import path from 'node:path';
+import { createInterface } from 'node:readline';
 import { glob } from 'glob';
 import { buildAssetMetaIndex, buildMetaIndex } from './meta-index.js';
+import { buildUnityUiMetaIndex } from './ui-meta-index.js';
+import { streamPrefabSourceRefs } from './prefab-source-scan.js';
+import type { StreamPrefabSourceRefsInput } from './prefab-source-scan.js';
 import type { UnityResourceGuidHit } from './resource-hit-scanner.js';
 import type { UnityObjectBlock } from './yaml-object-graph.js';
-import { buildSerializableTypeIndexFromSources } from './serialized-type-index.js';
+import { buildSerializableTypeIndexFromFiles } from './serialized-type-index.js';
+import type { UnityParitySeed } from '../ingestion/unity-parity-seed.js';
 
 const DECLARATION_PATTERN = /\b(?:class|struct|interface)\s+([A-Za-z_][A-Za-z0-9_]*)\b/g;
-const GUID_IN_LINE_PATTERN = /\bguid:\s*([0-9a-f]{32})\b/gi;
-const RESOURCE_HIT_SCAN_CONCURRENCY = 16;
+const SCRIPT_GUID_IN_LINE_PATTERN = /\bm_Script\s*:\s*\{[^}]*\bguid\s*:\s*([0-9a-f]{32})\b/gi;
+const RESOURCE_HIT_SCAN_CONCURRENCY = 4;
 
 export interface BuildScanContextInput {
   repoRoot: string;
@@ -21,6 +27,15 @@ export interface UnitySymbolDeclaration {
   scriptPath: string;
 }
 
+export interface UnityPrefabSourceRef {
+  sourceResourcePath: string;
+  targetGuid: string;
+  targetResourcePath?: string;
+  fileId?: string;
+  fieldName: 'm_SourcePrefab';
+  sourceLayer: 'scene' | 'prefab';
+}
+
 export interface UnityScanContext {
   symbolToScriptPaths: Map<string, string[]>;
   symbolToCanonicalScriptPath: Map<string, string>;
@@ -30,6 +45,13 @@ export interface UnityScanContext {
   serializableSymbols: Set<string>;
   hostFieldTypeHints: Map<string, Map<string, string>>;
   assetGuidToPath?: Map<string, string>;
+  uxmlGuidToPath?: Map<string, string>;
+  ussGuidToPath?: Map<string, string>;
+  prefabSourceRefs: UnityPrefabSourceRef[];
+  streamPrefabSourceRefs: (
+    options?: Pick<StreamPrefabSourceRefsInput, 'queue' | 'hooks'>,
+  ) => AsyncIterable<UnityPrefabSourceRef>;
+  resourceFiles: string[];
   resourceDocCache: Map<string, UnityObjectBlock[]>;
 }
 
@@ -42,8 +64,15 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     input.symbolDeclarations && input.symbolDeclarations.length > 0
       ? buildSymbolScriptPathIndexFromDeclarations(input.repoRoot, input.symbolDeclarations, input.scopedPaths)
       : await buildSymbolScriptPathIndex(input.repoRoot, scriptFiles);
-  const scriptSources = await loadScriptSources(input.repoRoot, scriptFiles);
-  const serializableTypeIndex = buildSerializableTypeIndexFromSources(scriptSources);
+  const serializableTypeIndex = await buildSerializableTypeIndexFromFiles(
+    scriptFiles.map((scriptPath) => {
+      const normalizedPath = normalizeSlashes(scriptPath);
+      return {
+        filePath: normalizedPath,
+        read: async () => fs.readFile(path.join(input.repoRoot, normalizedPath), 'utf-8'),
+      };
+    }),
+  );
 
   const metaFiles = scriptFiles.map((scriptPath) => `${scriptPath}.meta`);
   const guidToScriptPath = await buildMetaIndex(input.repoRoot, { metaFiles });
@@ -53,9 +82,26 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
   }
 
   const resourceFiles = await resolveResourceFiles(input.repoRoot, input.scopedPaths);
-  const guidToResourceHits = await buildGuidHitIndex(input.repoRoot, scriptPathToGuid, resourceFiles);
-  const assetMetaFiles = resolveAssetMetaFiles(input.repoRoot, input.scopedPaths, scriptFiles, resourceFiles);
+  const normalizedResourceFiles = [...new Set(resourceFiles.map((resourcePath) => normalizeSlashes(resourcePath)))]
+    .filter((resourcePath) => resourcePath.length > 0)
+    .sort((left, right) => left.localeCompare(right));
+  const guidToResourceHits = await buildGuidHitIndex(input.repoRoot, scriptPathToGuid, normalizedResourceFiles);
+  const assetMetaFiles = resolveAssetMetaFiles(
+    input.repoRoot,
+    input.scopedPaths,
+    scriptFiles,
+    normalizedResourceFiles,
+  );
   const assetGuidToPath = await buildAssetMetaIndex(input.repoRoot, { metaFiles: assetMetaFiles });
+  const uiMetaIndex = await buildUnityUiMetaIndex(input.repoRoot, { scopedPaths: input.scopedPaths });
+  const streamPrefabSourceRefsFn = (options?: Pick<StreamPrefabSourceRefsInput, 'queue' | 'hooks'>) =>
+    streamPrefabSourceRefs({
+      repoRoot: input.repoRoot,
+      resourceFiles: normalizedResourceFiles,
+      assetGuidToPath,
+      queue: options?.queue,
+      hooks: options?.hooks,
+    });
   const symbolToCanonicalScriptPath = buildCanonicalScriptPathIndex(
     symbolToScriptPaths,
     scriptPathToGuid,
@@ -72,26 +118,141 @@ export async function buildUnityScanContext(input: BuildScanContextInput): Promi
     serializableSymbols: serializableTypeIndex.serializableSymbols,
     hostFieldTypeHints: serializableTypeIndex.hostFieldTypeHints,
     assetGuidToPath,
+    uxmlGuidToPath: uiMetaIndex.uxmlGuidToPath,
+    ussGuidToPath: uiMetaIndex.ussGuidToPath,
+    prefabSourceRefs: [],
+    streamPrefabSourceRefs: streamPrefabSourceRefsFn,
+    resourceFiles: normalizedResourceFiles,
     resourceDocCache: new Map<string, UnityObjectBlock[]>(),
   };
 }
 
-async function loadScriptSources(
-  repoRoot: string,
-  scriptFiles: string[],
-): Promise<Array<{ filePath: string; content: string }>> {
-  const sources: Array<{ filePath: string; content: string }> = [];
-  for (const scriptPath of scriptFiles) {
+export function buildUnityScanContextFromSeed(input: {
+  seed: UnityParitySeed;
+  symbolDeclarations?: UnitySymbolDeclaration[];
+}): UnityScanContext {
+  const seed = input.seed;
+  const requestedSymbols = new Set(
+    (input.symbolDeclarations || [])
+      .map((entry) => String(entry.symbol || '').trim())
+      .filter((value) => value.length > 0),
+  );
+  const requestedScripts = new Set(
+    (input.symbolDeclarations || [])
+      .map((entry) => normalizeSlashes(String(entry.scriptPath || '').trim()))
+      .filter((value) => value.length > 0),
+  );
+
+  const symbolToScriptPath = new Map<string, string>();
+  for (const [symbol, scriptPath] of Object.entries(seed.symbolToScriptPath || {})) {
     const normalizedPath = normalizeSlashes(scriptPath);
-    try {
-      const content = await fs.readFile(path.join(repoRoot, normalizedPath), 'utf-8');
-      sources.push({ filePath: normalizedPath, content });
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
-      throw error;
+    if (!normalizedPath) continue;
+    if (requestedSymbols.size > 0 && !requestedSymbols.has(symbol)) continue;
+    symbolToScriptPath.set(symbol, normalizedPath);
+    requestedScripts.add(normalizedPath);
+  }
+
+  if (symbolToScriptPath.size === 0 && requestedSymbols.size > 0) {
+    for (const declaration of input.symbolDeclarations || []) {
+      const symbol = String(declaration.symbol || '').trim();
+      const scriptPath = normalizeSlashes(String(declaration.scriptPath || '').trim());
+      if (!symbol || !scriptPath) continue;
+      symbolToScriptPath.set(symbol, scriptPath);
+      requestedScripts.add(scriptPath);
     }
   }
-  return sources;
+
+  const symbolToCanonicalScriptPath = new Map<string, string>(symbolToScriptPath);
+  const symbolToScriptPaths = new Map<string, string[]>();
+  for (const [symbol, scriptPath] of symbolToScriptPath.entries()) {
+    symbolToScriptPaths.set(symbol, [scriptPath]);
+  }
+
+  const scriptPathToGuid = new Map<string, string>();
+  const normalizedScriptPathToGuidEntries = Object.entries(seed.scriptPathToGuid || {})
+    .map(([scriptPath, guid]) => [normalizeSlashes(scriptPath), String(guid || '').trim()] as const)
+    .filter(([scriptPath, guid]) => scriptPath.length > 0 && guid.length > 0);
+  for (const [scriptPath, guid] of normalizedScriptPathToGuidEntries) {
+    if (requestedScripts.size > 0 && !requestedScripts.has(scriptPath)) continue;
+    scriptPathToGuid.set(scriptPath, guid);
+  }
+  if (scriptPathToGuid.size === 0 && requestedScripts.size > 0) {
+    for (const [scriptPath, guid] of normalizedScriptPathToGuidEntries) {
+      if (!requestedScripts.has(scriptPath)) continue;
+      scriptPathToGuid.set(scriptPath, guid);
+    }
+  }
+
+  const selectedGuids = new Set<string>(scriptPathToGuid.values());
+  const guidToResourceHits = new Map<string, UnityResourceGuidHit[]>();
+  for (const [guid, resourcePaths] of Object.entries(seed.guidToResourcePaths || {})) {
+    if (selectedGuids.size > 0 && !selectedGuids.has(guid)) continue;
+    const hits = (resourcePaths || [])
+      .map((resourcePathRaw) => normalizeSlashes(String(resourcePathRaw || '').trim()))
+      .filter((resourcePath) => resourcePath.length > 0)
+      .map((resourcePath) => ({
+        resourcePath,
+        resourceType: inferResourceType(resourcePath),
+        line: 0,
+        lineText: 'seed',
+      }));
+    if (hits.length > 0) {
+      guidToResourceHits.set(guid, hits);
+    }
+  }
+
+  const assetGuidToPath = new Map<string, string>();
+  const uxmlGuidToPath = new Map<string, string>();
+  const ussGuidToPath = new Map<string, string>();
+  for (const [guid, assetPath] of Object.entries(seed.assetGuidToPath || {})) {
+    const normalizedPath = normalizeSlashes(String(assetPath || '').trim());
+    if (!guid || !normalizedPath) continue;
+    assetGuidToPath.set(guid, normalizedPath);
+    assetGuidToPath.set(guid.toLowerCase(), normalizedPath);
+    if (normalizedPath.endsWith('.uxml')) {
+      uxmlGuidToPath.set(guid, normalizedPath);
+      uxmlGuidToPath.set(guid.toLowerCase(), normalizedPath);
+    }
+    if (normalizedPath.endsWith('.uss')) {
+      ussGuidToPath.set(guid, normalizedPath);
+      ussGuidToPath.set(guid.toLowerCase(), normalizedPath);
+    }
+  }
+
+  const resourceFiles = [
+    ...new Set(
+      Object.values(seed.guidToResourcePaths || {})
+        .flat()
+        .map((resourcePathRaw) => normalizeSlashes(String(resourcePathRaw || '').trim()))
+        .filter((resourcePath) => resourcePath.length > 0),
+    ),
+  ].sort((left, right) => left.localeCompare(right));
+
+  const prefabSourceRefs = ((seed as any).prefabSourceRefs || [])
+    .map((value: any) => normalizePrefabSourceRef(value))
+    .filter((value: UnityPrefabSourceRef | undefined): value is UnityPrefabSourceRef => Boolean(value));
+  const streamPrefabSourceRefsFn = async function* (): AsyncGenerator<UnityPrefabSourceRef> {
+    for (const row of prefabSourceRefs) {
+      yield { ...row };
+    }
+  };
+
+  return {
+    symbolToScriptPaths,
+    symbolToCanonicalScriptPath,
+    symbolToScriptPath,
+    scriptPathToGuid,
+    guidToResourceHits,
+    serializableSymbols: new Set(),
+    hostFieldTypeHints: new Map<string, Map<string, string>>(),
+    assetGuidToPath,
+    uxmlGuidToPath,
+    ussGuidToPath,
+    prefabSourceRefs,
+    streamPrefabSourceRefs: streamPrefabSourceRefsFn,
+    resourceFiles,
+    resourceDocCache: new Map<string, UnityObjectBlock[]>(),
+  };
 }
 
 async function buildSymbolScriptPathIndex(repoRoot: string, scriptFiles: string[]): Promise<Map<string, string[]>> {
@@ -145,43 +306,9 @@ async function buildGuidHitIndex(
     RESOURCE_HIT_SCAN_CONCURRENCY,
     async (resourcePathRaw) => {
       const resourcePath = normalizeSlashes(resourcePathRaw);
-      const absolutePath = path.join(repoRoot, resourcePath);
-      let content = '';
-      try {
-        content = await fs.readFile(absolutePath, 'utf-8');
-      } catch (error) {
-        const code = (error as NodeJS.ErrnoException).code;
-        if (code === 'ENOENT' || code === 'EISDIR') {
-          return new Map<string, UnityResourceGuidHit[]>();
-        }
-        throw error;
-      }
-
       const resourceType = inferResourceType(resourcePath);
-      const lines = content.split(/\r?\n/);
       const hits = new Map<string, UnityResourceGuidHit[]>();
-
-      for (let index = 0; index < lines.length; index += 1) {
-        const line = lines[index];
-        const seenCanonical = new Set<string>();
-        GUID_IN_LINE_PATTERN.lastIndex = 0;
-        let match = GUID_IN_LINE_PATTERN.exec(line);
-        while (match) {
-          const canonicalGuid = guidLookup.get(match[1].toLowerCase());
-          if (canonicalGuid && !seenCanonical.has(canonicalGuid)) {
-            seenCanonical.add(canonicalGuid);
-            const existing = hits.get(canonicalGuid) || [];
-            existing.push({
-              resourcePath,
-              resourceType,
-              line: index + 1,
-              lineText: line,
-            });
-            hits.set(canonicalGuid, existing);
-          }
-          match = GUID_IN_LINE_PATTERN.exec(line);
-        }
-      }
+      await scanGuidHitsInResourceFile(repoRoot, resourcePath, resourceType, guidLookup, hits);
 
       return hits;
     },
@@ -197,6 +324,57 @@ async function buildGuidHitIndex(
   }
 
   return guidToResourceHits;
+}
+
+async function scanGuidHitsInResourceFile(
+  repoRoot: string,
+  resourcePath: string,
+  resourceType: UnityResourceGuidHit['resourceType'],
+  guidLookup: Map<string, string>,
+  hits: Map<string, UnityResourceGuidHit[]>,
+): Promise<void> {
+  const absolutePath = path.join(repoRoot, resourcePath);
+  const stream = createReadStream(absolutePath, { encoding: 'utf-8' });
+  const reader = createInterface({
+    input: stream,
+    crlfDelay: Infinity,
+  });
+  const seenGuidInResource = new Set<string>();
+
+  let lineNumber = 0;
+  try {
+    for await (const line of reader) {
+      lineNumber += 1;
+      const seenCanonical = new Set<string>();
+      SCRIPT_GUID_IN_LINE_PATTERN.lastIndex = 0;
+      let match = SCRIPT_GUID_IN_LINE_PATTERN.exec(line);
+      while (match) {
+        const canonicalGuid = guidLookup.get(match[1].toLowerCase());
+        if (canonicalGuid && !seenCanonical.has(canonicalGuid) && !seenGuidInResource.has(canonicalGuid)) {
+          seenCanonical.add(canonicalGuid);
+          seenGuidInResource.add(canonicalGuid);
+          const existing = hits.get(canonicalGuid) || [];
+          existing.push({
+            resourcePath,
+            resourceType,
+            line: lineNumber,
+            lineText: line,
+          });
+          hits.set(canonicalGuid, existing);
+        }
+        match = SCRIPT_GUID_IN_LINE_PATTERN.exec(line);
+      }
+    }
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'EISDIR') {
+      return;
+    }
+    throw error;
+  } finally {
+    reader.close();
+    stream.destroy();
+  }
 }
 
 async function resolveScriptFiles(repoRoot: string, scopedPaths?: string[]): Promise<string[]> {
@@ -356,6 +534,27 @@ function normalizeRelativePath(repoRoot: string, filePath: string): string | nul
 
 function normalizeSlashes(filePath: string): string {
   return filePath.replace(/\\/g, '/');
+}
+
+function normalizePrefabSourceRef(value: any): UnityPrefabSourceRef | undefined {
+  const sourceResourcePath = normalizeSlashes(String(value?.sourceResourcePath || '').trim());
+  const targetGuid = String(value?.targetGuid || '').trim().toLowerCase();
+  const targetResourcePath = normalizeSlashes(String(value?.targetResourcePath || '').trim());
+  const fileId = String(value?.fileId || '').trim();
+  if (!sourceResourcePath || !targetGuid) return undefined;
+
+  const sourceLayer = value?.sourceLayer === 'scene' ? 'scene' : value?.sourceLayer === 'prefab' ? 'prefab' : (
+    sourceResourcePath.endsWith('.unity') ? 'scene' : 'prefab'
+  );
+
+  return {
+    sourceResourcePath,
+    targetGuid,
+    targetResourcePath: targetResourcePath || undefined,
+    fileId: fileId || undefined,
+    fieldName: 'm_SourcePrefab',
+    sourceLayer,
+  };
 }
 
 function inferResourceType(resourcePath: string): UnityResourceGuidHit['resourceType'] {

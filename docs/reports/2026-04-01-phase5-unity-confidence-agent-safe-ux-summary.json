@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-04-01T03:24:39.675Z",
+  "repoAlias": "neonspark-u2-e2e-neonspark-u2-full-e2e-20260401-031542",
+  "sourceRunId": "neonspark-u2-full-e2e-20260401-031542",
+  "lowConfidenceHintCoverage": 100,
+  "falseConfidenceFailures": 0,
+  "falseNegativeFallbackCoverage": 14,
+  "falseNegativeRateBaselinePct": 40,
+  "falseNegativeRateCurrentPct": 0,
+  "falseNegativeRateDeltaPct": -40,
+  "falseConfidenceRateBaselinePct": 13.333,
+  "falseConfidenceRateCurrentPct": 0,
+  "falseConfidenceRateDeltaPct": -13.333,
+  "baseline": {
+    "artifactPath": "docs/reports/2026-03-31-phase4-unity-lifecycle-process-persist-summary.json",
+    "gitCommit": "6acfa27b69e9a2b216e3940f546d5dc4c5a8174d",
+    "sha256": "ddb50cb2a0f45472dbc23f515278e2ce67d2f5165171d47a398de34637fc34e8"
+  },
+  "confidenceCalibration": {
+    "lowConfidenceHintCoverage": 100,
+    "falseConfidenceFailures": 0,
+    "falseNegativeFallbackCoverage": 14,
+    "falseNegativeRateBaselinePct": 40,
+    "falseNegativeRateCurrentPct": 0,
+    "falseNegativeRateDeltaPct": -40,
+    "falseConfidenceRateBaselinePct": 13.333,
+    "falseConfidenceRateCurrentPct": 0,
+    "falseConfidenceRateDeltaPct": -13.333,
+    "baseline": {
+      "artifactPath": "docs/reports/2026-03-31-phase4-unity-lifecycle-process-persist-summary.json",
+      "gitCommit": "6acfa27b69e9a2b216e3940f546d5dc4c5a8174d",
+      "sha256": "ddb50cb2a0f45472dbc23f515278e2ce67d2f5165171d47a398de34637fc34e8"
+    }
+  },
+  "confirmed_chain": {
+    "source": "phase4 persisted lifecycle chain baseline reused for closure validation",
+    "steps": [
+      {
+        "step": 1,
+        "node_id": "Method:unity-runtime-root",
+        "reason": "unity-lifecycle-synthetic"
+      },
+      {
+        "step": 2,
+        "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Payloads/ParticlePayload.cs:OnDestroy",
+        "reason": "unity-runtime-loader-synthetic"
+      },
+      {
+        "step": 3,
+        "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Payloads/ParticlePayload.cs:GetValue",
+        "reason": "unity-runtime-loader-synthetic"
+      },
+      {
+        "step": 4,
+        "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:CheckReload",
+        "reason": "same-file"
+      },
+      {
+        "step": 5,
+        "node_id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs:ReloadRoutine",
+        "reason": "same-file"
+      }
+    ]
+  },
+  "reloadAcceptance": {
+    "resourceToAssetSegmentPass": true,
+    "loaderSegmentPass": true,
+    "runtimeSegmentPass": true,
+    "hopAnchorCoveragePct": 100
+  },
+  "backwardCompat": {
+    "legacyFieldsChecked": [
+      "processes[].id",
+      "processes[].summary",
+      "processes[].process_type",
+      "processes[].step_count"
+    ],
+    "flagOffLegacyFieldsPresent": true,
+    "runtimeChainConfidencePresentWhenFlagOff": false,
+    "verificationHintPresentWhenFlagOff": false,
+    "regressionDetected": false
+  },
+  "commands": [
+    "npm --prefix gitnexus run test:u3:gates",
+    "node --test gitnexus/dist/benchmark/u2-e2e/retrieval-runner.test.js",
+    "GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on node gitnexus/dist/cli/index.js query -r neonspark-u2-e2e-neonspark-u2-full-e2e-20260401-031542 --unity-resources on --unity-hydration parity \"WeaponPowerUp gungraph 1_weapon_orb_key\"",
+    "GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on node gitnexus/dist/cli/index.js query -r neonspark-u2-e2e-neonspark-u2-full-e2e-20260401-031542 --unity-resources on --unity-hydration parity \"PickItUp EquipWithEvent WeaponPowerUp Equip\"",
+    "GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on node gitnexus/dist/cli/index.js query -r neonspark-u2-e2e-neonspark-u2-full-e2e-20260401-031542 --unity-resources on --unity-hydration parity \"Reload NEON.Game.Graph.Nodes.Reloads\"",
+    "GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=on node gitnexus/dist/cli/index.js context -r neonspark-u2-e2e-neonspark-u2-full-e2e-20260401-031542 --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/ReloadBase.cs\" --unity-resources on --unity-hydration parity ReloadBase",
+    "GITNEXUS_UNITY_PROCESS_CONFIDENCE_FIELDS=off node gitnexus/dist/cli/index.js query -r neonspark-u2-e2e-neonspark-u2-full-e2e-20260401-031542 --unity-resources on --unity-hydration parity \"Reload NEON.Game.Graph.Nodes.Reloads\"",
+    "node gitnexus/dist/benchmark/u2-e2e/live-evidence-validator.js --input docs/reports/2026-04-01-phase5-live-evidence.jsonl"
+  ]
+}

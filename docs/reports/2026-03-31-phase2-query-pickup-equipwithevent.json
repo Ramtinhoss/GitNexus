@@ -1,0 +1,3000 @@
+{
+  "processes": [],
+  "process_symbols": [],
+  "definitions": [
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/CarryEggPowerUp.cs:PickItUp",
+      "name": "PickItUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/CarryEggPowerUp.cs",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/PowerUps/CarryEggPowerUp.cs:NEON.Game.PowerUps",
+      "name": "NEON.Game.PowerUps",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/CarryEggPowerUp.cs",
+      "startLine": 1,
+      "endLine": 1
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/PowerUps/CarryEggPowerUp.cs:CarryEggPowerUp",
+      "name": "CarryEggPowerUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/CarryEggPowerUp.cs",
+      "startLine": 3,
+      "endLine": 3,
+      "resourceBindings": [
+        {
+          "resourcePath": "Assets/NEON/DataAssets/Powerups/0_pickup/0_pickup_carryEgg.asset",
+          "resourceType": "asset",
+          "bindingKind": "prefab-instance",
+          "componentObjectId": "11400000",
+          "evidence": {
+            "line": 0,
+            "lineText": "seed"
+          },
+          "serializedFields": {
+            "scalarFields": [
+              {
+                "name": "BackGroundPrefab",
+                "sourceLayer": "asset",
+                "value": "2",
+                "valueType": "number"
+              },
+              {
+                "name": "baseColliderOffset",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 0}",
+                "valueType": "string"
+              },
+              {
+                "name": "curse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "Description",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/0_pickup_carryEggD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "id",
+                "sourceLayer": "asset",
+                "value": "1218",
+                "valueType": "number"
+              },
+              {
+                "name": "IgnorePickUpEvent",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "index",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "inPowerUp",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isDragonPart",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isEgg",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isManualInteraction",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isRoleOwn",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSpecialDrops",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSuit",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isTestItem",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "KeyWords",
+                "sourceLayer": "asset",
+                "value": "keywords: []",
+                "valueType": "string"
+              },
+              {
+                "name": "Name",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/0_pickup_carryEgg\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "needUse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "overrideColliderRadius",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "PickUpPrefabId",
+                "sourceLayer": "asset",
+                "value": "22",
+                "valueType": "number"
+              },
+              {
+                "name": "PowerUpType",
+                "sourceLayer": "asset",
+                "value": "3",
+                "valueType": "number"
+              },
+              {
+                "name": "quality",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "qualityIsShow",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "showBanner",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "showBannerSprite",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "SoundEffect",
+                "sourceLayer": "asset",
+                "value": "event:/SFX/Item/Sfx_item_get",
+                "valueType": "string"
+              },
+              {
+                "name": "spawnMaxNumber",
+                "sourceLayer": "asset",
+                "value": "10",
+                "valueType": "number"
+              },
+              {
+                "name": "subSuits",
+                "sourceLayer": "asset",
+                "value": "[]",
+                "valueType": "string"
+              },
+              {
+                "name": "Tags",
+                "sourceLayer": "asset",
+                "value": "tags:\n- tagLevel: 1\n  tagId: 17\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.6627451, g: 0.5647059, b: 0.78039217, a: 1}\n  tagRelationColor: {r: 0.8235294, g: 0.7372549, b: 0.9254902, a: 1}\n  chineseName: \"\\u6389\\u843D\\u7269\"\n  languageKey: 17",
+                "valueType": "string"
+              },
+              {
+                "name": "textShowCd",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "UniqueDrop",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "UseNew",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              }
+            ],
+            "referenceFields": [
+              {
+                "name": "BackgroundSrite",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ConversionPowerUp",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "evolvesFrom",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "MinionPrefab",
+                "sourceLayer": "asset",
+                "fileId": "5452916793001561131",
+                "guid": "0ff0b7ee78bf7d146abde38c596e2f72"
+              },
+              {
+                "name": "NewBackGroundPrefab",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "sprite",
+                "sourceLayer": "asset",
+                "fileId": "21300000",
+                "guid": "38f5664e49aa37845bd2e024e4cd3dab"
+              },
+              {
+                "name": "subsidiaryPowerUp",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "suit",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              }
+            ]
+          },
+          "resolvedReferences": [
+            {
+              "fieldName": "sprite",
+              "sourceLayer": "asset",
+              "fileId": "21300000",
+              "guid": "38f5664e49aa37845bd2e024e4cd3dab",
+              "fromList": false,
+              "resolution": "unresolved"
+            },
+            {
+              "fieldName": "NewBackGroundPrefab",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "BackgroundSrite",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "suit",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ConversionPowerUp",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "evolvesFrom",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "MinionPrefab",
+              "sourceLayer": "asset",
+              "fileId": "5452916793001561131",
+              "guid": "0ff0b7ee78bf7d146abde38c596e2f72",
+              "fromList": false,
+              "resolution": "external-asset",
+              "target": {
+                "assetPath": "Assets/NEON/Prefab/Minions/Formal_minions/Minion_carryEgg.prefab"
+              }
+            },
+            {
+              "fieldName": "subsidiaryPowerUp",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            }
+          ],
+          "assetRefPaths": [],
+          "lightweight": false
+        }
+      ],
+      "serializedFields": {
+        "scalarFields": [
+          {
+            "name": "BackGroundPrefab",
+            "sourceLayer": "asset",
+            "value": "2",
+            "valueType": "number"
+          },
+          {
+            "name": "baseColliderOffset",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 0}",
+            "valueType": "string"
+          },
+          {
+            "name": "curse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "Description",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/0_pickup_carryEggD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "id",
+            "sourceLayer": "asset",
+            "value": "1218",
+            "valueType": "number"
+          },
+          {
+            "name": "IgnorePickUpEvent",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "index",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "inPowerUp",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isDragonPart",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isEgg",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isManualInteraction",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isRoleOwn",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSpecialDrops",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSuit",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isTestItem",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "KeyWords",
+            "sourceLayer": "asset",
+            "value": "keywords: []",
+            "valueType": "string"
+          },
+          {
+            "name": "Name",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/0_pickup_carryEgg\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "needUse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "overrideColliderRadius",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "PickUpPrefabId",
+            "sourceLayer": "asset",
+            "value": "22",
+            "valueType": "number"
+          },
+          {
+            "name": "PowerUpType",
+            "sourceLayer": "asset",
+            "value": "3",
+            "valueType": "number"
+          },
+          {
+            "name": "quality",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "qualityIsShow",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "showBanner",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "showBannerSprite",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "SoundEffect",
+            "sourceLayer": "asset",
+            "value": "event:/SFX/Item/Sfx_item_get",
+            "valueType": "string"
+          },
+          {
+            "name": "spawnMaxNumber",
+            "sourceLayer": "asset",
+            "value": "10",
+            "valueType": "number"
+          },
+          {
+            "name": "subSuits",
+            "sourceLayer": "asset",
+            "value": "[]",
+            "valueType": "string"
+          },
+          {
+            "name": "Tags",
+            "sourceLayer": "asset",
+            "value": "tags:\n- tagLevel: 1\n  tagId: 17\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.6627451, g: 0.5647059, b: 0.78039217, a: 1}\n  tagRelationColor: {r: 0.8235294, g: 0.7372549, b: 0.9254902, a: 1}\n  chineseName: \"\\u6389\\u843D\\u7269\"\n  languageKey: 17",
+            "valueType": "string"
+          },
+          {
+            "name": "textShowCd",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "UniqueDrop",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "UseNew",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          }
+        ],
+        "referenceFields": [
+          {
+            "name": "BackgroundSrite",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ConversionPowerUp",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "evolvesFrom",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "MinionPrefab",
+            "sourceLayer": "asset",
+            "fileId": "5452916793001561131",
+            "guid": "0ff0b7ee78bf7d146abde38c596e2f72"
+          },
+          {
+            "name": "NewBackGroundPrefab",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "sprite",
+            "sourceLayer": "asset",
+            "fileId": "21300000",
+            "guid": "38f5664e49aa37845bd2e024e4cd3dab"
+          },
+          {
+            "name": "subsidiaryPowerUp",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "suit",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          }
+        ]
+      },
+      "unityDiagnostics": [],
+      "hydrationMeta": {
+        "requestedMode": "parity",
+        "effectiveMode": "parity",
+        "elapsedMs": 1,
+        "fallbackToCompact": false,
+        "resourceBindingCount": 1,
+        "unityDiagnosticsCount": 0,
+        "isComplete": true,
+        "completenessReason": [],
+        "needsParityRetry": false
+      }
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/ErisPowerUp.cs:PickItUp",
+      "name": "PickItUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ErisPowerUp.cs",
+      "startLine": 8,
+      "endLine": 8
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/PowerUps/ErisPowerUp.cs:NEON.Game.PowerUps",
+      "name": "NEON.Game.PowerUps",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ErisPowerUp.cs",
+      "startLine": 4,
+      "endLine": 4
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/PowerUps/ErisPowerUp.cs:ErisPowerUp",
+      "name": "ErisPowerUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ErisPowerUp.cs",
+      "startLine": 6,
+      "endLine": 6,
+      "resourceBindings": [
+        {
+          "resourcePath": "Assets/NEON/DataAssets/Powerups/0_pickup/0_coin_eris.asset",
+          "resourceType": "asset",
+          "bindingKind": "prefab-instance",
+          "componentObjectId": "11400000",
+          "evidence": {
+            "line": 0,
+            "lineText": "seed"
+          },
+          "serializedFields": {
+            "scalarFields": [
+              {
+                "name": "BackGroundPrefab",
+                "sourceLayer": "asset",
+                "value": "2",
+                "valueType": "number"
+              },
+              {
+                "name": "baseColliderOffset",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 0}",
+                "valueType": "string"
+              },
+              {
+                "name": "beliefType",
+                "sourceLayer": "asset",
+                "value": "11",
+                "valueType": "number"
+              },
+              {
+                "name": "canChangeGunpointOffset",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "ChangeGunGraphics",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "ChangeGunGraphicsHasAni",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "curse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "Description",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/0_coin_erisD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "glassesIsFront",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "gunpointOffset",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "gunpointOffsetY",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "hairResource",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "hairType",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "hatIsFront",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "id",
+                "sourceLayer": "asset",
+                "value": "2833",
+                "valueType": "number"
+              },
+              {
+                "name": "IgnorePickUpEvent",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "isRoleOwn",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSpecialDrops",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "isSuit",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isTestItem",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "KeyWords",
+                "sourceLayer": "asset",
+                "value": "keywords: []",
+                "valueType": "string"
+              },
+              {
+                "name": "Name",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/0_coin_eris\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "needShowOverheadIcon",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "needUse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "overrideColliderRadius",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "PickUpPrefabId",
+                "sourceLayer": "asset",
+                "value": "22",
+                "valueType": "number"
+              },
+              {
+                "name": "PowerUpType",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "quality",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "qualityIsShow",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "showBanner",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "showBannerSprite",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "SoundEffect",
+                "sourceLayer": "asset",
+                "value": "event:/SFX/Item/Sfx_item_get",
+                "valueType": "string"
+              },
+              {
+                "name": "subSuits",
+                "sourceLayer": "asset",
+                "value": "[]",
+                "valueType": "string"
+              },
+              {
+                "name": "tagDamageMult",
+                "sourceLayer": "asset",
+                "value": "",
+                "valueType": "string"
+              },
+              {
+                "name": "tagDamageMultRange",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 999}",
+                "valueType": "string"
+              },
+              {
+                "name": "Tags",
+                "sourceLayer": "asset",
+                "value": "tags:\n- tagLevel: 1\n  tagId: 17\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.6627451, g: 0.5647059, b: 0.78039217, a: 1}\n  tagRelationColor: {r: 0.8235294, g: 0.7372549, b: 0.9254902, a: 1}\n  chineseName: \"\\u6389\\u843D\\u7269\"\n  languageKey: 17",
+                "valueType": "string"
+              },
+              {
+                "name": "textShowCd",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "UniqueDrop",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "UseNew",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "values",
+                "sourceLayer": "asset",
+                "value": "_key: []\n_val: []\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              }
+            ],
+            "referenceFields": [
+              {
+                "name": "BackgroundSrite",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBagHelmetGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBagPrefab",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBodyAura",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeGogglesGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "changeHair",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeHats",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeHeadAura",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "changeHelmetGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeMaskGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ConversionPowerUp",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "NewBackGroundPrefab",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "sprite",
+                "sourceLayer": "asset",
+                "fileId": "21300000",
+                "guid": "efb9a13e94099d448924e5770d7f44a2"
+              },
+              {
+                "name": "suit",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              }
+            ]
+          },
+          "resolvedReferences": [
+            {
+              "fieldName": "sprite",
+              "sourceLayer": "asset",
+              "fileId": "21300000",
+              "guid": "efb9a13e94099d448924e5770d7f44a2",
+              "fromList": false,
+              "resolution": "unresolved"
+            },
+            {
+              "fieldName": "NewBackGroundPrefab",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "BackgroundSrite",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "suit",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ConversionPowerUp",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeHeadAura",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBodyAura",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeGogglesGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeHats",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "changeHair",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "changeHelmetGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeMaskGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBagHelmetGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBagPrefab",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            }
+          ],
+          "assetRefPaths": [],
+          "lightweight": false
+        }
+      ],
+      "serializedFields": {
+        "scalarFields": [
+          {
+            "name": "BackGroundPrefab",
+            "sourceLayer": "asset",
+            "value": "2",
+            "valueType": "number"
+          },
+          {
+            "name": "baseColliderOffset",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 0}",
+            "valueType": "string"
+          },
+          {
+            "name": "beliefType",
+            "sourceLayer": "asset",
+            "value": "11",
+            "valueType": "number"
+          },
+          {
+            "name": "canChangeGunpointOffset",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "ChangeGunGraphics",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "ChangeGunGraphicsHasAni",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "curse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "Description",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/0_coin_erisD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "glassesIsFront",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "gunpointOffset",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "gunpointOffsetY",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "hairResource",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "hairType",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "hatIsFront",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "id",
+            "sourceLayer": "asset",
+            "value": "2833",
+            "valueType": "number"
+          },
+          {
+            "name": "IgnorePickUpEvent",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "isRoleOwn",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSpecialDrops",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "isSuit",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isTestItem",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "KeyWords",
+            "sourceLayer": "asset",
+            "value": "keywords: []",
+            "valueType": "string"
+          },
+          {
+            "name": "Name",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/0_coin_eris\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "needShowOverheadIcon",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "needUse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "overrideColliderRadius",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "PickUpPrefabId",
+            "sourceLayer": "asset",
+            "value": "22",
+            "valueType": "number"
+          },
+          {
+            "name": "PowerUpType",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "quality",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "qualityIsShow",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "showBanner",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "showBannerSprite",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "SoundEffect",
+            "sourceLayer": "asset",
+            "value": "event:/SFX/Item/Sfx_item_get",
+            "valueType": "string"
+          },
+          {
+            "name": "subSuits",
+            "sourceLayer": "asset",
+            "value": "[]",
+            "valueType": "string"
+          },
+          {
+            "name": "tagDamageMult",
+            "sourceLayer": "asset",
+            "value": "",
+            "valueType": "string"
+          },
+          {
+            "name": "tagDamageMultRange",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 999}",
+            "valueType": "string"
+          },
+          {
+            "name": "Tags",
+            "sourceLayer": "asset",
+            "value": "tags:\n- tagLevel: 1\n  tagId: 17\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.6627451, g: 0.5647059, b: 0.78039217, a: 1}\n  tagRelationColor: {r: 0.8235294, g: 0.7372549, b: 0.9254902, a: 1}\n  chineseName: \"\\u6389\\u843D\\u7269\"\n  languageKey: 17",
+            "valueType": "string"
+          },
+          {
+            "name": "textShowCd",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "UniqueDrop",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "UseNew",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "values",
+            "sourceLayer": "asset",
+            "value": "_key: []\n_val: []\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          }
+        ],
+        "referenceFields": [
+          {
+            "name": "BackgroundSrite",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBagHelmetGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBagPrefab",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBodyAura",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeGogglesGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "changeHair",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeHats",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeHeadAura",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "changeHelmetGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeMaskGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ConversionPowerUp",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "NewBackGroundPrefab",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "sprite",
+            "sourceLayer": "asset",
+            "fileId": "21300000",
+            "guid": "efb9a13e94099d448924e5770d7f44a2"
+          },
+          {
+            "name": "suit",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          }
+        ]
+      },
+      "unityDiagnostics": [],
+      "hydrationMeta": {
+        "requestedMode": "parity",
+        "effectiveMode": "parity",
+        "elapsedMs": 1,
+        "fallbackToCompact": false,
+        "resourceBindingCount": 1,
+        "unityDiagnosticsCount": 0,
+        "isComplete": true,
+        "completenessReason": [],
+        "needsParityRetry": false
+      }
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/PhantomShadowBladePowerUp.cs:PickItUp",
+      "name": "PickItUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/PhantomShadowBladePowerUp.cs",
+      "startLine": 12,
+      "endLine": 12
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/PhantomShadowBladePowerUp.cs:RevokePickup",
+      "name": "RevokePickup",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/PhantomShadowBladePowerUp.cs",
+      "startLine": 21,
+      "endLine": 21
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/PowerUps/PhantomShadowBladePowerUp.cs:NEON.Game.PowerUps",
+      "name": "NEON.Game.PowerUps",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/PhantomShadowBladePowerUp.cs",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/MeleeOrbitalPowerUp.cs:PickItUp",
+      "name": "PickItUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/MeleeOrbitalPowerUp.cs",
+      "startLine": 10,
+      "endLine": 10,
+      "module": "Managers"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/PowerUps/MeleeOrbitalPowerUp.cs:NEON.Game.PowerUps",
+      "name": "NEON.Game.PowerUps",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/MeleeOrbitalPowerUp.cs",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/PowerUps/MeleeOrbitalPowerUp.cs:MeleeOrbitalPowerUp",
+      "name": "MeleeOrbitalPowerUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/MeleeOrbitalPowerUp.cs",
+      "startLine": 7,
+      "endLine": 7,
+      "resourceBindings": [],
+      "serializedFields": {
+        "scalarFields": [],
+        "referenceFields": []
+      },
+      "unityDiagnostics": [],
+      "hydrationMeta": {
+        "requestedMode": "parity",
+        "effectiveMode": "parity",
+        "elapsedMs": 0,
+        "fallbackToCompact": false,
+        "resourceBindingCount": 0,
+        "unityDiagnosticsCount": 0,
+        "isComplete": true,
+        "completenessReason": [],
+        "needsParityRetry": false
+      }
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/ComboActivatePowerUp.cs:PickItUp",
+      "name": "PickItUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ComboActivatePowerUp.cs",
+      "startLine": 9,
+      "endLine": 9
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/ComboActivatePowerUp.cs:RevokePickup",
+      "name": "RevokePickup",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ComboActivatePowerUp.cs",
+      "startLine": 18,
+      "endLine": 18
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/PowerUps/ComboActivatePowerUp.cs:NEON.Game.PowerUps",
+      "name": "NEON.Game.PowerUps",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/ComboActivatePowerUp.cs",
+      "startLine": 4,
+      "endLine": 4
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/BeliefMinionPowerUp.cs:PickItUp",
+      "name": "PickItUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/BeliefMinionPowerUp.cs",
+      "startLine": 13,
+      "endLine": 13,
+      "module": "PowerUps"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/PowerUps/BeliefMinionPowerUp.cs:NEON.Game.PowerUps",
+      "name": "NEON.Game.PowerUps",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/BeliefMinionPowerUp.cs",
+      "startLine": 7,
+      "endLine": 7
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/PowerUps/BeliefMinionPowerUp.cs:BeliefMinionPowerUp",
+      "name": "BeliefMinionPowerUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/BeliefMinionPowerUp.cs",
+      "startLine": 10,
+      "endLine": 10,
+      "module": "PowerUps",
+      "resourceBindings": [
+        {
+          "resourcePath": "Assets/NEON/DataAssets/Powerups/0_pickup/0_coin_ares.asset",
+          "resourceType": "asset",
+          "bindingKind": "prefab-instance",
+          "componentObjectId": "11400000",
+          "evidence": {
+            "line": 0,
+            "lineText": "seed"
+          },
+          "serializedFields": {
+            "scalarFields": [
+              {
+                "name": "BackGroundPrefab",
+                "sourceLayer": "asset",
+                "value": "2",
+                "valueType": "number"
+              },
+              {
+                "name": "baseColliderOffset",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 0}",
+                "valueType": "string"
+              },
+              {
+                "name": "beliefType",
+                "sourceLayer": "asset",
+                "value": "2",
+                "valueType": "number"
+              },
+              {
+                "name": "canChangeGunpointOffset",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "ChangeGunGraphics",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "ChangeGunGraphicsHasAni",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "curse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "Description",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/0_coin_aresD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "glassesIsFront",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "gunpointOffset",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "gunpointOffsetY",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "hairResource",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "hairType",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "hatIsFront",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "id",
+                "sourceLayer": "asset",
+                "value": "1286",
+                "valueType": "number"
+              },
+              {
+                "name": "IgnorePickUpEvent",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "isRoleOwn",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSpecialDrops",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSuit",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isTestItem",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "KeyWords",
+                "sourceLayer": "asset",
+                "value": "keywords: []",
+                "valueType": "string"
+              },
+              {
+                "name": "Name",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/0_coin_ares\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "needShowOverheadIcon",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "needUse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "overrideColliderRadius",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "PickUpPrefabId",
+                "sourceLayer": "asset",
+                "value": "22",
+                "valueType": "number"
+              },
+              {
+                "name": "PowerUpType",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "quality",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "qualityIsShow",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "showBanner",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "showBannerSprite",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "SoundEffect",
+                "sourceLayer": "asset",
+                "value": "event:/SFX/Item/Sfx_item_get",
+                "valueType": "string"
+              },
+              {
+                "name": "subSuits",
+                "sourceLayer": "asset",
+                "value": "[]",
+                "valueType": "string"
+              },
+              {
+                "name": "tagDamageMult",
+                "sourceLayer": "asset",
+                "value": "",
+                "valueType": "string"
+              },
+              {
+                "name": "tagDamageMultRange",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 999}",
+                "valueType": "string"
+              },
+              {
+                "name": "Tags",
+                "sourceLayer": "asset",
+                "value": "tags:\n- tagLevel: 1\n  tagId: 17\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.6627451, g: 0.5647059, b: 0.78039217, a: 1}\n  tagRelationColor: {r: 0.8235294, g: 0.7372549, b: 0.9254902, a: 1}\n  chineseName: \"\\u6389\\u843D\\u7269\"\n  languageKey: 17",
+                "valueType": "string"
+              },
+              {
+                "name": "textShowCd",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "UniqueDrop",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "UseNew",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "values",
+                "sourceLayer": "asset",
+                "value": "_key: []\n_val: []\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              }
+            ],
+            "referenceFields": [
+              {
+                "name": "BackgroundSrite",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBagHelmetGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBagPrefab",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBodyAura",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeGogglesGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "changeHair",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeHats",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeHeadAura",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "changeHelmetGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeMaskGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ConversionPowerUp",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "NewBackGroundPrefab",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "sprite",
+                "sourceLayer": "asset",
+                "fileId": "21300000",
+                "guid": "e42b643aa3fe54b2dbd745d462d69677"
+              },
+              {
+                "name": "suit",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              }
+            ]
+          },
+          "resolvedReferences": [
+            {
+              "fieldName": "sprite",
+              "sourceLayer": "asset",
+              "fileId": "21300000",
+              "guid": "e42b643aa3fe54b2dbd745d462d69677",
+              "fromList": false,
+              "resolution": "unresolved"
+            },
+            {
+              "fieldName": "NewBackGroundPrefab",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "BackgroundSrite",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "suit",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ConversionPowerUp",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeHeadAura",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBodyAura",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeGogglesGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeHats",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "changeHair",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "changeHelmetGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeMaskGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBagHelmetGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBagPrefab",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            }
+          ],
+          "assetRefPaths": [],
+          "lightweight": false
+        },
+        {
+          "resourcePath": "Assets/NEON/DataAssets/Powerups/0_pickup/0_coin_athena.asset",
+          "resourceType": "asset",
+          "bindingKind": "prefab-instance",
+          "componentObjectId": "11400000",
+          "evidence": {
+            "line": 0,
+            "lineText": "seed"
+          },
+          "serializedFields": {
+            "scalarFields": [
+              {
+                "name": "BackGroundPrefab",
+                "sourceLayer": "asset",
+                "value": "2",
+                "valueType": "number"
+              },
+              {
+                "name": "baseColliderOffset",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 0}",
+                "valueType": "string"
+              },
+              {
+                "name": "beliefType",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "canChangeGunpointOffset",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "ChangeGunGraphics",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "ChangeGunGraphicsHasAni",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "curse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "Description",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/0_coin_athenaD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "glassesIsFront",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "gunpointOffset",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "gunpointOffsetY",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "hairResource",
+                "sourceLayer": "asset",
+                "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "hairType",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "hatIsFront",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "id",
+                "sourceLayer": "asset",
+                "value": "1233",
+                "valueType": "number"
+              },
+              {
+                "name": "IgnorePickUpEvent",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "isRoleOwn",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSpecialDrops",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isSuit",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "isTestItem",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "KeyWords",
+                "sourceLayer": "asset",
+                "value": "keywords: []",
+                "valueType": "string"
+              },
+              {
+                "name": "Name",
+                "sourceLayer": "asset",
+                "value": "mTerm: PuName/0_coin_athena\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+                "valueType": "string"
+              },
+              {
+                "name": "needShowOverheadIcon",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "needUse",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "overrideColliderRadius",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "PickUpPrefabId",
+                "sourceLayer": "asset",
+                "value": "22",
+                "valueType": "number"
+              },
+              {
+                "name": "PowerUpType",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "quality",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "qualityIsShow",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "showBanner",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "showBannerSprite",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "SoundEffect",
+                "sourceLayer": "asset",
+                "value": "event:/SFX/Item/Sfx_item_get",
+                "valueType": "string"
+              },
+              {
+                "name": "subSuits",
+                "sourceLayer": "asset",
+                "value": "[]",
+                "valueType": "string"
+              },
+              {
+                "name": "tagDamageMult",
+                "sourceLayer": "asset",
+                "value": "",
+                "valueType": "string"
+              },
+              {
+                "name": "tagDamageMultRange",
+                "sourceLayer": "asset",
+                "value": "{x: 0, y: 999}",
+                "valueType": "string"
+              },
+              {
+                "name": "Tags",
+                "sourceLayer": "asset",
+                "value": "tags:\n- tagLevel: 1\n  tagId: 17\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.6627451, g: 0.5647059, b: 0.78039217, a: 1}\n  tagRelationColor: {r: 0.8235294, g: 0.7372549, b: 0.9254902, a: 1}\n  chineseName: \"\\u6389\\u843D\\u7269\"\n  languageKey: 17",
+                "valueType": "string"
+              },
+              {
+                "name": "textShowCd",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "UniqueDrop",
+                "sourceLayer": "asset",
+                "value": "1",
+                "valueType": "number"
+              },
+              {
+                "name": "UseNew",
+                "sourceLayer": "asset",
+                "value": "0",
+                "valueType": "number"
+              },
+              {
+                "name": "values",
+                "sourceLayer": "asset",
+                "value": "_key: []\n_val: []\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+                "valueType": "string"
+              }
+            ],
+            "referenceFields": [
+              {
+                "name": "BackgroundSrite",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBagHelmetGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBagPrefab",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeBodyAura",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeGogglesGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "changeHair",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeHats",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeHeadAura",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "changeHelmetGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ChangeMaskGraphics",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "ConversionPowerUp",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "NewBackGroundPrefab",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              },
+              {
+                "name": "sprite",
+                "sourceLayer": "asset",
+                "fileId": "21300000",
+                "guid": "47be70e417dae49c5bc867c3a00cd1ca"
+              },
+              {
+                "name": "suit",
+                "sourceLayer": "asset",
+                "fileId": "0"
+              }
+            ]
+          },
+          "resolvedReferences": [
+            {
+              "fieldName": "sprite",
+              "sourceLayer": "asset",
+              "fileId": "21300000",
+              "guid": "47be70e417dae49c5bc867c3a00cd1ca",
+              "fromList": false,
+              "resolution": "unresolved"
+            },
+            {
+              "fieldName": "NewBackGroundPrefab",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "BackgroundSrite",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "suit",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ConversionPowerUp",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeHeadAura",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBodyAura",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeGogglesGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeHats",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "changeHair",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "changeHelmetGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeMaskGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBagHelmetGraphics",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            },
+            {
+              "fieldName": "ChangeBagPrefab",
+              "sourceLayer": "asset",
+              "fileId": "0",
+              "fromList": false,
+              "resolution": "null"
+            }
+          ],
+          "assetRefPaths": [],
+          "lightweight": false
+        }
+      ],
+      "serializedFields": {
+        "scalarFields": [
+          {
+            "name": "BackGroundPrefab",
+            "sourceLayer": "asset",
+            "value": "2",
+            "valueType": "number"
+          },
+          {
+            "name": "baseColliderOffset",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 0}",
+            "valueType": "string"
+          },
+          {
+            "name": "beliefType",
+            "sourceLayer": "asset",
+            "value": "2",
+            "valueType": "number"
+          },
+          {
+            "name": "canChangeGunpointOffset",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "ChangeGunGraphics",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "ChangeGunGraphicsHasAni",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "curse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "Description",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/0_coin_aresD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "glassesIsFront",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "gunpointOffset",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "gunpointOffsetY",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "hairResource",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "hairType",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "hatIsFront",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "id",
+            "sourceLayer": "asset",
+            "value": "1286",
+            "valueType": "number"
+          },
+          {
+            "name": "IgnorePickUpEvent",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "isRoleOwn",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSpecialDrops",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSuit",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isTestItem",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "KeyWords",
+            "sourceLayer": "asset",
+            "value": "keywords: []",
+            "valueType": "string"
+          },
+          {
+            "name": "Name",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/0_coin_ares\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "needShowOverheadIcon",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "needUse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "overrideColliderRadius",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "PickUpPrefabId",
+            "sourceLayer": "asset",
+            "value": "22",
+            "valueType": "number"
+          },
+          {
+            "name": "PowerUpType",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "quality",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "qualityIsShow",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "showBanner",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "showBannerSprite",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "SoundEffect",
+            "sourceLayer": "asset",
+            "value": "event:/SFX/Item/Sfx_item_get",
+            "valueType": "string"
+          },
+          {
+            "name": "subSuits",
+            "sourceLayer": "asset",
+            "value": "[]",
+            "valueType": "string"
+          },
+          {
+            "name": "tagDamageMult",
+            "sourceLayer": "asset",
+            "value": "",
+            "valueType": "string"
+          },
+          {
+            "name": "tagDamageMultRange",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 999}",
+            "valueType": "string"
+          },
+          {
+            "name": "Tags",
+            "sourceLayer": "asset",
+            "value": "tags:\n- tagLevel: 1\n  tagId: 17\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.6627451, g: 0.5647059, b: 0.78039217, a: 1}\n  tagRelationColor: {r: 0.8235294, g: 0.7372549, b: 0.9254902, a: 1}\n  chineseName: \"\\u6389\\u843D\\u7269\"\n  languageKey: 17",
+            "valueType": "string"
+          },
+          {
+            "name": "textShowCd",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "UniqueDrop",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "UseNew",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "values",
+            "sourceLayer": "asset",
+            "value": "_key: []\n_val: []\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "BackGroundPrefab",
+            "sourceLayer": "asset",
+            "value": "2",
+            "valueType": "number"
+          },
+          {
+            "name": "baseColliderOffset",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 0}",
+            "valueType": "string"
+          },
+          {
+            "name": "beliefType",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "canChangeGunpointOffset",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "ChangeGunGraphics",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "ChangeGunGraphicsHasAni",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "curse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "Description",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/0_coin_athenaD\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "glassesIsFront",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "gunpointOffset",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "gunpointOffsetY",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "hairResource",
+            "sourceLayer": "asset",
+            "value": "_key: \n_val: []\n_errorList: \n_keyType: 0\n_valType: {fileID: 0}\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "hairType",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "hatIsFront",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "id",
+            "sourceLayer": "asset",
+            "value": "1233",
+            "valueType": "number"
+          },
+          {
+            "name": "IgnorePickUpEvent",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "isRoleOwn",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSpecialDrops",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isSuit",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "isTestItem",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "KeyWords",
+            "sourceLayer": "asset",
+            "value": "keywords: []",
+            "valueType": "string"
+          },
+          {
+            "name": "Name",
+            "sourceLayer": "asset",
+            "value": "mTerm: PuName/0_coin_athena\nmRTL_IgnoreArabicFix: 0\nmRTL_MaxLineLength: 0\nmRTL_ConvertNumbers: 0\nm_DontLocalizeParameters: 0",
+            "valueType": "string"
+          },
+          {
+            "name": "needShowOverheadIcon",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "needUse",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "overrideColliderRadius",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "PickUpPrefabId",
+            "sourceLayer": "asset",
+            "value": "22",
+            "valueType": "number"
+          },
+          {
+            "name": "PowerUpType",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "quality",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "qualityIsShow",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "showBanner",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "showBannerSprite",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "SoundEffect",
+            "sourceLayer": "asset",
+            "value": "event:/SFX/Item/Sfx_item_get",
+            "valueType": "string"
+          },
+          {
+            "name": "subSuits",
+            "sourceLayer": "asset",
+            "value": "[]",
+            "valueType": "string"
+          },
+          {
+            "name": "tagDamageMult",
+            "sourceLayer": "asset",
+            "value": "",
+            "valueType": "string"
+          },
+          {
+            "name": "tagDamageMultRange",
+            "sourceLayer": "asset",
+            "value": "{x: 0, y: 999}",
+            "valueType": "string"
+          },
+          {
+            "name": "Tags",
+            "sourceLayer": "asset",
+            "value": "tags:\n- tagLevel: 1\n  tagId: 17\n  tagFontColor: {r: 0, g: 0, b: 0, a: 1}\n  tagBgColor: {r: 0.6627451, g: 0.5647059, b: 0.78039217, a: 1}\n  tagRelationColor: {r: 0.8235294, g: 0.7372549, b: 0.9254902, a: 1}\n  chineseName: \"\\u6389\\u843D\\u7269\"\n  languageKey: 17",
+            "valueType": "string"
+          },
+          {
+            "name": "textShowCd",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "UniqueDrop",
+            "sourceLayer": "asset",
+            "value": "1",
+            "valueType": "number"
+          },
+          {
+            "name": "UseNew",
+            "sourceLayer": "asset",
+            "value": "0",
+            "valueType": "number"
+          },
+          {
+            "name": "values",
+            "sourceLayer": "asset",
+            "value": "_key: []\n_val: []\n_errorList: \n_keyType: \n_valType: 0\n_divider: 0\n_selected: 0\nreset: 0",
+            "valueType": "string"
+          }
+        ],
+        "referenceFields": [
+          {
+            "name": "BackgroundSrite",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBagHelmetGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBagPrefab",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBodyAura",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeGogglesGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "changeHair",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeHats",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeHeadAura",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "changeHelmetGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeMaskGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ConversionPowerUp",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "NewBackGroundPrefab",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "sprite",
+            "sourceLayer": "asset",
+            "fileId": "21300000",
+            "guid": "e42b643aa3fe54b2dbd745d462d69677"
+          },
+          {
+            "name": "suit",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "BackgroundSrite",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBagHelmetGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBagPrefab",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeBodyAura",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeGogglesGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "changeHair",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeHats",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeHeadAura",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "changeHelmetGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ChangeMaskGraphics",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "ConversionPowerUp",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "NewBackGroundPrefab",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          },
+          {
+            "name": "sprite",
+            "sourceLayer": "asset",
+            "fileId": "21300000",
+            "guid": "47be70e417dae49c5bc867c3a00cd1ca"
+          },
+          {
+            "name": "suit",
+            "sourceLayer": "asset",
+            "fileId": "0"
+          }
+        ]
+      },
+      "unityDiagnostics": [],
+      "hydrationMeta": {
+        "requestedMode": "parity",
+        "effectiveMode": "parity",
+        "elapsedMs": 0,
+        "fallbackToCompact": false,
+        "resourceBindingCount": 2,
+        "unityDiagnosticsCount": 0,
+        "isComplete": true,
+        "completenessReason": [],
+        "needsParityRetry": false
+      }
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/OnMinionEventPowerUp.cs:PickItUp",
+      "name": "PickItUp",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/OnMinionEventPowerUp.cs",
+      "startLine": 9,
+      "endLine": 9,
+      "module": "PowerUps"
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/OnMinionEventPowerUp.cs:RevokePickup",
+      "name": "RevokePickup",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/OnMinionEventPowerUp.cs",
+      "startLine": 20,
+      "endLine": 20,
+      "module": "PowerUps"
+    }
+  ]
+}

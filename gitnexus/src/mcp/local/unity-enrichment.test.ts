@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadUnityContext, projectUnityBindings } from './unity-enrichment.js';
+import { formatLazyHydrationBudgetDiagnostic, loadUnityContext, projectUnityBindings } from './unity-enrichment.js';
 
 test('projectUnityBindings restores graph-native Unity payload rows', () => {
   const out = projectUnityBindings([
@@ -137,4 +137,80 @@ _actorPrefabRef:
   assert.equal(refs[0]?.isSprite, true);
   assert.equal(refs[1]?.fieldName, '_actorPrefabRef');
   assert.equal(refs[1]?.isSprite, false);
+});
+
+test('projectUnityBindings preserves lightweight marker from payload', () => {
+  const out = projectUnityBindings([
+    {
+      resourcePath: 'Assets/Scene/LargeScene.unity',
+      payload: JSON.stringify({
+        resourcePath: 'Assets/Scene/LargeScene.unity',
+        resourceType: 'scene',
+        bindingKind: 'direct',
+        componentObjectId: 'line-200',
+        lightweight: true,
+        serializedFields: { scalarFields: [], referenceFields: [] },
+      }),
+    },
+  ]);
+
+  assert.equal(out.resourceBindings.length, 1);
+  assert.equal(out.resourceBindings[0]?.lightweight, true);
+});
+
+test('projectUnityBindings infers lightweight marker from legacy line-* component id', () => {
+  const out = projectUnityBindings([
+    {
+      resourcePath: 'Assets/Scene/LargeScene.unity',
+      payload: JSON.stringify({
+        resourcePath: 'Assets/Scene/LargeScene.unity',
+        resourceType: 'scene',
+        bindingKind: 'direct',
+        componentObjectId: 'line-54558',
+        serializedFields: { scalarFields: [], referenceFields: [] },
+        resolvedReferences: [],
+      }),
+    },
+  ]);
+
+  assert.equal(out.resourceBindings.length, 1);
+  assert.equal(out.resourceBindings[0]?.lightweight, true);
+});
+
+test('projectUnityBindings restores compact component payload rows without embedded resourcePath', () => {
+  const out = projectUnityBindings([
+    {
+      resourcePath: 'Assets/A.prefab',
+      payload: JSON.stringify({
+        bindingKind: 'direct',
+        componentObjectId: '114',
+        serializedFields: { scalarFields: [], referenceFields: [] },
+      }),
+    },
+  ]);
+
+  assert.equal(out.resourceBindings.length, 1);
+  assert.equal(out.resourceBindings[0]?.resourcePath, 'Assets/A.prefab');
+  assert.equal(out.resourceBindings[0]?.bindingKind, 'direct');
+  assert.deepEqual(out.unityDiagnostics, []);
+});
+
+test('loadUnityContext can project UNITY_RESOURCE_SUMMARY rows before hydration', async () => {
+  const out = await loadUnityContext('repo-id', 'Class:Assets/Scripts/DoorObj.cs:DoorObj', async () => [
+    {
+      relationType: 'UNITY_RESOURCE_SUMMARY',
+      relationReason: JSON.stringify({ resourceType: 'prefab', bindingKinds: ['direct'], lightweight: true }),
+      resourcePath: 'Assets/Doors/Door.prefab',
+      payload: '',
+    },
+  ] as any);
+  assert.equal(out.resourceBindings.length, 1);
+  assert.equal(out.resourceBindings[0]?.resourcePath, 'Assets/Doors/Door.prefab');
+  assert.equal(out.resourceBindings[0]?.lightweight, true);
+});
+
+test('formatLazyHydrationBudgetDiagnostic returns stable budget warning', () => {
+  const message = formatLazyHydrationBudgetDiagnostic(17);
+  assert.match(message, /budget exceeded/i);
+  assert.match(message, /17ms/);
 });

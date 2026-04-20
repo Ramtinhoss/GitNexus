@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { normalizeRepoAlias, parseExtensionList, resolveAnalyzeScopeRules } from './analyze-options.js';
+import {
+  normalizeRepoAlias,
+  parseExtensionList,
+  resolveAnalyzeScopeRules,
+  resolveEffectiveAnalyzeOptions,
+} from './analyze-options.js';
+import { parseScopeManifestConfig } from './scope-manifest-config.js';
 
 test('parseExtensionList normalizes dot prefixes', () => {
   const exts = parseExtensionList('cs,.ts, go ');
@@ -43,4 +49,145 @@ test('resolveAnalyzeScopeRules fails when manifest has no usable rule', async ()
     resolveAnalyzeScopeRules({ scopeManifest: manifestPath }),
     /no valid scope rules/i,
   );
+});
+
+test('resolveEffectiveAnalyzeOptions reuses stored settings when CLI omits them', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    {},
+    {
+      includeExtensions: ['.cs'],
+      scopeRules: ['Assets/NEON/Code'],
+      repoAlias: 'neonspark-v1-subset',
+      embeddings: true,
+    },
+  );
+
+  assert.deepEqual(resolved.includeExtensions, ['.cs']);
+  assert.deepEqual(resolved.scopeRules, ['Assets/NEON/Code']);
+  assert.equal(resolved.repoAlias, 'neonspark-v1-subset');
+  assert.equal(resolved.embeddings, true);
+});
+
+test('resolveEffectiveAnalyzeOptions disables reuse via reuseOptions=false', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    { reuseOptions: false },
+    {
+      includeExtensions: ['.cs'],
+      scopeRules: ['Assets/NEON/Code'],
+      repoAlias: 'neonspark-v1-subset',
+      embeddings: true,
+    },
+  );
+
+  assert.deepEqual(resolved.includeExtensions, []);
+  assert.deepEqual(resolved.scopeRules, []);
+  assert.equal(resolved.repoAlias, undefined);
+  assert.equal(resolved.embeddings, false);
+});
+
+test('resolveEffectiveAnalyzeOptions prefers explicit CLI values over stored settings', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    {
+      extensions: '.ts',
+      scopePrefix: ['src'],
+      repoAlias: 'new-alias',
+      embeddings: false,
+    },
+    {
+      includeExtensions: ['.cs'],
+      scopeRules: ['Assets/NEON/Code'],
+      repoAlias: 'old-alias',
+      embeddings: true,
+    },
+  );
+
+  assert.deepEqual(resolved.includeExtensions, ['.ts']);
+  assert.deepEqual(resolved.scopeRules, ['src']);
+  assert.equal(resolved.repoAlias, 'new-alias');
+  assert.equal(resolved.embeddings, false);
+});
+
+test('resolveEffectiveAnalyzeOptions reads @extensions/@repoAlias/@embeddings from manifest', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-directives-'));
+  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
+  await fs.writeFile(
+    manifestPath,
+    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=neonspark-core', '@embeddings=false'].join('\n'),
+    'utf-8',
+  );
+
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    { scopeManifest: manifestPath },
+    {
+      includeExtensions: ['.ts'],
+      scopeRules: ['src'],
+      repoAlias: 'stored-alias',
+      embeddings: true,
+    },
+  );
+
+  assert.deepEqual(resolved.scopeRules, ['Assets']);
+  assert.deepEqual(resolved.includeExtensions, ['.cs', '.meta']);
+  assert.equal(resolved.repoAlias, 'neonspark-core');
+  assert.equal(resolved.embeddings, false);
+});
+
+test('resolveEffectiveAnalyzeOptions enforces precedence CLI > manifest > meta', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-precedence-'));
+  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
+  await fs.writeFile(
+    manifestPath,
+    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=manifest-alias', '@embeddings=false'].join('\n'),
+    'utf-8',
+  );
+
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    {
+      scopeManifest: manifestPath,
+      extensions: '.ts',
+    },
+    {
+      includeExtensions: ['.js'],
+      scopeRules: ['tools'],
+      repoAlias: 'meta-alias',
+      embeddings: true,
+    },
+  );
+
+  assert.deepEqual(resolved.scopeRules, ['Assets']);
+  assert.deepEqual(resolved.includeExtensions, ['.ts']);
+  assert.equal(resolved.repoAlias, 'manifest-alias');
+  assert.equal(resolved.embeddings, false);
+});
+
+test('resolveEffectiveAnalyzeOptions rejects unknown manifest directives', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-unknown-'));
+  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
+  await fs.writeFile(manifestPath, ['Assets/', '@foo=bar'].join('\n'), 'utf-8');
+
+  await assert.rejects(
+    resolveEffectiveAnalyzeOptions({ scopeManifest: manifestPath }),
+    /unknown manifest directive/i,
+  );
+});
+
+test('parseScopeManifestConfig splits scope rules and directives', () => {
+  const parsed = parseScopeManifestConfig(
+    [
+      '# comment',
+      'Assets/',
+      'Packages/com.veewo.*',
+      '',
+      '@extensions=.cs,.meta',
+      '@repoAlias=demo-repo',
+      '@embeddings=false',
+    ].join('\n'),
+  );
+
+  assert.deepEqual(parsed.scopeRules, ['Assets', 'Packages/com.veewo.*']);
+  assert.deepEqual(parsed.directives, {
+    extensions: '.cs,.meta',
+    repoAlias: 'demo-repo',
+    embeddings: 'false',
+  });
 });

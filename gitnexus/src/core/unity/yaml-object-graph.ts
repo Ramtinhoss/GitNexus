@@ -40,7 +40,7 @@ export function parseUnityYamlObjects(text: string): UnityObjectBlock[] {
   };
 
   for (const line of lines) {
-    const header = line.match(/^--- !u!\d+ &(\d+)(?:\s+(\w+))?\s*$/);
+    const header = line.match(/^--- !u!\d+ &(-?\d+)(?:\s+(\w+))?\s*$/);
     if (header) {
       flush();
       currentHeader = {

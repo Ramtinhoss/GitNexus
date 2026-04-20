@@ -3,7 +3,7 @@ GitNexus Docker Environment for SWE-bench Evaluation
 
 Extends mini-swe-agent's Docker environment to:
 1. Install GitNexus (Node.js + npm + gitnexus package)
-2. Run `gitnexus analyze` on the repository
+2. Run `npx -y @veewo/gitnexus@latest analyze` on the repository
 3. Start the eval-server daemon (persistent HTTP server with warm KuzuDB)
 4. Install standalone tool scripts in /usr/local/bin/ (works with subprocess.run)
 5. Cache indexes per (repo, base_commit) to avoid re-indexing
@@ -14,7 +14,7 @@ don't persist. The tool scripts must be standalone executables in $PATH.
 
 Architecture:
   Agent bash cmd → /usr/local/bin/gitnexus-query → curl localhost:4848/tool/query → eval-server → KuzuDB
-  Fallback: → npx gitnexus query (cold start, slower)
+  Fallback: → npx -y @veewo/gitnexus@latest query (cold start, slower)
 
 Tool call latency: ~50-100ms via eval-server, ~5-10s via CLI fallback.
 """
@@ -47,7 +47,7 @@ args="{\"query\": \"$query\""
 args="$args}"
 result=$(curl -sf -X POST "http://127.0.0.1:${PORT}/tool/query" -H "Content-Type: application/json" -d "$args" 2>/dev/null)
 if [ $? -eq 0 ] && [ -n "$result" ]; then echo "$result"; exit 0; fi
-cd /testbed && npx gitnexus query "$query" 2>&1
+cd /testbed && npx -y @veewo/gitnexus@latest query "$query" 2>&1
 '''
 
 TOOL_SCRIPT_CONTEXT = r'''#!/bin/bash
@@ -59,7 +59,7 @@ args="{\"name\": \"$name\""
 args="$args}"
 result=$(curl -sf -X POST "http://127.0.0.1:${PORT}/tool/context" -H "Content-Type: application/json" -d "$args" 2>/dev/null)
 if [ $? -eq 0 ] && [ -n "$result" ]; then echo "$result"; exit 0; fi
-cd /testbed && npx gitnexus context "$name" 2>&1
+cd /testbed && npx -y @veewo/gitnexus@latest context "$name" 2>&1
 '''
 
 TOOL_SCRIPT_IMPACT = r'''#!/bin/bash
@@ -68,7 +68,7 @@ target="$1"; direction="${2:-upstream}"
 [ -z "$target" ] && echo "Usage: gitnexus-impact <symbol_name> [upstream|downstream]" && exit 1
 result=$(curl -sf -X POST "http://127.0.0.1:${PORT}/tool/impact" -H "Content-Type: application/json" -d "{\"target\": \"$target\", \"direction\": \"$direction\"}" 2>/dev/null)
 if [ $? -eq 0 ] && [ -n "$result" ]; then echo "$result"; exit 0; fi
-cd /testbed && npx gitnexus impact "$target" --direction "$direction" 2>&1
+cd /testbed && npx -y @veewo/gitnexus@latest impact "$target" --direction "$direction" 2>&1
 '''
 
 TOOL_SCRIPT_CYPHER = r'''#!/bin/bash
@@ -77,11 +77,11 @@ query="$1"
 [ -z "$query" ] && echo "Usage: gitnexus-cypher <cypher_query>" && exit 1
 result=$(curl -sf -X POST "http://127.0.0.1:${PORT}/tool/cypher" -H "Content-Type: application/json" -d "{\"query\": \"$query\"}" 2>/dev/null)
 if [ $? -eq 0 ] && [ -n "$result" ]; then echo "$result"; exit 0; fi
-cd /testbed && npx gitnexus cypher "$query" 2>&1
+cd /testbed && npx -y @veewo/gitnexus@latest cypher "$query" 2>&1
 '''
 
 TOOL_SCRIPT_AUGMENT = r'''#!/bin/bash
-cd /testbed && npx gitnexus augment "$1" 2>&1 || true
+cd /testbed && npx -y @veewo/gitnexus@latest augment "$1" 2>&1 || true
 '''
 
 TOOL_SCRIPT_OVERVIEW = r'''#!/bin/bash
@@ -89,7 +89,7 @@ PORT="${GITNEXUS_EVAL_PORT:-__PORT__}"
 echo "=== Code Knowledge Graph Overview ==="
 result=$(curl -sf -X POST "http://127.0.0.1:${PORT}/tool/list_repos" -H "Content-Type: application/json" -d "{}" 2>/dev/null)
 if [ $? -eq 0 ] && [ -n "$result" ]; then echo "$result"; exit 0; fi
-cd /testbed && npx gitnexus list 2>&1
+cd /testbed && npx -y @veewo/gitnexus@latest list 2>&1
 '''
 
 
@@ -100,7 +100,7 @@ class GitNexusDockerEnvironment(DockerEnvironment):
     Setup flow:
     1. Start Docker container (base SWE-bench image)
     2. Install Node.js + gitnexus inside the container
-    3. Run `gitnexus analyze` (or restore from cache)
+    3. Run `npx -y @veewo/gitnexus@latest analyze` (or restore from cache)
     4. Start `gitnexus eval-server` daemon (keeps KuzuDB warm)
     5. Install standalone tool scripts in /usr/local/bin/
     6. Agent runs with near-instant GitNexus tool calls
@@ -174,7 +174,7 @@ class GitNexusDockerEnvironment(DockerEnvironment):
 
     def _install_gitnexus(self):
         """Install the gitnexus npm package globally."""
-        check = self.execute({"command": "npx gitnexus --version 2>/dev/null || echo 'NOT_FOUND'"})
+        check = self.execute({"command": "npx -y @veewo/gitnexus@latest --version 2>/dev/null || echo 'NOT_FOUND'"})
         if "NOT_FOUND" in check.get("output", ""):
             logger.info("Installing gitnexus...")
             result = self.execute({
@@ -185,7 +185,7 @@ class GitNexusDockerEnvironment(DockerEnvironment):
                 raise RuntimeError(f"Failed to install gitnexus: {result.get('output', '')}")
 
     def _index_repository(self):
-        """Run gitnexus analyze on the repo, using cache if available."""
+        """Run npx -y @veewo/gitnexus@latest analyze on the repo, using cache if available."""
         repo_info = self._get_repo_info()
         cache_key = self._make_cache_key(repo_info)
         cache_path = self.cache_dir / cache_key
@@ -195,17 +195,17 @@ class GitNexusDockerEnvironment(DockerEnvironment):
             self._restore_cache(cache_path)
             return
 
-        logger.info("Running gitnexus analyze...")
+        logger.info("Running npx -y @veewo/gitnexus@latest analyze...")
         skip_flag = "--skip-embeddings" if self.skip_embeddings else ""
         result = self.execute({
-            "command": f"cd /testbed && npx gitnexus analyze . {skip_flag} 2>&1",
+            "command": f"cd /testbed && npx -y @veewo/gitnexus@latest analyze . {skip_flag} 2>&1",
             "timeout": self.gitnexus_timeout,
         })
 
         if result.get("returncode", 1) != 0:
             output = result.get("output", "")
             if "error" in output.lower() and "indexed" not in output.lower():
-                raise RuntimeError(f"gitnexus analyze failed: {output[-500:]}")
+                raise RuntimeError(f"npx -y @veewo/gitnexus@latest analyze failed: {output[-500:]}")
 
         self._save_cache(cache_path, repo_info)
 
@@ -215,7 +215,7 @@ class GitNexusDockerEnvironment(DockerEnvironment):
 
         self.execute({
             "command": (
-                f"nohup npx gitnexus eval-server --port {self.eval_server_port} "
+                f"nohup npx -y @veewo/gitnexus@latest eval-server --port {self.eval_server_port} "
                 f"--idle-timeout 600 "
                 f"> /tmp/gitnexus-eval-server.log 2>&1 &"
             ),
@@ -345,7 +345,7 @@ class GitNexusDockerEnvironment(DockerEnvironment):
                 self.execute({"command": "mkdir -p /root/.gitnexus"})
 
                 storage_result = self.execute({
-                    "command": "npx gitnexus list 2>/dev/null | grep -o '/root/.gitnexus/[^ ]*' | head -1 || echo '/root/.gitnexus/repos/default'"
+                    "command": "npx -y @veewo/gitnexus@latest list 2>/dev/null | grep -o '/root/.gitnexus/[^ ]*' | head -1 || echo '/root/.gitnexus/repos/default'"
                 })
                 storage_path = storage_result.get("output", "").strip() or "/root/.gitnexus/repos/default"
                 self.execute({"command": f"mkdir -p {storage_path}"})

@@ -63,7 +63,33 @@ if [ "$found" = false ]; then
 fi
 
 # Run gitnexus augment — must be fast (<500ms target)
-RESULT=$(cd "$CWD" && npx -y gitnexus augment "$PATTERN" 2>/dev/null)
+# augment writes to stderr (KuzuDB captures stdout at OS level), so capture stderr and discard stdout
+if command -v gitnexus >/dev/null 2>&1; then
+  RESULT=$(cd "$CWD" && gitnexus augment "$PATTERN" 2>&1 1>/dev/null)
+else
+  if [ -n "$GITNEXUS_CLI_SPEC" ]; then
+    :
+  elif [ -n "$GITNEXUS_CLI_VERSION" ]; then
+    GITNEXUS_CLI_SPEC="@veewo/gitnexus@$GITNEXUS_CLI_VERSION"
+  elif [ -f "${HOME}/.gitnexus/config.json" ]; then
+    GITNEXUS_CLI_SPEC="$(
+      node -e 'const fs=require("fs");const os=require("os");const path=require("path");
+      try {
+        const raw=fs.readFileSync(path.join(os.homedir(),".gitnexus","config.json"),"utf8");
+        const parsed=JSON.parse(raw);
+        const spec=typeof parsed.cliPackageSpec==="string" && parsed.cliPackageSpec.trim()
+          ? parsed.cliPackageSpec.trim()
+          : typeof parsed.cliVersion==="string" && parsed.cliVersion.trim()
+            ? `@veewo/gitnexus@${parsed.cliVersion.trim()}`
+            : "";
+        if (spec) process.stdout.write(spec);
+      } catch {}'
+    )"
+  fi
+
+  [ -z "$GITNEXUS_CLI_SPEC" ] && exit 0
+  RESULT=$(cd "$CWD" && npx -y "$GITNEXUS_CLI_SPEC" augment "$PATTERN" 2>&1 1>/dev/null)
+fi
 
 if [ -n "$RESULT" ]; then
   ESCAPED=$(echo "$RESULT" | jq -Rs .)

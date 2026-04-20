@@ -1,0 +1,168 @@
+{
+  "generatedAt": "2026-03-24T06:53:07.270Z",
+  "rows": [
+    {
+      "goal": "asset_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Shell/Views/BanScreen.uxml",
+      "results": 1,
+      "diag": "none",
+      "ms": 26285
+    },
+    {
+      "goal": "asset_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Shell/Views/EvolutionScreenNew.uxml",
+      "results": 1,
+      "diag": "none",
+      "ms": 26147
+    },
+    {
+      "goal": "asset_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Shell/Views/IllustrationsScreenNew.uxml",
+      "results": 1,
+      "diag": "none",
+      "ms": 25918
+    },
+    {
+      "goal": "asset_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Shell/Views/DifficultyScreenNew.uxml",
+      "results": 2,
+      "diag": "none",
+      "ms": 26960
+    },
+    {
+      "goal": "asset_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Shell/Views/AssaultModeLevelScreen.uxml",
+      "results": 1,
+      "diag": "none",
+      "ms": 25789
+    },
+    {
+      "goal": "asset_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Shell/Views/AresArsenalScreenNew.uxml",
+      "results": 1,
+      "diag": "none",
+      "ms": 25721
+    },
+    {
+      "goal": "template_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Mobile/Option_Controls_Mobile.uxml",
+      "results": 2,
+      "diag": "none",
+      "ms": 749
+    },
+    {
+      "goal": "template_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Tutorial/TutorialDifficultChoose.uxml",
+      "results": 2,
+      "diag": "none",
+      "ms": 725
+    },
+    {
+      "goal": "template_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/Tutorial/TutGamePadMode.uxml",
+      "results": 1,
+      "diag": "none",
+      "ms": 724
+    },
+    {
+      "goal": "template_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/OptionScreen/Option_KeyBoard.uxml",
+      "results": 3,
+      "diag": "none",
+      "ms": 719
+    },
+    {
+      "goal": "template_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/UISlot/UISlot.uxml",
+      "results": 4,
+      "diag": "none",
+      "ms": 724
+    },
+    {
+      "goal": "template_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/NewScreens/NoticeScreenNew.uxml",
+      "results": 2,
+      "diag": "none",
+      "ms": 731
+    },
+    {
+      "goal": "template_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/OptionScreen/OptionScreenNew.uxml",
+      "results": 11,
+      "diag": "none",
+      "ms": 728
+    },
+    {
+      "goal": "template_refs",
+      "target": "Assets/NEON/VeewoUI/Uxml/NewScreens/HeroChooseScreenNew.uxml",
+      "results": 1,
+      "diag": "none",
+      "ms": 744
+    },
+    {
+      "goal": "selector_bindings",
+      "target": "Assets/NEON/VeewoUI/Uxml/BarScreen/Patch/PatchItemPreview.uxml",
+      "results": 3,
+      "diag": "none",
+      "ms": 27729
+    },
+    {
+      "goal": "selector_bindings",
+      "target": "Assets/NEON/VeewoUI/Uxml/Shell/Views/EliteBossScreenNew.uxml",
+      "results": 4,
+      "diag": "none",
+      "ms": 27463
+    },
+    {
+      "goal": "selector_bindings",
+      "target": "Assets/NEON/VeewoUI/Uxml/BarScreen/Boss/EliteBossScreen.uxml",
+      "results": 8,
+      "diag": "none",
+      "ms": 26908
+    },
+    {
+      "goal": "selector_bindings",
+      "target": "Assets/NEON/VeewoUI/Uxml/Shell/Views/DressUpScreenNew.uxml",
+      "results": 12,
+      "diag": "none",
+      "ms": 27655
+    },
+    {
+      "goal": "selector_bindings",
+      "target": "Assets/NEON/VeewoUI/Uxml/BarScreen/CoreScreen.uxml",
+      "results": 13,
+      "diag": "none",
+      "ms": 31149
+    },
+    {
+      "goal": "selector_bindings",
+      "target": "Assets/NEON/VeewoUI/Uxml/BarScreen/Achievement/AchievementScreen.uxml",
+      "results": 17,
+      "diag": "none",
+      "ms": 27348
+    }
+  ],
+  "byGoal": {
+    "asset_refs": {
+      "total": 6,
+      "nonEmpty": 6,
+      "not_found": 0,
+      "ambiguous": 0,
+      "avgMs": 26137
+    },
+    "template_refs": {
+      "total": 8,
+      "nonEmpty": 8,
+      "not_found": 0,
+      "ambiguous": 0,
+      "avgMs": 731
+    },
+    "selector_bindings": {
+      "total": 6,
+      "nonEmpty": 6,
+      "not_found": 0,
+      "ambiguous": 0,
+      "avgMs": 28042
+    }
+  }
+}

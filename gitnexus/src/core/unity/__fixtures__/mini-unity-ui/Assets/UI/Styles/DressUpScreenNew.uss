@@ -1,0 +1,7 @@
+.dressup-screen {
+  align-items: center;
+}
+
+.tooltip-box {
+  opacity: 0.95;
+}

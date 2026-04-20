@@ -1,0 +1,140 @@
+{
+  "phase": "phase3",
+  "generatedAt": "2026-03-31T17:37:00+08:00",
+  "repoAlias": "neonspark",
+  "indexedCommit": "9d105b2",
+  "flagState": {
+    "env": "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS",
+    "enabledValue": "on",
+    "defaultValue": "off"
+  },
+  "commands": [
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js context -r neonspark --file \"Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs\" --unity-resources on --unity-hydration parity WeaponPowerUp",
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js query -r neonspark --unity-resources on --unity-hydration parity \"WeaponPowerUp Equip CurGunGraph\"",
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js query -r neonspark --unity-resources on --unity-hydration parity \"GunGraph RegisterEvents StartRoutineWithEvents\"",
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js context -r neonspark --file \"Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs\" --unity-resources on --unity-hydration parity Reload",
+    "GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js query -r neonspark --unity-resources on --unity-hydration parity \"Reload NEON.Game.Graph.Nodes.Reloads\"",
+    "node gitnexus/dist/cli/index.js cypher -r neonspark \"MATCH ()-[r:CodeRelation {type:'CALLS'}]->() WHERE r.reason IN ['unity-lifecycle-synthetic','unity-runtime-loader-synthetic'] RETURN count(r) AS synthetic_calls\"",
+    "/usr/bin/time -p node gitnexus/dist/cli/index.js context -r gitnexus --unity-resources off LocalBackend",
+    "/usr/bin/time -p env GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js context -r gitnexus --unity-resources off LocalBackend",
+    "/usr/bin/time -p node gitnexus/dist/cli/index.js query -r gitnexus --unity-resources off \"process detection\"",
+    "/usr/bin/time -p env GITNEXUS_UNITY_LIFECYCLE_SYNTHETIC_CALLS=on node gitnexus/dist/cli/index.js query -r gitnexus --unity-resources off \"process detection\"",
+    "npm --prefix gitnexus run test:u3:gates"
+  ],
+  "artifacts": {
+    "contextWeaponPowerUpOn": "docs/reports/2026-03-31-phase3-context-weaponpowerup.on.json",
+    "queryWeaponPowerUpOn": "docs/reports/2026-03-31-phase3-query-weaponpowerup-equip-curgungraph.on.json",
+    "queryRuntimeOn": "docs/reports/2026-03-31-phase3-query-gungraph-registerevents-startroutine.on.json",
+    "contextReloadOn": "docs/reports/2026-03-31-phase3-context-reload.on.json",
+    "queryReloadOn": "docs/reports/2026-03-31-phase3-query-reload-neon-game-graph-nodes-reloads.on.json",
+    "contextWeaponPowerUpOff": "docs/reports/2026-03-31-phase3-context-weaponpowerup.off.json",
+    "queryWeaponPowerUpOff": "docs/reports/2026-03-31-phase3-query-weaponpowerup-equip-curgungraph.off.json",
+    "queryRuntimeOff": "docs/reports/2026-03-31-phase3-query-gungraph-registerevents-startroutine.off.json",
+    "contextReloadOff": "docs/reports/2026-03-31-phase3-context-reload.off.json",
+    "queryReloadOff": "docs/reports/2026-03-31-phase3-query-reload-neon-game-graph-nodes-reloads.off.json",
+    "nonUnityContextOff": "docs/reports/2026-03-31-phase3-nonunity-context-gitnexus.json",
+    "nonUnityContextOn": "docs/reports/2026-03-31-phase3-nonunity-context-gitnexus.on.json",
+    "nonUnityQueryOff": "docs/reports/2026-03-31-phase3-nonunity-query-process-detection.json",
+    "nonUnityQueryOn": "docs/reports/2026-03-31-phase3-nonunity-query-process-detection.on.json",
+    "nonUnityU3Gates": "docs/reports/2026-03-31-phase3-nonunity-test-u3-gates.log"
+  },
+  "counts": {
+    "syntheticCalls": {
+      "off": 0,
+      "on": 0,
+      "delta": 0,
+      "source": "cypher synthetic_calls"
+    },
+    "unityAcceptance": {
+      "off": {
+        "totalProcesses": 1,
+        "totalProcessSymbols": 1
+      },
+      "on": {
+        "totalProcesses": 1,
+        "totalProcessSymbols": 1
+      }
+    },
+    "nonUnity": {
+      "context": {
+        "off": {
+          "processes": 70,
+          "realSeconds": 0.25
+        },
+        "on": {
+          "processes": 70,
+          "realSeconds": 0.23
+        }
+      },
+      "query": {
+        "off": {
+          "processes": 5,
+          "processSymbols": 3,
+          "realSeconds": 0.33
+        },
+        "on": {
+          "processes": 5,
+          "processSymbols": 3,
+          "realSeconds": 0.35
+        }
+      },
+      "u3Gates": {
+        "pass": true,
+        "tests": 49,
+        "failures": 0
+      }
+    }
+  },
+  "metricsDelta": {
+    "unity": {
+      "processesDelta": 0,
+      "processSymbolsDelta": 0,
+      "syntheticCallsDelta": 0,
+      "nonNegativeImprovement": true
+    },
+    "nonUnity": {
+      "contextProcessesDelta": 0,
+      "queryProcessesDelta": 0,
+      "queryProcessSymbolsDelta": 0,
+      "contextRealSecondsDelta": -0.02,
+      "queryRealSecondsDelta": 0.02
+    }
+  },
+  "confirmed_chain": {
+    "steps": [
+      {
+        "segment": "loader",
+        "query": "WeaponPowerUp Equip CurGunGraph",
+        "hops": ["WeaponPowerUp", "Equip", "CurGunGraph"],
+        "evidence_mode": "definition_and_process_symbol",
+        "artifact": "docs/reports/2026-03-31-phase3-query-weaponpowerup-equip-curgungraph.on.json"
+      },
+      {
+        "segment": "runtime",
+        "query": "GunGraph RegisterEvents StartRoutineWithEvents",
+        "hops": ["GunGraph", "RegisterEvents", "StartRoutineWithEvents"],
+        "evidence_mode": "definition_match",
+        "artifact": "docs/reports/2026-03-31-phase3-query-gungraph-registerevents-startroutine.on.json"
+      },
+      {
+        "segment": "reload",
+        "query": "Reload NEON.Game.Graph.Nodes.Reloads",
+        "hops": ["Reload", "ReloadRoutine"],
+        "evidence_mode": "definition_match",
+        "artifact": "docs/reports/2026-03-31-phase3-query-reload-neon-game-graph-nodes-reloads.on.json"
+      }
+    ]
+  },
+  "authenticity_gate": {
+    "no_placeholder_path": true,
+    "live_mode_has_tool_evidence": true,
+    "synthetic_edges_vanish_when_flag_off": true,
+    "freeze_requires_non_empty_confirmed_chain_steps": true
+  },
+  "verdict": {
+    "neonsparkReloadCase": "partial_pass",
+    "summary": "Loader/runtime/reload segments have concrete symbol evidence and non-empty confirmed chain steps, while process-symbol counts remain unchanged on this pre-existing neonspark index snapshot.",
+    "processRecursionModel": "CALLS"
+  },
+  "verification_status": "ready_for_user_verification"
+}

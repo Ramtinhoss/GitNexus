@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-04-02T01:44:30.963Z",
+  "repoAlias": "GitNexus",
+  "metrics": {
+    "process_ref": {
+      "total": 5,
+      "readable_count": 5,
+      "readable_rate": 1,
+      "unreadable_count": 0
+    },
+    "derived_id_stability_rate": 1
+  },
+  "checks": {
+    "query": "Reload",
+    "unity_resources": "on",
+    "unity_hydration_mode": "compact"
+  }
+}

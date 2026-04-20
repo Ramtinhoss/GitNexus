@@ -37,6 +37,11 @@ node dist/cli/index.js benchmark-agent-context ../benchmarks/agent-context/neons
   --scope-manifest ../benchmarks/unity-baseline/neonspark-v2/sync-manifest.txt
 ```
 
+Legacy benchmark note:
+
+- `benchmark-agent-context` now forces `response_profile=full` for its internal `query/context` calls, because the benchmark assertions still inspect heavy payload fields.
+- For manual reproduction outside the benchmark, add `--response-profile full` to direct `gitnexus query/context` calls when you need the same legacy payload shape.
+
 ## Reports
 
 Default report output directory:

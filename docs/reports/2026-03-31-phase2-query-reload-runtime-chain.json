@@ -1,0 +1,143 @@
+{
+  "processes": [],
+  "process_symbols": [],
+  "definitions": [
+    {
+      "id": "Struct:Assets/NEON/Code/Game/SimpleChain.cs:ChainNode",
+      "name": "ChainNode",
+      "filePath": "Assets/NEON/Code/Game/SimpleChain.cs",
+      "startLine": 9,
+      "endLine": 9
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/SimpleChain.cs:SimpleChain",
+      "name": "SimpleChain",
+      "filePath": "Assets/NEON/Code/Game/SimpleChain.cs",
+      "startLine": 24,
+      "endLine": 24
+    },
+    {
+      "id": "File:Assets/NEON/Code/Game/SimpleChain.cs",
+      "name": "SimpleChain.cs",
+      "filePath": "Assets/NEON/Code/Game/SimpleChain.cs"
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:Reload",
+      "name": "Reload",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs",
+      "startLine": 14,
+      "endLine": 14
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:NEON.Game.Graph.Nodes.Reloads",
+      "name": "NEON.Game.Graph.Nodes.Reloads",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs",
+      "startLine": 11,
+      "endLine": 11
+    },
+    {
+      "id": "Property:Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs:FReloadTimePortValue",
+      "name": "FReloadTimePortValue",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/Reload.cs",
+      "startLine": 53,
+      "endLine": 53
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/MonoScript/OlaolaActor.cs:Reload",
+      "name": "Reload",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/MonoScript/OlaolaActor.cs",
+      "startLine": 240,
+      "endLine": 240
+    },
+    {
+      "id": "Property:Assets/NEON/Code/Game/PowerUps/MonoScript/OlaolaActor.cs:ReloadTimeValue",
+      "name": "ReloadTimeValue",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/MonoScript/OlaolaActor.cs",
+      "startLine": 67,
+      "endLine": 67
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/PowerUps/MonoScript/OlaolaActor.cs:EnergyReloading",
+      "name": "EnergyReloading",
+      "filePath": "Assets/NEON/Code/Game/PowerUps/MonoScript/OlaolaActor.cs",
+      "startLine": 225,
+      "endLine": 225,
+      "module": "MonoScript"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs:NEON.Game.Graph.Nodes.Reloads",
+      "name": "NEON.Game.Graph.Nodes.Reloads",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs",
+      "startLine": 12,
+      "endLine": 12
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs:TriggerReload",
+      "name": "TriggerReload",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs",
+      "startLine": 15,
+      "endLine": 15
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs:ReloadRoutine",
+      "name": "ReloadRoutine",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/TriggerReload.cs",
+      "startLine": 89,
+      "endLine": 89
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs:NEON.Game.Graph.Nodes.Reloads",
+      "name": "NEON.Game.Graph.Nodes.Reloads",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs",
+      "startLine": 4,
+      "endLine": 4
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs:MeleeReload",
+      "name": "MeleeReload",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs",
+      "startLine": 7,
+      "endLine": 7
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs:NeedReload",
+      "name": "NeedReload",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/MeleeReload.cs",
+      "startLine": 29,
+      "endLine": 29
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Editor/ReloadDomain.cs:DomainReloadMenu",
+      "name": "DomainReloadMenu",
+      "filePath": "Assets/NEON/Code/Editor/ReloadDomain.cs",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "id": "Method:Assets/NEON/Code/Editor/ReloadDomain.cs:ReloadDomain",
+      "name": "ReloadDomain",
+      "filePath": "Assets/NEON/Code/Editor/ReloadDomain.cs",
+      "startLine": 8,
+      "endLine": 8
+    },
+    {
+      "id": "File:Assets/NEON/Code/Editor/ReloadDomain.cs",
+      "name": "ReloadDomain.cs",
+      "filePath": "Assets/NEON/Code/Editor/ReloadDomain.cs"
+    },
+    {
+      "id": "Namespace:Assets/NEON/Code/Game/Graph/Nodes/Reloads/MinionReload.cs:NEON.Game.Graph.Nodes.Reloads",
+      "name": "NEON.Game.Graph.Nodes.Reloads",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/MinionReload.cs",
+      "startLine": 5,
+      "endLine": 5
+    },
+    {
+      "id": "Class:Assets/NEON/Code/Game/Graph/Nodes/Reloads/MinionReload.cs:MinionReload",
+      "name": "MinionReload",
+      "filePath": "Assets/NEON/Code/Game/Graph/Nodes/Reloads/MinionReload.cs",
+      "startLine": 8,
+      "endLine": 8
+    }
+  ]
+}

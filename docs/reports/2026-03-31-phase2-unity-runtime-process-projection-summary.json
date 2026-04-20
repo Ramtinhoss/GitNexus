@@ -1,0 +1,68 @@
+{
+  "phase": "phase2",
+  "generatedAt": "2026-03-31T09:04:00.000Z",
+  "baselineRef": "docs/reports/2026-03-31-phase0-unity-runtime-process-summary.json",
+  "repoAlias": "neonspark",
+  "indexedCommit": "9d105b2988e0a9711e6ef64cb4a8e458516f6c9c",
+  "commands": [
+    "npm --prefix gitnexus run build",
+    "npm --prefix gitnexus exec vitest run test/integration/local-backend-calltool.test.ts",
+    "npm --prefix gitnexus run test:u3:gates",
+    "node gitnexus/dist/cli/index.js context -r neonspark --file \"Assets/NEON/Code/Game/PowerUps/WeaponPowerUp.cs\" --unity-resources on --unity-hydration parity WeaponPowerUp",
+    "node gitnexus/dist/cli/index.js query -r neonspark --unity-resources on --unity-hydration parity \"Pickup PickItUp EquipWithEvent\"",
+    "phase0 queryset sweep (neonspark): 10 context samples + 8 query samples"
+  ],
+  "observations": {
+    "requiredSamples": {
+      "contextWeaponPowerUp": {
+        "status": "found",
+        "processesCount": 0,
+        "artifact": "docs/reports/2026-03-31-phase2-context-weaponpowerup.json"
+      },
+      "queryPickupEquip": {
+        "processesCount": 0,
+        "processSymbolsCount": 0,
+        "artifact": "docs/reports/2026-03-31-phase2-query-pickup-equipwithevent.json"
+      }
+    },
+    "sweep": {
+      "artifact": "docs/reports/2026-03-31-phase2-neonspark-metrics-scan.json",
+      "symbolNonEmptyCount": 2,
+      "symbolTotal": 10,
+      "queryProcessSymbolsNonEmptyCount": 2,
+      "queryTotal": 8
+    }
+  },
+  "baseline": {
+    "neonsparkContextProcessNonEmptyRatioPct": 0,
+    "neonsparkQueryProcessSymbolsNonEmptyRatioPct": 12.5
+  },
+  "phase2": {
+    "neonsparkContextProcessNonEmptyRatioPct": 20,
+    "neonsparkQueryProcessSymbolsNonEmptyRatioPct": 25
+  },
+  "metricsDelta": {
+    "contextProcessNonEmptyRatioDeltaPctPoint": 20,
+    "queryProcessSymbolsNonEmptyRatioDeltaPctPoint": 12.5
+  },
+  "confirmed_chain": {
+    "steps": [
+      {
+        "symbol": "Gun",
+        "file": "Assets/NEON/Code/Game/Core/Gun.cs",
+        "process": "GetValue → SetVariable",
+        "step_index": 4,
+        "step_count": 5,
+        "evidence_mode": "method_projected",
+        "confidence": "medium",
+        "artifact": "docs/reports/2026-03-31-phase2-context-gun.json"
+      }
+    ]
+  },
+  "authenticity_gate": {
+    "no_placeholder_path": true,
+    "live_mode_has_tool_evidence": true,
+    "freeze_requires_non_empty_confirmed_chain_steps": true
+  },
+  "verification_status": "ready_for_user_verification"
+}
