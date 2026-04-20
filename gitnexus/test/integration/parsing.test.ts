@@ -681,6 +681,24 @@ describe('parsing', () => {
       });
     });
 
+    // GDScript
+    describe('gdscript', () => {
+      it('public symbol (no underscore prefix) is exported', () => {
+        const node = mockNode('identifier', 'my_function');
+        expect(isNodeExported(node, 'my_function', 'gdscript')).toBe(true);
+      });
+
+      it('private symbol (underscore prefix) is not exported', () => {
+        const node = mockNode('identifier', '_private_helper');
+        expect(isNodeExported(node, '_private_helper', 'gdscript')).toBe(false);
+      });
+
+      it('dunder method is private', () => {
+        const node = mockNode('identifier', '_ready');
+        expect(isNodeExported(node, '_ready', 'gdscript')).toBe(false);
+      });
+    });
+
     // Unknown language
     describe('unknown language', () => {
       it('returns false for unknown language', () => {

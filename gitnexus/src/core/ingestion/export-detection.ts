@@ -223,6 +223,7 @@ const exportCheckers = {
   [SupportedLanguages.PHP]: phpExportChecker,
   [SupportedLanguages.Swift]: swiftExportChecker,
   [SupportedLanguages.Ruby]: (_node, _name) => true,
+  [SupportedLanguages.GDScript]: (_node, name) => !name.startsWith('_'),
 } satisfies Record<SupportedLanguages, ExportChecker>;
 
 // ============================================================================

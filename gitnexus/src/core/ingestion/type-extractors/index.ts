@@ -31,6 +31,14 @@ export const typeConfigs = {
   [SupportedLanguages.CPlusPlus]: cCppConfig,
   [SupportedLanguages.PHP]: phpConfig,
   [SupportedLanguages.Ruby]: rubyConfig,
+  [SupportedLanguages.GDScript]: {
+    declarationNodeTypes: new Set(),
+    extractDeclaration: () => null,
+    extractParameter: () => null,
+    extractConstructor: () => null,
+    extractReturnBinding: () => null,
+    extractPatternBinding: () => null,
+  } as any,
 } satisfies Record<SupportedLanguages, LanguageTypeConfig>;
 
 export type {

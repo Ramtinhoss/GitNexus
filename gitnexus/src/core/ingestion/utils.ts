@@ -577,6 +577,8 @@ export const getLanguageFromFilename = (filename: string): SupportedLanguages | 
   }
   // Swift (extensions)
   if (filename.endsWith('.swift')) return SupportedLanguages.Swift;
+  // GDScript (Godot Engine)
+  if (filename.endsWith('.gd')) return SupportedLanguages.GDScript;
   return null;
 };
 

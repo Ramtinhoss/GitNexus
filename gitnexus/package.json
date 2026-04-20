@@ -101,7 +101,8 @@
   },
   "optionalDependencies": {
     "tree-sitter-kotlin": "^0.3.8",
-    "tree-sitter-swift": "^0.6.0"
+    "tree-sitter-swift": "^0.6.0",
+    "tree-sitter-gdscript": "^6.1.0"
   },
   "devDependencies": {
     "@types/cli-progress": "^3.11.6",
