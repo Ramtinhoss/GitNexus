@@ -4,6 +4,19 @@ All notable changes to GitNexus will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.3] - 2026-04-20
+
+### Added
+- Added Godot GDScript source analysis support, including language detection for `.gd` files, parser wiring, query extraction for classes/functions/constructors/signals/constants, and graph ingestion integration.
+- Added GDScript export-detection regression coverage in integration tests.
+
+### Changed
+- Updated GDScript import extraction to only treat `preload(...)` and `load(...)` as imports, avoiding call/import double-classification in graph construction.
+- Extended ingestion routing/config mappings so GDScript participates consistently in parser loading and call-routing fallbacks.
+
+### Fixed
+- Fixed optional dependency handling for `tree-sitter-gdscript` by switching to guarded dynamic loading in parser paths, preventing hard startup failures when the optional parser package is not installed.
+
 ## [1.5.2] - 2026-04-20
 
 ### Fixed
