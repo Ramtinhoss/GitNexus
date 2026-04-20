@@ -4,6 +4,11 @@ All notable changes to GitNexus will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-04-20
+
+### Fixed
+- Pinned `tree-sitter-c-sharp` to `0.23.1` so fresh installs do not resolve to `0.23.5`, which can break C# parser initialization and produce Unity indexes with no C# symbols, calls, communities, or processes.
+
 ## [1.5.1] - 2026-04-17
 
 > Stable release notes comparing `v1.5.0` -> `v1.5.1`.
