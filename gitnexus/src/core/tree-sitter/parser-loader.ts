@@ -12,24 +12,13 @@ import PHP from 'tree-sitter-php';
 import Ruby from 'tree-sitter-ruby';
 import { createRequire } from 'node:module';
 import { SupportedLanguages } from '../../config/supported-languages.js';
+import { getTreeSitterBufferSize } from '../ingestion/constants.js';
 
 const _require = createRequire(import.meta.url);
 
-// tree-sitter-gdscript is an optionalDependency — may not be installed
-let GDScript: any = null;
-try { GDScript = _require('tree-sitter-gdscript'); } catch {}
-
-// tree-sitter-swift is an optionalDependency — may not be installed
-let Swift: any = null;
-try { Swift = _require('tree-sitter-swift'); } catch {}
-
-// tree-sitter-kotlin is an optionalDependency — may not be installed
-let Kotlin: any = null;
-try { Kotlin = _require('tree-sitter-kotlin'); } catch {}
-
 let parser: Parser | null = null;
 
-const languageMap: Record<string, any> = {
+const requiredLanguageMap: Record<string, any> = {
   [SupportedLanguages.JavaScript]: JavaScript,
   [SupportedLanguages.TypeScript]: TypeScript.typescript,
   [`${SupportedLanguages.TypeScript}:tsx`]: TypeScript.tsx,
@@ -40,15 +29,67 @@ const languageMap: Record<string, any> = {
   [SupportedLanguages.CSharp]: CSharp,
   [SupportedLanguages.Go]: Go,
   [SupportedLanguages.Rust]: Rust,
-  ...(Kotlin ? { [SupportedLanguages.Kotlin]: Kotlin } : {}),
   [SupportedLanguages.PHP]: PHP.php_only,
   [SupportedLanguages.Ruby]: Ruby,
-  ...(Swift ? { [SupportedLanguages.Swift]: Swift } : {}),
-  ...(GDScript ? { [SupportedLanguages.GDScript]: GDScript } : {}),
+};
+
+const optionalLanguagePackages: Partial<Record<SupportedLanguages, string>> = {
+  [SupportedLanguages.GDScript]: 'tree-sitter-gdscript',
+  [SupportedLanguages.Swift]: 'tree-sitter-swift',
+  [SupportedLanguages.Kotlin]: 'tree-sitter-kotlin',
+};
+
+const optionalLanguageCache = new Map<SupportedLanguages, any | null>();
+const optionalAvailabilityCache = new Map<SupportedLanguages, boolean>();
+
+const isOptionalLanguageInstalled = (language: SupportedLanguages): boolean => {
+  if (optionalAvailabilityCache.has(language)) {
+    return optionalAvailabilityCache.get(language)!;
+  }
+  const packageName = optionalLanguagePackages[language];
+  if (!packageName) {
+    optionalAvailabilityCache.set(language, false);
+    return false;
+  }
+  try {
+    _require.resolve(packageName);
+    optionalAvailabilityCache.set(language, true);
+    return true;
+  } catch {
+    optionalAvailabilityCache.set(language, false);
+    return false;
+  }
+};
+
+const loadOptionalLanguage = (language: SupportedLanguages): any | null => {
+  if (optionalLanguageCache.has(language)) {
+    return optionalLanguageCache.get(language);
+  }
+  const packageName = optionalLanguagePackages[language];
+  if (!packageName) {
+    optionalLanguageCache.set(language, null);
+    return null;
+  }
+  try {
+    const grammar = _require(packageName);
+    optionalLanguageCache.set(language, grammar);
+    return grammar;
+  } catch {
+    optionalLanguageCache.set(language, null);
+    optionalAvailabilityCache.set(language, false);
+    return null;
+  }
+};
+
+const resolveLanguage = (key: string, language: SupportedLanguages): any | null => {
+  if (key in requiredLanguageMap) {
+    return requiredLanguageMap[key];
+  }
+  return loadOptionalLanguage(language);
 };
 
 export const isLanguageAvailable = (language: SupportedLanguages): boolean =>
-  language in languageMap;
+  language in requiredLanguageMap || isOptionalLanguageInstalled(language);
 
 export const loadParser = async (): Promise<Parser> => {
   if (parser) return parser;
@@ -62,19 +103,21 @@ export const loadLanguage = async (language: SupportedLanguages, filePath?: stri
     ? `${language}:tsx`
     : language;
 
-  const lang = languageMap[key];
+  const lang = resolveLanguage(key, language);
   if (!lang) {
     throw new Error(`Unsupported language: ${language}`);
   }
   parser!.setLanguage(lang);
 };
 
-const MAX_CHUNK = 4096;
-
 /**
- * Parse source code using tree-sitter's chunked callback API.
- * Avoids the native binding's single-buffer size limit (< 32768 bytes)
- * that causes "Invalid argument" errors on large files.
+ * Parse source code using tree-sitter's string input path with an adaptive
+ * native buffer size.
+ *
+ * The callback input API receives byte offsets. Returning JavaScript string
+ * slices from those byte offsets is unsafe for UTF-8/multi-byte content and has
+ * caused native tree-sitter crashes in large repositories. Use the stable string
+ * input path instead and raise tree-sitter's internal buffer for large files.
  *
  * @param content - Full source file content as UTF-8 string
  * @param oldTree - Optional previous tree for incremental parsing (must call tree.edit() first)
@@ -82,8 +125,6 @@ const MAX_CHUNK = 4096;
  */
 export const parseContent = (content: string, oldTree?: any): any => {
   if (!parser) throw new Error('Parser not initialized — call loadParser() first');
-  return parser.parse((index: number) => {
-    if (index >= content.length) return null;
-    return content.slice(index, index + MAX_CHUNK);
-  }, oldTree);
+  const bufferSize = getTreeSitterBufferSize(Buffer.byteLength(content, 'utf8'));
+  return parser.parse(content, oldTree ?? null, { bufferSize });
 };

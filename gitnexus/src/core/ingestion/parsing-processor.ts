@@ -161,8 +161,10 @@ const processParsingSequential = async (
       continue;
     }
 
-    // Skip files larger than the max tree-sitter buffer (32 MB)
-    if (file.content.length > TREE_SITTER_MAX_BUFFER) continue;
+    // Skip files larger than the max tree-sitter buffer (32 MB).
+    // Use UTF-8 bytes, not JS string length, because tree-sitter buffer sizing
+    // is byte-oriented and multi-byte source can otherwise slip past the cap.
+    if (Buffer.byteLength(file.content, 'utf8') > TREE_SITTER_MAX_BUFFER) continue;
 
     try {
       await loadLanguage(language, file.path);
