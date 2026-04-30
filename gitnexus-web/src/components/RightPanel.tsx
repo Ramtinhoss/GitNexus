@@ -263,9 +263,9 @@ export const RightPanel = () => {
           {/* Status bar */}
           <div className="flex items-center gap-2.5 px-4 py-3 bg-elevated/50 border-b border-border-subtle">
             <div className="ml-auto flex items-center gap-2">
-              {!isAgentReady && (
+              {!isAgentReady && !isAgentInitializing && (
                 <span className="text-[11px] px-2 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                  Configure AI
+                  {isProviderConfigured() ? 'Initializing…' : 'Configure AI'}
                 </span>
               )}
               {isAgentInitializing && (
