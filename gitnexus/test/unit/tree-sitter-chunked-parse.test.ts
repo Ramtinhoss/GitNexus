@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { loadParser, loadLanguage, parseContent } from '../../src/core/tree-sitter/parser-loader.js';
 import { SupportedLanguages } from '../../src/config/supported-languages.js';
 
-describe('parseContent (chunked callback)', () => {
+describe('parseContent (adaptive buffer)', () => {
   it('exports parseContent function', async () => {
     expect(typeof parseContent).toBe('function');
   });
@@ -58,10 +58,12 @@ describe('parseContent edge cases', () => {
     expect(() => parseContent('')).not.toThrow();
   });
 
-  it('handles exactly MAX_CHUNK boundary content (4096 bytes)', async () => {
+  it('handles legacy chunk-boundary-sized content (4096 bytes)', async () => {
     await loadParser();
     await loadLanguage(SupportedLanguages.TypeScript);
-    // Generate content of exactly 4096 bytes
+    // Generate content of exactly 4096 bytes. This used to be a callback
+    // chunk boundary; keep it covered to prevent regressions around boundary
+    // sized input.
     const content = 'const x = 1;\n'.repeat(Math.ceil(4096 / 14)).slice(0, 4096);
     expect(() => parseContent(content)).not.toThrow();
   });
@@ -85,5 +87,26 @@ namespace 测试命名空间 {
     expect(tree).toBeDefined();
     // Should not have cascading top-level errors
     expect(tree.rootNode.hasError).toBe(false);
+  });
+
+  it('uses byte-sized buffers for large multi-byte UTF-8 content', async () => {
+    await loadParser();
+    await loadLanguage(SupportedLanguages.CSharp);
+
+    const comments = Array.from({ length: 12_000 }, (_, index) =>
+      `    // 第 ${index} 行：中文注释用于验证 byte offset 不会被 JS string index 误用`
+    ).join('\n');
+    const code = `
+namespace Utf8Stress {
+  public class LargeUtf8Class {
+${comments}
+    public void Done() {}
+  }
+}
+`;
+
+    expect(Buffer.byteLength(code, 'utf8')).toBeGreaterThan(code.length);
+    expect(Buffer.byteLength(code, 'utf8')).toBeGreaterThan(512 * 1024);
+    expect(() => parseContent(code)).not.toThrow();
   });
 });

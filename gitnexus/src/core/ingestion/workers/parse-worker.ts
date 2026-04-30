@@ -18,17 +18,6 @@ import { getTreeSitterBufferSize, TREE_SITTER_MAX_BUFFER } from '../constants.js
 
 const _require = createRequire(import.meta.url);
 
-// tree-sitter-gdscript is an optionalDependency — may not be installed
-let GDScript: any = null;
-try { GDScript = _require('tree-sitter-gdscript'); } catch {}
-
-// tree-sitter-swift is an optionalDependency — may not be installed
-let Swift: any = null;
-try { Swift = _require('tree-sitter-swift'); } catch {}
-
-// tree-sitter-kotlin is an optionalDependency — may not be installed
-let Kotlin: any = null;
-try { Kotlin = _require('tree-sitter-kotlin'); } catch {}
 import {
   getLanguageFromFilename,
   FUNCTION_NODE_TYPES,
@@ -176,7 +165,7 @@ export interface ParseWorkerInput {
 
 const parser = new Parser();
 
-const languageMap: Record<string, any> = {
+const requiredLanguageMap: Record<string, any> = {
   [SupportedLanguages.JavaScript]: JavaScript,
   [SupportedLanguages.TypeScript]: TypeScript.typescript,
   [`${SupportedLanguages.TypeScript}:tsx`]: TypeScript.tsx,
@@ -187,11 +176,63 @@ const languageMap: Record<string, any> = {
   [SupportedLanguages.CSharp]: CSharp,
   [SupportedLanguages.Go]: Go,
   [SupportedLanguages.Rust]: Rust,
-  ...(Kotlin ? { [SupportedLanguages.Kotlin]: Kotlin } : {}),
   [SupportedLanguages.PHP]: PHP.php_only,
   [SupportedLanguages.Ruby]: Ruby,
-  ...(Swift ? { [SupportedLanguages.Swift]: Swift } : {}),
-  ...(GDScript ? { [SupportedLanguages.GDScript]: GDScript } : {}),
+};
+
+const optionalLanguagePackages: Partial<Record<SupportedLanguages, string>> = {
+  [SupportedLanguages.GDScript]: 'tree-sitter-gdscript',
+  [SupportedLanguages.Swift]: 'tree-sitter-swift',
+  [SupportedLanguages.Kotlin]: 'tree-sitter-kotlin',
+};
+
+const optionalLanguageCache = new Map<SupportedLanguages, any | null>();
+const optionalAvailabilityCache = new Map<SupportedLanguages, boolean>();
+
+const isOptionalLanguageInstalled = (language: SupportedLanguages): boolean => {
+  if (optionalAvailabilityCache.has(language)) {
+    return optionalAvailabilityCache.get(language)!;
+  }
+  const packageName = optionalLanguagePackages[language];
+  if (!packageName) {
+    optionalAvailabilityCache.set(language, false);
+    return false;
+  }
+  try {
+    _require.resolve(packageName);
+    optionalAvailabilityCache.set(language, true);
+    return true;
+  } catch {
+    optionalAvailabilityCache.set(language, false);
+    return false;
+  }
+};
+
+const loadOptionalLanguage = (language: SupportedLanguages): any | null => {
+  if (optionalLanguageCache.has(language)) {
+    return optionalLanguageCache.get(language);
+  }
+  const packageName = optionalLanguagePackages[language];
+  if (!packageName) {
+    optionalLanguageCache.set(language, null);
+    return null;
+  }
+  try {
+    const grammar = _require(packageName);
+    optionalLanguageCache.set(language, grammar);
+    return grammar;
+  } catch {
+    optionalLanguageCache.set(language, null);
+    optionalAvailabilityCache.set(language, false);
+    return null;
+  }
+};
+
+const resolveLanguage = (key: string, language: SupportedLanguages): any | null => {
+  if (key in requiredLanguageMap) {
+    return requiredLanguageMap[key];
+  }
+  return loadOptionalLanguage(language);
 };
 
 /**
@@ -204,14 +245,14 @@ const isLanguageAvailable = (language: SupportedLanguages, filePath: string): bo
   const key = language === SupportedLanguages.TypeScript && filePath.endsWith('.tsx')
     ? `${language}:tsx`
     : language;
-  return key in languageMap && languageMap[key] != null;
+  return key in requiredLanguageMap || isOptionalLanguageInstalled(language);
 };
 
 const setLanguage = (language: SupportedLanguages, filePath: string): void => {
   const key = language === SupportedLanguages.TypeScript && filePath.endsWith('.tsx')
     ? `${language}:tsx`
     : language;
-  const lang = languageMap[key];
+  const lang = resolveLanguage(key, language);
   if (!lang) throw new Error(`Unsupported language: ${language}`);
   parser.setLanguage(lang);
 };
@@ -867,24 +908,22 @@ const processFileGroup = (
   }
 
   for (const file of files) {
-    // Skip files larger than the max tree-sitter buffer (32 MB)
-    if (file.content.length > TREE_SITTER_MAX_BUFFER) continue;
+    // Skip files larger than the max tree-sitter buffer (32 MB).
+    // tree-sitter buffer sizing is byte-oriented; JS string length undercounts
+    // UTF-8 multi-byte source and can route oversized input into native code.
+    if (Buffer.byteLength(file.content, 'utf8') > TREE_SITTER_MAX_BUFFER) continue;
 
     let tree;
     let usedRawContentFallback = false;
     try {
-      const MAX_CHUNK = 4096;
-      tree = parser.parse((index: number) => {
-        if (index >= file.content.length) return null;
-        return file.content.slice(index, index + MAX_CHUNK);
+      tree = parser.parse(file.content, null, {
+        bufferSize: getTreeSitterBufferSize(Buffer.byteLength(file.content, 'utf8')),
       });
     } catch (err) {
       if (file.rawContent && file.rawContent !== file.content) {
         try {
-          const MAX_CHUNK = 4096;
-          tree = parser.parse((index: number) => {
-            if (index >= file.rawContent!.length) return null;
-            return file.rawContent!.slice(index, index + MAX_CHUNK);
+          tree = parser.parse(file.rawContent, null, {
+            bufferSize: getTreeSitterBufferSize(Buffer.byteLength(file.rawContent, 'utf8')),
           });
           usedRawContentFallback = true;
         } catch {
@@ -899,10 +938,8 @@ const processFileGroup = (
 
     if (file.rawContent && file.rawContent !== file.content && tree.rootNode?.hasError) {
       try {
-        const MAX_CHUNK = 4096;
-        const rawTree = parser.parse((index: number) => {
-          if (index >= file.rawContent!.length) return null;
-          return file.rawContent!.slice(index, index + MAX_CHUNK);
+        const rawTree = parser.parse(file.rawContent, null, {
+          bufferSize: getTreeSitterBufferSize(Buffer.byteLength(file.rawContent, 'utf8')),
         });
         if (!rawTree.rootNode?.hasError) {
           tree = rawTree;
