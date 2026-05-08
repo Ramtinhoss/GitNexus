@@ -4,6 +4,17 @@ All notable changes to GitNexus will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.4] - 2026-05-08
+
+### Fixed
+- Fixed `gitnexus clean` to preserve `sync-manifest` instead of removing it, preventing scoped index setups from losing their manifest configuration.
+- Fixed right-panel agent badge state synchronization in the web UI.
+- Fixed native parser crashes on large UTF-8 repositories by guarding against tree-sitter Unicode identifier edge cases and oversized input buffers.
+
+### Changed
+- Updated parsing pitfalls documentation to reflect `tree-sitter-c-sharp@0.23.1` guidance and conditional-compilation normalization.
+- Refactored analyze workflow guidance in agent-facing docs for clearer manifest handling and CLI-first verification.
+
 ## [1.5.3] - 2026-04-20
 
 ### Added
