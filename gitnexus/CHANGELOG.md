@@ -4,6 +4,11 @@ All notable changes to GitNexus will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.5] - 2026-05-08
+
+### Fixed
+- Fixed native segfault during repository indexing caused by tree-sitter ABI drift. `tree-sitter@^0.22.0` resolved to `0.22.4` at install time, but 10 of 13 grammar packages ship native prebuilds compiled against `tree-sitter@0.21.x`. Loading 0.21.x parsers with the 0.22.4 runtime triggers `SIGSEGV` on certain C# files. Pinned `tree-sitter` to `^0.21.1` and aligned grammar versions to their last 0.21-ABI-compatible releases.
+
 ## [1.5.4] - 2026-05-08
 
 ### Fixed
