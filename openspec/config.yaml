@@ -1,0 +1,19 @@
+schema: orbitos-change-v1
+context: 'Governance SSOT: repo://orbitos
+
+  Execution SSOT: current repo
+
+  Cross-repo refs must use repo://<repo_id>
+
+  Read spec_standard_ref before writeback
+
+  '
+rules:
+  proposal:
+  - Follow OrbitOS Spec Standard and current schema templates
+  tasks:
+  - Keep task tracking aligned with tasks.md
+  verification:
+  - Record verification evidence and validated target
+  writeback:
+  - Read spec_standard_ref before governance writeback

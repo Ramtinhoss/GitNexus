@@ -1,0 +1,172 @@
+name: orbitos-change-v1
+description: OrbitOS spec-driven change schema with explicit page binding and writeback flow
+version: 1
+artifacts:
+  - id: binding
+    generates: binding.md
+    description: 记录标准页、项目页、回写目标与同步约束
+    template: binding.md
+    instruction: |
+      先创建 binding.md，把本次 change 的外部治理边界固定下来。
+
+      binding 是项目页面引用与回写机制的唯一协议入口，不承担行为规范真源职责。
+      真正的行为规范真源始终是 `specs/<capability-id>/spec.md`。
+
+      必须包含以下章节：
+      - 标准与项目页面绑定
+      - Source of Truth
+      - 回写目标
+      - 同步约束
+      - 待确认项
+
+      规则（硬性）：
+      - 明确列出 `spec_standard_ref`
+      - 明确列出一个或多个 `project_page_ref`
+      - 明确列出 `writeback_targets`
+      - 明确声明 `specs/` 为行为规范真源
+      - 明确声明项目页面只承担上下文输入、治理展示与结果回写，不替代 spec delta
+      - 禁止占位符（如 `<ref>`、`TBD`、`待定`）；若信息缺失，写入“待确认项”并说明缺口
+
+  - id: proposal
+    generates: proposal.md
+    description: 记录 change 的问题定义、范围边界与 capability contract
+    template: proposal.md
+    requires: [binding]
+    instruction: |
+      产出 proposal，并把能力边界写清楚。
+
+      proposal 负责立项与 capability contract，不是后续 artifacts 的唯一真源。
+      进入 specs 阶段后，行为规范真源切换为 `specs/` 中的 delta specs。
+
+      必须包含以下章节：
+      - 问题定义
+      - 范围边界
+      - Capabilities
+      - Impact
+      - 关联绑定
+
+      Capabilities 规则（硬性）：
+      - 使用两组列表：New Capabilities / Modified Capabilities
+      - 每条都使用 kebab-case 能力 ID
+      - 每条格式固定为：- `<capability-id>`: <一句话描述>
+      - proposal 中列出的每个 capability 都必须在 specs 阶段生成对应文件：
+        `specs/<capability-id>/spec.md`
+      - New 与 Modified 不能同时为空
+      - 禁止占位符（如 `<name>`、`TBD`、`待定`）
+
+      如果你无法确定 capability 归属或命名，请在 proposal 中明确标注待确认项，
+      并在创建 specs 前先向用户确认，不要自行猜测。
+
+      关联绑定要求：
+      - 引用 binding.md 中已确认的标准页、项目页与回写目标
+      - 不要在 proposal 内重复定义页面回写协议细节
+  - id: specs
+    generates: "specs/**/*.md"
+    description: 记录每个 capability 的行为规格与 delta 要求；这是 change 的规范真源
+    template: spec.md
+    requires: [proposal]
+    instruction: |
+      创建 specs 前，必须先完成 capabilities 对齐与确认。
+
+      执行步骤：
+      1. 读取 proposal.md 中的 Capabilities（New/Modified）并整理成清单。
+      2. 若 capabilities 缺失、为空、含占位符或命名不合法，先回写 proposal，再继续。
+      3. 在写 specs 前，必须向用户逐项确认 capabilities 清单（使用交互提问工具）。
+      4. 若用户调整了 capabilities，先更新 proposal.md，再次确认后才能继续。
+
+      只有在“用户明确确认 capability 清单”后，才允许写 specs。
+      一旦 capability 清单确认并开始编写 spec，`specs/` 即成为后续 design、tasks、verification 的规范真源。
+
+      创建规则：
+      - 为 proposal 中每个 capability 生成一个文件：`specs/<capability-id>/spec.md`
+      - New Capabilities: 使用 `## ADDED Requirements`
+      - Modified Capabilities: 针对既有行为改动，使用 `## MODIFIED Requirements`
+      - 如有废弃行为，使用 `## REMOVED Requirements`
+      - 如仅重命名 requirement，使用 `## RENAMED Requirements`
+
+      格式要求：
+      - 每个 requirement 使用 `### Requirement: <name>`
+      - requirement 描述使用 SHALL/MUST
+      - 每个 requirement 至少包含一个 `#### Scenario: <name>`
+      - Modified requirement 必须包含完整更新后的 requirement block，不允许只写增量碎片
+      - design、tasks、verification 必须引用 specs，不得仅复述 proposal
+      - 页面回写摘要不得替代 spec delta
+  - id: design
+    generates: design.md
+    description: 记录实现决策、非目标与迁移风险
+    template: design.md
+    requires: [proposal, specs]
+    instruction: |
+      创建 design.md，说明如何实现已经在 specs 中确认的行为。
+
+      OrbitOS 约定 design 为轻量必填，即使 change 很小，也至少要写清楚：
+      - Context
+      - Goals / Non-Goals
+      - Decisions
+      - Risks / Migration
+
+      design 必须以 specs 为输入，不得把 proposal 重新改写成设计文档。
+  - id: tasks
+    generates: tasks.md
+    description: 记录基于 specs/design 的可执行任务分解
+    template: tasks.md
+    requires: [specs, design]
+    instruction: |
+      创建 tasks.md，把 specs 中的行为要求和 design 中的实现决策拆成可执行任务。
+
+      规则（硬性）：
+      - 使用 `- [ ]` checkbox 格式
+      - 每个任务都要可验证
+      - 任务描述优先引用 spec 覆盖、实现路径、验证方式
+      - 不要把页面回写任务混入核心实现任务；回写准备放在 verification/writeback 阶段收敛
+  - id: verification
+    generates: verification.md
+    description: 记录 spec-to-implementation 与 task-to-evidence 的验证映射
+    template: verification.md
+    requires: [tasks]
+    instruction: |
+      创建 verification.md，验证实现是否满足 specs，并给出证据映射。
+
+      至少覆盖两类映射：
+      - spec-to-implementation coverage
+      - task-to-evidence coverage
+
+      若存在缺口，要明确列出未覆盖 requirement、未完成任务或缺失证据。
+  - id: writeback
+    generates: writeback.md
+    description: 记录页面回写摘要、目标与执行前置条件
+    template: writeback.md
+    requires: [verification]
+    instruction: |
+      创建 writeback.md，作为项目页面与治理页的回写协议载体。
+
+      writeback 只承接对外同步层信息，不重新定义 proposal、design 或 spec。
+      必须基于 binding.md 中已确认的回写目标，以及 verification.md 中的验证结论。
+
+      写回信息密度规则（硬性）：
+      - 禁止仅写“阶段结论”或“任务完成”。
+      - 必须包含本次 change 的 capability/spec 增量摘要。
+      - 必须能回答：这次 change 新增/修改了哪些 capability，哪些 spec 文件发生变化。
+      - 必须给出可追溯证据入口（至少引用 verification.md 中的覆盖结论与关键证据）。
+      - 必须记录每个回写目标的执行结果（成功/失败/跳过）与结果说明。
+
+      至少包含以下结构：
+      - 回写摘要（包含 change 目标与结果）
+      - Capability / Spec 增量摘要
+      - 验证结论与证据入口
+      - 回写目标与字段映射
+      - 回写执行结果
+      - 回写前置条件
+      - 不回写的内容
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    Read binding, proposal, specs, and design for context before implementing.
+    Treat specs as the authoritative behavior source.
+    Work through pending tasks and mark them complete as you go.
+    Do not stop at code implementation tasks only: completion MUST include
+    verification and writeback closure tasks defined in tasks.md.
+    Before considering this change ready for archive, ensure tasks covering
+    verification.md generation, writeback.md generation, and writeback target
+    execution evidence are all completed and checked.

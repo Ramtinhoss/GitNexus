@@ -1,0 +1,9 @@
+schema_family: orbitos
+source_of_truth: 99_系统/Harness/OpenSpec_Schema_Source
+schemas:
+  - orbitos-change-v1
+  - orbitos-replan-v1
+excluded_phase_scope:
+  - wrappers
+  - gates
+  - interactive_workflows

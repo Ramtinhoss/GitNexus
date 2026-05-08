@@ -60,34 +60,82 @@ $GN analyze
 
 Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and generates CLAUDE.md / AGENTS.md context files.
 
-| Flag                       | Effect                                                                                    |
-| -------------------------- | ----------------------------------------------------------------------------------------- |
-| `--force`                  | Force full re-index even if up to date                                                    |
-| `--embeddings`             | Enable embedding generation for semantic search (off by default)                          |
-| `--extensions <ext>`       | Limit parsing to specific file types (comma-separated, e.g., `--extensions ".cs,.meta"`) |
-| `--csharp-define-csproj <path>` | Load C# `DefineConstants` from a `.csproj` and normalize `#if/#elif/#else/#endif` before parsing |
-| `--scope-prefix <prefix>`  | Limit analysis to a path prefix (e.g., `--scope-prefix Assets/` for Unity)               |
-| `--scope-manifest <file>`  | Read scope rules from a manifest file (e.g., `.gitnexus/sync-manifest.txt`)              |
-| `--sync-manifest-policy <policy>` | Drift policy when explicit CLI values differ from manifest directives: `ask|update|keep|error` |
-| `--skills`                 | Generate repo-specific skill files from detected code communities                         |
+| Flag | Effect |
+|------|--------|
+| `--force` | Force full re-index even if up to date |
+| `--embeddings` | Enable embedding generation (off by default) |
+| `--skills` | Generate repo-specific skill files from detected communities |
 
-**Scope manifest syntax:** Non-`@` lines are path-prefix scope rules (same semantics as before). `@key=value` directives set analyze options: `@extensions=<csv>`, `@repoAlias=<name>`, `@embeddings=<true|false>`. Unknown directives fail fast.
+**Two mutually exclusive paths. Choose one per rebuild.**
 
-**Defaulting + drift guard:** If `.gitnexus/sync-manifest.txt` exists and you do not pass `--scope-manifest`/`--scope-prefix`, analyze auto-uses that file. When explicit CLI values (`--extensions`, `--repo-alias`, `--embeddings`) differ from manifest directives, CLI follows `--sync-manifest-policy` (default `ask`; non-TTY requires explicit policy).
+#### Path A: sync-manifest managed (recommended for Unity / monorepo)
 
-**When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale. In Claude Code, a PostToolUse hook runs `analyze` automatically after `git commit` and `git merge`, preserving embeddings if previously generated.
-
-**Unity projects:** Add `--extensions ".cs,.meta"` to ensure Unity asset edges (`UNITY_ASSET_GUID_REF`, `UNITY_COMPONENT_INSTANCE`) are parsed. Add `--scope-prefix Assets/` to limit scope if all code lives under `Assets/`.
-
-**C# conditional-compilation projects (recommended):**
-
-- Unity: pass `--csharp-define-csproj /path/to/Assembly-CSharp.csproj` (for neonspark, use `/Volumes/Shuttle/projects/neonspark/Assembly-CSharp.csproj`).
-- Non-Unity: discover candidate project files first, then pass the intended one explicitly:
+If `.gitnexus/sync-manifest.txt` exists, `analyze` **auto-uses** it when you do **not** pass `--scope-prefix` or `--scope-manifest`.
 
 ```bash
-rg --files -g '*.csproj'
-$GN analyze --extensions ".cs" --csharp-define-csproj <picked-project>.csproj
+# Unity project with an existing manifest — this is the normal rebuild command
+$GN analyze --force
 ```
+
+The manifest controls scope rules, extensions, and repo alias. Example:
+
+```
+Assets/
+Packages/
+@extensions=.cs,.meta
+@repoAlias=neonspark-core
+```
+
+- Non-`@` lines = path-prefix scope rules
+- `@extensions=<csv>` = file extension filter
+- `@repoAlias=<name>` = stable repo alias
+- `@embeddings=<true|false>` = embedding toggle
+
+**Drift guard:** If you pass `--extensions` / `--repo-alias` / `--embeddings` while a manifest exists, CLI compares them. Use `--sync-manifest-policy` to control: `ask|update|keep|error` (default `ask`; non-TTY requires explicit policy).
+
+**Do not mix Path A and Path B.** Passing `--scope-prefix` or `--extensions` when a manifest exists triggers the drift guard and may error out in non-TTY environments.
+
+#### Path B: manual CLI flags (first-time or simple projects)
+
+Use when no sync-manifest exists:
+
+```bash
+# Unity project, first-time index
+$GN analyze --force --extensions ".cs,.meta" --scope-prefix Assets/ --repo-alias neonspark-core
+
+# Generic project
+$GN analyze --force --extensions ".ts,.tsx" --scope-prefix src/
+```
+
+| Manual flag | Effect |
+|-------------|--------|
+| `--extensions <ext>` | Comma-separated file extensions |
+| `--scope-prefix <prefix>` | Add a path prefix rule (repeatable) |
+| `--scope-manifest <file>` | Read scope rules from a manifest file |
+| `--repo-alias <name>` | Override indexed repository name |
+| `--csharp-define-csproj <path>` | Load C# `DefineConstants` from `.csproj` for `#if` normalization |
+
+**C# preprocessing (Unity):** For projects with heavy conditional compilation, add `--csharp-define-csproj /path/to/Assembly-CSharp.csproj` (neonspark: `/Volumes/Shuttle/projects/neonspark/Assembly-CSharp.csproj`). Without it, C# files are parsed raw and tree-sitter may mishandle `#if` branches.
+
+#### Rebuild recovery — when analyze hangs or crashes
+
+If `analyze --force` hangs (no progress after 5+ minutes) or crashes leaving a corrupted index:
+
+```bash
+# 1. Clean the corrupted index (preserves sync-manifest.txt)
+$GN clean --force
+
+# 2. Rebuild
+$GN analyze --force
+```
+
+**When to clean before rebuild:**
+- Previous run left `.gitnexus/csv/` with no `relations.csv` (crash mid-streaming)
+- `.gitnexus/lbug.wal` exists but `lbug` is tiny (LadybugDB in unrecovered state)
+- Any `analyze` run hangs indefinitely in the "Loading into LadybugDB..." phase
+- After `gitnexus clean`, always run `analyze --force` to rebuild
+
+**When to run:** First time in a project, after major code changes, or when `gitnexus://repo/{name}/context` reports the index is stale.
 
 ### status — Check index freshness
 
@@ -97,13 +145,13 @@ $GN status
 
 Shows whether the current repo has a GitNexus index, when it was last updated, and symbol/relationship counts. Use this to check if re-indexing is needed.
 
-### clean — Delete the index
+### clean — Delete the index (preserves config)
 
 ```bash
-$GN clean
+$GN clean --force
 ```
 
-Deletes the `.gitnexus/` directory and unregisters the repo from the global registry. Use before re-indexing if the index is corrupt or after removing GitNexus from a project.
+Removes the GitNexus index (graph, CSVs, LadybugDB) from `.gitnexus/` while **preserving `sync-manifest.txt`** and other configuration files. Use this to recover from a corrupted index before re-indexing.
 
 | Flag      | Effect                                            |
 | --------- | ------------------------------------------------- |
@@ -189,6 +237,7 @@ $GN unity-ui-trace "Assets/NEON/VeewoUI/Uxml/BarScreen/Patch/PatchItemPreview.ux
 - **"Not inside a git repository"**: Run from a directory inside a git repo
 - **Index is stale after re-analyzing**: Restart Claude Code to reload the MCP server
 - **Embeddings slow**: Omit `--embeddings` (it's off by default) or set `OPENAI_API_KEY` for faster API-based embedding
+- **`analyze --force` hangs or crashes**: Run `$GN clean --force` to remove the corrupted index (sync-manifest is preserved), then `$GN analyze --force` to rebuild. Common corruption signatures: `.gitnexus/csv/` exists but `relations.csv` is missing; `.gitnexus/lbug.wal` exists while `lbug` is only a few KB.
 
 ## Runtime-Chain Closure Guard
 

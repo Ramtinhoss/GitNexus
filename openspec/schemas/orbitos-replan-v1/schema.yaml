@@ -1,0 +1,26 @@
+name: orbitos-replan-v1
+description: OrbitOS replan schema source bundle
+version: 1
+artifacts:
+  - id: recalc-proposal
+    generates: proposal.md
+    description: 记录 replan 的变更原因与替代关系
+    template: proposal.md
+  - id: delta-requirements
+    generates: requirement.md
+    description: 记录范围变更与影响分析
+    template: requirement.md
+    requires: [recalc-proposal]
+  - id: rebind
+    generates: tasks.md
+    description: 记录新的绑定结论与执行调整
+    template: tasks.md
+    requires: [delta-requirements]
+  - id: writeback
+    generates: writeback.md
+    description: 记录 replan 治理摘要与替换链路
+    template: writeback.md
+    requires: [rebind]
+apply:
+  requires: [rebind]
+  tracks: tasks.md

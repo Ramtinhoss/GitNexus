@@ -1,0 +1,25 @@
+{
+  "source_root": "/Users/nantasmac/projects/obsidian-mind/99_系统/Harness/OpenSpec_Schema_Source",
+  "target_repo": "/Users/nantasmac/projects/agentic/GitNexus",
+  "schemas": [
+    "orbitos-change-v1",
+    "orbitos-replan-v1"
+  ],
+  "copied_files": [
+    "openspec/manifest.yaml",
+    "openspec/schemas/orbitos-change-v1/schema.yaml",
+    "openspec/schemas/orbitos-change-v1/templates/binding.md",
+    "openspec/schemas/orbitos-change-v1/templates/proposal.md",
+    "openspec/schemas/orbitos-change-v1/templates/spec.md",
+    "openspec/schemas/orbitos-change-v1/templates/design.md",
+    "openspec/schemas/orbitos-change-v1/templates/tasks.md",
+    "openspec/schemas/orbitos-change-v1/templates/verification.md",
+    "openspec/schemas/orbitos-change-v1/templates/writeback.md",
+    "openspec/schemas/orbitos-replan-v1/schema.yaml",
+    "openspec/schemas/orbitos-replan-v1/templates/proposal.md",
+    "openspec/schemas/orbitos-replan-v1/templates/requirement.md",
+    "openspec/schemas/orbitos-replan-v1/templates/tasks.md",
+    "openspec/schemas/orbitos-replan-v1/templates/writeback.md"
+  ],
+  "overwritten_files": []
+}
