@@ -4,6 +4,11 @@ All notable changes to GitNexus will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.6] - 2026-05-10
+
+### Fixed
+- Fixed `SIGSEGV` crash caused by `@ladybugdb/core` version drift. The caret range `^0.15.1` allowed resolution to newer minor versions with incompatible native bindings, triggering segfaults at runtime. Pin `@ladybugdb/core` and `@ladybugdb/wasm-core` to exact `0.15.1`.
+
 ## [1.5.5] - 2026-05-08
 
 ### Fixed
