@@ -158,14 +158,6 @@ async function execCommand(command: string, args: string[], cwd: string): Promis
   });
 }
 
-function scopePrefixArgs(prefixes: string[]): string[] {
-  const out: string[] = [];
-  for (const prefix of prefixes) {
-    out.push('--scope-prefix', prefix);
-  }
-  return out;
-}
-
 async function runRequiredCommand(command: string, args: string[], cwd: string): Promise<ExecResult> {
   const result = await execCommand(command, args, cwd);
   if (result.code !== 0) {
@@ -388,7 +380,6 @@ export async function runNeonsparkU2E2E(options: RunNeonsparkU2E2EOptions): Prom
       },
       'pipeline-profile': async () => {
         const reportPath = path.join(reportDir, 'pipeline-profile.json');
-        const scopeArgs = scopePrefixArgs(config.scope.scriptPrefixes || []);
         await runRequiredCommand(
           'npm',
           [
@@ -403,7 +394,6 @@ export async function runNeonsparkU2E2E(options: RunNeonsparkU2E2EOptions): Prom
             '1',
             '--report',
             reportPath,
-            ...scopeArgs,
           ],
           repoRoot,
         );
@@ -412,7 +402,6 @@ export async function runNeonsparkU2E2E(options: RunNeonsparkU2E2EOptions): Prom
         return state.pipelineProfile;
       },
       analyze: async () => {
-        const scopeArgs = scopePrefixArgs(config.scope.scriptPrefixes || []);
         const analyze = await runRequiredCommand(
           '/usr/bin/time',
           [
@@ -425,7 +414,6 @@ export async function runNeonsparkU2E2E(options: RunNeonsparkU2E2EOptions): Prom
             '.cs',
             '--repo-alias',
             repoAlias,
-            ...scopeArgs,
             config.targetPath,
           ],
           gitnexusRoot,
