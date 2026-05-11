@@ -104,7 +104,7 @@ export const runPipelineFromRepo = async (
     const scopedFiles = scopeSelection.selected;
 
     if (scopeSelection.diagnostics.appliedRuleCount > 0 && scopedFiles.length === 0) {
-      throw new Error('Scope filters matched zero files. Check --scope-manifest/--scope-prefix.');
+      throw new Error('Scope filters matched zero files. Check your scope rules and extensions.');
     }
 
     const includeExtensions = new Set(

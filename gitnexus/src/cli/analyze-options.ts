@@ -1,27 +1,24 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { normalizeScopeRules } from '../core/ingestion/scope-filter.js';
-import { parseScopeManifestConfig } from './scope-manifest-config.js';
 
 const REPO_ALIAS_REGEX = /^[a-zA-Z0-9._-]{3,64}$/;
-
-export interface AnalyzeScopeOptions {
-  scopeManifest?: string;
-  scopePrefix?: string[] | string;
-}
 
 export interface StoredAnalyzeOptions {
   includeExtensions?: string[];
   scopeRules?: string[];
   repoAlias?: string;
   embeddings?: boolean;
+  csharpDefineCsproj?: string;
 }
 
-export interface ResolveAnalyzeOptionsInput extends AnalyzeScopeOptions {
+export interface ResolveAnalyzeOptionsInput {
   extensions?: string;
+  scope?: string;
   repoAlias?: string;
   embeddings?: boolean;
   reuseOptions?: boolean;
+  csharpDefineCsproj?: string;
 }
 
 export interface EffectiveAnalyzeOptions {
@@ -29,6 +26,7 @@ export interface EffectiveAnalyzeOptions {
   scopeRules: string[];
   repoAlias?: string;
   embeddings: boolean;
+  csharpDefineCsproj?: string;
 }
 
 export function parseExtensionList(rawExtensions?: string): string[] {
@@ -37,6 +35,16 @@ export function parseExtensionList(rawExtensions?: string): string[] {
     .map((ext) => ext.trim().toLowerCase())
     .filter(Boolean)
     .map((ext) => (ext.startsWith('.') ? ext : `.${ext}`));
+}
+
+/** Parse comma-separated scope rules (e.g. "Assets/,Packages/com.veewo.*"). */
+export function parseScopeList(rawScope?: string): string[] {
+  if (!rawScope) return [];
+  const rules = rawScope
+    .split(',')
+    .map((rule) => rule.trim())
+    .filter(Boolean);
+  return normalizeScopeRules(rules);
 }
 
 export function normalizeRepoAlias(repoAlias?: string): string | undefined {
@@ -50,119 +58,112 @@ export function normalizeRepoAlias(repoAlias?: string): string | undefined {
   return normalized;
 }
 
-export async function resolveAnalyzeScopeRules(options?: AnalyzeScopeOptions): Promise<string[]> {
-  let manifestRules: string[] = [];
+export interface ValidatedStoredOptions {
+  includeExtensions: string[];
+  scopeRules: string[];
+  repoAlias?: string;
+  embeddings: boolean;
+  csharpDefineCsproj?: string;
+}
 
-  if (options?.scopeManifest) {
-    const manifestPath = path.resolve(options.scopeManifest);
-    const manifest = await readScopeManifestConfig(manifestPath);
-    manifestRules = manifest.scopeRules;
-    if (manifestRules.length === 0) {
-      throw new Error(`Scope manifest has no valid scope rules: ${manifestPath}`);
+/**
+ * Validate stored options from meta.json.analyzeOptions before reusing them.
+ * Invalid fields are filtered out or set to undefined, with console.warn output.
+ */
+export async function validateStoredOptions(
+  stored: StoredAnalyzeOptions | undefined,
+  repoPath: string,
+): Promise<ValidatedStoredOptions> {
+  if (!stored) {
+    return { includeExtensions: [], scopeRules: [], repoAlias: undefined, embeddings: false, csharpDefineCsproj: undefined };
+  }
+
+  // Validate repoAlias
+  let repoAlias: string | undefined;
+  if (stored.repoAlias) {
+    const trimmed = stored.repoAlias.trim();
+    if (trimmed && REPO_ALIAS_REGEX.test(trimmed)) {
+      repoAlias = trimmed;
+    } else {
+      console.warn(`  Warning: stored repoAlias "${stored.repoAlias}" is invalid, resetting to undefined.`);
     }
   }
 
-  return resolveScopeRulesFromInput(
-    manifestRules,
-    normalizeScopePrefixes(options?.scopePrefix),
-    Boolean(options?.scopeManifest),
-  );
-}
+  // Validate includeExtensions (must start with '.')
+  let includeExtensions: string[] = [];
+  if (stored.includeExtensions) {
+    const valid: string[] = [];
+    for (const ext of stored.includeExtensions) {
+      if (typeof ext === 'string' && ext.startsWith('.')) {
+        valid.push(ext);
+      } else {
+        console.warn(`  Warning: stored includeExtensions entry "${ext}" does not start with '.', filtering out.`);
+      }
+    }
+    includeExtensions = valid;
+  }
 
-function parseScopePrefixCount(scopePrefix?: string[] | string): number {
-  if (Array.isArray(scopePrefix)) return scopePrefix.length;
-  if (typeof scopePrefix === 'string') return scopePrefix.trim() ? 1 : 0;
-  return 0;
+  // Validate scopeRules (filter empty/whitespace-only)
+  let scopeRules: string[] = [];
+  if (stored.scopeRules) {
+    scopeRules = stored.scopeRules.filter((rule) => typeof rule === 'string' && rule.trim().length > 0);
+  }
+
+  // Validate csharpDefineCsproj (file must exist)
+  let csharpDefineCsproj: string | undefined;
+  if (stored.csharpDefineCsproj) {
+    try {
+      await fs.stat(stored.csharpDefineCsproj);
+      csharpDefineCsproj = stored.csharpDefineCsproj;
+    } catch {
+      console.warn(`  Warning: stored csharpDefineCsproj "${stored.csharpDefineCsproj}" not found on disk, resetting to undefined.`);
+    }
+  }
+
+  return {
+    includeExtensions,
+    scopeRules,
+    repoAlias,
+    embeddings: Boolean(stored.embeddings),
+    csharpDefineCsproj,
+  };
 }
 
 export async function resolveEffectiveAnalyzeOptions(
   options?: ResolveAnalyzeOptionsInput,
   stored?: StoredAnalyzeOptions,
 ): Promise<EffectiveAnalyzeOptions> {
-  const manifestConfig = options?.scopeManifest
-    ? await readScopeManifestConfig(path.resolve(options.scopeManifest))
-    : undefined;
-
   const includeExtensionsFromCli = parseExtensionList(options?.extensions);
-  const scopeRulesFromCli = resolveScopeRulesFromInput(
-    manifestConfig?.scopeRules || [],
-    normalizeScopePrefixes(options?.scopePrefix),
-    Boolean(options?.scopeManifest),
-  );
+  const scopeRulesFromCli = parseScopeList(options?.scope);
   const repoAliasFromCli = normalizeRepoAlias(options?.repoAlias);
 
-  const manifestExtensions = manifestConfig?.directives.extensions;
-  const manifestRepoAlias = manifestConfig?.directives.repoAlias;
-  const manifestEmbeddings = manifestConfig?.directives.embeddings;
-
   const hasCliExtensions = options?.extensions !== undefined;
-  const hasCliScope = Boolean(options?.scopeManifest) || parseScopePrefixCount(options?.scopePrefix) > 0;
+  const hasCliScope = options?.scope !== undefined;
   const hasCliRepoAlias = options?.repoAlias !== undefined;
+  const hasCliCsproj = options?.csharpDefineCsproj !== undefined;
   const canReuse = options?.reuseOptions !== false;
 
   const includeExtensions = hasCliExtensions
     ? includeExtensionsFromCli
-    : (manifestExtensions !== undefined
-      ? parseExtensionList(manifestExtensions)
-      : (canReuse ? (stored?.includeExtensions || []) : []));
+    : (canReuse ? (stored?.includeExtensions || []) : []);
   const scopeRules = hasCliScope
     ? scopeRulesFromCli
     : (canReuse ? (stored?.scopeRules || []) : []);
   const repoAlias = hasCliRepoAlias
     ? repoAliasFromCli
-    : (manifestRepoAlias !== undefined
-      ? normalizeRepoAlias(manifestRepoAlias)
-      : (canReuse ? normalizeRepoAlias(stored?.repoAlias) : undefined));
-  const embeddings = options?.embeddings
-    ?? (manifestEmbeddings !== undefined
-      ? parseManifestEmbeddings(manifestEmbeddings)
-      : (canReuse ? Boolean(stored?.embeddings) : false));
+    : (canReuse ? normalizeRepoAlias(stored?.repoAlias) : undefined);
+  const embeddings = options?.embeddings !== undefined
+    ? options.embeddings
+    : (canReuse ? Boolean(stored?.embeddings) : false);
+  const csharpDefineCsproj = hasCliCsproj
+    ? options!.csharpDefineCsproj
+    : (canReuse ? stored?.csharpDefineCsproj : undefined);
 
   return {
     includeExtensions: [...includeExtensions],
     scopeRules: [...scopeRules],
     repoAlias,
     embeddings,
+    csharpDefineCsproj,
   };
-}
-
-function normalizeScopePrefixes(scopePrefix?: string[] | string): string[] {
-  const prefixesRaw = Array.isArray(scopePrefix)
-    ? scopePrefix || []
-    : scopePrefix
-      ? [scopePrefix]
-      : [];
-
-  return prefixesRaw
-    .map((prefix) => prefix.trim())
-    .filter(Boolean);
-}
-
-function resolveScopeRulesFromInput(
-  manifestRules: string[],
-  prefixes: string[],
-  hasScopeManifest: boolean,
-): string[] {
-  const normalizedRules = normalizeScopeRules([...manifestRules, ...prefixes]);
-  if ((hasScopeManifest || prefixes.length > 0) && normalizedRules.length === 0) {
-    throw new Error('No valid scope rules provided.');
-  }
-  return normalizedRules;
-}
-
-async function readScopeManifestConfig(manifestPath: string) {
-  let content: string;
-  try {
-    content = await fs.readFile(manifestPath, 'utf-8');
-  } catch {
-    throw new Error(`Scope manifest not found: ${manifestPath}`);
-  }
-  return parseScopeManifestConfig(content);
-}
-
-function parseManifestEmbeddings(raw: string): boolean {
-  const normalized = raw.trim().toLowerCase();
-  if (normalized === 'true') return true;
-  if (normalized === 'false') return false;
-  throw new Error(`Invalid @embeddings directive value: ${raw}. Expected true or false.`);
 }

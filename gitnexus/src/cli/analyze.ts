@@ -19,7 +19,7 @@ import { getCurrentCommit, isGitRepo, getGitRoot } from '../storage/git.js';
 import { generateAIContextFiles } from './ai-context.js';
 import { generateSkillFiles, type GeneratedSkillInfo } from './skill-gen.js';
 import fs from 'fs/promises';
-import { resolveEffectiveAnalyzeOptions } from './analyze-options.js';
+import { resolveEffectiveAnalyzeOptions, validateStoredOptions } from './analyze-options.js';
 import {
   formatCSharpPreprocDiagnosticsSummary,
   formatFallbackSummary,
@@ -29,7 +29,7 @@ import {
 } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
 import { toPipelineRuntimeSummary } from './analyze-runtime-summary.js';
-import { enforceSyncManifestConsistency, resolveScopeManifestForAnalyze, type SyncManifestPolicy } from './sync-manifest.js';
+
 import type { PipelineResult } from '../types/pipeline.js';
 import type { UnityParitySeed } from '../core/ingestion/unity-parity-seed.js';
 
@@ -63,11 +63,9 @@ export interface AnalyzeOptions {
   force?: boolean;
   embeddings?: boolean;
   extensions?: string;
+  scope?: string;
   repoAlias?: string;
   csharpDefineCsproj?: string;
-  scopeManifest?: string;
-  scopePrefix?: string[];
-  syncManifestPolicy?: SyncManifestPolicy;
   reuseOptions?: boolean;
   skills?: boolean;
   verbose?: boolean;
@@ -146,33 +144,26 @@ export const analyzeCommand = async (
   let scopeRules: string[] = [];
   let repoAlias: string | undefined;
   let embeddingsEnabled = false;
+  let csharpDefineCsproj: string | undefined;
   try {
-    const scopeManifest = await resolveScopeManifestForAnalyze(repoPath, {
-      scopeManifest: options?.scopeManifest,
-      scopePrefix: options?.scopePrefix,
-    });
-
-    await enforceSyncManifestConsistency({
-      manifestPath: scopeManifest,
-      extensions: options?.extensions,
-      repoAlias: options?.repoAlias,
-      embeddings: options?.embeddings,
-      policy: options?.syncManifestPolicy,
-      stdinIsTTY: Boolean(process.stdin.isTTY),
-    });
+    const validatedStored = await validateStoredOptions(
+      options?.reuseOptions !== false ? existingMeta?.analyzeOptions : undefined,
+      repoPath,
+    );
 
     const effectiveOptions = await resolveEffectiveAnalyzeOptions({
       extensions: options?.extensions,
-      scopeManifest,
-      scopePrefix: options?.scopePrefix,
+      scope: options?.scope,
       repoAlias: options?.repoAlias,
       embeddings: options?.embeddings,
       reuseOptions: options?.reuseOptions,
-    }, existingMeta?.analyzeOptions);
+      csharpDefineCsproj: options?.csharpDefineCsproj,
+    }, validatedStored);
     includeExtensions = effectiveOptions.includeExtensions;
     scopeRules = effectiveOptions.scopeRules;
     repoAlias = effectiveOptions.repoAlias;
     embeddingsEnabled = effectiveOptions.embeddings;
+    csharpDefineCsproj = effectiveOptions.csharpDefineCsproj;
   } catch (error: any) {
     console.log(`  ${error?.message || String(error)}\n`);
     process.exitCode = 1;
@@ -184,14 +175,11 @@ export const analyzeCommand = async (
   }
 
   if (existingMeta && hasLbugIndex && !options?.force && existingMeta.lastCommit === currentCommit && !options?.skills) {
-    const hasScopePrefixInput = Array.isArray(options?.scopePrefix)
-      ? options.scopePrefix.length > 0
-      : Boolean(options?.scopePrefix);
     const hasCliOverrides =
       options?.extensions !== undefined ||
-      Boolean(options?.scopeManifest) ||
-      hasScopePrefixInput ||
+      options?.scope !== undefined ||
       options?.repoAlias !== undefined ||
+      options?.csharpDefineCsproj !== undefined ||
       options?.embeddings !== undefined ||
       options?.reuseOptions === false;
 
@@ -301,8 +289,7 @@ export const analyzeCommand = async (
   let pipelineResult: PipelineResult | undefined;
   try {
     const pipelineRunOptions = buildPipelineRunOptionsForAnalyze(
-      { includeExtensions, scopeRules },
-      options,
+      { includeExtensions, scopeRules, csharpDefineCsproj },
     );
 
     pipelineResult = await runPipelineFromRepo(
@@ -431,6 +418,7 @@ export const analyzeCommand = async (
       scopeRules,
       repoAlias,
       embeddings: embeddingsEnabled,
+      ...(csharpDefineCsproj ? { csharpDefineCsproj } : {}),
     },
     stats: {
       files: pipelineRuntime.totalFileCount,
@@ -565,7 +553,7 @@ export const analyzeCommand = async (
 };
 
 export function buildPipelineRunOptionsForAnalyze(
-  resolvedOptions: { includeExtensions: string[]; scopeRules: string[] },
+  resolvedOptions: { includeExtensions: string[]; scopeRules: string[]; csharpDefineCsproj?: string },
   options?: AnalyzeOptions,
 ): {
   includeExtensions: string[];
@@ -575,8 +563,8 @@ export function buildPipelineRunOptionsForAnalyze(
   return {
     includeExtensions: resolvedOptions.includeExtensions,
     scopeRules: resolvedOptions.scopeRules,
-    ...(options?.csharpDefineCsproj
-      ? { csharpDefineCsproj: options.csharpDefineCsproj }
+    ...(resolvedOptions.csharpDefineCsproj
+      ? { csharpDefineCsproj: resolvedOptions.csharpDefineCsproj }
       : {}),
   };
 }

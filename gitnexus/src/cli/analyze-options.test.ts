@@ -6,10 +6,9 @@ import path from 'node:path';
 import {
   normalizeRepoAlias,
   parseExtensionList,
-  resolveAnalyzeScopeRules,
   resolveEffectiveAnalyzeOptions,
+  validateStoredOptions,
 } from './analyze-options.js';
-import { parseScopeManifestConfig } from './scope-manifest-config.js';
 
 test('parseExtensionList normalizes dot prefixes', () => {
   const exts = parseExtensionList('cs,.ts, go ');
@@ -21,34 +20,6 @@ test('normalizeRepoAlias validates format', () => {
   assert.equal(normalizeRepoAlias('neonspark-v1-subset'), 'neonspark-v1-subset');
   assert.throws(() => normalizeRepoAlias('ab'), /repo alias/i);
   assert.throws(() => normalizeRepoAlias('bad alias'), /repo alias/i);
-});
-
-test('resolveAnalyzeScopeRules combines manifest and repeated prefixes', async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-scope-test-'));
-  const manifestPath = path.join(tmpDir, 'scope.txt');
-  await fs.writeFile(manifestPath, '# comment\nAssets/NEON/Code\n\nPackages/com.veewo.*\n', 'utf-8');
-
-  const rules = await resolveAnalyzeScopeRules({
-    scopeManifest: manifestPath,
-    scopePrefix: ['Packages/com.neonspark.*'],
-  });
-
-  assert.deepEqual(rules, [
-    'Assets/NEON/Code',
-    'Packages/com.veewo.*',
-    'Packages/com.neonspark.*',
-  ]);
-});
-
-test('resolveAnalyzeScopeRules fails when manifest has no usable rule', async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-scope-test-'));
-  const manifestPath = path.join(tmpDir, 'empty-scope.txt');
-  await fs.writeFile(manifestPath, '# only comments\n\n', 'utf-8');
-
-  await assert.rejects(
-    resolveAnalyzeScopeRules({ scopeManifest: manifestPath }),
-    /no valid scope rules/i,
-  );
 });
 
 test('resolveEffectiveAnalyzeOptions reuses stored settings when CLI omits them', async () => {
@@ -76,6 +47,7 @@ test('resolveEffectiveAnalyzeOptions disables reuse via reuseOptions=false', asy
       scopeRules: ['Assets/NEON/Code'],
       repoAlias: 'neonspark-v1-subset',
       embeddings: true,
+      csharpDefineCsproj: '/tmp/Assembly-CSharp.csproj',
     },
   );
 
@@ -83,13 +55,14 @@ test('resolveEffectiveAnalyzeOptions disables reuse via reuseOptions=false', asy
   assert.deepEqual(resolved.scopeRules, []);
   assert.equal(resolved.repoAlias, undefined);
   assert.equal(resolved.embeddings, false);
+  assert.equal(resolved.csharpDefineCsproj, undefined);
 });
 
 test('resolveEffectiveAnalyzeOptions prefers explicit CLI values over stored settings', async () => {
   const resolved = await resolveEffectiveAnalyzeOptions(
     {
       extensions: '.ts',
-      scopePrefix: ['src'],
+      scope: 'src/',
       repoAlias: 'new-alias',
       embeddings: false,
     },
@@ -107,87 +80,117 @@ test('resolveEffectiveAnalyzeOptions prefers explicit CLI values over stored set
   assert.equal(resolved.embeddings, false);
 });
 
-test('resolveEffectiveAnalyzeOptions reads @extensions/@repoAlias/@embeddings from manifest', async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-directives-'));
-  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
-  await fs.writeFile(
-    manifestPath,
-    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=neonspark-core', '@embeddings=false'].join('\n'),
-    'utf-8',
-  );
+test('resolveEffectiveAnalyzeOptions no stored uses defaults', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions({}, undefined);
 
-  const resolved = await resolveEffectiveAnalyzeOptions(
-    { scopeManifest: manifestPath },
-    {
-      includeExtensions: ['.ts'],
-      scopeRules: ['src'],
-      repoAlias: 'stored-alias',
-      embeddings: true,
-    },
-  );
-
-  assert.deepEqual(resolved.scopeRules, ['Assets']);
-  assert.deepEqual(resolved.includeExtensions, ['.cs', '.meta']);
-  assert.equal(resolved.repoAlias, 'neonspark-core');
+  assert.deepEqual(resolved.includeExtensions, []);
+  assert.deepEqual(resolved.scopeRules, []);
+  assert.equal(resolved.repoAlias, undefined);
   assert.equal(resolved.embeddings, false);
+  assert.equal(resolved.csharpDefineCsproj, undefined);
 });
 
-test('resolveEffectiveAnalyzeOptions enforces precedence CLI > manifest > meta', async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-precedence-'));
-  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
-  await fs.writeFile(
-    manifestPath,
-    ['Assets/', '@extensions=.cs,.meta', '@repoAlias=manifest-alias', '@embeddings=false'].join('\n'),
-    'utf-8',
-  );
-
+test('resolveEffectiveAnalyzeOptions reuses stored scopeRules when CLI scope is omitted', async () => {
   const resolved = await resolveEffectiveAnalyzeOptions(
+    { extensions: '.ts' },
     {
-      scopeManifest: manifestPath,
-      extensions: '.ts',
-    },
-    {
-      includeExtensions: ['.js'],
-      scopeRules: ['tools'],
-      repoAlias: 'meta-alias',
-      embeddings: true,
+      scopeRules: ['Assets/', 'Packages/com.veewo.*'],
     },
   );
 
-  assert.deepEqual(resolved.scopeRules, ['Assets']);
-  assert.deepEqual(resolved.includeExtensions, ['.ts']);
-  assert.equal(resolved.repoAlias, 'manifest-alias');
-  assert.equal(resolved.embeddings, false);
+  assert.deepEqual(resolved.scopeRules, ['Assets/', 'Packages/com.veewo.*']);
 });
 
-test('resolveEffectiveAnalyzeOptions rejects unknown manifest directives', async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-manifest-unknown-'));
-  const manifestPath = path.join(tmpDir, 'sync-manifest.txt');
-  await fs.writeFile(manifestPath, ['Assets/', '@foo=bar'].join('\n'), 'utf-8');
-
-  await assert.rejects(
-    resolveEffectiveAnalyzeOptions({ scopeManifest: manifestPath }),
-    /unknown manifest directive/i,
+test('resolveEffectiveAnalyzeOptions parses --scope comma-separated rules', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    { scope: 'Assets/,Packages/com.veewo.*' },
+    undefined,
   );
+
+  assert.deepEqual(resolved.scopeRules, ['Assets/', 'Packages/com.veewo.*']);
 });
 
-test('parseScopeManifestConfig splits scope rules and directives', () => {
-  const parsed = parseScopeManifestConfig(
-    [
-      '# comment',
-      'Assets/',
-      'Packages/com.veewo.*',
-      '',
-      '@extensions=.cs,.meta',
-      '@repoAlias=demo-repo',
-      '@embeddings=false',
-    ].join('\n'),
+test('resolveEffectiveAnalyzeOptions reuses stored csharpDefineCsproj', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    {},
+    {
+      csharpDefineCsproj: '/path/to/Assembly-CSharp.csproj',
+    },
   );
 
-  assert.deepEqual(parsed.scopeRules, ['Assets', 'Packages/com.veewo.*']);
-  assert.deepEqual(parsed.directives, {
-    extensions: '.cs,.meta',
-    repoAlias: 'demo-repo',
-    embeddings: 'false',
-  });
+  assert.equal(resolved.csharpDefineCsproj, '/path/to/Assembly-CSharp.csproj');
+});
+
+test('resolveEffectiveAnalyzeOptions CLI csharpDefineCsproj overrides stored', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    { csharpDefineCsproj: '/new/path.csproj' },
+    {
+      csharpDefineCsproj: '/old/path.csproj',
+    },
+  );
+
+  assert.equal(resolved.csharpDefineCsproj, '/new/path.csproj');
+});
+
+// ─── validateStoredOptions tests ────────────────────────────────────
+
+test('validateStoredOptions returns defaults when stored is undefined', async () => {
+  const result = await validateStoredOptions(undefined, '/tmp');
+  assert.deepEqual(result.includeExtensions, []);
+  assert.deepEqual(result.scopeRules, []);
+  assert.equal(result.repoAlias, undefined);
+  assert.equal(result.embeddings, false);
+  assert.equal(result.csharpDefineCsproj, undefined);
+});
+
+test('validateStoredOptions passes valid options unchanged', async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'gitnexus-validate-'));
+  const csprojPath = path.join(tmpDir, 'Assembly-CSharp.csproj');
+  await fs.writeFile(csprojPath, '<Project />', 'utf-8');
+
+  const result = await validateStoredOptions({
+    includeExtensions: ['.cs', '.ts'],
+    scopeRules: ['Assets/'],
+    repoAlias: 'my-repo',
+    csharpDefineCsproj: csprojPath,
+    embeddings: true,
+  }, tmpDir);
+
+  assert.deepEqual(result.includeExtensions, ['.cs', '.ts']);
+  assert.deepEqual(result.scopeRules, ['Assets/']);
+  assert.equal(result.repoAlias, 'my-repo');
+  assert.equal(result.csharpDefineCsproj, csprojPath);
+  assert.equal(result.embeddings, true);
+});
+
+test('validateStoredOptions warns on invalid repoAlias and falls back', async () => {
+  const result = await validateStoredOptions({
+    repoAlias: 'bad alias!',
+  }, '/tmp');
+
+  assert.equal(result.repoAlias, undefined);
+});
+
+test('validateStoredOptions filters invalid extensions', async () => {
+  const result = await validateStoredOptions({
+    includeExtensions: ['cs', '.ts', '', '.go'],
+  }, '/tmp');
+
+  assert.deepEqual(result.includeExtensions, ['.ts', '.go']);
+});
+
+test('validateStoredOptions filters empty scopeRules', async () => {
+  const result = await validateStoredOptions({
+    scopeRules: ['', '  ', 'Assets/', 'Packages/com.veewo.*'],
+  }, '/tmp');
+
+  assert.deepEqual(result.scopeRules, ['Assets/', 'Packages/com.veewo.*']);
+});
+
+test('validateStoredOptions warns on missing csharpDefineCsproj file', async () => {
+  const result = await validateStoredOptions({
+    csharpDefineCsproj: '/nonexistent/path.csproj',
+  }, '/tmp');
+
+  assert.equal(result.csharpDefineCsproj, undefined);
 });
