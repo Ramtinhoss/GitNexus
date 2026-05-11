@@ -2,13 +2,17 @@
 
 All notable changes to GitNexus will be documented in this file.
 
-## [Unreleased]
+## [1.5.7] - 2026-05-11
+
+> Stable release notes comparing `v1.5.6` → `v1.5.7`.
 
 ### Changed
 - **Breaking**: Removed `sync-manifest` mechanism entirely. The analyze command no longer auto-loads `.gitnexus/sync-manifest.txt` or supports `--sync-manifest-policy`, `--scope-manifest`, `--scope-prefix` CLI options. Analyze options are now resolved via a two-layer priority: CLI arguments > stored options in `meta.json.analyzeOptions`.
 - **Breaking**: `gitnexus clean` now removes the entire `.gitnexus/` directory (including any residual `sync-manifest.txt`). Configuration is persisted in `meta.json` and will be re-specified on next analyze via CLI arguments.
 - The `--csharp-define-csproj` option is now persisted to `meta.json.analyzeOptions` and automatically reused on subsequent analyze runs.
+- Added `--scope <rules>` CLI flag for comma-separated scope path-prefix rules, replacing the removed `--scope-prefix` option.
 - Added `validateStoredOptions()` to validate stored analyze options before reuse (checks repo alias format, extension format, csproj file existence).
+- Updated agent-facing CLI docs and skills to reflect the simplified analyze workflow.
 
 ### Removed
 - Removed `sync-manifest.ts`, `sync-manifest.test.ts`, `scope-manifest-config.ts` files.

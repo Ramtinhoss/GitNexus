@@ -36,8 +36,11 @@ test('MCP JSON manifests use local gitnexus binary (no hardcoded npx package)', 
 
   for (const relPath of roots) {
     const raw = await fs.readFile(path.resolve(packageRoot, relPath), 'utf-8');
-    expect(raw).toContain('"command": "gitnexus"');
-    expect(raw).toContain('"args": ["mcp"]');
+    const manifest = JSON.parse(raw);
+    const server = manifest.mcpServers?.gitnexus;
+    expect(server, `${relPath}: missing mcpServers.gitnexus`).toBeDefined();
+    expect(server.command, `${relPath}: expected command "gitnexus"`).toBe('gitnexus');
+    expect(server.args, `${relPath}: expected args ["mcp"]`).toEqual(['mcp']);
     expect(raw).not.toContain('@veewo/gitnexus@latest');
   }
 });
