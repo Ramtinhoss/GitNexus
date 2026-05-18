@@ -2,6 +2,22 @@
 
 All notable changes to GitNexus will be documented in this file.
 
+## [1.5.8] - 2026-05-18
+
+> Stable release notes comparing `v1.5.7` → `v1.5.8`.
+
+### Added
+- Added one-hop `UNITY_GRAPH_NODE_SCRIPT_REF` chain support in Unity resource chain queries, enabling direct script-to-resource bindings without requiring an intermediate resource hop.
+- Added bindings→chains fallback in `query` and `context` MCP handlers for cases without seed paths.
+
+### Changed
+- Generalized `UnityResourceChainPayload` with a `relationType` union type and optional fields for more flexible chain payloads.
+- Relaxed `buildResourceChains` filter to drop the `intermediateResourcePath` requirement.
+- Updated Unity runtime process source-of-truth documentation with one-hop chain description.
+
+### Removed
+- Removed the entire Rule Lab offline rule authoring subsystem (Phase 5.7). Lifecycle auto-detection via Phase 5.6 + graph-only runtime verification now covers its use cases. Pipeline now proceeds from Phase 5.6 directly to Phase 6. MCP tools reduced from 13 to 8.
+
 ## [1.5.7] - 2026-05-11
 
 > Stable release notes comparing `v1.5.6` → `v1.5.7`.
