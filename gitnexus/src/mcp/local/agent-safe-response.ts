@@ -443,7 +443,7 @@ function buildResourceChains(resourceChains: any): Array<Record<string, unknown>
         }
         : undefined,
     }))
-    .filter((chain) => Boolean(chain.sourceResourcePath && chain.intermediateResourcePath && chain.targetSymbol));
+    .filter((chain) => Boolean(chain.sourceResourcePath && chain.targetSymbol));
 }
 
 function buildUpgradeHints(input: {

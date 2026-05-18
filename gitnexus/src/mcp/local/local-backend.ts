@@ -271,9 +271,9 @@ interface ResourceChainTargetSymbol {
 
 interface UnityResourceChainPayload {
   sourceResourcePath: string;
-  relationType: 'UNITY_ASSET_GUID_REF';
-  intermediateResourcePath: string;
-  nextRelationType: 'UNITY_GRAPH_NODE_SCRIPT_REF';
+  relationType: 'UNITY_ASSET_GUID_REF' | 'UNITY_GRAPH_NODE_SCRIPT_REF';
+  intermediateResourcePath?: string;
+  nextRelationType?: 'UNITY_GRAPH_NODE_SCRIPT_REF';
   targetSymbol: {
     uid?: string;
     name?: string;
@@ -343,11 +343,29 @@ async function loadSeedUnityResourceChains(input: {
     `, { seedPath });
   } catch (e) {
     logQueryError('unity-resource-chains:seed-second-hop', e);
-    return [];
+  }
+
+  // One-hop query: direct UNITY_GRAPH_NODE_SCRIPT_REF from seed to Class
+  let oneHopRows: any[] = [];
+  try {
+    oneHopRows = await executeParameterized(input.repoId, `
+      MATCH (source:File {filePath: $seedPath})-[r:CodeRelation {type: 'UNITY_GRAPH_NODE_SCRIPT_REF'}]->(target)
+      WHERE labels(target)[0] = 'Class'
+      RETURN source.filePath AS sourceResourcePath,
+             r.type AS relationType,
+             r.reason AS relationReason,
+             target.id AS targetUid,
+             target.name AS targetName,
+             labels(target)[0] AS targetKind,
+             target.filePath AS targetFilePath
+      LIMIT 200
+    `, { seedPath });
+  } catch (e) {
+    logQueryError('unity-resource-chains:seed-one-hop', e);
   }
 
   const seen = new Set<string>();
-  const chains = rows
+  const twoHopEntries = rows
     .map((row: any, index: number) => {
       const targetUid = String(row?.targetUid || row?.[6] || '').trim();
       const targetName = String(row?.targetName || row?.[7] || '').trim();
@@ -366,16 +384,35 @@ async function loadSeedUnityResourceChains(input: {
           ...(targetFilePath ? { filePath: targetFilePath } : {}),
         },
       };
-      return {
-        chain,
-        index,
-        score: scoreUnityResourceChainTarget(chain, targetSymbols),
+      return { chain, index, score: scoreUnityResourceChainTarget(chain, targetSymbols) };
+    });
+
+  const oneHopEntries = oneHopRows
+    .map((row: any, index: number) => {
+      const targetUid = String(row?.targetUid || row?.[4] || '').trim();
+      const targetName = String(row?.targetName || row?.[5] || '').trim();
+      const targetFilePath = normalizePath(String(row?.targetFilePath || row?.[7] || '').trim());
+      const chain: UnityResourceChainPayload = {
+        sourceResourcePath: normalizePath(String(row?.sourceResourcePath || row?.[0] || '').trim()),
+        relationType: 'UNITY_GRAPH_NODE_SCRIPT_REF',
+        relationReason: String(row?.relationReason || row?.[2] || '').trim() || undefined,
+        targetSymbol: {
+          ...(targetUid ? { uid: targetUid } : {}),
+          ...(targetName ? { name: targetName } : {}),
+          kind: String(row?.targetKind || row?.[6] || '').trim() || undefined,
+          ...(targetFilePath ? { filePath: targetFilePath } : {}),
+        },
       };
-    })
+      return { chain, index: rows.length + index, score: scoreUnityResourceChainTarget(chain, targetSymbols) };
+    });
+
+  const chains = [...twoHopEntries, ...oneHopEntries]
     .filter(({ chain, score }) => {
-      if (!chain.sourceResourcePath || !chain.intermediateResourcePath || !chain.targetSymbol?.name) return false;
+      if (!chain.sourceResourcePath || !chain.targetSymbol?.name) return false;
       if (targetSymbols.length > 0 && score <= 0) return false;
-      const key = `${chain.sourceResourcePath}->${chain.intermediateResourcePath}->${chain.targetSymbol.uid || chain.targetSymbol.name}`;
+      const key = chain.intermediateResourcePath
+        ? `${chain.sourceResourcePath}->${chain.intermediateResourcePath}->${chain.targetSymbol.uid || chain.targetSymbol.name}`
+        : `${chain.sourceResourcePath}->${chain.targetSymbol.uid || chain.targetSymbol.name}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -1707,6 +1744,18 @@ export class LocalBackend {
     const firstResourceBindings = Array.isArray(firstSymbolForHops?.resourceBindings)
       ? firstSymbolForHops.resourceBindings
       : [];
+    // Bindings→chains fallback: if resource_chains is empty but bindings exist, generate one-hop chains
+    if ((!result.resource_chains || result.resource_chains.length === 0) && firstResourceBindings.length > 0) {
+      result.resource_chains = firstResourceBindings.slice(0, 20).map((binding: any) => ({
+        sourceResourcePath: binding.resourcePath,
+        relationType: 'UNITY_GRAPH_NODE_SCRIPT_REF' as const,
+        targetSymbol: {
+          uid: firstSymbolForHops?.id || undefined,
+          name: firstSymbolForHops?.name || undefined,
+          filePath: firstSymbolForHops?.filePath || undefined,
+        },
+      }));
+    }
     result.next_hops = buildNextHops({
       seedPath,
       mappedSeedTargets,
@@ -2539,6 +2588,18 @@ export class LocalBackend {
           requireExact: true,
         }],
       });
+    }
+    // Bindings→chains fallback: if resource_chains is empty but bindings exist, generate one-hop chains
+    if ((!result.resource_chains || result.resource_chains.length === 0) && contextResourceBindings.length > 0) {
+      result.resource_chains = contextResourceBindings.slice(0, 20).map((binding: any) => ({
+        sourceResourcePath: binding.resourcePath,
+        relationType: 'UNITY_GRAPH_NODE_SCRIPT_REF' as const,
+        targetSymbol: {
+          uid: symNodeId || undefined,
+          name: symName || undefined,
+          filePath: symFilePath || undefined,
+        },
+      }));
     }
     result.next_hops = buildNextHops({
       seedPath,

@@ -122,7 +122,10 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - `clues`：资源线索（`resource_hints`）等收敛提示
    - `tier_envelope`：`facts_present/closure_present/clues_present/semantic_order_pass/summary_source`
    - strict-anchor 默认阅读顺序：`facts -> closure -> clues`
-9. `resource_chains[]`：当请求提供 Unity resource seed（例如 `resource_path_prefix`）且图谱存在 `File -[UNITY_ASSET_GUID_REF]-> File -[UNITY_GRAPH_NODE_SCRIPT_REF]-> Symbol` 时，`query/context` 返回结构化链路：`sourceResourcePath`、`intermediateResourcePath`、`targetSymbol`。这是检索返回契约，不等同于把资源桥接写入 `Process`。
+9. `resource_chains[]`：`query/context` 返回结构化资源链路。支持两种链路模式：
+   - **两跳链**（via GUID ref）：`File -[UNITY_ASSET_GUID_REF]-> File -[UNITY_GRAPH_NODE_SCRIPT_REF]-> Symbol`。需要 `resource_path_prefix` 提供 seed path。
+   - **单跳链**（direct script ref）：`File -[UNITY_GRAPH_NODE_SCRIPT_REF]-> Symbol`。支持通过 `resource_path_prefix` 查询，也支持从 `resourceBindings` 自动生成（当无 seed path 但有 bindings 时作为 fallback）。
+   - 结构字段：`sourceResourcePath`、`relationType`（`UNITY_ASSET_GUID_REF` 或 `UNITY_GRAPH_NODE_SCRIPT_REF`）、`intermediateResourcePath`（两跳链必填，单跳链为 undefined）、`targetSymbol`。这是检索返回契约，不等同于把资源桥接写入 `Process`。
 
 ### 4.2 `runtime_chain` 输出条件
 
