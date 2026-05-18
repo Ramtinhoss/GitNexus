@@ -78,24 +78,13 @@
 
 > **每次提交涉及以下内容时，必须检查并同步更新上表中对应的源文件：**
 > - MCP 工具接口变更（新增/修改/删除工具参数或行为）
-> - `analyze_rules` 规则格式变更（新增 binding kind、新增字段、修改 YAML schema）
-> - CLI 命令变更（新增子命令、修改参数）
+> > - CLI 命令变更（新增子命令、修改参数）
 > - Unity runtime process 架构变更（新增 edge type、新增 process 阶段）
 > - Shared contract 接口变更
 > - `query/context` 默认返回契约或 `response_profile` 升级路径变更
-> - `gitnexus-unity-rule-gen` 的公开工作流或工件契约变更（`approved -> compile -> analyze -> CLI validation`）
->
+> >
 > 检查方式：阅读对应源文件，确认 skill 中的示例、字段说明、工作流步骤与当前实现一致。
 
-### 新增 binding kind 或 resource_bindings 字段时的强制要求
-
-> **每次新增 `UnityResourceBinding` binding kind 或为现有 kind 新增字段时，必须在同一 commit 内完成以下三件事，缺一不可：**
->
-> 1. **类型定义**：在 `gitnexus/src/rule-lab/types.ts` 的 `UnityResourceBinding` 接口中添加新字段。
-> 2. **解析器**：在 `gitnexus/src/mcp/local/runtime-claim-rule-registry.ts` 的 `parseRuleYaml()` binding 解析循环中，用 `scalar()` 或 `list()` 提取对应字段。
-> 3. **单元测试**：在 `gitnexus/test/unit/runtime-claim-rule-registry.test.ts` 中添加 `describe('parseRuleYaml – <kind>')` 测试块，断言新字段被正确解析，以及缺失时返回 `undefined`。
->
-> **背景**：`method_triggers_method` 在 1.5.0-rc.3 中新增了类型定义和处理函数，但 `parseRuleYaml()` 未同步添加字段提取，导致所有 `method_triggers_method` 规则在 analyze 阶段产出 0 条合成边，且没有任何测试覆盖这条路径，问题直到在真实仓库验证时才被发现。
 
 ---
 

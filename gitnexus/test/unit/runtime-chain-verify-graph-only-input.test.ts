@@ -3,7 +3,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { verifyRuntimeClaimOnDemand } from '../../src/mcp/local/runtime-chain-verify.js';
-import { writeCompiledRuleBundle } from '../../src/rule-lab/compiled-bundles.js';
 
 function makeSyntheticExecutor() {
   return async (query: string) => {
@@ -27,26 +26,8 @@ describe('runtime-chain graph-only input contract', () => {
   it('does not use queryText as primary verifier match signal', async () => {
     const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'runtime-chain-graph-only-input-'));
     try {
-      await writeCompiledRuleBundle(
-        path.join(repoRoot, '.gitnexus', 'rules'),
-        'verification_rules',
-        [
-          {
-            id: 'demo.graph-only-input.v1',
-            version: '1.0.0',
-            trigger_family: 'reload',
-            trigger_tokens: ['reload'],
-            resource_types: ['asset'],
-            host_base_type: ['GunGraph'],
-            required_hops: ['resource', 'guid_map', 'code_loader', 'code_runtime'],
-            guarantees: ['topology_chain_closed'],
-            non_guarantees: ['does_not_prove_runtime_execution'],
-            next_action: 'gitnexus query "Reload runtime chain"',
-            file_path: 'approved/demo.graph-only-input.v1.yaml',
-          },
-        ],
-      );
-
+      // Without any compiled rule bundle, graph-only verification should still work
+      // and return rule_not_matched (no project-specific rules to match against)
       const out = await verifyRuntimeClaimOnDemand({
         repoPath: repoRoot,
         queryText: 'reload runtime chain',

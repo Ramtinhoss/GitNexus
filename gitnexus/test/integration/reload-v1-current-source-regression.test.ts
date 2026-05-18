@@ -3,7 +3,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { verifyRuntimeClaimOnDemand } from '../../src/mcp/local/runtime-chain-verify.js';
-import { promoteCuratedRules } from '../../src/rule-lab/promote.js';
 
 interface CuratedRuleInput {
   ruleId: string;
@@ -85,7 +84,6 @@ describe('reload-v1 current-source regressions', () => {
         triggerToken: 'reload',
         hostBaseType: ['MonsterReload'],
       });
-      await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-generic', version: '2.0.0' });
 
       await writeCuratedSlice(repoRoot, 'run-x', 'slice-gungraph', {
         ruleId: 'demo.reload.gungraph.v2',
@@ -93,7 +91,6 @@ describe('reload-v1 current-source regressions', () => {
         triggerToken: 'reload',
         hostBaseType: ['GunGraph'],
       });
-      await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-x', sliceId: 'slice-gungraph', version: '2.0.0' });
 
       const out = await verifyRuntimeClaimOnDemand({
         repoPath: repoRoot,
@@ -126,66 +123,6 @@ describe('reload-v1 current-source regressions', () => {
     }
   });
 
-  it('preserves curated reload DSL fields in the approved yaml and compiled verification bundle', async () => {
-    const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'reload-v1-promote-'));
-    try {
-      await writeCuratedSlice(repoRoot, 'run-y', 'slice-reload', {
-        ruleId: 'demo.neonspark.reload.v1',
-        title: 'reload gungraph path',
-        triggerToken: 'reload',
-        hostBaseType: ['GunGraph'],
-        resourceTypes: ['asset'],
-        topology: [
-          {
-            hop: 'resource',
-            from: { entity: 'resource' },
-            to: { entity: 'script' },
-            edge: { kind: 'binds_script' },
-          },
-          {
-            hop: 'code_loader',
-            from: { entity: 'script' },
-            to: { entity: 'script' },
-            edge: { kind: 'calls' },
-            constraints: { sourceName: 'RegisterGraphEvents', targetName: 'RegisterEvents' },
-          },
-          {
-            hop: 'code_runtime',
-            from: { entity: 'script' },
-            to: { entity: 'runtime' },
-            edge: { kind: 'calls' },
-            constraints: { sourceName: 'RegisterEvents', targetName: 'StartRoutineWithEvents' },
-          },
-        ],
-      });
-      await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-y', sliceId: 'slice-reload', version: '2.0.0' });
-
-      const yamlPath = path.join(repoRoot, '.gitnexus', 'rules', 'approved', 'demo.neonspark.reload.v1.yaml');
-      const bundlePath = path.join(repoRoot, '.gitnexus', 'rules', 'compiled', 'verification_rules.v2.json');
-      const yaml = await fs.readFile(yamlPath, 'utf-8');
-      const bundle = JSON.parse(await fs.readFile(bundlePath, 'utf-8'));
-      const compiledRule = bundle.rules.find((rule: any) => rule.id === 'demo.neonspark.reload.v1');
-
-      expect(yaml).toContain('host_base_type:');
-      expect(yaml).toContain('- GunGraph');
-      expect(yaml).toContain('resource_types:');
-      expect(yaml).toContain('targetName: RegisterEvents');
-      expect(yaml).toContain('targetName: StartRoutineWithEvents');
-      expect(compiledRule.match.host_base_type).toEqual(['GunGraph']);
-      expect(compiledRule.match.resource_types).toEqual(['asset']);
-      expect(compiledRule.topology).toHaveLength(3);
-      expect(compiledRule.topology[1].constraints).toEqual({
-        sourceName: 'RegisterGraphEvents',
-        targetName: 'RegisterEvents',
-      });
-      expect(compiledRule.topology[2].constraints).toEqual({
-        sourceName: 'RegisterEvents',
-        targetName: 'StartRoutineWithEvents',
-      });
-    } finally {
-      await fs.rm(repoRoot, { recursive: true, force: true });
-    }
-  });
 
   it('does not close the resource hop on an arbitrary graph binding when the broad query has no seed corroboration', async () => {
     const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'reload-v1-resource-ambiguity-'));
@@ -196,7 +133,6 @@ describe('reload-v1 current-source regressions', () => {
         triggerToken: 'reload',
         hostBaseType: ['GunGraph'],
       });
-      await promoteCuratedRules({ repoPath: repoRoot, runId: 'run-z', sliceId: 'slice-reload', version: '2.0.0' });
 
       const out = await verifyRuntimeClaimOnDemand({
         repoPath: repoRoot,

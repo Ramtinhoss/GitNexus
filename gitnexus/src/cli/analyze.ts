@@ -24,7 +24,6 @@ import {
   formatCSharpPreprocDiagnosticsSummary,
   formatFallbackSummary,
   formatUnityDiagnosticsSummary,
-  formatUnityRuleBindingSummary,
   resolveFallbackStats,
 } from './analyze-summary.js';
 import { resolveChildProcessExit } from './exit-code.js';
@@ -506,10 +505,6 @@ export const analyzeCommand = async (
   }
   const unitySummaryLines = formatUnityDiagnosticsSummary(pipelineRuntime.unityResult?.diagnostics);
   for (const line of unitySummaryLines) {
-    console.log(`  ${line}`);
-  }
-  const unityRuleBindingSummaryLines = formatUnityRuleBindingSummary(pipelineRuntime.unityRuleBindingResult);
-  for (const line of unityRuleBindingSummaryLines) {
     console.log(`  ${line}`);
   }
   const csharpPreprocSummaryLines = formatCSharpPreprocDiagnosticsSummary(pipelineRuntime.csharpPreprocDiagnostics);

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   buildNextHops,
   computeVerifierMinimumEvidenceSatisfied,
-  pickRetrievalRuleHintFromBundle,
   pickVerifierSymbolAnchor,
 } from '../../src/mcp/local/local-backend.js';
 
@@ -65,52 +64,7 @@ describe('buildNextHops command templates', () => {
     expect(hops[0]?.next_command || '').not.toContain('--repo');
   });
 
-  it('adds a retrieval-rule-configured verify hop ahead of generic symbol follow-up', () => {
-    const hops = buildNextHops({
-      seedPath: 'Assets/Data/Seed.asset',
-      mappedSeedTargets: ['Assets/Graph/Target.asset'],
-      resourceBindings: [{ resourcePath: 'Assets/Graph/Target.asset' } as any],
-      repoName: 'neonspark-core',
-      retrievalRule: {
-        id: 'demo.rule.v2',
-        next_action: 'gitnexus query --unity-resources on "Reload"',
-      },
-      symbolName: 'EnergyByAttackCount',
-      queryForSymbol: 'EnergyByAttackCount',
-    } as any);
 
-    const configuredHop = hops.find((hop) => hop.kind === 'verify' && hop.why.includes('demo.rule.v2'));
-    expect(configuredHop).toBeDefined();
-    expect(configuredHop?.next_command || '').toContain('--repo "neonspark-core"');
-  });
-
-  it('suppresses raw resource hops when retrieval rule scope conflicts with the current symbol fallback', () => {
-    const hops = buildNextHops({
-      mappedSeedTargets: [],
-      resourceBindings: [
-        { resourcePath: 'Assets/NEON/Graphs/Monster/测试_标记.asset' } as any,
-        { resourcePath: 'Assets/NEON/Graphs/PlayerGun/1_weapon_gun_tata.asset' } as any,
-      ],
-      repoName: 'neonspark-core',
-      verificationHint: {
-        action: 'manual_asset_meta_verification',
-        target: 'Assets/NEON/Graphs/PlayerGun/1_weapon_gun_tata.asset',
-        next_command: 'Inspect asset + .meta linkage',
-      },
-      retrievalRule: {
-        id: 'demo.neonspark.reload.v1',
-        host_base_type: ['GunGraph'],
-        next_action: 'gitnexus query --unity-resources on --runtime-chain-verify on-demand "Reload GunGraph"',
-      },
-      symbolName: 'Reload',
-      queryForSymbol: 'Reload',
-    } as any);
-
-    expect(hops[0]?.kind).toBe('verify');
-    expect(hops[0]?.target).toBe('Reload');
-    expect(hops.some((hop) => hop.kind === 'resource')).toBe(false);
-    expect(hops.some((hop) => hop.target === 'Assets/NEON/Graphs/PlayerGun/1_weapon_gun_tata.asset')).toBe(false);
-  });
 
   it('prioritizes the explicit seed path ahead of mapped and bound resources', () => {
     const hops = buildNextHops({
@@ -148,52 +102,7 @@ describe('buildNextHops command templates', () => {
     expect(resourceTargets[0]).toBe('Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset');
   });
 
-  it('prefers the highest-signal retrieval rule instead of first substring match', () => {
-    const hint = pickRetrievalRuleHintFromBundle({
-      queryText: 'Reload ReloadBase asset runtime chain',
-      symbolName: 'ReloadBase',
-      seedPath: 'Assets/Data/Reload.asset',
-      rules: [
-        {
-          id: 'generic.reload',
-          trigger_tokens: ['reload'],
-          host_base_type: ['MonoBehaviour'],
-          resource_types: ['asset'],
-          next_action: 'gitnexus query "generic"',
-        },
-        {
-          id: 'specific.reloadbase',
-          trigger_tokens: ['reload'],
-          host_base_type: ['ReloadBase'],
-          resource_types: ['asset'],
-          next_action: 'gitnexus query "specific"',
-        },
-      ] as any,
-    });
 
-    expect(hint?.id).toBe('specific.reloadbase');
-    expect(hint?.next_action).toContain('specific');
-  });
-
-  it('allows retrieval rules to match through host/resource evidence even when trigger tokens are absent', () => {
-    const hint = pickRetrievalRuleHintFromBundle({
-      queryText: 'ammo value computation then reload validation flow',
-      symbolName: 'ReloadBase',
-      seedPath: 'Assets/NEON/Graphs/PlayerGun/Gungraph_use/1_weapon_orb_key.asset',
-      rules: [
-        {
-          id: 'reload.no-trigger',
-          trigger_tokens: ['triggerreloadonly'],
-          host_base_type: ['ReloadBase'],
-          resource_types: ['weapon_orb_key'],
-          next_action: 'gitnexus query "no-trigger-supported"',
-        },
-      ] as any,
-    });
-
-    expect(hint?.id).toBe('reload.no-trigger');
-    expect(hint?.next_action).toContain('no-trigger-supported');
-  });
 
   it('prefers structured symbol anchors for verifier wiring over query text fallback', () => {
     const anchor = pickVerifierSymbolAnchor({

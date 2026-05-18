@@ -40,12 +40,6 @@ import {
   cleanupOldKuzuFiles,
   type RegistryEntry,
 } from '../../storage/repo-manager.js';
-import { analyzeRuleLabSlice } from '../../rule-lab/analyze.js';
-import { buildReviewPack } from '../../rule-lab/review-pack.js';
-import { curateRuleLabSlice } from '../../rule-lab/curate.js';
-import { promoteCuratedRules } from '../../rule-lab/promote.js';
-import { runRuleLabRegress } from '../../rule-lab/regress.js';
-import { loadCompiledRuleBundle } from '../../rule-lab/compiled-bundles.js';
 // AI context generation is CLI-only (gitnexus analyze)
 // import { generateAIContextFiles } from '../../cli/ai-context.js';
 
@@ -261,11 +255,6 @@ interface NextHopPayload {
   next_command: string;
 }
 
-interface RetrievalRuleHint {
-  id: string;
-  next_action: string;
-  host_base_type?: string[];
-}
 
 interface SeedTargetCandidate {
   targetPath: string;
@@ -566,7 +555,6 @@ export function buildNextHops(input: {
   mappedSeedTargets: string[];
   resourceBindings: ResolvedUnityBinding[];
   verificationHint?: VerificationHint;
-  retrievalRule?: RetrievalRuleHint;
   repoName?: string;
   symbolName: string;
   queryForSymbol: string;
@@ -589,15 +577,7 @@ export function buildNextHops(input: {
     .map((value) => normalizePath(value))
     .filter((value) => value && !bindingSet.has(value));
 
-  const retrievalHostScope = (input.retrievalRule?.host_base_type || [])
-    .map((value) => String(value || '').trim().toLowerCase())
-    .filter(Boolean);
-  const currentSymbolMatchesRetrievalScope = retrievalHostScope.length === 0
-    || retrievalHostScope.includes(String(input.symbolName || '').trim().toLowerCase());
-  const shouldSuppressRawResourceHops = !input.seedPath
-    && mappedIntersectBindings.length === 0
-    && currentSymbolMatchesRetrievalScope === false;
-
+  const shouldSuppressRawResourceHops = false;
   const candidateResources = shouldSuppressRawResourceHops ? [] : rankCandidateResources([
     ...(input.seedPath ? [{ target: normalizePath(input.seedPath), bucket: 0 }] : []),
     ...mappedIntersectBindings.map((target) => ({ target, bucket: 1 })),
@@ -619,15 +599,6 @@ export function buildNextHops(input: {
       target,
       why: 'Unity resource evidence suggests this is the next deterministic hop.',
       next_command: `gitnexus query${repoArg} --unity-resources on --unity-hydration parity --resource-path-prefix "${target}" "${input.queryForSymbol}"`,
-    });
-  }
-
-  if (input.retrievalRule?.next_action) {
-    addHop({
-      kind: 'verify',
-      target: input.seedPath || input.symbolName,
-      why: `Retrieval rule ${input.retrievalRule.id} configured this follow-up action.`,
-      next_command: withRepoInCommand(input.retrievalRule.next_action),
     });
   }
 
@@ -692,88 +663,6 @@ function scoreResourcePathNoise(resourcePath: string): number {
   if (haystack.includes('测试')) penalty += 6;
   if (haystack.includes('标记')) penalty += 6;
   return penalty;
-}
-
-async function resolveRetrievalRuleHint(input: {
-  repoPath: string;
-  queryText?: string;
-  symbolName?: string;
-  seedPath?: string;
-}): Promise<RetrievalRuleHint | undefined> {
-  const bundle = await loadCompiledRuleBundle(input.repoPath, 'retrieval_rules');
-  if (!bundle) return undefined;
-  return pickRetrievalRuleHintFromBundle({
-    queryText: input.queryText,
-    symbolName: input.symbolName,
-    seedPath: input.seedPath,
-    rules: bundle.rules,
-  });
-}
-
-export function pickRetrievalRuleHintFromBundle(input: {
-  queryText?: string;
-  symbolName?: string;
-  seedPath?: string;
-  rules: Array<{
-    id: string;
-    trigger_tokens?: string[];
-    host_base_type?: string[];
-    resource_types?: string[];
-    next_action: string;
-  }>;
-}): RetrievalRuleHint | undefined {
-  const haystack = [
-    String(input.queryText || ''),
-    String(input.symbolName || ''),
-    String(input.seedPath || ''),
-  ].join(' ').toLowerCase();
-
-  const rank = (rule: {
-    trigger_tokens?: string[];
-    host_base_type?: string[];
-    resource_types?: string[];
-  }): number => {
-    let score = 0;
-    let matchedTrigger = false;
-    let matchedEvidence = false;
-    for (const token of rule.trigger_tokens || []) {
-      const normalized = String(token || '').trim().toLowerCase();
-      if (!normalized) continue;
-      if (haystack.includes(normalized)) {
-        matchedTrigger = true;
-        matchedEvidence = true;
-        score += 10 + normalized.length;
-      }
-    }
-    for (const token of rule.host_base_type || []) {
-      const normalized = String(token || '').trim().toLowerCase();
-      if (normalized && haystack.includes(normalized)) {
-        matchedEvidence = true;
-        score += 20 + normalized.length;
-      }
-    }
-    for (const token of rule.resource_types || []) {
-      const normalized = String(token || '').trim().toLowerCase();
-      if (normalized && haystack.includes(normalized)) {
-        matchedEvidence = true;
-        score += 4 + normalized.length;
-      }
-    }
-    if (!matchedEvidence) return Number.NEGATIVE_INFINITY;
-    if (!matchedTrigger) score -= 3;
-    return score;
-  };
-
-  const matched = [...input.rules]
-    .map((rule) => ({ rule, score: rank(rule) }))
-    .filter((entry) => Number.isFinite(entry.score))
-    .sort((a, b) => (b.score - a.score) || a.rule.id.localeCompare(b.rule.id))[0]?.rule;
-  if (!matched || !String(matched.next_action || '').trim()) return undefined;
-  return {
-    id: matched.id,
-    next_action: matched.next_action,
-    host_base_type: matched.host_base_type,
-  };
 }
 
 export async function resolveSeedTargetsFromResourceFile(repoPath: string, seedPath: string): Promise<string[]> {
@@ -1279,16 +1168,6 @@ export class LocalBackend {
         return this.detectChanges(repo, params);
       case 'rename':
         return this.rename(repo, params);
-      case 'rule_lab_analyze':
-        return this.ruleLabAnalyze(repo, params);
-      case 'rule_lab_review_pack':
-        return this.ruleLabReviewPack(repo, params);
-      case 'rule_lab_curate':
-        return this.ruleLabCurate(repo, params);
-      case 'rule_lab_promote':
-        return this.ruleLabPromote(repo, params);
-      case 'rule_lab_regress':
-        return this.ruleLabRegress(repo, params);
       // Legacy aliases for backwards compatibility
       case 'search':
         return this.query(repo, params);
@@ -1328,169 +1207,6 @@ export class LocalBackend {
       });
     } catch (err: any) {
       return { error: err?.message || 'unity_ui_trace failed' };
-    }
-  }
-
-  private async ruleLabAnalyze(repo: RepoHandle, params: {
-    run_id?: string;
-    runId?: string;
-    slice_id?: string;
-    sliceId?: string;
-  }): Promise<any> {
-    const runId = String(params?.run_id || params?.runId || '').trim();
-    const sliceId = String(params?.slice_id || params?.sliceId || '').trim();
-    if (!runId || !sliceId) {
-      return { error: 'run_id and slice_id are required for rule_lab_analyze' };
-    }
-    try {
-      const out = await analyzeRuleLabSlice({
-        repoPath: repo.repoPath,
-        runId,
-        sliceId,
-      });
-      return {
-        ...out,
-        artifact_paths: {
-          candidates: out.paths.candidatesPath,
-        },
-      };
-    } catch (err: any) {
-      return { error: err?.message || 'rule_lab_analyze failed' };
-    }
-  }
-
-  private async ruleLabReviewPack(repo: RepoHandle, params: {
-    run_id?: string;
-    runId?: string;
-    slice_id?: string;
-    sliceId?: string;
-    max_tokens?: number;
-    maxTokens?: number;
-  }): Promise<any> {
-    const runId = String(params?.run_id || params?.runId || '').trim();
-    const sliceId = String(params?.slice_id || params?.sliceId || '').trim();
-    if (!runId || !sliceId) {
-      return { error: 'run_id and slice_id are required for rule_lab_review_pack' };
-    }
-    const maxTokens = Number.isFinite(Number(params?.max_tokens ?? params?.maxTokens))
-      ? Number(params?.max_tokens ?? params?.maxTokens)
-      : 6000;
-    try {
-      const out = await buildReviewPack({
-        repoPath: repo.repoPath,
-        runId,
-        sliceId,
-        maxTokens,
-      });
-      return {
-        ...out,
-        artifact_paths: {
-          review_pack: out.paths.reviewCardsPath,
-        },
-      };
-    } catch (err: any) {
-      return { error: err?.message || 'rule_lab_review_pack failed' };
-    }
-  }
-
-  private async ruleLabCurate(repo: RepoHandle, params: {
-    run_id?: string;
-    runId?: string;
-    slice_id?: string;
-    sliceId?: string;
-    input_path?: string;
-    inputPath?: string;
-  }): Promise<any> {
-    const runId = String(params?.run_id || params?.runId || '').trim();
-    const sliceId = String(params?.slice_id || params?.sliceId || '').trim();
-    const inputPath = String(params?.input_path || params?.inputPath || '').trim();
-    if (!runId || !sliceId || !inputPath) {
-      return { error: 'run_id, slice_id, and input_path are required for rule_lab_curate' };
-    }
-    try {
-      const out = await curateRuleLabSlice({
-        repoPath: repo.repoPath,
-        runId,
-        sliceId,
-        inputPath,
-      });
-      return {
-        ...out,
-        artifact_paths: {
-          curated: out.paths.curatedPath,
-        },
-      };
-    } catch (err: any) {
-      return { error: err?.message || 'rule_lab_curate failed' };
-    }
-  }
-
-  private async ruleLabPromote(repo: RepoHandle, params: {
-    run_id?: string;
-    runId?: string;
-    slice_id?: string;
-    sliceId?: string;
-    version?: string;
-  }): Promise<any> {
-    const runId = String(params?.run_id || params?.runId || '').trim();
-    const sliceId = String(params?.slice_id || params?.sliceId || '').trim();
-    if (!runId || !sliceId) {
-      return { error: 'run_id and slice_id are required for rule_lab_promote' };
-    }
-    try {
-      const out = await promoteCuratedRules({
-        repoPath: repo.repoPath,
-        runId,
-        sliceId,
-        version: typeof params?.version === 'string' ? params.version : undefined,
-      });
-      return {
-        ...out,
-        artifact_paths: {
-          catalog: path.join(out.paths.rulesRoot, 'catalog.json'),
-          promoted_files: out.promotedFiles,
-          compiled_bundles: out.compiledPaths,
-        },
-      };
-    } catch (err: any) {
-      return { error: err?.message || 'rule_lab_promote failed' };
-    }
-  }
-
-  private async ruleLabRegress(repo: RepoHandle, params: {
-    precision?: number;
-    coverage?: number;
-    probes?: Array<any>;
-    probes_path?: string;
-    probesPath?: string;
-    run_id?: string;
-    runId?: string;
-  }): Promise<any> {
-    const precision = Number(params?.precision);
-    const coverage = Number(params?.coverage);
-    if (!Number.isFinite(precision) || !Number.isFinite(coverage)) {
-      return { error: 'precision and coverage are required numeric fields for rule_lab_regress' };
-    }
-    try {
-      let probes = Array.isArray(params?.probes) ? params.probes : undefined;
-      const probesPath = String(params?.probes_path || params?.probesPath || '').trim();
-      if (!probes && probesPath) {
-        const raw = await fs.readFile(path.isAbsolute(probesPath) ? probesPath : path.join(repo.repoPath, probesPath), 'utf-8');
-        probes = JSON.parse(raw) as Array<any>;
-      }
-      const out = await runRuleLabRegress({
-        precision,
-        coverage,
-        probes,
-        repoPath: repo.repoPath,
-        runId: String(params?.run_id || params?.runId || '').trim() || undefined,
-      });
-      return {
-        ...out,
-        artifact_paths: out.reportPath ? { report: out.reportPath } : {},
-      };
-    } catch (err: any) {
-      return { error: err?.message || 'rule_lab_regress failed' };
     }
   }
 
@@ -1991,18 +1707,11 @@ export class LocalBackend {
     const firstResourceBindings = Array.isArray(firstSymbolForHops?.resourceBindings)
       ? firstSymbolForHops.resourceBindings
       : [];
-    const retrievalRule = await resolveRetrievalRuleHint({
-      repoPath: repo.repoPath,
-      queryText: params.query,
-      symbolName: String(firstSymbolForHops?.name || searchQuery),
-      seedPath,
-    });
     result.next_hops = buildNextHops({
       seedPath,
       mappedSeedTargets,
       resourceBindings: firstResourceBindings,
       verificationHint: firstVerificationHint,
-      retrievalRule,
       repoName: repo.name,
       symbolName: String(firstSymbolForHops?.name || searchQuery),
       queryForSymbol: String(firstSymbolForHops?.name || searchQuery),
@@ -2831,18 +2540,11 @@ export class LocalBackend {
         }],
       });
     }
-    const retrievalRule = await resolveRetrievalRuleHint({
-      repoPath: repo.repoPath,
-      queryText: name,
-      symbolName: symName || String(name || uid || ''),
-      seedPath,
-    });
     result.next_hops = buildNextHops({
       seedPath,
       mappedSeedTargets,
       resourceBindings: contextResourceBindings,
       verificationHint: topVerificationHint,
-      retrievalRule,
       repoName: repo.name,
       symbolName: symName || String(name || uid || ''),
       queryForSymbol: symName || String(name || uid || ''),

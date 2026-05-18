@@ -1,14 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { loadCompiledRuleBundle } from '../../rule-lab/compiled-bundles.js';
-import type { UnityResourceBinding, LifecycleOverrides } from '../../rule-lab/types.js';
 
 export interface RuntimeClaimRuleCatalogEntry {
   id: string;
   version: string;
   file?: string;
   enabled?: boolean;
-  family?: 'analyze_rules' | 'verification_rules';
 }
 
 export interface RuntimeClaimRule {
@@ -29,9 +26,6 @@ export interface RuntimeClaimRule {
   guarantees: string[];
   non_guarantees: string[];
   next_action?: string;
-  family?: 'analyze_rules' | 'verification_rules';
-  resource_bindings?: UnityResourceBinding[];
-  lifecycle_overrides?: LifecycleOverrides;
   file_path: string;
   topology?: Array<{
     hop: string;
@@ -204,57 +198,7 @@ export function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
   const legacyNonGuarantees = readList(raw, 'non_guarantees');
   const legacyNextAction = readScalar(raw, 'next_action');
 
-  // Parse resource_bindings
-  const rbLines = readSectionLines(raw, 'resource_bindings');
-  let resource_bindings: UnityResourceBinding[] | undefined;
-  if (rbLines.length > 0) {
-    resource_bindings = [];
-    const joined = rbLines.map((l) => l.replace(/^\s{2}/, '')).join('\n');
-    const entries = joined.split(/(?=^\s*- kind:)/m).filter((s) => s.trim());
-    for (const entry of entries) {
-      const kindMatch = entry.match(/- kind:\s*(.+)/);
-      if (!kindMatch) continue;
-      const binding: UnityResourceBinding = { kind: decodeYamlScalar(kindMatch[1]) as UnityResourceBinding['kind'] };
-      const scalar = (k: string) => {
-        const m = entry.match(new RegExp(`^\\s+${k}:\\s*(.+)$`, 'm'));
-        return m ? decodeYamlScalar(m[1]) : undefined;
-      };
-      const list = (k: string): string[] | undefined => {
-        const lines = entry.split('\n');
-        const idx = lines.findIndex((l) => new RegExp(`^\\s+${k}:\\s*$`).test(l));
-        if (idx < 0) return undefined;
-        const out: string[] = [];
-        for (let i = idx + 1; i < lines.length; i++) {
-          if (!/^\s+-\s+/.test(lines[i])) break;
-          out.push(decodeYamlScalar(lines[i].replace(/^\s+-\s+/, '')));
-        }
-        return out.length > 0 ? out : undefined;
-      };
-      binding.ref_field_pattern = scalar('ref_field_pattern');
-      binding.target_entry_points = list('target_entry_points');
-      binding.host_class_pattern = scalar('host_class_pattern');
-      binding.field_name = scalar('field_name');
-      binding.loader_methods = list('loader_methods');
-      binding.scene_name = scalar('scene_name');
-      binding.source_class_pattern = scalar('source_class_pattern');
-      binding.source_method = scalar('source_method');
-      binding.target_class_pattern = scalar('target_class_pattern');
-      binding.target_method = scalar('target_method');
-      resource_bindings.push(binding);
-    }
-    if (resource_bindings.length === 0) resource_bindings = undefined;
-  }
 
-  // Parse lifecycle_overrides
-  const loEntryPoints = readNestedList(raw, 'lifecycle_overrides', 'additional_entry_points');
-  const loScope = readNestedScalar(raw, 'lifecycle_overrides', 'scope');
-  const lifecycle_overrides: LifecycleOverrides | undefined =
-    loEntryPoints.length > 0 || loScope
-      ? {
-          ...(loEntryPoints.length > 0 ? { additional_entry_points: loEntryPoints } : {}),
-          ...(loScope ? { scope: loScope } : {}),
-        }
-      : undefined;
 
   return {
     id,
@@ -273,122 +217,7 @@ export function parseRuleYaml(raw: string, filePath: string): RuntimeClaimRule {
     guarantees: claimGuarantees.length > 0 ? claimGuarantees : legacyGuarantees,
     non_guarantees: claimNonGuarantees.length > 0 ? claimNonGuarantees : legacyNonGuarantees,
     next_action: claimNextAction || legacyNextAction,
-    family: (readScalar(raw, 'family') as RuntimeClaimRule['family']) || 'verification_rules',
-    resource_bindings,
-    lifecycle_overrides,
     file_path: filePath,
   };
 }
 
-/**
- * Runtime claim rule registry remains the source for analyze-time synthetic-edge production
- * and offline governance/report workflows. Query-time runtime closure verification is graph-only.
- */
-export async function loadRuleRegistry(repoPath: string, rulesRoot?: string): Promise<RuntimeClaimRuleRegistry> {
-  const normalizedRepoPath = path.resolve(repoPath);
-  const root = rulesRoot
-    ? path.resolve(rulesRoot)
-    : path.join(normalizedRepoPath, '.gitnexus', 'rules');
-  const compiledVerificationBundle = await loadCompiledRuleBundle(normalizedRepoPath, 'verification_rules', root);
-  if (compiledVerificationBundle && compiledVerificationBundle.rules.length > 0) {
-    return {
-      repoPath: normalizedRepoPath,
-      rulesRoot: root,
-      catalogPath: path.join(root, 'compiled', 'verification_rules.v2.json'),
-      activeRules: compiledVerificationBundle.rules.map((rule) => ({
-        id: rule.id,
-        version: rule.version,
-        trigger_family: rule.trigger_family,
-        resource_types: rule.resource_types,
-        host_base_type: rule.host_base_type,
-        match: rule.match,
-        required_hops: rule.required_hops,
-        guarantees: rule.guarantees,
-        non_guarantees: rule.non_guarantees,
-        next_action: rule.next_action,
-        file_path: rule.file_path,
-        topology: rule.topology,
-        closure: rule.closure,
-        claims: rule.claims,
-      })),
-    };
-  }
-  const catalogPath = path.join(root, 'catalog.json');
-  let catalogRaw: string;
-  try {
-    catalogRaw = await fs.readFile(catalogPath, 'utf-8');
-  } catch (error: any) {
-    if (error?.code === 'ENOENT') {
-      throw new RuleRegistryLoadError(
-        'rule_catalog_missing',
-        `Runtime claim rule catalog not found: ${catalogPath}`,
-        { repoPath: normalizedRepoPath, rulesRoot: root, catalogPath },
-      );
-    }
-    throw error;
-  }
-
-  let catalog: { rules?: RuntimeClaimRuleCatalogEntry[] };
-  try {
-    catalog = JSON.parse(catalogRaw) as { rules?: RuntimeClaimRuleCatalogEntry[] };
-  } catch {
-    throw new RuleRegistryLoadError(
-      'rule_catalog_invalid',
-      `Runtime claim rule catalog is invalid JSON: ${catalogPath}`,
-      { repoPath: normalizedRepoPath, rulesRoot: root, catalogPath },
-    );
-  }
-  const catalogRules = Array.isArray(catalog.rules) ? catalog.rules : [];
-
-  const activeRules: RuntimeClaimRule[] = [];
-  for (const entry of catalogRules) {
-    if (entry.enabled === false) continue;
-    const relativeRulePath = String(entry.file || path.join('approved', `${entry.id}.yaml`));
-    const rulePath = path.join(root, relativeRulePath);
-    let raw: string;
-    try {
-      raw = await fs.readFile(rulePath, 'utf-8');
-    } catch (error: any) {
-      if (error?.code === 'ENOENT') {
-        throw new RuleRegistryLoadError(
-          'rule_file_missing',
-          `Runtime claim rule file not found: ${rulePath}`,
-          { repoPath: normalizedRepoPath, rulesRoot: root, catalogPath, rulePath, ruleId: entry.id },
-        );
-      }
-      throw error;
-    }
-    const parsed = parseRuleYaml(raw, rulePath);
-    if (parsed.id !== entry.id) {
-      throw new Error(`Rule id mismatch between catalog and yaml: ${entry.id} vs ${parsed.id}`);
-    }
-    activeRules.push({
-      ...parsed,
-      version: entry.version || parsed.version,
-      family: entry.family || parsed.family || 'verification_rules',
-    });
-  }
-
-  return {
-    repoPath: normalizedRepoPath,
-    rulesRoot: root,
-    catalogPath,
-    activeRules,
-  };
-}
-
-export async function loadAnalyzeRules(repoPath: string, rulesRoot?: string): Promise<RuntimeClaimRule[]> {
-  const normalizedRepoPath = path.resolve(repoPath);
-  const root = rulesRoot
-    ? path.resolve(rulesRoot)
-    : path.join(normalizedRepoPath, '.gitnexus', 'rules');
-  const analyzeBundle = await loadCompiledRuleBundle(normalizedRepoPath, 'analyze_rules', root);
-  if (analyzeBundle && analyzeBundle.rules.length > 0) {
-    return analyzeBundle.rules.map((rule) => ({
-      ...rule,
-      family: 'analyze_rules' as const,
-    }));
-  }
-  const registry = await loadRuleRegistry(repoPath, rulesRoot);
-  return registry.activeRules.filter((r) => r.family === 'analyze_rules');
-}

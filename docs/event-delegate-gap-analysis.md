@@ -10,7 +10,7 @@ Status: Active（决策基线）
 
 1. Event/Delegate 缺口不再作为 gap-lab/rule authoring 主战场。  
 2. 这类问题的主路径是 analyzer-native 能力建设。  
-3. reduced `rule-lab` 仅处理稀疏、非规律、可被用户明确给出 exact pair 的残余案例。
+3. 稀疏、非规律的残余案例通过 analyzer-native 能力持续收敛。
 
 ---
 
@@ -40,20 +40,8 @@ Status: Active（决策基线）
 
 ---
 
-## 4. reduced Rule-Lab 的角色
 
-reduced `rule-lab` 仅承担：
-- 用户明确给定 `exact source/target pair` 的稀疏缺口补规则
-- 严格执行 3 guards：duplicate-prevention、fail-closed binding、non-empty evidence
-
-不承担：
-- 全库穷举发现
-- 事件总线自动配对
-- 结构化静态分析能力替代
-
----
-
-## 5. 与 Query-Time 闭环边界
+## 4. 与 Query-Time 闭环边界
 
 - query-time runtime closure 继续 graph-only。  
 - analyzer 改进完成后，通过 analyze-time 合成边进入图，再由 query/context 检索消费。  

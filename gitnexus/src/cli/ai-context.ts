@@ -67,7 +67,6 @@ function generateGitNexusContent(
 
 > If step 1 warns the index is stale, ask user whether to rebuild index via \`gitnexus analyze\` when local CLI exists; otherwise resolve the pinned npx package spec from \`~/.gitnexus/config.json\` (\`cliPackageSpec\` first, then \`cliVersion\`) and run \`npx -y <resolved-spec> analyze\` (it reuses previous analyze scope/options by default; add \`--no-reuse-options\` to reset). If user declines, explicitly warn that retrieval may not reflect current codebase. For build/analyze/test commands, use a 10-30 minute timeout; on failure/timeout, report exact tool output and do not auto-retry or silently fall back to glob/grep.
 > \`query/context\` slim guidance is narrowing-first: inspect \`decision.recommended_follow_up\`, \`missing_proof_targets\`, and \`suggested_context_targets\` before upgrading to \`response_profile=full\`.
-> Query-time runtime closure is graph-only and does not require \`verification_rules\` / \`trigger_tokens\`; if you need hydration diagnostics such as \`needsParityRetry\` or strict fallback state, rerun with \`response_profile=full\` and then use parity before closure claims.
 
 ## Skills
 
@@ -78,8 +77,7 @@ function generateGitNexusContent(
 | Trace bugs / "Why is X failing?" | \`${skillRoot}/gitnexus-debugging/SKILL.md\` |
 | Rename / extract / split / refactor | \`${skillRoot}/gitnexus-refactoring/SKILL.md\` |
 | Tools, resources, schema reference | \`${skillRoot}/gitnexus-guide/SKILL.md\` |
-| Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |
-| Create Unity analyze_rules interactively | \`${skillRoot}/gitnexus-unity-rule-gen/SKILL.md\` |${generatedRows}
+| Index, status, clean, wiki CLI commands | \`${skillRoot}/gitnexus-cli/SKILL.md\` |${generatedRows}
 
 ${GITNEXUS_END_MARKER}`;
 }
@@ -169,10 +167,6 @@ async function installSkills(repoPath: string): Promise<string[]> {
     {
       name: 'gitnexus-cli',
       description: 'Use when the user needs to run GitNexus CLI commands like analyze/index a repo, check status, clean the index, generate a wiki, or list indexed repos. Examples: "Index this repo", "Reanalyze the codebase", "Generate a wiki"',
-    },
-    {
-      name: 'gitnexus-unity-rule-gen',
-      description: 'Use when the user wants to create Unity analyze_rules for a Unity project repo — interactively collecting chain clues, exploring the graph, generating rule YAML, compiling, and verifying. Examples: "Create unity rules", "Generate analyze rules", "Add resource binding rules for this Unity project"',
     },
   ];
 

@@ -2,7 +2,7 @@
 
 Date: 2026-04-10
 Owner: GitNexus
-Status: Active (source of truth) — V2 规则驱动架构
+Status: Active (source of truth)
 
 ## 1. 文档定位
 
@@ -30,7 +30,6 @@ Phase 1-4:   Scan → Structure → Parse → MRO
 Phase 5:     Communities
 Phase 5.5:   processUnityResources (UNITY_COMPONENT_INSTANCE / UNITY_ASSET_GUID_REF 边)
 Phase 5.6:   applyUnityLifecycleSyntheticCalls (通用 lifecycle 合成 CALLS)
-Phase 5.7:   applyUnityRuntimeBindingRules (规则驱动资源↔代码边界穿越 CALLS)
 Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 ```
 
@@ -42,16 +41,6 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - 对 Unity 项目自动生效（检测 `Assets/*.cs` 文件）：`pipeline.ts:444`
    - 通用 lifecycle 回调注入（OnEnable/Awake/Start/Update 等）：`unity-lifecycle-synthetic-calls.ts:52-107`
    - 配置从 `resolveUnityConfig()` 读取：`pipeline.ts:445`
-3. 规则驱动注入（Phase 5.7）：
-   - 加载 `analyze_rules` 族规则：`pipeline.ts:465`
-   - 三种绑定处理器 + lifecycle_overrides：`unity-runtime-binding-rules.ts`
-     - `asset_ref_loads_components`：资源引用链触发代码执行
-     - `method_triggers_field_load`：代码方法触发字段引用资源加载
-     - `method_triggers_scene_load`：代码方法触发场景加载（通过场景文件名匹配 `.unity` File 节点，并沿 `m_SourcePrefab` 的 `UNITY_ASSET_GUID_REF` 链覆盖场景实例化 prefab）
-     - `lifecycle_overrides`：扩展内置 lifecycle 入口
-   - 场景文件索引：预构建 lowercase scene name → File node ID 映射，供 `method_triggers_scene_load` 使用
-   - 合成边属性：`confidence=0.75`，`reason=unity-rule-{kind}:{ruleId}`
-   - 构建结束输出 `rule_binding.*` 诊断摘要（含 `rule_binding.agent_report: should_report=<bool>`）；该信号用于提示 agent 是否应汇报异常，不对执行路径做限流/中断
 4. Process 生成（Phase 6）：
    - 基于 CALLS tracing，标注 `processSubtype` 和 `runtimeChainConfidence`：`pipeline.ts:490-525`
    - 生命周期 metadata 按 Unity resource-binding flow 条件持久化（Unity 自动检测命中 `Assets/*.cs` 时开启）：`pipeline.ts:446`
@@ -103,34 +92,6 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
    - `status: 'failed'` 可伴随 `evidence_level: 'none' | 'clue' | 'verified_segment'`（精度优先降级）
    - `runtime_claim` 统一输出失败分类：`rule_not_matched | rule_matched_but_evidence_missing | rule_matched_but_verification_failed`
 
-### 2.4 Phase 5 Offline Rule Lab（Reduced: Analyze → Review → Curate → Promote → Regress）
-
-MCP 工具入口：`rule_lab_analyze` → `rule_lab_review_pack` → `rule_lab_curate` → `rule_lab_promote` → `rule_lab_regress`
-
-1. Rule Lab 模块分层（`gitnexus/src/rule-lab/`）：
-   - 路径与 run/slice 约定：`paths.ts:32-56`
-   - reduced 流程：analyze → review-pack → curate → promote → regress
-2. 规则族区分：
-   - `family: 'analyze_rules'`：索引阶段注入合成边（`loadAnalyzeRules`）
-   - `family: 'verification_rules'`：离线治理与报告用途（Rule Lab / artifact），不再作为 query-time closure 匹配门槛
-   - v1 规则（无 family 字段）默认归类为 `verification_rules`
-3. Runtime verifier 治理闭环：
-   - promote 写入 `.gitnexus/rules/catalog.json` + `approved/*.yaml`
-   - `verification_rules` 供离线治理与回归对照，不参与 query-time graph-only closure
-
-### 2.5 Rule Authoring Boundary（Post-Rollback）
-
-1. `gap-lab` 已从产品主流程退役，不再作为默认 authoring/orchestration 路径。
-2. Unity 规则创作主路径是 reduced `rule-lab`，输入为用户确认后的 `exact source/target pair`。
-3. reduced `rule-lab` 仅保留 3 个 guard：
-   - duplicate-prevention（对比 `.gitnexus/rules/approved/*.yaml`）
-   - fail-closed binding resolution
-   - non-empty evidence before promote
-4. anchor 歧义必须由用户在 authoring/skill 层选择，不允许自动猜测。
-5. event/delegate 大规模缺口属于 analyzer-native 路线，不作为规则作者主路径。
-6. query-time runtime closure remains graph-only；该边界不受 authoring 流程变化影响。
-7. 当 `hydration_policy=strict` 且 `hydrationMeta.fallbackToCompact=true` 时，必须 parity rerun 后再做 closure 结论。
-8. 对外操作闭环固定为：`rules/approved/*.yaml -> rule-lab compile -> analyze -> CLI validation`。
 
 ## 3. 设计与实现对照（阶段）
 
@@ -139,11 +100,10 @@ MCP 工具入口：`rule_lab_analyze` → `rule_lab_review_pack` → `rule_lab_c
 | Phase 0 | 基线与指标固化 | 已有报告产物 | `docs/reports/2026-03-31-phase0-*` |
 | Phase 1 | Unity summary schema hygiene | 已落地 | `schema.ts:254` |
 | Phase 2 | class→method process 投影 | 已落地（query/context 双侧） | `local-backend.ts:763-793, 1460-1483` |
-| Phase 3 | lifecycle + loader synthetic CALLS | **V2 重构**：lifecycle 始终启用，loader 改为规则驱动 | `unity-lifecycle-synthetic-calls.ts`；`unity-runtime-binding-rules.ts` |
+| Phase 3 | lifecycle + loader synthetic CALLS | **V2 重构**：lifecycle 始终启用 | `unity-lifecycle-synthetic-calls.ts` |
 | Phase 4 | persisted lifecycle process artifact | **V2 变更**：仅在 Unity resource-binding flow 激活时持久化 | `pipeline.ts:446,524-525` |
 | Phase 5 | confidence + verification_hint 合约 | **V2 变更**：扩展字段始终输出 | `process-confidence.ts`；`local-backend.ts` |
 | V1 Reload | on-demand verify + 验收闭环 | **V2 重构**：verifier 简化为图谱查询 | `runtime-chain-verify.ts` (934→297 行) |
-| V2 规则驱动 | 规则定义资源↔代码边界穿越 | 已落地 | `unity-runtime-binding-rules.ts`；`unity-config.ts` |
 
 ## 4. 对外契约真理源
 
@@ -196,20 +156,6 @@ MCP 工具入口：`rule_lab_analyze` → `rule_lab_review_pack` → `rule_lab_c
 6. 严格策略回退语义：若 `strict` 因成本/上限回退到 compact（`fallbackToCompact=true`），则对外结果视为 `policy-adjusted`，并要求 parity 重跑后再做 closure 结论。
 7. `resource_path_prefix` / seed contract：类符号 + 资源路径联合检索为主路径
 
-### 4.4 Phase 5 Offline Rule Lab 合约（Reduced）
-
-1. Rule Lab 生命周期（reduced）：analyze → review_pack → curate → promote → regress
-2. Artifact 路径：`.gitnexus/rules/lab/runs/<run_id>/...`
-3. reduced `rule-lab` 输入契约：只处理用户确认的 `exact source/target pair`（或其显式集合）。
-4. reduced `rule-lab` 必须执行 3 guards：
-   - duplicate-prevention（已覆盖 pair 阻断）
-   - fail-closed binding resolution（禁止 `UnknownClass` / `UnknownMethod`）
-   - non-empty evidence before promote（`confirmed_chain.steps` 为空则阻断）
-5. anchor 歧义处理：必须请求用户离散选择，不允许 analyze 自动猜测目标锚点。
-6. promote 后必须执行 `rule-lab compile`，再执行 `analyze` 与 CLI 验证；该链路是公开验收路径。
-7. compile 产物供 analyze pipeline、retrieval hint、offline governance 读取；不参与 query-time runtime claim closure 匹配。
-8. 规则族区分保持不变：`analyze_rules`（索引阶段注入）vs `verification_rules`（离线治理/报告）。
-
 ## 5. 配置方式（V2）
 
 ### 5.1 行为控制
@@ -219,7 +165,6 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 | 行为 | 控制方式 |
 | --- | --- |
 | Lifecycle 合成边注入 | 对 Unity 项目自动生效（检测 `Assets/*.cs`） |
-| 规则驱动边注入 | `.gitnexus/rules/` 下有 `analyze_rules` 规则即生效 |
 | Process 元数据持久化 | 与 Unity resource-binding flow 绑定（Unity 自动检测命中 `Assets/*.cs` 时持久化） |
 | 扩展置信度字段输出 | 始终输出 |
 | 运行时链路验证 | 请求参数 `runtime_chain_verify=on-demand` 为唯一开关 |
@@ -255,23 +200,35 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 
 ## 7. V2 迁移回写（2026-04-03）
 
-1. **规则基础设施**：`UnityResourceBinding` / `LifecycleOverrides` 类型 + `family` 字段 + `loadAnalyzeRules()` + 统一配置加载器
-2. **Pipeline 重排序**：Unity 资源处理从 Phase 7 提前到 Phase 5.5，lifecycle 始终启用，规则驱动注入插入 Phase 5.7
-3. **规则驱动注入**：`applyUnityRuntimeBindingRules` 实现三种绑定处理器（`asset_ref_loads_components` / `method_triggers_field_load` / `method_triggers_scene_load`）+ `lifecycle_overrides`
-4. **环境变量清除**：15 个 `GITNEXUS_UNITY_*` env var 全部移除，迁移到 `resolveUnityConfig()` 统一配置
-5. **Verifier 收口**：`runtime-chain-verify.ts` query-time 路径已切换为 graph-only closure，不再加载 retrieval/verification 规则目录做匹配
-6. **硬编码移除**：`RUNTIME_LOADER_ANCHORS`（8 锚点）、`DETERMINISTIC_LOADER_BRIDGES`（7 桥接）、项目特化评分全部删除
+1. **Pipeline 重排序**：Unity 资源处理从 Phase 7 提前到 Phase 5.5，lifecycle 始终启用
+2. **环境变量清除**：15 个 `GITNEXUS_UNITY_*` env var 全部移除，迁移到 `resolveUnityConfig()` 统一配置
+3. **Verifier 收口**：`runtime-chain-verify.ts` query-time 路径已切换为 graph-only closure，不再加载 retrieval/verification 规则目录做匹配
+4. **硬编码移除**：`RUNTIME_LOADER_ANCHORS`（8 锚点）、`DETERMINISTIC_LOADER_BRIDGES`（7 桥接）、项目特化评分全部删除
 
-## 8. Rule Lab 当前边界（2026-04-03 As-Built）
-
-1. `promote.ts` 仍允许从 curated 内容推断 `trigger_family`，但 scope/topology/claims 必须通过 DSL lint。
-2. `analyze.ts` 已升级为多候选 topology 输出（含 coverage/conflict/counter-example 统计）。
-3. Rule Lab 产物写入 `.gitnexus/rules/**`，受仓库 `.gitignore` 影响（默认忽略 `.gitnexus`）。
-4. V2 新增 `analyze_rules` 族规则在索引阶段生效；`verification_rules` 族规则用于离线治理/报告，不参与 query-time runtime closure 匹配。两种规则通过 `family` 字段区分。
-
-## 9. 维护规则
+## 8. 维护规则
 
 1. 任何 Unity runtime process 行为变更（字段、配置、语义、默认值），必须同步更新本文。
-2. 扩展新的 `resource_bindings` kind 时，需在本文补充触发判定、图谱遍历路径、合成边属性。
 3. `AGENTS.md` / `CLAUDE.md` 应持续指向本文，作为该领域唯一入口文档。
 4. 新增 Unity 资源字段识别需求时，优先评估是否应挂载到 scan-context 承载器，并在本文同步记录“识别器输入字段 + Phase 5.5 消费方式”。
+
+## 附录 C：已退役 — Rule Lab 离线规则创作系统（v1.5.0 移除）
+
+**退役日期**: 2026-05-18
+**退役原因**: Phase 5.6（内置 lifecycle 自动检测）+ graph-only runtime verification 已完全覆盖 rule lab 的规则驱动合成边注入功能。离线规则创作工作流（CLI `rule-lab` 子命令组、MCP `rule_lab_*` 工具）不再维护。
+
+### 退役模块
+
+| 模块 | 路径 | 说明 |
+|------|------|------|
+| Rule Lab 核心 | `src/rule-lab/` | 离线规则创作全链路 |
+| 注入引擎 | `src/core/ingestion/unity-runtime-binding-rules.ts` | 规则驱动合成边注入 |
+| CLI 子命令 | `src/cli/rule-lab.ts` | `rule-lab analyze/review-pack/curate/promote/regress/compile` |
+| MCP 工具 | `src/mcp/tools.ts` | 5 个 `rule_lab_*` 工具 |
+| Compiled Bundles | `src/rule-lab/compiled-bundles.ts` | 编译产物读写消费 |
+
+### 保留的能力
+
+- Phase 5.5（Unity 资源绑定解析）— 不受影响
+- Phase 5.6（内置 Lifecycle 合成 CALLS 注入）— 不受影响
+- Query-time graph-only runtime chain verification — 不受影响
+- 非 rule-lab 的 MCP 工具（query/context/impact/rename 等）— 不受影响
