@@ -9,6 +9,25 @@ import fs from 'fs/promises';
 import path from 'path';
 import { findRepo, unregisterRepo, listRegisteredRepos } from '../storage/repo-manager.js';
 
+/**
+ * Selectively delete contents of a .gitnexus directory, preserving config files.
+ * Preserves: meta.json, config.json, .gitnexusignore
+ */
+const selectiveClean = async (storagePath: string): Promise<void> => {
+  const PRESERVE = new Set(['meta.json', 'config.json', '.gitnexusignore']);
+  let entries: string[];
+  try {
+    entries = await fs.readdir(storagePath);
+  } catch {
+    // Directory doesn't exist, nothing to clean
+    return;
+  }
+  for (const entry of entries) {
+    if (PRESERVE.has(entry)) continue;
+    await fs.rm(path.join(storagePath, entry), { recursive: true, force: true });
+  }
+};
+
 export const cleanCommand = async (options?: { force?: boolean; all?: boolean }) => {
   // --all flag: clean all indexed repos
   if (options?.all) {
@@ -29,7 +48,7 @@ export const cleanCommand = async (options?: { force?: boolean; all?: boolean })
     const entries = await listRegisteredRepos();
     for (const entry of entries) {
       try {
-        await fs.rm(entry.storagePath, { recursive: true, force: true });
+        await selectiveClean(entry.storagePath);
         await unregisterRepo(entry.path);
         console.log(`Cleaned: ${entry.name} (${entry.storagePath})`);
       } catch (err) {
@@ -58,7 +77,7 @@ export const cleanCommand = async (options?: { force?: boolean; all?: boolean })
   }
 
   try {
-    await fs.rm(repo.storagePath, { recursive: true, force: true });
+    await selectiveClean(repo.storagePath);
     await unregisterRepo(repo.repoPath);
     console.log(`Cleaned: ${repo.storagePath}`);
   } catch (err) {

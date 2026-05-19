@@ -34,16 +34,16 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 ```
 
 1. Unity 资源绑定解析（Phase 5.5）：
-   - `processUnityResources`：`pipeline.ts:441`
+   - `processUnityResources`：`pipeline.ts:498`
    - 产出 `UNITY_COMPONENT_INSTANCE`、`UNITY_ASSET_GUID_REF`、`UNITY_RESOURCE_SUMMARY` 边
    - `PrefabInstance.m_SourcePrefab` 资源级提取已纳入 Phase 5.5，产出去重后的 `scene->prefab` 与 `prefab->prefab` `UNITY_ASSET_GUID_REF`
 2. 内置 Lifecycle 注入（Phase 5.6）：
-   - 对 Unity 项目自动生效（检测 `Assets/*.cs` 文件）：`pipeline.ts:444`
-   - 通用 lifecycle 回调注入（OnEnable/Awake/Start/Update 等）：`unity-lifecycle-synthetic-calls.ts:52-107`
-   - 配置从 `resolveUnityConfig()` 读取：`pipeline.ts:445`
+   - 对 Unity 项目自动生效（检测 `Assets/*.cs` 文件）：`pipeline.ts:501`
+   - 通用 lifecycle 回调注入（OnEnable/Awake/Start/Update 等）：`unity-lifecycle-synthetic-calls.ts:52-103`
+   - 配置从 `resolveUnityConfig()` 读取：`pipeline.ts:502`
 4. Process 生成（Phase 6）：
-   - 基于 CALLS tracing，标注 `processSubtype` 和 `runtimeChainConfidence`：`pipeline.ts:490-525`
-   - 生命周期 metadata 按 Unity resource-binding flow 条件持久化（Unity 自动检测命中 `Assets/*.cs` 时开启）：`pipeline.ts:446`
+   - 基于 CALLS tracing，标注 `processSubtype` 和 `runtimeChainConfidence`：`pipeline.ts:534-580`
+   - 生命周期 metadata 按 Unity resource-binding flow 条件持久化（Unity 自动检测命中 `Assets/*.cs` 时开启）：`pipeline.ts:505`
 
 ### 2.1.1 Scan-Context 承载器契约（As-Built + Design Direction）
 
@@ -64,8 +64,8 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 
 1. 直接 process membership：`STEP_IN_PROCESS`。
 2. 类符号方法投影：
-   - `HAS_METHOD -> STEP_IN_PROCESS` 合并：`local-backend.ts:763-793, 1460-1483`
-   - 证据模式合并：`process-evidence.ts:46-114`
+   - `HAS_METHOD -> STEP_IN_PROCESS` 合并：`local-backend.ts:1416-1449, 2393-2414`
+   - 证据模式合并：`process-evidence.ts:60-104`
 3. empty-process 行为（无 heuristic 注入）：
    - `query`: `processRows.length===0` 时，符号归入 `definitions`
    - `context`: `processRows.length===0` 时，`processes=[]`
@@ -98,10 +98,10 @@ Phase 6:     processProcesses (沿所有 CALLS 边追踪，生成 Process)
 | 阶段 | 设计目标 | As-Built 结论 | 代码/证据 |
 | --- | --- | --- | --- |
 | Phase 0 | 基线与指标固化 | 已有报告产物 | `docs/reports/2026-03-31-phase0-*` |
-| Phase 1 | Unity summary schema hygiene | 已落地 | `schema.ts:254` |
-| Phase 2 | class→method process 投影 | 已落地（query/context 双侧） | `local-backend.ts:763-793, 1460-1483` |
+| Phase 1 | Unity summary schema hygiene | 已落地 | `gitnexus/src/core/lbug/schema.ts`（`REL_TYPES` 定义处） |
+| Phase 2 | class→method process 投影 | 已落地（query/context 双侧） | `local-backend.ts:1416-1449, 2393-2414` |
 | Phase 3 | lifecycle + loader synthetic CALLS | **V2 重构**：lifecycle 始终启用 | `unity-lifecycle-synthetic-calls.ts` |
-| Phase 4 | persisted lifecycle process artifact | **V2 变更**：仅在 Unity resource-binding flow 激活时持久化 | `pipeline.ts:446,524-525` |
+| Phase 4 | persisted lifecycle process artifact | **V2 变更**：仅在 Unity resource-binding flow 激活时持久化 | `pipeline.ts:505,569-570` |
 | Phase 5 | confidence + verification_hint 合约 | **V2 变更**：扩展字段始终输出 | `process-confidence.ts`；`local-backend.ts` |
 | V1 Reload | on-demand verify + 验收闭环 | **V2 重构**：verifier 简化为图谱查询 | `runtime-chain-verify.ts` (934→297 行) |
 
@@ -187,8 +187,11 @@ V2 移除所有 `GITNEXUS_UNITY_*` 环境变量，行为由自动检测和显式
 | `payloadMode` | `compact` | 资源绑定载荷详略 |
 | `parityWarmup` | false | 启动时预热 parity |
 | `parityWarmupMaxParallel` | 4 | 预热并发数 |
+| `paritySeedCacheIdleMs` | 60000 | parity seed 缓存空闲超时 |
+| `paritySeedCacheMaxEntries` | 100 | parity seed 缓存最大条目数 |
+| `parityCacheMaxEntries` | 500 | parity 缓存最大条目数 |
 
-代码依据：`gitnexus/src/core/config/unity-config.ts:4-18,26-40`
+代码依据：`gitnexus/src/core/config/unity-config.ts:4-16,26-41`
 
 优先级：`CLI 参数 > .gitnexus/config.json > 内置默认值`
 
