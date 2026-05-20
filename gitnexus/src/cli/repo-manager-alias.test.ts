@@ -58,6 +58,7 @@ test('saveMeta/loadMeta persists analyzeOptions for future re-index reuse', asyn
       scopeRules: ['Assets/NEON/Code'],
       repoAlias: 'neonspark-v1-subset',
       embeddings: true,
+      aiContext: false,
     },
     stats: { files: 1, nodes: 2, edges: 3 },
   });
@@ -68,6 +69,7 @@ test('saveMeta/loadMeta persists analyzeOptions for future re-index reuse', asyn
     scopeRules: ['Assets/NEON/Code'],
     repoAlias: 'neonspark-v1-subset',
     embeddings: true,
+    aiContext: false,
   });
   assert.equal(meta?.repoId, 'neonspark-v1-subset');
 });

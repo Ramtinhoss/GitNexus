@@ -21,6 +21,7 @@ export interface RepoMeta {
     repoAlias?: string;
     embeddings?: boolean;
     csharpDefineCsproj?: string;
+    aiContext?: boolean;
   };
   stats?: {
     files?: number;

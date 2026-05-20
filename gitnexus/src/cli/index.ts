@@ -3,7 +3,7 @@
 // Heap re-spawn removed — only analyze.ts needs the 8GB heap (via its own ensureHeap()).
 // Removing it from here improves MCP server startup time significantly.
 
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { createRequire } from 'node:module';
 import { createLazyAction } from './lazy-action.js';
 
@@ -30,6 +30,8 @@ program
   .description('Index a repository (full analysis)')
   .option('-f, --force', 'Force full re-index even if up to date')
   .option('--no-reuse-options', 'Do not reuse stored analyze options from previous index')
+  .addOption(new Option('--ai-context', 'Write AGENTS.md/CLAUDE.md and install repo-local GitNexus skills').hideHelp())
+  .option('--no-ai-context', 'Skip writing AGENTS.md/CLAUDE.md and installing repo-local GitNexus skills')
   .option('--embeddings', 'Enable embedding generation for semantic search (off by default)')
   .option('--extensions <list>', 'Comma-separated file extensions to include (e.g. .cs,.ts)')
   .option('--repo-alias <name>', 'Override indexed repository name with a stable alias')

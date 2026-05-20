@@ -58,7 +58,7 @@ fi
 $GN analyze
 ```
 
-Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and generates CLAUDE.md / AGENTS.md context files.
+Run from the project root. This parses all source files, builds the knowledge graph, writes it to `.gitnexus/`, and generates CLAUDE.md / AGENTS.md context files unless `--no-ai-context` is set.
 
 Analyze options are resolved with two-layer priority: **CLI arguments** > **stored options** in `meta.json.analyzeOptions`. On first run, pass CLI flags; they are persisted automatically for subsequent runs.
 
@@ -66,6 +66,7 @@ Analyze options are resolved with two-layer priority: **CLI arguments** > **stor
 |------|--------|
 | `--force` | Force full re-index even if up to date |
 | `--no-reuse-options` | Do not reuse stored analyze options from previous index |
+| `--no-ai-context` | Skip writing `AGENTS.md` / `CLAUDE.md` and installing repo-local GitNexus skills |
 | `--embeddings` | Enable embedding generation (off by default) |
 | `--extensions <list>` | Comma-separated file extensions (e.g. `.cs,.ts`) |
 | `--scope <rules>` | Comma-separated scope path-prefix rules (e.g. `Assets/,Packages/com.veewo.*`) |
@@ -74,7 +75,9 @@ Analyze options are resolved with two-layer priority: **CLI arguments** > **stor
 | `--skills` | Generate repo-specific skill files from detected communities |
 | `-v, --verbose` | Enable verbose ingestion warnings |
 
-**Option persistence:** `--extensions`, `--scope`, `--repo-alias`, `--embeddings`, and `--csharp-define-csproj` are automatically saved to `meta.json.analyzeOptions` after a successful run. On subsequent runs, these stored values are reused unless you pass new CLI flags or use `--no-reuse-options`.
+**Option persistence:** `--extensions`, `--scope`, `--repo-alias`, `--embeddings`, `--csharp-define-csproj`, and the effective AI-context setting are automatically saved to `meta.json.analyzeOptions` after a successful run. On subsequent runs, these stored values are reused unless you pass new CLI flags or use `--no-reuse-options`.
+
+When `--no-ai-context` is saved, later `analyze` runs continue skipping AGENTS/CLAUDE generation until you explicitly re-enable AI context (for example by passing `--ai-context` through a direct CLI invocation or clearing the stored setting with `--no-reuse-options`).
 
 #### Scope rules
 

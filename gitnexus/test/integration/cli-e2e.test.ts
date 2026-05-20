@@ -119,6 +119,33 @@ describe('CLI end-to-end', () => {
     expect(fs.statSync(gitnexusDir).isDirectory()).toBe(true);
   });
 
+  it('analyze --no-ai-context skips context files and persists the setting', () => {
+    for (const file of ['AGENTS.md', 'CLAUDE.md']) {
+      const fullPath = path.join(MINI_REPO, file);
+      if (fs.existsSync(fullPath)) {
+        fs.rmSync(fullPath, { force: true });
+      }
+    }
+
+    const result = runCliRaw(['analyze', '--force', '--no-ai-context'], MINI_REPO, 30000);
+
+    if (result.status === null) return;
+
+    expect(result.status, [
+      `analyze exited with code ${result.status}`,
+      `stdout: ${result.stdout}`,
+      `stderr: ${result.stderr}`,
+    ].join('\n')).toBe(0);
+
+    expect(result.stdout).toMatch(/Context: skipped \(\-\-no-ai-context\)/);
+    expect(fs.existsSync(path.join(MINI_REPO, 'AGENTS.md'))).toBe(false);
+    expect(fs.existsSync(path.join(MINI_REPO, 'CLAUDE.md'))).toBe(false);
+
+    const metaPath = path.join(MINI_REPO, '.gitnexus', 'meta.json');
+    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+    expect(meta.analyzeOptions.aiContext).toBe(false);
+  });
+
   describe('unhappy path', () => {
     it('exits with error when no command is given', () => {
       const result = runCliRaw([], MINI_REPO);
@@ -145,6 +172,15 @@ describe('CLI end-to-end', () => {
       // The program name and at least one known subcommand should appear.
       expect(result.stdout).toMatch(/gitnexus/i);
       expect(result.stdout).toMatch(/analyze|status|serve/i);
+    });
+
+    it('shows analyze help with --no-ai-context flag', () => {
+      const result = runCliRaw(['analyze', '--help'], MINI_REPO);
+
+      if (result.status === null) return;
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toMatch(/--no-ai-context/);
     });
 
     it('fails with unknown command', () => {

@@ -23,7 +23,8 @@ This document defines the current configuration and state file rules used by Git
     "scopeRules": ["Assets/**"],
     "repoAlias": "optional-alias",
     "embeddings": true,
-    "csharpDefineCsproj": "optional-path-to.csproj"
+    "csharpDefineCsproj": "optional-path-to.csproj",
+    "aiContext": true
   },
   "stats": {
     "files": 0,
@@ -39,6 +40,7 @@ This document defines the current configuration and state file rules used by Git
 Notes:
 - `repoId` is persisted after registration and is used as the CLI default `repo` when `--repo` is omitted.
 - For backward compatibility, when `repoId` is missing, CLI falls back to matching the current path in global registry.
+- `analyzeOptions.aiContext=false` means `analyze` should skip AGENTS/CLAUDE generation and repo-local GitNexus skill installation until a later run explicitly re-enables AI context or bypasses stored options.
 
 ## Repo-local optional inputs
 
@@ -61,7 +63,7 @@ Notes:
 
 ## Precedence rules
 
-1. For analyze option resolution (`extensions`, `repoAlias`, `embeddings`, `scope rules`):
+1. For analyze option resolution (`extensions`, `repoAlias`, `embeddings`, `scope rules`, `aiContext`):
    1. CLI explicit flags
    2. `<repo>/.gitnexus/meta.json.analyzeOptions` when `reuseOptions !== false`
    3. built-in defaults

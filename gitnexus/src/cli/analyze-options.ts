@@ -10,6 +10,7 @@ export interface StoredAnalyzeOptions {
   repoAlias?: string;
   embeddings?: boolean;
   csharpDefineCsproj?: string;
+  aiContext?: boolean;
 }
 
 export interface ResolveAnalyzeOptionsInput {
@@ -19,6 +20,7 @@ export interface ResolveAnalyzeOptionsInput {
   embeddings?: boolean;
   reuseOptions?: boolean;
   csharpDefineCsproj?: string;
+  aiContext?: boolean;
 }
 
 export interface EffectiveAnalyzeOptions {
@@ -27,6 +29,7 @@ export interface EffectiveAnalyzeOptions {
   repoAlias?: string;
   embeddings: boolean;
   csharpDefineCsproj?: string;
+  aiContext: boolean;
 }
 
 export function parseExtensionList(rawExtensions?: string): string[] {
@@ -64,6 +67,7 @@ export interface ValidatedStoredOptions {
   repoAlias?: string;
   embeddings: boolean;
   csharpDefineCsproj?: string;
+  aiContext: boolean;
 }
 
 /**
@@ -75,7 +79,14 @@ export async function validateStoredOptions(
   repoPath: string,
 ): Promise<ValidatedStoredOptions> {
   if (!stored) {
-    return { includeExtensions: [], scopeRules: [], repoAlias: undefined, embeddings: false, csharpDefineCsproj: undefined };
+    return {
+      includeExtensions: [],
+      scopeRules: [],
+      repoAlias: undefined,
+      embeddings: false,
+      csharpDefineCsproj: undefined,
+      aiContext: true,
+    };
   }
 
   // Validate repoAlias
@@ -126,6 +137,7 @@ export async function validateStoredOptions(
     repoAlias,
     embeddings: Boolean(stored.embeddings),
     csharpDefineCsproj,
+    aiContext: stored.aiContext !== false,
   };
 }
 
@@ -141,6 +153,7 @@ export async function resolveEffectiveAnalyzeOptions(
   const hasCliScope = options?.scope !== undefined;
   const hasCliRepoAlias = options?.repoAlias !== undefined;
   const hasCliCsproj = options?.csharpDefineCsproj !== undefined;
+  const hasCliAiContext = options?.aiContext !== undefined;
   const canReuse = options?.reuseOptions !== false;
 
   const includeExtensions = hasCliExtensions
@@ -158,6 +171,9 @@ export async function resolveEffectiveAnalyzeOptions(
   const csharpDefineCsproj = hasCliCsproj
     ? options!.csharpDefineCsproj
     : (canReuse ? stored?.csharpDefineCsproj : undefined);
+  const aiContext = hasCliAiContext
+    ? options!.aiContext !== false
+    : (canReuse ? stored?.aiContext !== false : true);
 
   return {
     includeExtensions: [...includeExtensions],
@@ -165,5 +181,6 @@ export async function resolveEffectiveAnalyzeOptions(
     repoAlias,
     embeddings,
     csharpDefineCsproj,
+    aiContext,
   };
 }

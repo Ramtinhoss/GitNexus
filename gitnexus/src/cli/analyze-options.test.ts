@@ -30,6 +30,7 @@ test('resolveEffectiveAnalyzeOptions reuses stored settings when CLI omits them'
       scopeRules: ['Assets/NEON/Code'],
       repoAlias: 'neonspark-v1-subset',
       embeddings: true,
+      aiContext: false,
     },
   );
 
@@ -37,6 +38,7 @@ test('resolveEffectiveAnalyzeOptions reuses stored settings when CLI omits them'
   assert.deepEqual(resolved.scopeRules, ['Assets/NEON/Code']);
   assert.equal(resolved.repoAlias, 'neonspark-v1-subset');
   assert.equal(resolved.embeddings, true);
+  assert.equal(resolved.aiContext, false);
 });
 
 test('resolveEffectiveAnalyzeOptions disables reuse via reuseOptions=false', async () => {
@@ -48,6 +50,7 @@ test('resolveEffectiveAnalyzeOptions disables reuse via reuseOptions=false', asy
       repoAlias: 'neonspark-v1-subset',
       embeddings: true,
       csharpDefineCsproj: '/tmp/Assembly-CSharp.csproj',
+      aiContext: false,
     },
   );
 
@@ -56,6 +59,7 @@ test('resolveEffectiveAnalyzeOptions disables reuse via reuseOptions=false', asy
   assert.equal(resolved.repoAlias, undefined);
   assert.equal(resolved.embeddings, false);
   assert.equal(resolved.csharpDefineCsproj, undefined);
+  assert.equal(resolved.aiContext, true);
 });
 
 test('resolveEffectiveAnalyzeOptions prefers explicit CLI values over stored settings', async () => {
@@ -65,12 +69,14 @@ test('resolveEffectiveAnalyzeOptions prefers explicit CLI values over stored set
       scope: 'src/',
       repoAlias: 'new-alias',
       embeddings: false,
+      aiContext: true,
     },
     {
       includeExtensions: ['.cs'],
       scopeRules: ['Assets/NEON/Code'],
       repoAlias: 'old-alias',
       embeddings: true,
+      aiContext: false,
     },
   );
 
@@ -78,6 +84,7 @@ test('resolveEffectiveAnalyzeOptions prefers explicit CLI values over stored set
   assert.deepEqual(resolved.scopeRules, ['src']);
   assert.equal(resolved.repoAlias, 'new-alias');
   assert.equal(resolved.embeddings, false);
+  assert.equal(resolved.aiContext, true);
 });
 
 test('resolveEffectiveAnalyzeOptions no stored uses defaults', async () => {
@@ -88,6 +95,7 @@ test('resolveEffectiveAnalyzeOptions no stored uses defaults', async () => {
   assert.equal(resolved.repoAlias, undefined);
   assert.equal(resolved.embeddings, false);
   assert.equal(resolved.csharpDefineCsproj, undefined);
+  assert.equal(resolved.aiContext, true);
 });
 
 test('resolveEffectiveAnalyzeOptions reuses stored scopeRules when CLI scope is omitted', async () => {
@@ -132,6 +140,28 @@ test('resolveEffectiveAnalyzeOptions CLI csharpDefineCsproj overrides stored', a
   assert.equal(resolved.csharpDefineCsproj, '/new/path.csproj');
 });
 
+test('resolveEffectiveAnalyzeOptions reuses stored aiContext=false', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    {},
+    {
+      aiContext: false,
+    },
+  );
+
+  assert.equal(resolved.aiContext, false);
+});
+
+test('resolveEffectiveAnalyzeOptions CLI aiContext=true overrides stored false', async () => {
+  const resolved = await resolveEffectiveAnalyzeOptions(
+    { aiContext: true },
+    {
+      aiContext: false,
+    },
+  );
+
+  assert.equal(resolved.aiContext, true);
+});
+
 // ─── validateStoredOptions tests ────────────────────────────────────
 
 test('validateStoredOptions returns defaults when stored is undefined', async () => {
@@ -141,6 +171,7 @@ test('validateStoredOptions returns defaults when stored is undefined', async ()
   assert.equal(result.repoAlias, undefined);
   assert.equal(result.embeddings, false);
   assert.equal(result.csharpDefineCsproj, undefined);
+  assert.equal(result.aiContext, true);
 });
 
 test('validateStoredOptions passes valid options unchanged', async () => {
@@ -154,6 +185,7 @@ test('validateStoredOptions passes valid options unchanged', async () => {
     repoAlias: 'my-repo',
     csharpDefineCsproj: csprojPath,
     embeddings: true,
+    aiContext: false,
   }, tmpDir);
 
   assert.deepEqual(result.includeExtensions, ['.cs', '.ts']);
@@ -161,6 +193,7 @@ test('validateStoredOptions passes valid options unchanged', async () => {
   assert.equal(result.repoAlias, 'my-repo');
   assert.equal(result.csharpDefineCsproj, csprojPath);
   assert.equal(result.embeddings, true);
+  assert.equal(result.aiContext, false);
 });
 
 test('validateStoredOptions warns on invalid repoAlias and falls back', async () => {

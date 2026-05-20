@@ -60,6 +60,7 @@ function ensureHeap(): boolean {
 
 export interface AnalyzeOptions {
   force?: boolean;
+  aiContext?: boolean;
   embeddings?: boolean;
   extensions?: string;
   scope?: string;
@@ -144,6 +145,7 @@ export const analyzeCommand = async (
   let repoAlias: string | undefined;
   let embeddingsEnabled = false;
   let csharpDefineCsproj: string | undefined;
+  let aiContextEnabled = true;
   try {
     const validatedStored = await validateStoredOptions(
       options?.reuseOptions !== false ? existingMeta?.analyzeOptions : undefined,
@@ -157,12 +159,14 @@ export const analyzeCommand = async (
       embeddings: options?.embeddings,
       reuseOptions: options?.reuseOptions,
       csharpDefineCsproj: options?.csharpDefineCsproj,
+      aiContext: options?.aiContext,
     }, validatedStored);
     includeExtensions = effectiveOptions.includeExtensions;
     scopeRules = effectiveOptions.scopeRules;
     repoAlias = effectiveOptions.repoAlias;
     embeddingsEnabled = effectiveOptions.embeddings;
     csharpDefineCsproj = effectiveOptions.csharpDefineCsproj;
+    aiContextEnabled = effectiveOptions.aiContext;
   } catch (error: any) {
     console.log(`  ${error?.message || String(error)}\n`);
     process.exitCode = 1;
@@ -180,6 +184,7 @@ export const analyzeCommand = async (
       options?.repoAlias !== undefined ||
       options?.csharpDefineCsproj !== undefined ||
       options?.embeddings !== undefined ||
+      options?.aiContext !== undefined ||
       options?.reuseOptions === false;
 
     if (!hasCliOverrides) {
@@ -192,7 +197,8 @@ export const analyzeCommand = async (
       includeExtensions.length === 0 &&
       scopeRules.length === 0 &&
       !repoAlias &&
-      !embeddingsEnabled
+      !embeddingsEnabled &&
+      aiContextEnabled
     ) {
       console.log('  Already up to date\n');
       return;
@@ -417,6 +423,7 @@ export const analyzeCommand = async (
       scopeRules,
       repoAlias,
       embeddings: embeddingsEnabled,
+      aiContext: aiContextEnabled,
       ...(csharpDefineCsproj ? { csharpDefineCsproj } : {}),
     },
     stats: {
@@ -452,17 +459,20 @@ export const analyzeCommand = async (
     generatedSkills = skillResult.skills;
   }
 
-  const cliConfig = await loadCLIConfig();
-  const aiContext = await generateAIContextFiles(repoPath, storagePath, projectName, {
-    files: pipelineRuntime.totalFileCount,
-    nodes: stats.nodes,
-    edges: stats.edges,
-    communities: pipelineRuntime.communityResult?.stats.totalCommunities,
-    clusters: aggregatedClusterCount,
-    processes: pipelineRuntime.processResult?.stats.totalProcesses,
-  }, {
-    skillScope: (cliConfig.setupScope === 'global') ? 'global' : 'project',
-  }, generatedSkills);
+  let aiContext: { files: string[] } = { files: [] };
+  if (aiContextEnabled) {
+    const cliConfig = await loadCLIConfig();
+    aiContext = await generateAIContextFiles(repoPath, storagePath, projectName, {
+      files: pipelineRuntime.totalFileCount,
+      nodes: stats.nodes,
+      edges: stats.edges,
+      communities: pipelineRuntime.communityResult?.stats.totalCommunities,
+      clusters: aggregatedClusterCount,
+      processes: pipelineRuntime.processResult?.stats.totalProcesses,
+    }, {
+      skillScope: (cliConfig.setupScope === 'global') ? 'global' : 'project',
+    }, generatedSkills);
+  }
 
   await closeLbug();
   // Note: we intentionally do NOT call disposeEmbedder() here.
@@ -518,7 +528,9 @@ export const analyzeCommand = async (
   }
   console.log(`  ${repoPath}`);
 
-  if (aiContext.files.length > 0) {
+  if (!aiContextEnabled) {
+    console.log('  Context: skipped (--no-ai-context)');
+  } else if (aiContext.files.length > 0) {
     console.log(`  Context: ${aiContext.files.join(', ')}`);
   }
 
